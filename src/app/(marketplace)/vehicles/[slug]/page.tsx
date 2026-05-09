@@ -1,0 +1,204 @@
+import { notFound } from "next/navigation";
+import Image from "next/image";
+import { createClient } from "@/lib/supabase/server";
+import { Badge } from "@/components/ui/Badge";
+import { BookingRequestForm } from "@/components/booking/BookingRequestForm";
+import { formatLKR, insuranceLabel, fuelPolicyLabel, reliabilityColor } from "@/lib/vehicles/format";
+import type { VehicleWithAgency } from "@/types/queries";
+import type { Metadata } from "next";
+
+interface Props {
+  params: Promise<{ slug: string }>;
+}
+
+export async function generateMetadata({ params }: Props): Promise<Metadata> {
+  const { slug } = await params;
+  const supabase = await createClient();
+  const { data } = await supabase
+    .from("vehicles")
+    .select("make, model, year, city, daily_rate_lkr")
+    .eq("slug", slug)
+    .single();
+
+  const v = data as { make: string; model: string; year: number; city: string; daily_rate_lkr: number } | null;
+  if (!v) return { title: "Vehicle not found" };
+
+  return {
+    title: `Rent ${v.year} ${v.make} ${v.model} in ${v.city}`,
+    description: `Rent a ${v.year} ${v.make} ${v.model} in ${v.city} from ${formatLKR(v.daily_rate_lkr)}/day. Verified agency, locked-in pricing via DriveLink SL.`,
+  };
+}
+
+export default async function VehicleDetailPage({ params }: Props) {
+  const { slug } = await params;
+  const supabase = await createClient();
+
+  const { data } = await supabase
+    .from("vehicles")
+    .select("*, agencies(id, name, city, whatsapp_number, is_verified, reliability_pct, rating_avg, rating_count, cancellation_count)")
+    .eq("slug", slug)
+    .single();
+
+  if (!data) notFound();
+
+  const vehicle = data as unknown as VehicleWithAgency;
+  const agency = vehicle.agencies!;
+  const photos = vehicle.photos ?? [];
+
+  return (
+    <div className="max-w-5xl mx-auto px-4 py-8">
+      <div className="grid lg:grid-cols-5 gap-8">
+
+        {/* Left: photos + details */}
+        <div className="lg:col-span-3 space-y-6">
+
+          {/* Main photo */}
+          <div className="rounded-2xl overflow-hidden bg-slate-900 aspect-[16/9] relative">
+            {photos[0] ? (
+              <Image
+                src={photos[0]}
+                alt={`${vehicle.year} ${vehicle.make} ${vehicle.model}`}
+                fill className="object-cover" priority
+              />
+            ) : (
+              <div className="w-full h-full flex items-center justify-center text-6xl text-slate-700">🚗</div>
+            )}
+          </div>
+
+          {/* Thumbnail strip */}
+          {photos.length > 1 && (
+            <div className="flex gap-2 overflow-x-auto pb-1">
+              {photos.slice(1).map((url: string, i: number) => (
+                <div key={i} className="relative w-24 h-16 shrink-0 rounded-lg overflow-hidden">
+                  <Image src={url} alt={`Photo ${i + 2}`} fill className="object-cover" />
+                </div>
+              ))}
+            </div>
+          )}
+
+          {/* Title + price */}
+          <div>
+            <div className="flex items-start justify-between gap-2">
+              <div>
+                <h1 className="text-2xl font-bold text-white">
+                  {vehicle.year} {vehicle.make} {vehicle.model}
+                </h1>
+                <p className="text-slate-400 mt-0.5">{vehicle.city}</p>
+              </div>
+              <div className="text-right">
+                <p className="text-2xl font-bold text-amber-400">{formatLKR(vehicle.daily_rate_lkr)}</p>
+                <p className="text-slate-500 text-sm">per day</p>
+              </div>
+            </div>
+            {vehicle.deposit_lkr > 0 && (
+              <p className="text-slate-400 text-sm mt-1">+ {formatLKR(vehicle.deposit_lkr)} refundable deposit</p>
+            )}
+          </div>
+
+          {/* Specs grid */}
+          <div className="grid grid-cols-2 gap-3">
+            {[
+              { label: "Transmission", value: vehicle.transmission },
+              { label: "Seats",        value: `${vehicle.seats} seats` },
+              { label: "Fuel Policy",  value: fuelPolicyLabel(vehicle.fuel_policy) },
+              { label: "Insurance",    value: insuranceLabel(vehicle.insurance_type) },
+            ].map(({ label, value }) => (
+              <div key={label} className="bg-slate-900 rounded-xl p-3 border border-slate-800">
+                <p className="text-slate-500 text-xs">{label}</p>
+                <p className="text-white text-sm font-medium mt-0.5">{value}</p>
+              </div>
+            ))}
+          </div>
+
+          {/* Insurance warning */}
+          {vehicle.insurance_type === "private" && (
+            <div className="flex gap-3 p-3 bg-yellow-500/10 border border-yellow-500/20 rounded-xl">
+              <span className="text-yellow-400 shrink-0">⚠</span>
+              <p className="text-yellow-300 text-sm">
+                This vehicle has Private (P-Number) insurance. Verify coverage with the agency before renting.
+              </p>
+            </div>
+          )}
+
+          {/* Features */}
+          {vehicle.features && vehicle.features.length > 0 && (
+            <div>
+              <p className="text-slate-400 text-xs uppercase tracking-widest font-semibold mb-2">Features</p>
+              <div className="flex flex-wrap gap-2">
+                {vehicle.features.map((f: string) => <Badge key={f} variant="slate">{f}</Badge>)}
+              </div>
+            </div>
+          )}
+        </div>
+
+        {/* Right: agency + booking */}
+        <div className="lg:col-span-2 space-y-4">
+
+          {/* Agency card */}
+          <div className="bg-slate-900 rounded-2xl border border-slate-800 p-4">
+            <div className="flex items-center justify-between mb-3">
+              <div>
+                <p className="font-semibold text-white">{agency.name}</p>
+                <p className="text-slate-400 text-xs mt-0.5">{agency.city}</p>
+              </div>
+              {agency.is_verified && <Badge variant="green">Verified Agency</Badge>}
+            </div>
+
+            <div className="grid grid-cols-3 gap-2 text-center">
+              <div>
+                <p className={`text-lg font-bold ${reliabilityColor(agency.reliability_pct)}`}>
+                  {agency.reliability_pct ?? 100}%
+                </p>
+                <p className="text-slate-500 text-xs">Reliability</p>
+              </div>
+              <div>
+                <p className="text-lg font-bold text-white">
+                  {agency.rating_avg ? agency.rating_avg.toFixed(1) : "—"}
+                </p>
+                <p className="text-slate-500 text-xs">Rating</p>
+              </div>
+              <div>
+                <p className="text-lg font-bold text-white">{agency.rating_count ?? 0}</p>
+                <p className="text-slate-500 text-xs">Reviews</p>
+              </div>
+            </div>
+          </div>
+
+          {/* Booking card */}
+          <div className="bg-slate-900 rounded-2xl border border-slate-800 p-4">
+            <h2 className="font-semibold text-white mb-1">Request this vehicle</h2>
+            <p className="text-slate-400 text-xs mb-4">
+              No payment yet. The agency confirms first — you pay Rs. 1,000 only after they say yes.
+            </p>
+            <BookingRequestForm
+              vehicleId={vehicle.id}
+              agencyId={vehicle.agency_id}
+              dailyRateLkr={vehicle.daily_rate_lkr}
+            />
+          </div>
+
+          {/* How it works */}
+          <div className="bg-slate-900 rounded-2xl border border-slate-800 p-4">
+            <p className="text-slate-400 text-xs font-semibold uppercase tracking-widest mb-3">How it works</p>
+            <ol className="space-y-2">
+              {[
+                "You send a request (free, no payment)",
+                "Agency confirms availability via WhatsApp",
+                "You pay Rs. 1,000 to lock in the booking",
+                "Agency contact details unlocked instantly",
+                "Meet and collect the car",
+              ].map((step, i) => (
+                <li key={i} className="flex gap-3 text-sm text-slate-400">
+                  <span className="w-5 h-5 rounded-full bg-slate-800 text-amber-400 font-bold text-xs flex items-center justify-center shrink-0">
+                    {i + 1}
+                  </span>
+                  {step}
+                </li>
+              ))}
+            </ol>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
