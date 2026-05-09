@@ -19,7 +19,25 @@
       "Bash(winget --version)",
       "Bash(winget install *)",
       "Bash(git init *)",
-      "Bash(git add *)"
+      "Bash(git add *)",
+      "Bash(git -c user.email=\"umarhassanbusiness@gmail.com\" -c user.name=\"Umar Hassan\" commit -m \"Initial DriveLink SL marketplace\")",
+      "Bash(git diff-tree *)",
+      "Read(//c/Program Files/GitHub CLI/**)",
+      "Read(//c/Users/Beast/AppData/Local/Programs/**)",
+      "Bash(tasklist)",
+      "Bash(\"/c/Program Files/GitHub CLI/gh.exe\" --version)",
+      "Bash(\"/c/Program Files/GitHub CLI/gh.exe\" auth status)",
+      "Bash(vercel whoami *)",
+      "Bash(git -c user.email=\"umarhassanbusiness@gmail.com\" -c user.name=\"Umar Hassan\" commit -m \"Add .env.example template\")",
+      "Bash(\"/c/Program Files/GitHub CLI/gh.exe\" repo create drivelink-sl --private --source=. --remote=origin --push --description \"DriveLink SL - Sri Lankan car rental marketplace\")",
+      "Bash(vercel link *)",
+      "Bash(vercel env *)",
+      "Bash(vercel deploy *)",
+      "Bash(vercel inspect *)",
+      "Bash(vercel logs *)",
+      "Bash(git config *)",
+      "Bash(git filter-branch -f --env-filter ' *)",
+      "Bash(git commit *)"
     ],
     "additionalDirectories": [
       "C:\\Users\\Beast\\Downloads\\DriveLink\\src\\app\\(marketplace)\\bookings"
