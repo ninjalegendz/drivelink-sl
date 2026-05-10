@@ -1,6 +1,9 @@
 import { createServerClient } from "@supabase/ssr";
+import { createClient as createPlainClient, type SupabaseClient } from "@supabase/supabase-js";
 import { cookies } from "next/headers";
 
+// Cookie-bound client. Reads & writes auth cookies so it respects the
+// caller's session (renter / agency / admin), and RLS is enforced.
 export async function createClient() {
   const cookieStore = await cookies();
 
@@ -22,23 +25,29 @@ export async function createClient() {
   );
 }
 
-export async function createServiceClient() {
-  const cookieStore = await cookies();
+// Service-role client. Bypasses RLS. Use ONLY for server-side admin work
+// that genuinely needs cross-row access: writing to RLS-protected tables
+// from an unauthenticated endpoint (signup, login OTP), or operations
+// that span users.
+//
+// Important: this MUST NOT use @supabase/ssr's createServerClient — that
+// path uses the caller's cookies for the Authorization header, which
+// downgrades to anon when there's no session, and anon can't see
+// service-only tables (e.g. email_config). createClient from
+// supabase-js with the service-role key sets Authorization correctly.
+let cachedServiceClient: SupabaseClient | null = null;
 
-  return createServerClient(
+export async function createServiceClient(): Promise<SupabaseClient> {
+  if (cachedServiceClient) return cachedServiceClient;
+  cachedServiceClient = createPlainClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
     process.env.SUPABASE_SERVICE_ROLE_KEY!,
     {
-      cookies: {
-        getAll() { return cookieStore.getAll(); },
-        setAll(cookiesToSet) {
-          try {
-            cookiesToSet.forEach(({ name, value, options }) =>
-              cookieStore.set(name, value, options)
-            );
-          } catch {}
-        },
+      auth: {
+        autoRefreshToken: false,
+        persistSession:   false,
       },
     }
   );
+  return cachedServiceClient;
 }
