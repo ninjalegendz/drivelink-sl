@@ -1,11 +1,11 @@
 import { notFound } from "next/navigation";
-import Image from "next/image";
-import { Car, AlertTriangle } from "lucide-react";
+import { AlertTriangle } from "lucide-react";
 import { createClient } from "@/lib/supabase/server";
 import { Badge } from "@/components/ui/Badge";
 import { HelpHint } from "@/components/ui/HelpHint";
 import { BookingRequestForm } from "@/components/booking/BookingRequestForm";
-import { formatLKR, insuranceLabel, fuelPolicyLabel, reliabilityColor } from "@/lib/vehicles/format";
+import { VehicleGallery } from "@/components/vehicles/VehicleGallery";
+import { formatLKR, insuranceLabel, fuelPolicyLabel, reliabilityColor, reliabilityLabel, RELIABILITY_HELP, RATING_HELP, REVIEW_COUNT_HELP } from "@/lib/vehicles/format";
 import type { VehicleWithAgency } from "@/types/queries";
 import type { Metadata } from "next";
 
@@ -83,31 +83,10 @@ export default async function VehicleDetailPage({ params }: Props) {
         {/* Left: photos + details */}
         <div className="lg:col-span-3 space-y-6">
 
-          {/* Main photo */}
-          <div className="rounded-2xl overflow-hidden bg-slate-900 aspect-[16/9] relative">
-            {photos[0] ? (
-              <Image
-                src={photos[0]}
-                alt={`${vehicle.year} ${vehicle.make} ${vehicle.model}`}
-                fill className="object-cover" priority
-              />
-            ) : (
-              <div className="w-full h-full flex items-center justify-center text-slate-700">
-                <Car size={64} strokeWidth={1.5} />
-              </div>
-            )}
-          </div>
-
-          {/* Thumbnail strip */}
-          {photos.length > 1 && (
-            <div className="flex gap-2 overflow-x-auto pb-1">
-              {photos.slice(1).map((url: string, i: number) => (
-                <div key={i} className="relative w-24 h-16 shrink-0 rounded-lg overflow-hidden">
-                  <Image src={url} alt={`Photo ${i + 2}`} fill className="object-cover" />
-                </div>
-              ))}
-            </div>
-          )}
+          <VehicleGallery
+            photos={photos}
+            alt={`${vehicle.year} ${vehicle.make} ${vehicle.model}`}
+          />
 
           {/* Title + price */}
           <div>
@@ -196,19 +175,25 @@ export default async function VehicleDetailPage({ params }: Props) {
             <div className="grid grid-cols-3 gap-2 text-center">
               <div>
                 <p className={`text-lg font-bold ${reliabilityColor(agency.reliability_pct)}`}>
-                  {agency.reliability_pct ?? 100}%
+                  {reliabilityLabel(agency.reliability_pct)}
                 </p>
-                <p className="text-slate-500 text-xs">Reliability</p>
+                <p className="text-slate-500 text-xs inline-flex items-center justify-center">
+                  Reliability <HelpHint text={RELIABILITY_HELP} />
+                </p>
               </div>
               <div>
                 <p className="text-lg font-bold text-white">
                   {agency.profiles?.rating_avg ? agency.profiles.rating_avg.toFixed(1) : "—"}
                 </p>
-                <p className="text-slate-500 text-xs">Rating</p>
+                <p className="text-slate-500 text-xs inline-flex items-center justify-center">
+                  Rating <HelpHint text={RATING_HELP} />
+                </p>
               </div>
               <div>
                 <p className="text-lg font-bold text-white">{agency.profiles?.rating_count ?? 0}</p>
-                <p className="text-slate-500 text-xs">Reviews</p>
+                <p className="text-slate-500 text-xs inline-flex items-center justify-center">
+                  Reviews <HelpHint text={REVIEW_COUNT_HELP} />
+                </p>
               </div>
             </div>
           </div>
@@ -223,6 +208,7 @@ export default async function VehicleDetailPage({ params }: Props) {
               vehicleId={vehicle.id}
               agencyId={vehicle.agency_id}
               dailyRateLkr={vehicle.daily_rate_lkr}
+              monthlyRateLkr={vehicle.monthly_rate_lkr}
               bookedRanges={bookedRanges}
             />
           </div>

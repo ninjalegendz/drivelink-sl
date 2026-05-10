@@ -226,6 +226,7 @@ export type Database = {
           start_date: string;
           end_date: string;
           daily_rate_lkr: number;
+          subtotal_lkr?: number;
           booking_fee_lkr?: number;
           slip_url?: string | null;
           slip_verified_at?: string | null;

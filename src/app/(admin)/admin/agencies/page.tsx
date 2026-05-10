@@ -2,7 +2,7 @@ import { createClient } from "@/lib/supabase/server";
 import { Badge } from "@/components/ui/Badge";
 import { AgencyVerifyAction } from "@/components/admin/AgencyVerifyAction";
 import { AgencyActions } from "@/components/admin/AgencyActions";
-import { reliabilityColor } from "@/lib/vehicles/format";
+import { reliabilityColor, reliabilityLabel } from "@/lib/vehicles/format";
 
 export default async function AdminAgenciesPage() {
   const supabase = await createClient();
@@ -99,7 +99,7 @@ export default async function AdminAgenciesPage() {
         {/* Metrics grid */}
         <div className="grid grid-cols-2 sm:grid-cols-5 gap-2 mb-3">
           {[
-            { label: "Reliability", value: `${a.reliability_pct ?? 100}%`, color: reliabilityColor(a.reliability_pct) },
+            { label: "Reliability", value: reliabilityLabel(a.reliability_pct), color: reliabilityColor(a.reliability_pct) },
             { label: "Confirmed",   value: a.confirmed_count },
             { label: "Cancellations", value: a.cancellation_count, color: a.cancellation_count > 0 ? "text-amber-400" : "" },
             { label: "Fleet size",  value: fleetCount },

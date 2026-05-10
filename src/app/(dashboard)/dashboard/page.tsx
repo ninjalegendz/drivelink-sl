@@ -2,7 +2,7 @@ import { createClient } from "@/lib/supabase/server";
 import { redirect } from "next/navigation";
 import Link from "next/link";
 import { AlertTriangle, Plus } from "lucide-react";
-import { reliabilityColor } from "@/lib/vehicles/format";
+import { reliabilityColor, reliabilityLabel } from "@/lib/vehicles/format";
 import type { AgencyRow } from "@/types/queries";
 
 export default async function DashboardPage() {
@@ -44,7 +44,7 @@ export default async function DashboardPage() {
       {/* Stats */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
         {[
-          { label: "Reliability Score", value: `${agency.reliability_pct ?? 100}%`, color: reliabilityColor(agency.reliability_pct), href: "#" },
+          { label: "Reliability Score", value: reliabilityLabel(agency.reliability_pct), color: reliabilityColor(agency.reliability_pct), href: "#" },
           { label: "Pending requests",  value: pendingBookings ?? 0, color: "text-amber-400", href: "/dashboard/bookings?status=pending_confirmation" },
           { label: "Active bookings",   value: activeBookings ?? 0,  color: "text-emerald-400", href: "/dashboard/bookings?status=active" },
           { label: "Fleet size",        value: vehicleCount ?? 0,    color: "text-white", href: "/dashboard/vehicles" },

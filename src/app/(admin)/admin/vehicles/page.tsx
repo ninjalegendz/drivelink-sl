@@ -75,6 +75,52 @@ export default async function AdminVehiclesPage({ searchParams }: Props) {
         <div className="space-y-4">
           {vehicles.map((v) => {
             const photos = v.photos ?? [];
+
+            // Compact card for vehicles that have already been reviewed once.
+            // Full review detail only matters for pending_review.
+            if (v.status !== "pending_review") {
+              const cover = photos[0];
+              return (
+                <div key={v.id} className="bg-slate-900 border border-slate-800 rounded-2xl p-4">
+                  <div className="flex gap-4">
+                    <div className="relative w-28 h-20 shrink-0 rounded-lg overflow-hidden bg-slate-800">
+                      {cover ? (
+                        <Image src={cover} alt="" fill className="object-cover" sizes="112px" />
+                      ) : (
+                        <div className="w-full h-full flex items-center justify-center text-slate-700">
+                          <Car size={24} strokeWidth={1.5} />
+                        </div>
+                      )}
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-start justify-between gap-3">
+                        <div className="min-w-0">
+                          <p className="font-semibold text-white text-sm">{v.year} {v.make} {v.model}</p>
+                          <p className="text-slate-400 text-xs mt-0.5">
+                            {v.agencies?.name ?? "—"} · {v.city}
+                          </p>
+                        </div>
+                        <p className="text-amber-400 font-bold text-sm shrink-0">
+                          {formatLKR(v.daily_rate_lkr)}<span className="text-slate-500 text-xs font-normal"> / day</span>
+                        </p>
+                      </div>
+                      <div className="mt-2 flex items-center justify-between gap-3">
+                        <Link
+                          href={`/vehicles/${v.slug}`}
+                          target="_blank"
+                          className="inline-flex items-center gap-1 text-xs text-amber-400 hover:text-amber-300"
+                        >
+                          Preview <ExternalLink size={11} />
+                        </Link>
+                        <VehicleApprovalActions vehicleId={v.id} status={v.status} />
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              );
+            }
+
+            // Full review card — only for pending_review.
             return (
               <div key={v.id} className="bg-slate-900 border border-slate-800 rounded-2xl p-5">
 
@@ -88,9 +134,6 @@ export default async function AdminVehiclesPage({ searchParams }: Props) {
                       <Badge variant={v.insurance_type === "hire" ? "green" : "yellow"}>
                         {insuranceLabel(v.insurance_type)}
                       </Badge>
-                      {v.status !== "pending_review" && v.status !== "available" && v.status !== "unlisted" && (
-                        <Badge variant="slate">{v.status}</Badge>
-                      )}
                     </div>
                     <p className="text-slate-400 text-sm mt-1">
                       {v.agencies?.name ?? "—"} · {v.city} · {v.agencies?.whatsapp_number ?? "—"}
@@ -188,9 +231,7 @@ export default async function AdminVehiclesPage({ searchParams }: Props) {
                   >
                     Open public preview <ExternalLink size={11} />
                   </Link>
-                  {(v.status === "pending_review" || v.status === "available" || v.status === "unlisted") && (
-                    <VehicleApprovalActions vehicleId={v.id} status={v.status} />
-                  )}
+                  <VehicleApprovalActions vehicleId={v.id} status={v.status} />
                 </div>
               </div>
             );

@@ -2,7 +2,7 @@ import Link from "next/link";
 import Image from "next/image";
 import { Car, Star } from "lucide-react";
 import { Badge } from "@/components/ui/Badge";
-import { formatLKR, insuranceLabel, reliabilityColor } from "@/lib/vehicles/format";
+import { formatLKR, insuranceLabel, reliabilityColor, reliabilityLabel } from "@/lib/vehicles/format";
 import type { VehicleWithAgency } from "@/types/queries";
 
 export function VehicleCard({ vehicle }: { vehicle: VehicleWithAgency }) {
@@ -73,11 +73,9 @@ export function VehicleCard({ vehicle }: { vehicle: VehicleWithAgency }) {
                   {agency.profiles.rating_avg.toFixed(1)}
                 </span>
               )}
-              {agency.reliability_pct !== null && (
-                <span className={`text-xs font-medium ${reliabilityColor(agency.reliability_pct)}`}>
-                  {agency.reliability_pct}% reliable
-                </span>
-              )}
+              <span className={`text-xs font-medium ${reliabilityColor(agency.reliability_pct)}`}>
+                {reliabilityLabel(agency.reliability_pct)} reliable
+              </span>
             </div>
           </div>
         )}

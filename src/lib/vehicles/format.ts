@@ -16,3 +16,19 @@ export function reliabilityColor(pct: number | null): string {
   if (pct >= 75) return "text-yellow-400";
   return "text-red-400";
 }
+
+// Public-side: "100% by default" misleads first-time renters into thinking
+// the agency has a perfect track record. Show N/A until they have data.
+export function reliabilityLabel(pct: number | null): string {
+  return pct === null ? "N/A" : `${pct}%`;
+}
+
+// Tooltip copy — info-packed but short. Reused across public views.
+export const RELIABILITY_HELP =
+  "% of confirmed bookings the agency actually fulfilled. Calculated from completed vs. cancelled bookings. N/A means they haven't had a confirmed booking yet — not a perfect record.";
+
+export const RATING_HELP =
+  "Average score from past renters (1–5 stars). Only renters with completed bookings can leave reviews — no fake ratings.";
+
+export const REVIEW_COUNT_HELP =
+  "Number of reviews left by renters after completed bookings.";

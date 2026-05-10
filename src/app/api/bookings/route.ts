@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient, createServiceClient } from "@/lib/supabase/server";
 import { sendWhatsAppText, buildAgencyPingMessage } from "@/lib/whatsapp/send";
+import { calcBookingPrice } from "@/lib/bookings/pricing";
 
 export async function POST(req: NextRequest) {
   const supabase = await createClient();
@@ -11,25 +12,27 @@ export async function POST(req: NextRequest) {
   }
 
   const body = await req.json();
-  const { vehicle_id, agency_id, start_date, end_date, daily_rate_lkr } = body;
+  const { vehicle_id, agency_id, start_date, end_date } = body;
 
-  if (!vehicle_id || !agency_id || !start_date || !end_date || !daily_rate_lkr) {
+  if (!vehicle_id || !agency_id || !start_date || !end_date) {
     return NextResponse.json({ error: "Missing required fields" }, { status: 400 });
   }
 
   // Use service client for insert so RLS doesn't block server-side ops
   const service = await createServiceClient();
 
-  // Fetch agency WhatsApp number and vehicle name in parallel
+  // Fetch the vehicle's canonical rates server-side — never trust client-supplied prices.
   const [{ data: agency }, { data: vehicle }, { data: renter }] = await Promise.all([
     service.from("agencies").select("id, name, whatsapp_number").eq("id", agency_id).single(),
-    service.from("vehicles").select("make, model, year").eq("id", vehicle_id).single(),
+    service.from("vehicles").select("make, model, year, daily_rate_lkr, monthly_rate_lkr").eq("id", vehicle_id).single(),
     service.from("profiles").select("full_name").eq("id", user.id).single(),
   ]);
 
   if (!agency || !vehicle) {
     return NextResponse.json({ error: "Vehicle or agency not found" }, { status: 404 });
   }
+
+  const v = vehicle as { make: string; model: string; year: number; daily_rate_lkr: number; monthly_rate_lkr: number | null };
 
   // Reject if the dates clash with an already-confirmed/active booking on the
   // same vehicle. Pending requests are allowed to stack — agency picks one.
@@ -50,6 +53,12 @@ export async function POST(req: NextRequest) {
     );
   }
 
+  // Calculate days + subtotal (with monthly rate discount when applicable)
+  const days = Math.ceil(
+    (new Date(end_date).getTime() - new Date(start_date).getTime()) / 86400000
+  );
+  const { subtotal } = calcBookingPrice(days, v.daily_rate_lkr, v.monthly_rate_lkr);
+
   // Create the booking
   const { data: booking, error: insertError } = await service
     .from("bookings")
@@ -60,7 +69,8 @@ export async function POST(req: NextRequest) {
       status: "pending_confirmation",
       start_date,
       end_date,
-      daily_rate_lkr,
+      daily_rate_lkr:  v.daily_rate_lkr,
+      subtotal_lkr:    subtotal,
       booking_fee_lkr: 1000,
     })
     .select("id")
@@ -71,14 +81,9 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "Failed to create booking" }, { status: 500 });
   }
 
-  // Calculate days
-  const days = Math.ceil(
-    (new Date(end_date).getTime() - new Date(start_date).getTime()) / 86400000
-  );
-
   // Fire WhatsApp ping to agency (non-blocking — don't fail the booking if WA fails)
   const agencyPhone = agency.whatsapp_number.replace(/\D/g, "");
-  const vehicleName = `${vehicle.year} ${vehicle.make} ${vehicle.model}`;
+  const vehicleName = `${v.year} ${v.make} ${v.model}`;
   const renterName  = renter?.full_name ?? "Verified Renter";
 
   try {

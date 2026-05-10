@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import { Button } from "@/components/ui/Button";
 import { formatLKR } from "@/lib/vehicles/format";
+import { calcBookingPrice, DAYS_PER_MONTH } from "@/lib/bookings/pricing";
 
 export interface DateRange {
   start: string;  // YYYY-MM-DD
@@ -12,10 +13,11 @@ export interface DateRange {
 }
 
 interface Props {
-  vehicleId:    string;
-  agencyId:     string;
-  dailyRateLkr: number;
-  bookedRanges?: DateRange[];
+  vehicleId:      string;
+  agencyId:       string;
+  dailyRateLkr:   number;
+  monthlyRateLkr?: number | null;
+  bookedRanges?:  DateRange[];
 }
 
 // Half-open overlap: [a, b) overlaps [c, d) iff a < d AND c < b.
@@ -31,7 +33,7 @@ function formatRange(start: string, end: string): string {
   return `${s} → ${e}`;
 }
 
-export function BookingRequestForm({ vehicleId, agencyId, dailyRateLkr, bookedRanges = [] }: Props) {
+export function BookingRequestForm({ vehicleId, agencyId, dailyRateLkr, monthlyRateLkr, bookedRanges = [] }: Props) {
   const router = useRouter();
   const [startDate, setStartDate] = useState("");
   const [endDate, setEndDate]     = useState("");
@@ -45,7 +47,9 @@ export function BookingRequestForm({ vehicleId, agencyId, dailyRateLkr, bookedRa
       ? Math.max(0, Math.ceil((new Date(endDate).getTime() - new Date(startDate).getTime()) / 86400000))
       : 0;
 
-  const subtotal = days * dailyRateLkr;
+  const price = calcBookingPrice(days, dailyRateLkr, monthlyRateLkr);
+  const undiscountedTotal = days * dailyRateLkr;
+  const savings = undiscountedTotal - price.subtotal;
 
   // Live conflict check while the user picks dates
   const conflict =
@@ -65,8 +69,8 @@ export function BookingRequestForm({ vehicleId, agencyId, dailyRateLkr, bookedRa
       setError("End date must be after start date.");
       return;
     }
-    if (days > 30) {
-      setError("Maximum booking length is 30 days.");
+    if (days > 365) {
+      setError("Maximum rental length is 365 days.");
       return;
     }
     if (conflict) {
@@ -88,11 +92,10 @@ export function BookingRequestForm({ vehicleId, agencyId, dailyRateLkr, bookedRa
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
-        vehicle_id:     vehicleId,
-        agency_id:      agencyId,
-        start_date:     startDate,
-        end_date:       endDate,
-        daily_rate_lkr: dailyRateLkr,
+        vehicle_id: vehicleId,
+        agency_id:  agencyId,
+        start_date: startDate,
+        end_date:   endDate,
       }),
     });
 
@@ -161,17 +164,34 @@ export function BookingRequestForm({ vehicleId, agencyId, dailyRateLkr, bookedRa
       {/* Price breakdown */}
       {days > 0 && !conflict && (
         <div className="bg-slate-800 rounded-lg p-3 space-y-1 text-sm">
-          <div className="flex justify-between text-slate-400">
-            <span>{formatLKR(dailyRateLkr)} × {days} day{days !== 1 ? "s" : ""}</span>
-            <span>{formatLKR(subtotal)}</span>
-          </div>
+          {price.fullMonths > 0 && (
+            <div className="flex justify-between text-slate-400">
+              <span>
+                {formatLKR(monthlyRateLkr ?? 0)} × {price.fullMonths} month{price.fullMonths !== 1 ? "s" : ""}
+                <span className="text-slate-600"> ({price.fullMonths * DAYS_PER_MONTH} days)</span>
+              </span>
+              <span>{formatLKR(price.monthsCost)}</span>
+            </div>
+          )}
+          {price.remainingDays > 0 && (
+            <div className="flex justify-between text-slate-400">
+              <span>{formatLKR(dailyRateLkr)} × {price.remainingDays} day{price.remainingDays !== 1 ? "s" : ""}</span>
+              <span>{formatLKR(price.daysCost)}</span>
+            </div>
+          )}
+          {savings > 0 && (
+            <div className="flex justify-between text-emerald-400 text-xs">
+              <span>Monthly-rate discount</span>
+              <span>−{formatLKR(savings)}</span>
+            </div>
+          )}
           <div className="flex justify-between text-slate-400">
             <span>Booking lock-in fee</span>
             <span>Rs. 1,000</span>
           </div>
           <div className="flex justify-between text-white font-semibold border-t border-slate-700 pt-1 mt-1">
             <span>Total rental cost</span>
-            <span>{formatLKR(subtotal)}</span>
+            <span>{formatLKR(price.subtotal)}</span>
           </div>
           <p className="text-slate-500 text-xs">
             Rs. 1,000 due now (if confirmed). Balance paid to agency on collection.
