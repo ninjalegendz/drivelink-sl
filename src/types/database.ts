@@ -369,6 +369,39 @@ export type Database = {
         };
         Relationships: [];
       };
+      email_config: {
+        Row: {
+          id: boolean;
+          from_name: string;
+          from_email: string | null;
+          smtp_host: string;
+          smtp_port: number;
+          smtp_username: string | null;
+          smtp_password: string | null;
+          updated_at: string;
+          updated_by: string | null;
+        };
+        Insert: {
+          id?: boolean;
+          from_name?: string;
+          from_email?: string | null;
+          smtp_host?: string;
+          smtp_port?: number;
+          smtp_username?: string | null;
+          smtp_password?: string | null;
+          updated_by?: string | null;
+        };
+        Update: {
+          from_name?: string;
+          from_email?: string | null;
+          smtp_host?: string;
+          smtp_port?: number;
+          smtp_username?: string | null;
+          smtp_password?: string | null;
+          updated_by?: string | null;
+        };
+        Relationships: [];
+      };
     };
     Views: {
       wallet_balances: {

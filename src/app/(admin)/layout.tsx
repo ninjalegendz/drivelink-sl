@@ -1,19 +1,20 @@
 import { redirect } from "next/navigation";
 import Link from "next/link";
 import {
-  LayoutDashboard, ReceiptText, ClipboardList, Users, Building2, Ban, Settings, Car,
+  LayoutDashboard, ReceiptText, ClipboardList, Users, Building2, Ban, Settings, Car, Mail,
 } from "lucide-react";
 import { createClient } from "@/lib/supabase/server";
 import { SignOutButton } from "@/components/account/SignOutButton";
 
 const NAV = [
-  { href: "/admin",           label: "Overview",      Icon: LayoutDashboard },
-  { href: "/admin/slips",     label: "Slip Queue",    Icon: ReceiptText },
-  { href: "/admin/vehicles",  label: "Listings",      Icon: Car },
-  { href: "/admin/bookings",  label: "All Bookings",  Icon: ClipboardList },
-  { href: "/admin/users",     label: "Renters / KYC", Icon: Users },
-  { href: "/admin/agencies",  label: "Agencies",      Icon: Building2 },
-  { href: "/admin/blacklist", label: "Blacklist",     Icon: Ban },
+  { href: "/admin",                 label: "Overview",      Icon: LayoutDashboard },
+  { href: "/admin/slips",           label: "Slip Queue",    Icon: ReceiptText },
+  { href: "/admin/vehicles",        label: "Listings",      Icon: Car },
+  { href: "/admin/bookings",        label: "All Bookings",  Icon: ClipboardList },
+  { href: "/admin/users",           label: "Renters / KYC", Icon: Users },
+  { href: "/admin/agencies",        label: "Agencies",      Icon: Building2 },
+  { href: "/admin/blacklist",       label: "Blacklist",     Icon: Ban },
+  { href: "/admin/settings/email",  label: "Email setup",   Icon: Mail },
 ];
 
 export default async function AdminLayout({ children }: { children: React.ReactNode }) {
