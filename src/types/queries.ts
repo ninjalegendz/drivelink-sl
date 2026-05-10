@@ -37,12 +37,13 @@ export interface AgencySnippet {
   id: string;
   name: string;
   city: string;
-  whatsapp_number: string;
   is_verified: boolean;
   reliability_pct: number | null;
   cancellation_count: number;
   // Rating lives on the owner's profile — joined via agencies.owner_id
   profiles: { rating_avg: number | null; rating_count: number } | null;
+  // whatsapp_number deliberately omitted — not exposed to the public marketplace.
+  // Available only via agency dashboards and the renter's own /bookings/[id] page.
 }
 
 export interface VehicleWithAgency extends VehicleRow {

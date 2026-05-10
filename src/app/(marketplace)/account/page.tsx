@@ -4,6 +4,7 @@ import { ArrowRight, Check, ChevronRight, Settings } from "lucide-react";
 import { createClient } from "@/lib/supabase/server";
 import { Badge } from "@/components/ui/Badge";
 import { DiditVerifyButton } from "@/components/account/DiditVerifyButton";
+import { PhoneVerifyForm } from "@/components/account/PhoneVerifyForm";
 import { SignOutButton } from "@/components/account/SignOutButton";
 
 interface Props {
@@ -45,7 +46,7 @@ export default async function AccountPage({ searchParams }: Props) {
   const [{ data: profile }, { data: agency }] = await Promise.all([
     supabase
       .from("profiles")
-      .select("full_name, phone, role, kyc_status, rating_avg, rating_count, created_at")
+      .select("full_name, phone, phone_verified, role, kyc_status, rating_avg, rating_count, created_at")
       .eq("id", user.id)
       .single(),
     supabase
@@ -264,9 +265,14 @@ export default async function AccountPage({ searchParams }: Props) {
             <span className="text-slate-400">Email</span>
             <span className="text-white">{user.email}</span>
           </div>
-          <div className="flex justify-between">
-            <span className="text-slate-400">WhatsApp</span>
-            <span className="text-white">{profile.phone}</span>
+          <div className="flex justify-between items-start gap-3">
+            <span className="text-slate-400 pt-1">WhatsApp</span>
+            <div className="text-right">
+              <span className="text-white">{profile.phone}</span>
+              <div className="mt-2">
+                <PhoneVerifyForm phone={profile.phone} verified={profile.phone_verified} />
+              </div>
+            </div>
           </div>
           <div className="flex justify-between">
             <span className="text-slate-400">Member since</span>

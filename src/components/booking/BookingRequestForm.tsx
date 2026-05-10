@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import { Button } from "@/components/ui/Button";
 import { formatLKR } from "@/lib/vehicles/format";
-import { calcBookingPrice, DAYS_PER_MONTH } from "@/lib/bookings/pricing";
+import { calcBookingPrice } from "@/lib/bookings/pricing";
 
 export interface DateRange {
   start: string;  // YYYY-MM-DD
@@ -47,7 +47,9 @@ export function BookingRequestForm({ vehicleId, agencyId, dailyRateLkr, monthlyR
       ? Math.max(0, Math.ceil((new Date(endDate).getTime() - new Date(startDate).getTime()) / 86400000))
       : 0;
 
-  const price = calcBookingPrice(days, dailyRateLkr, monthlyRateLkr);
+  const price = startDate && endDate && days > 0
+    ? calcBookingPrice({ startDate, endDate, dailyRateLkr, monthlyRateLkr })
+    : { fullMonths: 0, remainingDays: 0, monthsCost: 0, daysCost: 0, subtotal: 0 };
   const undiscountedTotal = days * dailyRateLkr;
   const savings = undiscountedTotal - price.subtotal;
 
@@ -168,7 +170,6 @@ export function BookingRequestForm({ vehicleId, agencyId, dailyRateLkr, monthlyR
             <div className="flex justify-between text-slate-400">
               <span>
                 {formatLKR(monthlyRateLkr ?? 0)} × {price.fullMonths} month{price.fullMonths !== 1 ? "s" : ""}
-                <span className="text-slate-600"> ({price.fullMonths * DAYS_PER_MONTH} days)</span>
               </span>
               <span>{formatLKR(price.monthsCost)}</span>
             </div>

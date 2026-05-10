@@ -1,8 +1,8 @@
 // Booking subtotal calculation, shared between the API and the booking form.
-// One full month = 30 days. If the agency hasn't set a monthly rate, every
-// day is charged at daily_rate.
-
-export const DAYS_PER_MONTH = 30;
+//
+// Calendar-aware: a "month" means a full calendar month from start_date,
+// not a fixed 30 days. So May 10 → June 10 = 1 month even though May has
+// 31 days. This stays accurate across months with different lengths.
 
 export interface PriceBreakdown {
   fullMonths:    number;
@@ -12,23 +12,101 @@ export interface PriceBreakdown {
   subtotal:      number;
 }
 
-export function calcBookingPrice(
-  days:           number,
-  dailyRateLkr:   number,
+export interface PriceInputs {
+  startDate:      string;  // YYYY-MM-DD
+  endDate:        string;  // YYYY-MM-DD (exclusive — return day)
+  dailyRateLkr:   number;
+  monthlyRateLkr?: number | null;
+}
+
+function parseUTC(iso: string): Date {
+  // Treat the date as UTC midnight so DST and locale don't shift the day count.
+  const [y, m, d] = iso.split("-").map(Number);
+  return new Date(Date.UTC(y, m - 1, d));
+}
+
+function daysBetweenUTC(a: Date, b: Date): number {
+  return Math.round((b.getTime() - a.getTime()) / 86400000);
+}
+
+// Advance a date by exactly one calendar month. If the source day-of-month
+// doesn't exist in the target month (e.g. Jan 31 + 1m), JS Date clamps to
+// the last valid day (Feb 28/29) — exactly the behaviour we want.
+function addCalendarMonth(d: Date): Date {
+  const next = new Date(Date.UTC(d.getUTCFullYear(), d.getUTCMonth() + 1, d.getUTCDate()));
+  return next;
+}
+
+export function calcBookingPrice({ startDate, endDate, dailyRateLkr, monthlyRateLkr }: PriceInputs): PriceBreakdown {
+  const start = parseUTC(startDate);
+  const end   = parseUTC(endDate);
+  const totalDays = daysBetweenUTC(start, end);
+
+  if (totalDays <= 0) {
+    return { fullMonths: 0, remainingDays: 0, monthsCost: 0, daysCost: 0, subtotal: 0 };
+  }
+
+  // No monthly rate configured — straight daily math.
+  if (!monthlyRateLkr) {
+    return {
+      fullMonths: 0,
+      remainingDays: totalDays,
+      monthsCost: 0,
+      daysCost: totalDays * dailyRateLkr,
+      subtotal: totalDays * dailyRateLkr,
+    };
+  }
+
+  // Walk forward in calendar months from start_date. Each step that lands at
+  // or before end_date is a full chargeable month.
+  let cursor     = start;
+  let fullMonths = 0;
+  while (true) {
+    const next = addCalendarMonth(cursor);
+    if (next.getTime() > end.getTime()) break;
+    cursor = next;
+    fullMonths += 1;
+  }
+
+  const remainingDays = daysBetweenUTC(cursor, end);
+  const monthsCost    = fullMonths * monthlyRateLkr;
+  const daysCost      = remainingDays * dailyRateLkr;
+
+  return {
+    fullMonths,
+    remainingDays,
+    monthsCost,
+    daysCost,
+    subtotal: monthsCost + daysCost,
+  };
+}
+
+// Convenience for callers that only have a day count and don't care about
+// calendar accuracy (e.g. UI estimations before dates are picked).
+export function calcBookingPriceByDays(
+  days: number,
+  dailyRateLkr: number,
   monthlyRateLkr: number | null | undefined,
 ): PriceBreakdown {
   if (days <= 0) {
     return { fullMonths: 0, remainingDays: 0, monthsCost: 0, daysCost: 0, subtotal: 0 };
   }
-
-  if (monthlyRateLkr && days >= DAYS_PER_MONTH) {
-    const fullMonths    = Math.floor(days / DAYS_PER_MONTH);
-    const remainingDays = days - fullMonths * DAYS_PER_MONTH;
-    const monthsCost    = fullMonths * monthlyRateLkr;
-    const daysCost      = remainingDays * dailyRateLkr;
-    return { fullMonths, remainingDays, monthsCost, daysCost, subtotal: monthsCost + daysCost };
+  if (monthlyRateLkr && days >= 30) {
+    const fullMonths    = Math.floor(days / 30);
+    const remainingDays = days - fullMonths * 30;
+    return {
+      fullMonths,
+      remainingDays,
+      monthsCost: fullMonths * monthlyRateLkr,
+      daysCost:   remainingDays * dailyRateLkr,
+      subtotal:   fullMonths * monthlyRateLkr + remainingDays * dailyRateLkr,
+    };
   }
-
-  const daysCost = days * dailyRateLkr;
-  return { fullMonths: 0, remainingDays: days, monthsCost: 0, daysCost, subtotal: daysCost };
+  return {
+    fullMonths: 0,
+    remainingDays: days,
+    monthsCost: 0,
+    daysCost: days * dailyRateLkr,
+    subtotal: days * dailyRateLkr,
+  };
 }

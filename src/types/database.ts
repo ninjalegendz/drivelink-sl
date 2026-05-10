@@ -33,6 +33,10 @@ export type Database = {
           rating_count: number;
           reliability_pct: number | null;
           avatar_url: string | null;
+          phone_otp_hash: string | null;
+          phone_otp_expires_at: string | null;
+          phone_otp_attempts: number;
+          phone_otp_last_sent: string | null;
           created_at: string;
           updated_at: string;
         };

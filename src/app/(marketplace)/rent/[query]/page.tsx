@@ -44,7 +44,7 @@ export default async function RentQueryPage({ params }: Props) {
     if (safeModel && safeCity) {
       const { data } = await supabase
         .from("vehicles")
-        .select("*, agencies(id, name, city, whatsapp_number, is_verified, reliability_pct, cancellation_count, profiles!owner_id(rating_avg, rating_count))")
+        .select("*, agencies(id, name, city, is_verified, reliability_pct, cancellation_count, profiles!owner_id(rating_avg, rating_count))")
         .eq("status", "available")
         .or(`make.ilike.%${safeModel}%,model.ilike.%${safeModel}%`)
         .ilike("city", `%${safeCity}%`)

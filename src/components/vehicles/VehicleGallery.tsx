@@ -54,30 +54,51 @@ export function VehicleGallery({ photos, alt }: Props) {
 
   return (
     <>
-      {/* Main image — click to open lightbox */}
-      <button
-        type="button"
-        onClick={() => setZoomed(true)}
-        className="rounded-2xl overflow-hidden bg-slate-900 aspect-[16/9] relative w-full block group cursor-zoom-in"
-        aria-label="Zoom photo"
-      >
-        <Image
-          src={main}
-          alt={alt}
-          fill
-          className="object-cover transition-transform duration-200 group-hover:scale-[1.02]"
-          priority
-          sizes="(max-width: 1024px) 100vw, 60vw"
-        />
-        <span className="absolute top-3 right-3 inline-flex items-center gap-1 bg-black/60 text-white text-xs px-2 py-1 rounded-full opacity-0 group-hover:opacity-100 transition-opacity">
-          <ZoomIn size={12} /> Zoom
-        </span>
-        {photos.length > 1 && (
-          <span className="absolute bottom-3 right-3 bg-black/60 text-white text-xs px-2 py-1 rounded-full">
-            {active + 1} / {photos.length}
+      {/* Main image — click to open lightbox; arrows step through inline */}
+      <div className="rounded-2xl overflow-hidden bg-slate-900 aspect-[16/9] relative w-full group">
+        <button
+          type="button"
+          onClick={() => setZoomed(true)}
+          className="absolute inset-0 cursor-zoom-in"
+          aria-label="Zoom photo"
+        >
+          <Image
+            src={main}
+            alt={alt}
+            fill
+            className="object-cover transition-transform duration-200 group-hover:scale-[1.02]"
+            priority
+            sizes="(max-width: 1024px) 100vw, 60vw"
+          />
+          <span className="absolute top-3 right-3 inline-flex items-center gap-1 bg-black/60 text-white text-xs px-2 py-1 rounded-full opacity-0 group-hover:opacity-100 transition-opacity">
+            <ZoomIn size={12} /> Zoom
           </span>
+        </button>
+
+        {photos.length > 1 && (
+          <>
+            <button
+              type="button"
+              onClick={() => setActive((i) => (i === 0 ? photos.length - 1 : i - 1))}
+              className="absolute left-3 top-1/2 -translate-y-1/2 w-10 h-10 rounded-full bg-black/50 hover:bg-black/70 text-white flex items-center justify-center backdrop-blur-sm opacity-0 group-hover:opacity-100 transition-opacity z-10"
+              aria-label="Previous photo"
+            >
+              <ChevronLeft size={20} />
+            </button>
+            <button
+              type="button"
+              onClick={() => setActive((i) => (i === photos.length - 1 ? 0 : i + 1))}
+              className="absolute right-3 top-1/2 -translate-y-1/2 w-10 h-10 rounded-full bg-black/50 hover:bg-black/70 text-white flex items-center justify-center backdrop-blur-sm opacity-0 group-hover:opacity-100 transition-opacity z-10"
+              aria-label="Next photo"
+            >
+              <ChevronRight size={20} />
+            </button>
+            <span className="absolute bottom-3 right-3 bg-black/60 text-white text-xs px-2 py-1 rounded-full pointer-events-none">
+              {active + 1} / {photos.length}
+            </span>
+          </>
         )}
-      </button>
+      </div>
 
       {/* Thumbnail strip */}
       {photos.length > 1 && (

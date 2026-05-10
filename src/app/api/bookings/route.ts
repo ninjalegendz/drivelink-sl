@@ -53,11 +53,16 @@ export async function POST(req: NextRequest) {
     );
   }
 
-  // Calculate days + subtotal (with monthly rate discount when applicable)
+  // Calendar-aware subtotal (uses real month boundaries, not 30-day blocks)
+  const { subtotal } = calcBookingPrice({
+    startDate:      start_date,
+    endDate:        end_date,
+    dailyRateLkr:   v.daily_rate_lkr,
+    monthlyRateLkr: v.monthly_rate_lkr,
+  });
   const days = Math.ceil(
     (new Date(end_date).getTime() - new Date(start_date).getTime()) / 86400000
   );
-  const { subtotal } = calcBookingPrice(days, v.daily_rate_lkr, v.monthly_rate_lkr);
 
   // Create the booking
   const { data: booking, error: insertError } = await service
