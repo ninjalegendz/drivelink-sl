@@ -1,11 +1,10 @@
 import { createClient } from "@/lib/supabase/server";
 import { redirect } from "next/navigation";
-import { Star } from "lucide-react";
+import { Star, ShieldAlert } from "lucide-react";
 import { Badge } from "@/components/ui/Badge";
 import { AgencyBookingActions } from "@/components/booking/AgencyBookingActions";
 import { BOOKING_STATUS_LABELS } from "@/lib/booking/state-machine";
 import { formatLKR } from "@/lib/vehicles/format";
-import type { BookingWithRelations } from "@/types/queries";
 import type { BookingStatus } from "@/types/database";
 
 const statusVariant: Record<BookingStatus, "slate" | "yellow" | "green" | "red" | "blue"> = {
@@ -51,14 +50,29 @@ export default async function AgencyBookingsPage({ searchParams }: Props) {
 
   let query = supabase
     .from("bookings")
-    .select("*, vehicles(make, model, year), profiles(full_name, rating_avg, kyc_status)")
+    .select("*, vehicles(make, model, year), profiles(full_name, rating_avg, kyc_status, is_blacklisted, blacklist_reason_public)")
     .eq("agency_id", agency.id)
     .order("created_at", { ascending: false });
 
   if (filterStatus) query = query.eq("status", filterStatus as BookingStatus);
 
   const { data } = await query.limit(50);
-  const bookings = (data ?? []) as unknown as BookingWithRelations[];
+  const bookings = (data ?? []) as unknown as Array<{
+    id: string;
+    status: BookingStatus;
+    start_date: string;
+    end_date: string;
+    total_days: number;
+    subtotal_lkr: number;
+    vehicles: { make: string; model: string; year: number } | null;
+    profiles: {
+      full_name: string;
+      rating_avg: number | null;
+      kyc_status: string;
+      is_blacklisted: boolean;
+      blacklist_reason_public: string | null;
+    } | null;
+  }>;
 
   return (
     <div>
@@ -88,8 +102,16 @@ export default async function AgencyBookingsPage({ searchParams }: Props) {
             const renter  = booking.profiles;
             const status  = booking.status;
 
+            const blocked = renter?.is_blacklisted ?? false;
             return (
-              <div key={booking.id} className="bg-slate-900 border border-slate-800 rounded-2xl p-4">
+              <div
+                key={booking.id}
+                className={`rounded-2xl p-4 border ${
+                  blocked
+                    ? "bg-red-500/5 border-red-500/30"
+                    : "bg-slate-900 border-slate-800"
+                }`}
+              >
                 <div className="flex items-start justify-between gap-4">
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-2 flex-wrap">
@@ -106,8 +128,11 @@ export default async function AgencyBookingsPage({ searchParams }: Props) {
                     </p>
 
                     {renter && (
-                      <div className="flex items-center gap-3 mt-2">
-                        <p className="text-slate-300 text-sm">{renter.full_name}</p>
+                      <div className="flex items-center gap-3 mt-2 flex-wrap">
+                        <p className={`text-sm ${blocked ? "text-red-300" : "text-slate-300"}`}>
+                          {renter.full_name}
+                        </p>
+                        {blocked && <Badge variant="red">Flagged renter</Badge>}
                         {renter.kyc_status === "verified" && (
                           <Badge variant="green">ID Verified</Badge>
                         )}
@@ -120,7 +145,27 @@ export default async function AgencyBookingsPage({ searchParams }: Props) {
                       </div>
                     )}
 
-                    <p className="text-slate-500 text-xs mt-1">
+                    {/* Agency-visible blacklist warning */}
+                    {blocked && (
+                      <div className="mt-3 px-3 py-2 bg-red-500/10 border border-red-500/30 rounded-lg flex gap-2 text-sm">
+                        <ShieldAlert size={16} className="text-red-400 shrink-0 mt-0.5" />
+                        <div>
+                          <p className="text-red-400 font-medium text-xs">
+                            DriveLink has flagged this renter
+                          </p>
+                          <p className="text-red-300/80 text-xs mt-0.5">
+                            {renter?.blacklist_reason_public
+                              ? renter.blacklist_reason_public
+                              : "No public reason provided. Contact DriveLink support before accepting."}
+                          </p>
+                          <p className="text-slate-500 text-[11px] mt-1">
+                            You may decline this request without penalty.
+                          </p>
+                        </div>
+                      </div>
+                    )}
+
+                    <p className="text-slate-500 text-xs mt-2">
                       Rental: {formatLKR(booking.subtotal_lkr)}
                     </p>
                   </div>

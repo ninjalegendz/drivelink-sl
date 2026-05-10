@@ -29,6 +29,7 @@ export type Database = {
           selfie_url: string | null;
           is_blacklisted: boolean;
           blacklist_reason: string | null;
+          blacklist_reason_public: string | null;
           rating_avg: number | null;
           rating_count: number;
           reliability_pct: number | null;
@@ -51,6 +52,7 @@ export type Database = {
           selfie_url?: string | null;
           is_blacklisted?: boolean;
           blacklist_reason?: string | null;
+          blacklist_reason_public?: string | null;
           rating_avg?: number | null;
           rating_count?: number;
           reliability_pct?: number | null;
@@ -66,6 +68,7 @@ export type Database = {
           selfie_url?: string | null;
           is_blacklisted?: boolean;
           blacklist_reason?: string | null;
+          blacklist_reason_public?: string | null;
           rating_avg?: number | null;
           rating_count?: number;
           reliability_pct?: number | null;
