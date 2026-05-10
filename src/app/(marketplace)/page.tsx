@@ -20,7 +20,7 @@ export default async function HomePage() {
 
   const { data: featuredVehicles } = await supabase
     .from("vehicles")
-    .select("*, agencies(id, name, city, whatsapp_number, is_verified, reliability_pct, rating_avg, rating_count, cancellation_count)")
+    .select("*, agencies(id, name, city, whatsapp_number, is_verified, reliability_pct, cancellation_count, profiles!owner_id(rating_avg, rating_count))")
     .eq("status", "available")
     .order("created_at", { ascending: false })
     .limit(6);

@@ -8,3 +8,6 @@ next-env.d.ts
 out/
 
 .vercel
+
+# Supabase CLI scratch (project ref, version cache, etc.)
+supabase/.temp/

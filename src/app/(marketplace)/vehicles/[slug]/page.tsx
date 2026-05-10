@@ -45,7 +45,7 @@ export default async function VehicleDetailPage({ params }: Props) {
 
   const { data } = await supabase
     .from("vehicles")
-    .select("*, agencies(id, name, city, whatsapp_number, is_verified, reliability_pct, rating_avg, rating_count, cancellation_count)")
+    .select("*, agencies(id, name, city, whatsapp_number, is_verified, reliability_pct, cancellation_count, profiles!owner_id(rating_avg, rating_count))")
     .eq("slug", slug)
     .single();
 
@@ -202,12 +202,12 @@ export default async function VehicleDetailPage({ params }: Props) {
               </div>
               <div>
                 <p className="text-lg font-bold text-white">
-                  {agency.rating_avg ? agency.rating_avg.toFixed(1) : "—"}
+                  {agency.profiles?.rating_avg ? agency.profiles.rating_avg.toFixed(1) : "—"}
                 </p>
                 <p className="text-slate-500 text-xs">Rating</p>
               </div>
               <div>
-                <p className="text-lg font-bold text-white">{agency.rating_count ?? 0}</p>
+                <p className="text-lg font-bold text-white">{agency.profiles?.rating_count ?? 0}</p>
                 <p className="text-slate-500 text-xs">Reviews</p>
               </div>
             </div>

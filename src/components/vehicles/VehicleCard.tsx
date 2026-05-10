@@ -67,10 +67,10 @@ export function VehicleCard({ vehicle }: { vehicle: VehicleWithAgency }) {
           <div className="mt-3 pt-3 border-t border-slate-800 flex items-center justify-between">
             <p className="text-slate-400 text-xs truncate">{agency.name}</p>
             <div className="flex items-center gap-2 shrink-0">
-              {agency.rating_avg && (
+              {agency.profiles?.rating_avg && (
                 <span className="inline-flex items-center gap-1 text-xs text-slate-400">
                   <Star size={12} fill="currentColor" className="text-amber-400" />
-                  {agency.rating_avg.toFixed(1)}
+                  {agency.profiles.rating_avg.toFixed(1)}
                 </span>
               )}
               {agency.reliability_pct !== null && (

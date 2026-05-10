@@ -10,15 +10,18 @@ export default async function AdminAgenciesPage() {
   const { data } = await supabase
     .from("agencies")
     .select(`
-      id, name, city, whatsapp_number, is_verified, is_blocked,
+      id, name, description, address, city, whatsapp_number, is_verified, is_blocked,
       reliability_pct, confirmed_count, cancellation_count, strike_count, created_at,
-      profiles(full_name, phone, kyc_status)
+      profiles(full_name, phone, kyc_status, rating_avg, rating_count),
+      vehicles(count)
     `)
     .order("created_at", { ascending: false });
 
   const agencies = (data ?? []) as unknown as {
     id: string;
     name: string;
+    description: string | null;
+    address: string | null;
     city: string;
     whatsapp_number: string;
     is_verified: boolean;
@@ -28,7 +31,8 @@ export default async function AdminAgenciesPage() {
     cancellation_count: number;
     strike_count: number;
     created_at: string;
-    profiles: { full_name: string; phone: string; kyc_status: string } | null;
+    profiles: { full_name: string; phone: string; kyc_status: string; rating_avg: number | null; rating_count: number } | null;
+    vehicles: { count: number }[];
   }[];
 
   const pending   = agencies.filter((a) => !a.is_verified);
@@ -49,14 +53,15 @@ export default async function AdminAgenciesPage() {
 
   function AgencyCard({ a }: { a: typeof agencies[0] }) {
     const ownerKyc = a.profiles?.kyc_status ?? "unverified";
+    const fleetCount = a.vehicles?.[0]?.count ?? 0;
     return (
-      <div className="bg-slate-900 border border-slate-800 rounded-2xl p-4">
-        <div className="flex items-start justify-between gap-4">
-          <div className="flex-1">
+      <div className="bg-slate-900 border border-slate-800 rounded-2xl p-5">
 
-            {/* Name + badges */}
-            <div className="flex items-center gap-2 flex-wrap mb-0.5">
-              <p className="text-white font-semibold">{a.name}</p>
+        {/* Header: name, badges, actions */}
+        <div className="flex items-start justify-between gap-4 mb-3">
+          <div className="min-w-0 flex-1">
+            <div className="flex items-center gap-2 flex-wrap">
+              <p className="text-white font-semibold text-lg">{a.name}</p>
               {a.is_blocked
                 ? <Badge variant="red">Blocked</Badge>
                 : a.is_verified
@@ -65,42 +70,72 @@ export default async function AdminAgenciesPage() {
               }
               {a.strike_count >= 3 && <Badge variant="red">{a.strike_count} strikes</Badge>}
             </div>
-
-            {/* City + contact */}
-            <p className="text-slate-400 text-sm">{a.city} · {a.whatsapp_number}</p>
-
-            {/* Owner identity */}
-            <div className="flex items-center gap-2 mt-2">
-              <span className="text-slate-500 text-xs">Owner: {a.profiles?.full_name ?? "—"}</span>
-              <Badge variant={kycVariant[ownerKyc]}>
-                {kycLabel[ownerKyc]}
-              </Badge>
-            </div>
-
-            {/* Metrics */}
-            <div className="flex items-center gap-4 mt-2 text-xs">
-              <span className={`font-medium ${reliabilityColor(a.reliability_pct)}`}>
-                {a.reliability_pct ?? 100}% reliability
-              </span>
-              <span className="text-slate-500">{a.confirmed_count} confirmed</span>
-              <span className="text-slate-500">{a.cancellation_count} cancellations</span>
-              <span className="text-slate-500">
-                Joined {new Date(a.created_at).toLocaleDateString("en-LK")}
-              </span>
-            </div>
-
-            {/* Warn if trying to approve without ID verified */}
-            {!a.is_verified && ownerKyc !== "verified" && (
-              <p className="mt-2 text-amber-400/80 text-xs">
-                Owner has not completed identity verification yet.
-              </p>
+            <p className="text-slate-400 text-sm mt-1">
+              {a.city} · {a.whatsapp_number}
+            </p>
+            {a.address && (
+              <p className="text-slate-500 text-xs mt-0.5">{a.address}</p>
             )}
+            <p className="text-slate-600 text-xs mt-0.5 font-mono">
+              {a.id.slice(0, 8).toUpperCase()} · Joined {new Date(a.created_at).toLocaleDateString("en-LK")}
+            </p>
           </div>
-
           <div className="flex flex-col items-end gap-2 shrink-0">
             <AgencyVerifyAction agencyId={a.id} isVerified={a.is_verified} />
             <AgencyActions agencyId={a.id} name={a.name} isBlocked={a.is_blocked} />
           </div>
+        </div>
+
+        {/* Description */}
+        {a.description && (
+          <div className="mb-3">
+            <p className="text-slate-500 text-[10px] uppercase tracking-wider mb-1">About</p>
+            <p className="text-slate-300 text-sm whitespace-pre-line leading-relaxed bg-slate-800/40 border border-slate-700/50 rounded-lg px-3 py-2">
+              {a.description}
+            </p>
+          </div>
+        )}
+
+        {/* Metrics grid */}
+        <div className="grid grid-cols-2 sm:grid-cols-5 gap-2 mb-3">
+          {[
+            { label: "Reliability", value: `${a.reliability_pct ?? 100}%`, color: reliabilityColor(a.reliability_pct) },
+            { label: "Confirmed",   value: a.confirmed_count },
+            { label: "Cancellations", value: a.cancellation_count, color: a.cancellation_count > 0 ? "text-amber-400" : "" },
+            { label: "Fleet size",  value: fleetCount },
+            { label: "Strikes",     value: a.strike_count, color: a.strike_count > 0 ? "text-red-400" : "" },
+          ].map(({ label, value, color }) => (
+            <div key={label} className="bg-slate-800/40 border border-slate-700/50 rounded-lg px-3 py-2">
+              <p className="text-slate-500 text-[10px] uppercase tracking-wider">{label}</p>
+              <p className={`text-sm font-semibold mt-0.5 ${color ?? "text-white"}`}>{value}</p>
+            </div>
+          ))}
+        </div>
+
+        {/* Owner panel */}
+        <div className="bg-slate-800/40 border border-slate-700/50 rounded-lg px-3 py-2.5">
+          <div className="flex items-center justify-between gap-3 flex-wrap">
+            <div className="min-w-0">
+              <p className="text-slate-500 text-[10px] uppercase tracking-wider">Owner</p>
+              <p className="text-white text-sm font-medium mt-0.5 truncate">
+                {a.profiles?.full_name ?? "—"}
+              </p>
+              <p className="text-slate-400 text-xs">{a.profiles?.phone ?? "—"}</p>
+            </div>
+            <div className="text-right">
+              <Badge variant={kycVariant[ownerKyc]}>{kycLabel[ownerKyc]}</Badge>
+              {(a.profiles?.rating_count ?? 0) > 0 && (
+                <p className="text-slate-400 text-xs mt-1">
+                  ★ {a.profiles?.rating_avg?.toFixed(1)} ({a.profiles?.rating_count})
+                </p>
+              )}
+            </div>
+          </div>
+          {!a.is_verified && ownerKyc !== "verified" && (
+            <p className="mt-2 text-amber-400/80 text-xs">
+              Owner has not completed identity verification yet — verify ID before approving.
+            </p>
+          )}
         </div>
       </div>
     );

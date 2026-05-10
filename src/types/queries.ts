@@ -40,9 +40,9 @@ export interface AgencySnippet {
   whatsapp_number: string;
   is_verified: boolean;
   reliability_pct: number | null;
-  rating_avg: number | null;
-  rating_count: number;
   cancellation_count: number;
+  // Rating lives on the owner's profile — joined via agencies.owner_id
+  profiles: { rating_avg: number | null; rating_count: number } | null;
 }
 
 export interface VehicleWithAgency extends VehicleRow {

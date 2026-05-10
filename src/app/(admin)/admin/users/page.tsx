@@ -1,6 +1,6 @@
 import { createClient } from "@/lib/supabase/server";
 import Image from "next/image";
-import { Star, ExternalLink } from "lucide-react";
+import { Star, ExternalLink, ShieldAlert } from "lucide-react";
 import { Badge } from "@/components/ui/Badge";
 import { KycActions } from "@/components/admin/KycActions";
 import { RenterActions } from "@/components/admin/RenterActions";
@@ -22,7 +22,7 @@ export default async function AdminUsersPage({ searchParams }: Props) {
 
   let query = supabase
     .from("profiles")
-    .select("id, full_name, phone, role, kyc_status, nic_url, selfie_url, is_blacklisted, rating_avg, rating_count, created_at")
+    .select("id, full_name, phone, phone_verified, role, kyc_status, nic_url, selfie_url, is_blacklisted, blacklist_reason, rating_avg, rating_count, reliability_pct, avatar_url, created_at, updated_at")
     .order("created_at", { ascending: false });
 
   if (kyc) query = query.eq("kyc_status", kyc);
@@ -33,15 +33,38 @@ export default async function AdminUsersPage({ searchParams }: Props) {
     id: string;
     full_name: string;
     phone: string;
+    phone_verified: boolean;
     role: string;
     kyc_status: string;
     nic_url: string | null;
     selfie_url: string | null;
     is_blacklisted: boolean;
+    blacklist_reason: string | null;
     rating_avg: number | null;
     rating_count: number;
+    reliability_pct: number | null;
+    avatar_url: string | null;
     created_at: string;
+    updated_at: string;
   }[];
+
+  // Booking history per user — useful signal when reviewing a renter's KYC
+  const userIds = users.map((u) => u.id);
+  const bookingsByUser = new Map<string, { total: number; completed: number; cancelled: number; active: number }>();
+  if (userIds.length > 0) {
+    const { data: bookingData } = await supabase
+      .from("bookings")
+      .select("renter_id, status")
+      .in("renter_id", userIds);
+    for (const b of (bookingData ?? []) as { renter_id: string; status: string }[]) {
+      const stats = bookingsByUser.get(b.renter_id) ?? { total: 0, completed: 0, cancelled: 0, active: 0 };
+      stats.total += 1;
+      if (b.status === "completed")                                       stats.completed += 1;
+      if (b.status === "cancelled" || b.status === "declined")            stats.cancelled += 1;
+      if (b.status === "active" || b.status === "confirmed" || b.status === "payment_pending") stats.active += 1;
+      bookingsByUser.set(b.renter_id, stats);
+    }
+  }
 
   const TABS = [
     { label: "KYC pending",  value: "pending" },
@@ -72,27 +95,46 @@ export default async function AdminUsersPage({ searchParams }: Props) {
       </div>
 
       <div className="space-y-4">
-        {users.map((u) => (
-          <div key={u.id} className="bg-slate-900 border border-slate-800 rounded-2xl p-4">
+        {users.map((u) => {
+          const stats = bookingsByUser.get(u.id) ?? { total: 0, completed: 0, cancelled: 0, active: 0 };
+          return (
+          <div key={u.id} className="bg-slate-900 border border-slate-800 rounded-2xl p-5">
 
-            {/* Top row: info + actions */}
+            {/* Top row: avatar + info + actions */}
             <div className="flex items-start justify-between gap-4 mb-4">
-              <div className="flex-1 min-w-0">
-                <div className="flex items-center gap-2 flex-wrap">
-                  <p className="text-white font-semibold">{u.full_name}</p>
-                  <Badge variant={kycVariant[u.kyc_status] ?? "slate"}>{u.kyc_status}</Badge>
-                  {u.is_blacklisted && <Badge variant="red">Blacklisted</Badge>}
-                </div>
-                <p className="text-slate-400 text-sm mt-0.5">{u.phone}</p>
-                <div className="flex items-center gap-3 mt-1 text-xs text-slate-500">
-                  {u.rating_count > 0 && (
-                    <span className="inline-flex items-center gap-1">
-                      <Star size={11} fill="currentColor" className="text-amber-400" />
-                      {u.rating_avg?.toFixed(1)} ({u.rating_count} reviews)
-                    </span>
+              <div className="flex items-start gap-3 flex-1 min-w-0">
+                <div className="relative w-12 h-12 shrink-0 rounded-full overflow-hidden bg-slate-800 border border-slate-700">
+                  {u.avatar_url ? (
+                    <Image src={u.avatar_url} alt="" fill className="object-cover" sizes="48px" unoptimized />
+                  ) : (
+                    <div className="w-full h-full flex items-center justify-center text-slate-500 text-sm font-semibold">
+                      {u.full_name.charAt(0).toUpperCase()}
+                    </div>
                   )}
-                  <span>Joined {new Date(u.created_at).toLocaleDateString("en-LK")}</span>
-                  <span className="font-mono text-slate-600">{u.id.slice(0, 8).toUpperCase()}</span>
+                </div>
+                <div className="min-w-0 flex-1">
+                  <div className="flex items-center gap-2 flex-wrap">
+                    <p className="text-white font-semibold">{u.full_name}</p>
+                    <Badge variant={kycVariant[u.kyc_status] ?? "slate"}>{u.kyc_status}</Badge>
+                    {u.is_blacklisted && <Badge variant="red">Blacklisted</Badge>}
+                    {u.phone_verified && <Badge variant="green">Phone verified</Badge>}
+                  </div>
+                  <p className="text-slate-400 text-sm mt-0.5">
+                    {u.phone}{u.role !== "renter" ? ` · ${u.role}` : ""}
+                  </p>
+                  <div className="flex items-center gap-3 mt-1 text-xs text-slate-500 flex-wrap">
+                    {u.rating_count > 0 && (
+                      <span className="inline-flex items-center gap-1">
+                        <Star size={11} fill="currentColor" className="text-amber-400" />
+                        {u.rating_avg?.toFixed(1)} ({u.rating_count} reviews)
+                      </span>
+                    )}
+                    {u.reliability_pct !== null && (
+                      <span>{u.reliability_pct}% reliability</span>
+                    )}
+                    <span>Joined {new Date(u.created_at).toLocaleDateString("en-LK")}</span>
+                    <span className="font-mono text-slate-600">{u.id.slice(0, 8).toUpperCase()}</span>
+                  </div>
                 </div>
               </div>
 
@@ -101,6 +143,34 @@ export default async function AdminUsersPage({ searchParams }: Props) {
                 <RenterActions userId={u.id} fullName={u.full_name} isBlacklisted={u.is_blacklisted} />
               </div>
             </div>
+
+            {/* Blacklist reason */}
+            {u.is_blacklisted && u.blacklist_reason && (
+              <div className="mb-4 px-3 py-2 bg-red-500/10 border border-red-500/20 rounded-lg flex gap-2 text-sm">
+                <ShieldAlert size={16} className="text-red-400 shrink-0 mt-0.5" />
+                <div>
+                  <p className="text-red-400 font-medium text-xs">Blacklist reason</p>
+                  <p className="text-red-300/80 text-xs mt-0.5">{u.blacklist_reason}</p>
+                </div>
+              </div>
+            )}
+
+            {/* Booking stats */}
+            {stats.total > 0 && (
+              <div className="grid grid-cols-4 gap-2 mb-4">
+                {[
+                  { label: "Bookings", value: stats.total, color: "text-white" },
+                  { label: "Completed", value: stats.completed, color: "text-emerald-400" },
+                  { label: "Active", value: stats.active, color: "text-amber-400" },
+                  { label: "Cancelled", value: stats.cancelled, color: stats.cancelled > 0 ? "text-red-400" : "text-slate-400" },
+                ].map(({ label, value, color }) => (
+                  <div key={label} className="bg-slate-800/40 border border-slate-700/50 rounded-lg px-3 py-2">
+                    <p className="text-slate-500 text-[10px] uppercase tracking-wider">{label}</p>
+                    <p className={`text-sm font-semibold mt-0.5 ${color}`}>{value}</p>
+                  </div>
+                ))}
+              </div>
+            )}
 
             {/* KYC document images */}
             {(u.nic_url || u.selfie_url) && (
@@ -164,7 +234,8 @@ export default async function AdminUsersPage({ searchParams }: Props) {
               <div className="text-slate-600 text-xs italic">No documents uploaded yet.</div>
             )}
           </div>
-        ))}
+          );
+        })}
 
         {users.length === 0 && (
           <div className="text-center py-16 text-slate-500">No users found.</div>
