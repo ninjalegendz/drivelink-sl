@@ -34,6 +34,18 @@ export async function GET(req: NextRequest) {
     return NextResponse.redirect(`${origin}/login?error=missing_token`);
   }
 
+  // If this callback was the "verify your email for a badge" link, stamp
+  // email_verified_at on the profile while we're authenticated as them.
+  if (searchParams.get("verify_email") === "1") {
+    const { data: { user } } = await supabase.auth.getUser();
+    if (user) {
+      await supabase
+        .from("profiles")
+        .update({ email_verified_at: new Date().toISOString() })
+        .eq("id", user.id);
+    }
+  }
+
   // Success — figure out where to send them.
   if (next) return NextResponse.redirect(`${origin}${next}`);
 

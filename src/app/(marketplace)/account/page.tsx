@@ -8,7 +8,7 @@ import { PhoneVerifyForm } from "@/components/account/PhoneVerifyForm";
 import { SignOutButton } from "@/components/account/SignOutButton";
 
 interface Props {
-  searchParams: Promise<{ didit?: string; agency?: string }>;
+  searchParams: Promise<{ didit?: string; agency?: string; welcome?: string }>;
 }
 
 const kycVariant: Record<string, "slate" | "yellow" | "green" | "red"> = {
@@ -38,7 +38,7 @@ function kycStep(status: string) {
 }
 
 export default async function AccountPage({ searchParams }: Props) {
-  const { didit, agency: agencyCreated } = await searchParams;
+  const { didit, agency: agencyCreated, welcome } = await searchParams;
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) redirect("/login?next=/account");
@@ -46,7 +46,7 @@ export default async function AccountPage({ searchParams }: Props) {
   const [{ data: profile }, { data: agency }] = await Promise.all([
     supabase
       .from("profiles")
-      .select("full_name, phone, phone_verified, role, kyc_status, rating_avg, rating_count, created_at")
+      .select("full_name, phone, phone_verified, email, email_verified_at, role, kyc_status, rating_avg, rating_count, created_at")
       .eq("id", user.id)
       .single(),
     supabase
@@ -70,7 +70,14 @@ export default async function AccountPage({ searchParams }: Props) {
       <div className="flex items-start justify-between">
         <div>
           <h1 className="text-2xl font-bold text-white">{profile.full_name}</h1>
-          <p className="text-slate-400 text-sm mt-0.5">{user.email}</p>
+          {profile.email && (
+            <p className="text-slate-400 text-sm mt-0.5 inline-flex items-center gap-2">
+              {profile.email}
+              {profile.email_verified_at && (
+                <Badge variant="green">Verified</Badge>
+              )}
+            </p>
+          )}
           <p className="text-slate-500 text-xs">{profile.phone}</p>
         </div>
         <div className="flex items-center gap-2">
@@ -83,6 +90,31 @@ export default async function AccountPage({ searchParams }: Props) {
           <SignOutButton />
         </div>
       </div>
+
+      {/* Welcome banner — first sight after passwordless signup */}
+      {welcome && (
+        <div className="p-4 bg-amber-500/10 border border-amber-500/20 rounded-2xl text-sm">
+          <p className="text-amber-300 font-semibold mb-1">Welcome to DriveLink!</p>
+          <p className="text-amber-200/80 text-xs leading-relaxed">
+            Your account is live. Verify your ID below to unlock booking — agencies confirm verified
+            renters faster, and the whole thing takes about 2 minutes.
+          </p>
+        </div>
+      )}
+
+      {/* Email-verification nudge — only when an email exists and isn't verified yet */}
+      {profile.email && !profile.email_verified_at && (
+        <div className="p-3 bg-slate-900 border border-slate-800 rounded-2xl flex items-start gap-3 text-xs">
+          <span className="w-7 h-7 rounded-full bg-slate-800 text-amber-400 flex items-center justify-center shrink-0">@</span>
+          <div className="flex-1">
+            <p className="text-slate-300 font-medium">Verify your email for a trust badge</p>
+            <p className="text-slate-500 mt-0.5">
+              We&apos;ve sent a link to <span className="font-mono">{profile.email}</span>. Clicking it
+              adds a verified badge to your profile that helps agencies confirm bookings faster. Optional.
+            </p>
+          </div>
+        </div>
+      )}
 
       {/* Agency created banner */}
       {agencyCreated && (
