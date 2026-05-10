@@ -298,7 +298,7 @@ export default async function AccountPage({ searchParams }: Props) {
             <span className="text-white">{user.email}</span>
           </div>
           <div className="flex justify-between items-start gap-3">
-            <span className="text-slate-400 pt-1">WhatsApp</span>
+            <span className="text-slate-400 pt-1">Mobile</span>
             <div className="text-right">
               <span className="text-white">{profile.phone}</span>
               <div className="mt-2">

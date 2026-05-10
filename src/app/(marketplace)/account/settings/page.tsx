@@ -88,7 +88,7 @@ export default async function AccountSettingsPage() {
               initialName={agency.name}
               initialCity={agency.city}
               initialAddress={agency.address}
-              initialWhatsApp={agency.whatsapp_number}
+              initialPhone={agency.whatsapp_number}
               initialDescription={agency.description}
             />
           </Section>

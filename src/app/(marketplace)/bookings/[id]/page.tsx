@@ -145,7 +145,7 @@ export default async function BookingDetailPage({ params, searchParams }: Props)
         <div className="bg-amber-500/10 border border-amber-500/20 rounded-2xl p-4 mb-4">
           <p className="text-amber-400 font-semibold text-sm">Waiting for agency confirmation</p>
           <p className="text-slate-400 text-sm mt-1 mb-3">
-            We have sent a WhatsApp notification to {agency.name}. You will be notified once they confirm.
+            We&apos;ve texted {agency.name} about your request. You&apos;ll get an SMS once they confirm.
           </p>
           <CancelBookingButton bookingId={booking.id} />
         </div>
@@ -196,14 +196,29 @@ export default async function BookingDetailPage({ params, searchParams }: Props)
           <div className="bg-slate-800 rounded-xl p-3">
             <p className="text-slate-400 text-xs uppercase tracking-widest font-semibold mb-1">Agency contact</p>
             <p className="text-white font-semibold">{agency.name}</p>
-            <a
-              href={`https://wa.me/${agency.whatsapp_number.replace(/\D/g, "")}`}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="mt-2 inline-flex items-center gap-2 px-4 py-2 bg-green-600 hover:bg-green-500 text-white text-sm font-semibold rounded-lg transition-colors"
-            >
-              Open WhatsApp
-            </a>
+            <p className="text-slate-300 text-sm font-mono mt-0.5">{agency.whatsapp_number}</p>
+            <div className="mt-3 flex flex-wrap gap-2">
+              <a
+                href={`tel:${agency.whatsapp_number.replace(/\s+/g, "")}`}
+                className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-amber-500 hover:bg-amber-400 text-slate-950 text-xs font-semibold rounded-lg transition-colors"
+              >
+                Call
+              </a>
+              <a
+                href={`https://wa.me/${agency.whatsapp_number.replace(/\D/g, "")}`}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-green-600 hover:bg-green-500 text-white text-xs font-semibold rounded-lg transition-colors"
+              >
+                WhatsApp
+              </a>
+              <a
+                href={`sms:${agency.whatsapp_number.replace(/\s+/g, "")}`}
+                className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-slate-700 hover:bg-slate-600 text-white text-xs font-semibold rounded-lg transition-colors"
+              >
+                SMS
+              </a>
+            </div>
           </div>
         </div>
       )}

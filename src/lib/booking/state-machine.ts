@@ -22,7 +22,7 @@ export type TransitionActor = "renter" | "agency" | "system" | "admin";
 
 export const TRANSITION_ACTORS: Partial<Record<BookingStatus, Partial<Record<BookingStatus, TransitionActor>>>> = {
   requested: {
-    pending_confirmation: "system",   // auto: WhatsApp ping sent
+    pending_confirmation: "system",   // auto: SMS ping sent to agency
     cancelled:            "renter",
   },
   pending_confirmation: {

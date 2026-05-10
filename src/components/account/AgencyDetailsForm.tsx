@@ -14,7 +14,7 @@ interface Props {
   initialName:        string;
   initialCity:        string;
   initialAddress:     string | null;
-  initialWhatsApp:    string;
+  initialPhone:       string;
   initialDescription: string | null;
 }
 
@@ -23,14 +23,14 @@ export function AgencyDetailsForm({
   initialName,
   initialCity,
   initialAddress,
-  initialWhatsApp,
+  initialPhone,
   initialDescription,
 }: Props) {
   const router = useRouter();
   const [name, setName]               = useState(initialName);
   const [city, setCity]               = useState(initialCity);
   const [address, setAddress]         = useState(initialAddress ?? "");
-  const [whatsapp, setWhatsapp]       = useState(initialWhatsApp);
+  const [phone, setPhone]             = useState(initialPhone);
   const [description, setDescription] = useState(initialDescription ?? "");
 
   const [loading, setLoading]         = useState(false);
@@ -42,7 +42,7 @@ export function AgencyDetailsForm({
     name.trim()        !== initialName.trim() ||
     city               !== initialCity ||
     address.trim()     !== (initialAddress ?? "").trim() ||
-    whatsapp.trim()    !== initialWhatsApp.trim() ||
+    phone.trim()       !== initialPhone.trim() ||
     description.trim() !== (initialDescription ?? "").trim();
 
   async function handleSubmit(e: React.FormEvent) {
@@ -50,8 +50,8 @@ export function AgencyDetailsForm({
     setError(null);
     setSuccess(false);
 
-    if (!name.trim() || !city || !whatsapp.trim()) {
-      setError("Name, city and WhatsApp number are required.");
+    if (!name.trim() || !city || !phone.trim()) {
+      setError("Name, city and mobile number are required.");
       return;
     }
 
@@ -64,7 +64,7 @@ export function AgencyDetailsForm({
         name:            name.trim(),
         city,
         address:         address.trim() || null,
-        whatsapp_number: whatsapp.trim(),
+        whatsapp_number: phone.trim(),  // DB column is named whatsapp_number for legacy reasons
         description:     description.trim() || null,
       })
       .eq("id", agencyId);
@@ -110,13 +110,13 @@ export function AgencyDetailsForm({
       </div>
 
       <div>
-        <label className="text-slate-400 text-xs mb-1 block">WhatsApp number for booking alerts</label>
+        <label className="text-slate-400 text-xs mb-1 block">Mobile number for booking alerts</label>
         <input
-          type="tel" value={whatsapp} onChange={(e) => { setWhatsapp(e.target.value); setSuccess(false); }}
+          type="tel" value={phone} onChange={(e) => { setPhone(e.target.value); setSuccess(false); }}
           required
           className="w-full px-4 py-2.5 bg-slate-800 border border-slate-700 rounded-xl text-white text-sm focus:outline-none focus:border-amber-500"
         />
-        <p className="text-slate-500 text-xs mt-1">Booking requests arrive here. Reply YES or NO to confirm.</p>
+        <p className="text-slate-500 text-xs mt-1">Booking alerts arrive here as an SMS — tap the link to confirm in your dashboard.</p>
       </div>
 
       <div>

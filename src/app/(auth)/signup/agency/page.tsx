@@ -137,7 +137,7 @@ export default function AgencySignupPage() {
           </div>
 
           <div>
-            <label className="text-slate-400 text-xs mb-1 block">WhatsApp number</label>
+            <label className="text-slate-400 text-xs mb-1 block">Mobile number</label>
             <input
               type="tel"
               value={phone}

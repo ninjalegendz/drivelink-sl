@@ -125,7 +125,7 @@ function RenterSignupForm() {
           </div>
 
           <div>
-            <label className="text-slate-400 text-xs mb-1 block">WhatsApp number</label>
+            <label className="text-slate-400 text-xs mb-1 block">Mobile number</label>
             <input
               type="tel"
               value={phone}
@@ -135,7 +135,7 @@ function RenterSignupForm() {
               placeholder="0771234567"
               className="w-full px-4 py-2.5 bg-slate-800 border border-slate-700 rounded-xl text-white placeholder-slate-500 text-sm focus:outline-none focus:border-amber-500"
             />
-            <p className="text-slate-600 text-xs mt-1">We&apos;ll send a 6-digit code to this number.</p>
+            <p className="text-slate-600 text-xs mt-1">We&apos;ll text a 6-digit code to this number.</p>
           </div>
 
           <div>

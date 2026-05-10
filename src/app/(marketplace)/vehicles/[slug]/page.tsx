@@ -220,7 +220,7 @@ export default async function VehicleDetailPage({ params }: Props) {
             <ol className="space-y-2">
               {[
                 "You send a request (free, no payment)",
-                "Agency confirms availability via WhatsApp",
+                "Agency confirms availability — usually within minutes",
                 "You pay Rs. 1,000 to lock in the booking",
                 "Agency contact details unlocked instantly",
                 "Meet and collect the car",

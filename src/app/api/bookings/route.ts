@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient, createServiceClient } from "@/lib/supabase/server";
 import { sendSms } from "@/lib/sms/textlk";
-import { buildAgencyPingMessage } from "@/lib/whatsapp/send";
+import { buildAgencyPingMessage } from "@/lib/sms/messages";
 import { calcBookingPrice } from "@/lib/bookings/pricing";
 
 export async function POST(req: NextRequest) {
