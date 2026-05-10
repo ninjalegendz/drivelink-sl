@@ -6,6 +6,7 @@ import { Badge } from "@/components/ui/Badge";
 import { SlipUploadForm } from "@/components/booking/SlipUploadForm";
 import { ReviewForm } from "@/components/booking/ReviewForm";
 import { CancelBookingButton } from "@/components/booking/CancelBookingButton";
+import { PaymentExpiryCountdown } from "@/components/booking/PaymentExpiryCountdown";
 import { BOOKING_STATUS_LABELS } from "@/lib/booking/state-machine";
 import { formatLKR } from "@/lib/vehicles/format";
 import type { BookingWithRelations } from "@/types/queries";
@@ -178,6 +179,10 @@ export default async function BookingDetailPage({ params, searchParams }: Props)
               Once verified, you will receive the agency&apos;s contact details.
             </p>
           </div>
+
+          {booking.confirmed_at && (
+            <PaymentExpiryCountdown confirmedAt={booking.confirmed_at} windowHours={12} />
+          )}
 
           <div className="bg-slate-800 rounded-xl p-3 text-sm space-y-1">
             <p className="text-slate-400 text-xs uppercase tracking-widest font-semibold mb-2">Bank transfer details</p>
