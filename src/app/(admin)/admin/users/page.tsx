@@ -22,7 +22,7 @@ export default async function AdminUsersPage({ searchParams }: Props) {
 
   let query = supabase
     .from("profiles")
-    .select("id, full_name, phone, phone_verified, role, kyc_status, nic_url, selfie_url, is_blacklisted, blacklist_reason, rating_avg, rating_count, reliability_pct, avatar_url, created_at, updated_at")
+    .select("id, full_name, phone, phone_verified, role, kyc_status, nic_url, selfie_url, is_blacklisted, blacklist_reason, rating_avg, rating_count, reliability_pct, avatar_url, didit_session_id, created_at, updated_at")
     .order("created_at", { ascending: false });
 
   if (kyc) query = query.eq("kyc_status", kyc);
@@ -44,6 +44,7 @@ export default async function AdminUsersPage({ searchParams }: Props) {
     rating_count: number;
     reliability_pct: number | null;
     avatar_url: string | null;
+    didit_session_id: string | null;
     created_at: string;
     updated_at: string;
   }[];
@@ -139,7 +140,9 @@ export default async function AdminUsersPage({ searchParams }: Props) {
               </div>
 
               <div className="flex flex-col items-end gap-2">
-                {u.kyc_status === "pending" && <KycActions userId={u.id} />}
+                {u.kyc_status === "pending" && (
+                  <KycActions userId={u.id} hasDiditSession={Boolean(u.didit_session_id)} />
+                )}
                 <RenterActions userId={u.id} fullName={u.full_name} isBlacklisted={u.is_blacklisted} />
               </div>
             </div>

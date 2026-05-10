@@ -41,6 +41,7 @@ export type Database = {
           phone_otp_send_count: number;
           email: string | null;
           email_verified_at: string | null;
+          didit_session_id: string | null;
           created_at: string;
           updated_at: string;
         };
