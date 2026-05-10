@@ -1,7 +1,7 @@
 import { redirect } from "next/navigation";
 import Link from "next/link";
 import {
-  LayoutDashboard, ReceiptText, ClipboardList, Users, Building2, Ban, Settings, Car, Mail,
+  LayoutDashboard, ReceiptText, ClipboardList, Users, Building2, Ban, Settings, Car, Mail, Headphones,
 } from "lucide-react";
 import { createClient } from "@/lib/supabase/server";
 import { SignOutButton } from "@/components/account/SignOutButton";
@@ -14,6 +14,7 @@ const NAV = [
   { href: "/admin/users",           label: "Renters / KYC", Icon: Users },
   { href: "/admin/agencies",        label: "Agencies",      Icon: Building2 },
   { href: "/admin/blacklist",       label: "Blacklist",     Icon: Ban },
+  { href: "/admin/support",         label: "Support",       Icon: Headphones, badge: "support" as const },
   { href: "/admin/settings/email",  label: "Email setup",   Icon: Mail },
 ];
 
@@ -30,6 +31,12 @@ export default async function AdminLayout({ children }: { children: React.ReactN
 
   if (!profile || profile.role !== "admin") redirect("/");
 
+  // Count threads with admin-side unread for the sidebar badge
+  const { count: supportUnread } = await supabase
+    .from("support_threads")
+    .select("*", { count: "exact", head: true })
+    .eq("has_unread_admin", true);
+
   return (
     <div className="min-h-screen bg-slate-950 text-white flex">
       {/* Sidebar */}
@@ -43,14 +50,21 @@ export default async function AdminLayout({ children }: { children: React.ReactN
           </span>
         </div>
         <nav className="flex-1 p-3 space-y-0.5">
-          {NAV.map(({ href, label, Icon }) => (
+          {NAV.map(({ href, label, Icon, badge }) => (
             <Link
               key={href}
               href={href}
-              className="flex items-center gap-2.5 px-3 py-2 rounded-lg text-sm text-slate-400 hover:text-white hover:bg-slate-800 transition-colors"
+              className="flex items-center justify-between gap-2.5 px-3 py-2 rounded-lg text-sm text-slate-400 hover:text-white hover:bg-slate-800 transition-colors"
             >
-              <Icon size={16} className="shrink-0" />
-              {label}
+              <span className="inline-flex items-center gap-2.5">
+                <Icon size={16} className="shrink-0" />
+                {label}
+              </span>
+              {badge === "support" && supportUnread && supportUnread > 0 && (
+                <span className="text-[10px] font-semibold bg-red-500 text-white px-1.5 py-0.5 rounded-full">
+                  {supportUnread}
+                </span>
+              )}
             </Link>
           ))}
         </nav>

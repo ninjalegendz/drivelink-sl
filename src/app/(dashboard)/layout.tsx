@@ -1,5 +1,6 @@
 import Link from "next/link";
-import { Settings, User } from "lucide-react";
+import { Settings, User, Headphones } from "lucide-react";
+import { createClient } from "@/lib/supabase/server";
 import { SignOutButton } from "@/components/account/SignOutButton";
 
 const NAV = [
@@ -8,7 +9,29 @@ const NAV = [
   { href: "/dashboard/bookings", label: "Bookings" },
 ];
 
-export default function DashboardLayout({ children }: { children: React.ReactNode }) {
+export default async function DashboardLayout({ children }: { children: React.ReactNode }) {
+  // Surface a "new reply" indicator on the Support link so the agency owner
+  // knows when admin has responded without having to open the page.
+  const supabase = await createClient();
+  const { data: { user } } = await supabase.auth.getUser();
+
+  let supportUnread = false;
+  if (user) {
+    const { data: agency } = await supabase
+      .from("agencies")
+      .select("id")
+      .eq("owner_id", user.id)
+      .maybeSingle();
+    if (agency) {
+      const { data: thread } = await supabase
+        .from("support_threads")
+        .select("has_unread_agency")
+        .eq("agency_id", (agency as { id: string }).id)
+        .maybeSingle();
+      supportUnread = Boolean((thread as { has_unread_agency?: boolean } | null)?.has_unread_agency);
+    }
+  }
+
   return (
     <div className="min-h-screen bg-slate-950 text-white flex">
       {/* Sidebar */}
@@ -26,6 +49,19 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
               {label}
             </Link>
           ))}
+          <Link
+            href="/dashboard/support"
+            className="flex items-center justify-between px-3 py-2 rounded-lg text-sm text-slate-400 hover:text-white hover:bg-slate-800 transition-colors"
+          >
+            <span className="inline-flex items-center gap-2">
+              <Headphones size={14} /> Support
+            </span>
+            {supportUnread && (
+              <span className="text-[10px] font-semibold bg-red-500 text-white px-1.5 py-0.5 rounded-full">
+                NEW
+              </span>
+            )}
+          </Link>
         </nav>
         <div className="pt-3 border-t border-slate-800 space-y-1">
           <Link

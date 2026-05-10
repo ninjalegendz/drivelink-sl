@@ -372,6 +372,48 @@ export type Database = {
         };
         Relationships: [];
       };
+      support_threads: {
+        Row: {
+          id: string;
+          agency_id: string;
+          last_message_at: string | null;
+          has_unread_admin: boolean;
+          has_unread_agency: boolean;
+          created_at: string;
+        };
+        Insert: {
+          id?: string;
+          agency_id: string;
+          last_message_at?: string | null;
+          has_unread_admin?: boolean;
+          has_unread_agency?: boolean;
+        };
+        Update: {
+          last_message_at?: string | null;
+          has_unread_admin?: boolean;
+          has_unread_agency?: boolean;
+        };
+        Relationships: [];
+      };
+      support_messages: {
+        Row: {
+          id: string;
+          thread_id: string;
+          sender_id: string;
+          sender_role: "admin" | "agency_owner";
+          body: string;
+          created_at: string;
+        };
+        Insert: {
+          id?: string;
+          thread_id: string;
+          sender_id: string;
+          sender_role: "admin" | "agency_owner";
+          body: string;
+        };
+        Update: Record<string, never>;
+        Relationships: [];
+      };
       email_config: {
         Row: {
           id: boolean;

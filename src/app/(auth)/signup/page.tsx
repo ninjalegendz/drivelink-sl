@@ -3,7 +3,7 @@
 import { Suspense, useEffect, useRef, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
-import { ArrowLeft, ArrowRight, Phone, Mail, Sparkles } from "lucide-react";
+import { ArrowLeft, Phone, Mail, Sparkles } from "lucide-react";
 import { Button } from "@/components/ui/Button";
 import { isValidSLPhone, toLocalSL } from "@/lib/auth/phone-format";
 
@@ -90,21 +90,13 @@ function RenterSignupForm() {
     router.refresh();
   }
 
-  // Agency role hits a separate flow until that's overhauled too.
-  if (searchParams.get("role") === "agency") {
-    return (
-      <div className="bg-slate-900 rounded-2xl border border-slate-800 p-6">
-        <h1 className="text-white font-bold text-xl mb-1">List your fleet</h1>
-        <p className="text-slate-400 text-sm mb-4">
-          Agency signup uses email + password for now (separate flow with business details).
-        </p>
-        <Link href="/signup/agency">
-          <Button className="w-full" size="lg">
-            Continue to agency signup <ArrowRight size={16} />
-          </Button>
-        </Link>
-      </div>
-    );
+  // Agency signup lives at /signup/agency (collects business details up front).
+  const wantsAgency = searchParams.get("role") === "agency";
+  useEffect(() => {
+    if (wantsAgency) router.replace("/signup/agency");
+  }, [wantsAgency, router]);
+  if (wantsAgency) {
+    return <div className="bg-slate-900 rounded-2xl border border-slate-800 p-6 text-slate-400 text-sm">Loading…</div>;
   }
 
   return (

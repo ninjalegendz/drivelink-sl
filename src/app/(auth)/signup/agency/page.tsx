@@ -1,147 +1,305 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
-import { ArrowRight } from "lucide-react";
-import { createClient } from "@/lib/supabase/client";
+import Link from "next/link";
+import { ArrowLeft, Phone, Sparkles } from "lucide-react";
 import { Button } from "@/components/ui/Button";
 import { Select } from "@/components/ui/Select";
 import { SL_CITIES } from "@/data/cities";
+import { isValidSLPhone, toLocalSL } from "@/lib/auth/phone-format";
 
 const CITY_OPTIONS = SL_CITIES.map((c) => ({ value: c, label: c }));
 
-export default function AgencyOnboardingPage() {
+type Stage = "details" | "code";
+
+function maskPhone(value: string): string {
+  const local = toLocalSL(value) ?? value;
+  if (local.length < 5) return value;
+  return `${local.slice(0, 3)} *** *${local.slice(-3)}`;
+}
+
+export default function AgencySignupPage() {
   const router = useRouter();
-  const [form, setForm] = useState({
-    name:             "",
-    city:             "",
-    address:          "",
-    whatsapp_number:  "",
-    description:      "",
-  });
 
-  // Pre-fill agency name + WhatsApp from signup metadata
+  const [stage,    setStage]    = useState<Stage>("details");
+  const [fullName, setFullName] = useState("");
+  const [phone,    setPhone]    = useState("");
+  const [email,    setEmail]    = useState("");
+  const [aName,    setAName]    = useState("");
+  const [aCity,    setACity]    = useState("");
+  const [aAddress, setAAddress] = useState("");
+  const [aDesc,    setADesc]    = useState("");
+
+  const [code,     setCode]     = useState("");
+  const [loading,  setLoading]  = useState(false);
+  const [error,    setError]    = useState<string | null>(null);
+  const [info,     setInfo]     = useState<string | null>(null);
+  const [cooldown, setCooldown] = useState(0);
+  const codeRef = useRef<HTMLInputElement>(null);
+
   useEffect(() => {
-    createClient().auth.getUser().then(({ data }) => {
-      const meta      = data.user?.user_metadata ?? {};
-      const agencyName = meta.agency_name as string | undefined;
-      const phone      = meta.phone as string | undefined;
-      setForm((f) => ({
-        ...f,
-        name:            agencyName ?? f.name,
-        whatsapp_number: phone      ?? f.whatsapp_number,
-      }));
+    if (cooldown <= 0) return;
+    const id = setTimeout(() => setCooldown((c) => c - 1), 1000);
+    return () => clearTimeout(id);
+  }, [cooldown]);
+
+  useEffect(() => {
+    if (stage === "code") setTimeout(() => codeRef.current?.focus(), 50);
+  }, [stage]);
+
+  async function startSignup(e?: React.FormEvent) {
+    e?.preventDefault();
+
+    if (fullName.trim().length < 2)        { setError("Enter your full name."); return; }
+    if (!isValidSLPhone(phone))            { setError("Enter a Sri Lankan phone number like 0771234567."); return; }
+    if (email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) { setError("That email doesn't look right."); return; }
+    if (aName.trim().length < 2)           { setError("Enter your agency or business name."); return; }
+    if (!aCity)                             { setError("Pick your city."); return; }
+
+    setLoading(true); setError(null); setInfo(null);
+
+    const res = await fetch("/api/auth/signup-agency/start", {
+      method:  "POST",
+      headers: { "Content-Type": "application/json" },
+      body:    JSON.stringify({
+        full_name:           fullName.trim(),
+        phone:               phone.trim(),
+        email:               email.trim() || undefined,
+        agency_name:         aName.trim(),
+        agency_city:         aCity,
+        agency_address:      aAddress.trim() || undefined,
+        agency_description:  aDesc.trim() || undefined,
+      }),
     });
-  }, []);
-  const [loading, setLoading] = useState(false);
-  const [error, setError]     = useState<string | null>(null);
-
-  function set(field: string, value: string) {
-    setForm((f) => ({ ...f, [field]: value }));
-  }
-
-  async function handleSubmit(e: React.FormEvent) {
-    e.preventDefault();
-    setLoading(true);
-    setError(null);
-
-    const supabase = createClient();
-    const { data: { user } } = await supabase.auth.getUser();
-
-    if (!user) { router.push("/login"); return; }
-
-    const { error: insertError } = await supabase.from("agencies").insert({
-      owner_id:        user.id,
-      name:            form.name,
-      city:            form.city,
-      address:         form.address || null,
-      whatsapp_number: form.whatsapp_number,
-      description:     form.description || null,
-    });
-
+    const payload = await res.json().catch(() => ({}));
     setLoading(false);
 
-    if (insertError) {
-      setError("Failed to create agency. Please try again.");
+    if (!res.ok) {
+      setError(payload.error ?? "Couldn't start signup.");
+      if (payload.waitSec) setCooldown(payload.waitSec);
       return;
     }
 
-    router.push("/account?agency=created");
+    setStage("code");
+    if (payload.nextCooldownSec) setCooldown(payload.nextCooldownSec);
+    if (payload.devOnly && payload.devCode) setInfo(`Dev mode: code is ${payload.devCode}`);
+  }
+
+  async function verifyCode(e: React.FormEvent) {
+    e.preventDefault();
+    setLoading(true); setError(null);
+
+    const res = await fetch("/api/auth/signup-agency/verify", {
+      method:  "POST",
+      headers: { "Content-Type": "application/json" },
+      body:    JSON.stringify({ phone: phone.trim(), code }),
+    });
+    const payload = await res.json().catch(() => ({}));
+    setLoading(false);
+
+    if (!res.ok) { setError(payload.error ?? "Verification failed."); return; }
+
+    router.push(payload.dest || "/account?agency=1");
+    router.refresh();
   }
 
   return (
     <div className="bg-slate-900 rounded-2xl border border-slate-800 p-6">
-      <h1 className="text-white font-bold text-xl mb-1">Set up your agency</h1>
+      <h1 className="text-white font-bold text-xl mb-1">List your fleet</h1>
       <p className="text-slate-400 text-sm mb-6">
-        This is what renters will see when they browse your vehicles.
+        Already have an account?{" "}
+        <Link href="/login" className="text-amber-400 hover:text-amber-300">Sign in</Link>
       </p>
 
-      <form onSubmit={handleSubmit} className="space-y-4">
-        <div>
-          <label className="text-slate-400 text-xs mb-1 block">Agency / business name</label>
-          <input
-            type="text"
-            value={form.name}
-            onChange={(e) => set("name", e.target.value)}
-            required
-            className="w-full px-4 py-2.5 bg-slate-800 border border-slate-700 rounded-xl text-white placeholder-slate-500 text-sm focus:outline-none focus:border-amber-500"
-            placeholder="e.g. Perera Car Rentals"
-          />
-        </div>
+      <div className="mb-4 p-3 bg-amber-500/10 border border-amber-500/20 rounded-xl">
+        <p className="text-amber-400 text-xs font-medium">
+          Listing your fleet is free. We only earn when a renter books through us.
+        </p>
+      </div>
 
-        <div>
-          <label className="text-slate-400 text-xs mb-1 block">City</label>
-          <Select
-            value={form.city}
-            onChange={(v) => set("city", v)}
-            options={CITY_OPTIONS}
-            placeholder="Select city..."
-          />
-        </div>
+      {/* Stage 1 — details */}
+      {stage === "details" && (
+        <form onSubmit={startSignup} className="space-y-4">
 
-        <div>
-          <label className="text-slate-400 text-xs mb-1 block">WhatsApp number (for booking alerts)</label>
-          <input
-            type="tel"
-            value={form.whatsapp_number}
-            onChange={(e) => set("whatsapp_number", e.target.value)}
-            required
-            className="w-full px-4 py-2.5 bg-slate-800 border border-slate-700 rounded-xl text-white placeholder-slate-500 text-sm focus:outline-none focus:border-amber-500"
-            placeholder="0771234567"
-          />
-          <p className="text-slate-500 text-xs mt-1">
-            Booking alerts arrive here as an SMS — tap the link to confirm in your dashboard.
+          <div>
+            <label className="text-slate-400 text-xs mb-1 block">Your full name</label>
+            <input
+              type="text"
+              value={fullName}
+              onChange={(e) => setFullName(e.target.value)}
+              required
+              autoFocus
+              autoComplete="name"
+              placeholder="As on your NIC"
+              className={inputClass}
+            />
+          </div>
+
+          <div>
+            <label className="text-slate-400 text-xs mb-1 block">WhatsApp number</label>
+            <input
+              type="tel"
+              value={phone}
+              onChange={(e) => setPhone(e.target.value)}
+              required
+              autoComplete="tel"
+              placeholder="0771234567"
+              className={inputClass}
+            />
+            <p className="text-slate-600 text-xs mt-1">
+              Booking alerts arrive here as an SMS. We&apos;ll text a 6-digit code now to verify it&apos;s yours.
+            </p>
+          </div>
+
+          <div>
+            <label className="text-slate-400 text-xs mb-1 block">
+              Email <span className="text-slate-600 font-normal">(optional)</span>
+            </label>
+            <input
+              type="email"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              autoComplete="email"
+              placeholder="you@example.com"
+              className={inputClass}
+            />
+            <p className="text-slate-600 text-xs mt-1">
+              Verified email shows a trust badge on your listings.
+            </p>
+          </div>
+
+          <div className="pt-3 border-t border-slate-800 space-y-4">
+
+            <div>
+              <label className="text-slate-400 text-xs mb-1 block">Agency / business name</label>
+              <input
+                type="text"
+                value={aName}
+                onChange={(e) => setAName(e.target.value)}
+                required
+                placeholder="e.g. Perera Car Rentals"
+                className={inputClass}
+              />
+            </div>
+
+            <div className="grid grid-cols-2 gap-3">
+              <div>
+                <label className="text-slate-400 text-xs mb-1 block">City</label>
+                <Select
+                  value={aCity}
+                  onChange={setACity}
+                  options={CITY_OPTIONS}
+                  placeholder="Pick a city"
+                />
+              </div>
+              <div>
+                <label className="text-slate-400 text-xs mb-1 block">
+                  Address <span className="text-slate-600 font-normal">(optional)</span>
+                </label>
+                <input
+                  type="text"
+                  value={aAddress}
+                  onChange={(e) => setAAddress(e.target.value)}
+                  placeholder="e.g. 14 Galle Rd"
+                  className={inputClass}
+                />
+              </div>
+            </div>
+
+            <div>
+              <label className="text-slate-400 text-xs mb-1 block">
+                Short description <span className="text-slate-600 font-normal">(optional)</span>
+              </label>
+              <textarea
+                value={aDesc}
+                onChange={(e) => setADesc(e.target.value)}
+                rows={2}
+                maxLength={500}
+                placeholder="Family-run, Colombo-based, full-insurance fleet."
+                className={`${inputClass} resize-none`}
+              />
+            </div>
+          </div>
+
+          {error && <p className="text-red-400 text-sm">{error}</p>}
+
+          <Button type="submit" loading={loading} className="w-full" size="lg">
+            Send verification code
+          </Button>
+
+          <p className="text-slate-600 text-xs text-center">
+            No password needed. By continuing you agree to our Terms.
           </p>
-        </div>
+        </form>
+      )}
 
-        <div>
-          <label className="text-slate-400 text-xs mb-1 block">Address (optional)</label>
-          <input
-            type="text"
-            value={form.address}
-            onChange={(e) => set("address", e.target.value)}
-            className="w-full px-4 py-2.5 bg-slate-800 border border-slate-700 rounded-xl text-white placeholder-slate-500 text-sm focus:outline-none focus:border-amber-500"
-            placeholder="No. 12, Main Street, Colombo 3"
-          />
-        </div>
+      {/* Stage 2 — code */}
+      {stage === "code" && (
+        <form onSubmit={verifyCode} className="space-y-4">
+          <button
+            type="button"
+            onClick={() => { setStage("details"); setCode(""); setError(null); setInfo(null); }}
+            className="inline-flex items-center gap-1 text-slate-500 hover:text-white text-xs"
+          >
+            <ArrowLeft size={12} /> Edit details
+          </button>
 
-        <div>
-          <label className="text-slate-400 text-xs mb-1 block">Description (optional)</label>
-          <textarea
-            value={form.description}
-            onChange={(e) => set("description", e.target.value)}
-            rows={3}
-            className="w-full px-4 py-2.5 bg-slate-800 border border-slate-700 rounded-xl text-white placeholder-slate-500 text-sm focus:outline-none focus:border-amber-500 resize-none"
-            placeholder="Tell renters about your fleet..."
-          />
-        </div>
+          <div className="flex items-start gap-3 p-3 bg-slate-800/60 rounded-xl">
+            <Phone size={18} className="text-amber-400 mt-0.5 shrink-0" />
+            <div className="text-xs">
+              <p className="text-slate-300">
+                Code sent to <span className="text-white font-mono">{maskPhone(phone)}</span>
+              </p>
+              <p className="text-slate-500 mt-0.5">Expires in 10 minutes.</p>
+            </div>
+          </div>
 
-        {error && <p className="text-red-400 text-sm">{error}</p>}
+          <div>
+            <label className="text-slate-400 text-xs mb-1 block">6-digit code</label>
+            <input
+              ref={codeRef}
+              type="text"
+              inputMode="numeric"
+              pattern="\d{6}"
+              maxLength={6}
+              value={code}
+              onChange={(e) => setCode(e.target.value.replace(/\D/g, ""))}
+              required
+              className="w-full px-4 py-3 bg-slate-800 border border-slate-700 rounded-xl text-white text-center font-mono text-2xl tracking-[0.5em] focus:outline-none focus:border-amber-500"
+            />
+          </div>
 
-        <Button type="submit" loading={loading} className="w-full" size="lg">
-          <span className="inline-flex items-center gap-1.5">Create agency profile <ArrowRight size={16} /></span>
-        </Button>
-      </form>
+          <div className="flex items-start gap-2 p-3 bg-emerald-500/5 border border-emerald-500/20 rounded-xl">
+            <Sparkles size={14} className="text-emerald-400 mt-0.5 shrink-0" />
+            <div className="text-xs text-emerald-300/80">
+              <p className="font-medium text-emerald-300">After this you&apos;re in</p>
+              <p className="mt-0.5">
+                Listings go to admin review. Most agencies are approved within 24 hours.
+              </p>
+            </div>
+          </div>
+
+          {info  && <p className="text-amber-400 text-xs">{info}</p>}
+          {error && <p className="text-red-400 text-sm">{error}</p>}
+
+          <Button type="submit" loading={loading} disabled={code.length !== 6} className="w-full" size="lg">
+            Verify and create agency
+          </Button>
+
+          <button
+            type="button"
+            onClick={() => startSignup()}
+            disabled={loading || cooldown > 0}
+            className="text-xs text-slate-500 hover:text-amber-400 disabled:opacity-50 disabled:hover:text-slate-500 w-full text-center"
+          >
+            {cooldown > 0 ? `Resend code in ${cooldown}s` : "Resend code"}
+          </button>
+        </form>
+      )}
     </div>
   );
 }
+
+const inputClass =
+  "w-full px-4 py-2.5 bg-slate-800 border border-slate-700 rounded-xl text-white placeholder-slate-500 text-sm focus:outline-none focus:border-amber-500";
