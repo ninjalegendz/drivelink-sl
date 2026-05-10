@@ -1,5 +1,6 @@
 import { redirect } from "next/navigation";
 import Link from "next/link";
+import { Car, ArrowRight } from "lucide-react";
 import { createClient } from "@/lib/supabase/server";
 import { Badge } from "@/components/ui/Badge";
 import { BOOKING_STATUS_LABELS } from "@/lib/booking/state-machine";
@@ -49,14 +50,14 @@ export default async function MyBookingsPage() {
           <h1 className="text-2xl font-bold text-white">My Bookings</h1>
           <p className="text-slate-400 text-sm mt-0.5">{bookings.length} booking{bookings.length !== 1 ? "s" : ""}</p>
         </div>
-        <Link href="/vehicles" className="text-amber-400 hover:text-amber-300 text-sm">
-          Browse vehicles →
+        <Link href="/vehicles" className="inline-flex items-center gap-1.5 text-amber-400 hover:text-amber-300 text-sm">
+          Browse vehicles <ArrowRight size={14} />
         </Link>
       </div>
 
       {bookings.length === 0 ? (
         <div className="text-center py-20 text-slate-500">
-          <p className="text-4xl mb-3">🚗</p>
+          <Car size={40} strokeWidth={1.5} className="mx-auto mb-3 text-slate-600" />
           <p className="font-medium text-white mb-1">No bookings yet</p>
           <p className="text-sm">Browse available vehicles and make your first booking.</p>
           <Link

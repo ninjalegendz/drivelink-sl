@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
+import { Check, X } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 import { Button } from "@/components/ui/Button";
 
@@ -20,10 +21,10 @@ export function KycActions({ userId }: { userId: string }) {
   return (
     <div className="flex gap-2 shrink-0">
       <Button size="sm" loading={loading === "approve"} onClick={() => update("verified")}>
-        ✓ Approve
+        <Check size={14} /> Approve
       </Button>
       <Button size="sm" variant="danger" loading={loading === "reject"} onClick={() => update("rejected")}>
-        ✗ Reject
+        <X size={14} /> Reject
       </Button>
     </div>
   );

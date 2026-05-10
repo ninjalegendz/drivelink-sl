@@ -1,5 +1,6 @@
 import { createClient } from "@/lib/supabase/server";
 import Link from "next/link";
+import { ArrowRight } from "lucide-react";
 import { formatLKR } from "@/lib/vehicles/format";
 
 export default async function AdminOverviewPage() {
@@ -97,8 +98,8 @@ export default async function AdminOverviewPage() {
       <div>
         <div className="flex items-center justify-between mb-4">
           <h2 className="text-white font-semibold">Recent bookings</h2>
-          <Link href="/admin/bookings" className="text-amber-400 hover:text-amber-300 text-sm">
-            View all →
+          <Link href="/admin/bookings" className="inline-flex items-center gap-1 text-amber-400 hover:text-amber-300 text-sm">
+            View all <ArrowRight size={14} />
           </Link>
         </div>
 

@@ -31,6 +31,25 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "Vehicle or agency not found" }, { status: 404 });
   }
 
+  // Reject if the dates clash with an already-confirmed/active booking on the
+  // same vehicle. Pending requests are allowed to stack — agency picks one.
+  // Overlap rule: existing.start < new.end AND existing.end > new.start
+  const { data: conflicts } = await service
+    .from("bookings")
+    .select("id")
+    .eq("vehicle_id", vehicle_id)
+    .in("status", ["confirmed", "payment_pending", "active"])
+    .lt("start_date", end_date)
+    .gt("end_date", start_date)
+    .limit(1);
+
+  if (conflicts && conflicts.length > 0) {
+    return NextResponse.json(
+      { error: "These dates are already booked. Try different dates." },
+      { status: 409 }
+    );
+  }
+
   // Create the booking
   const { data: booking, error: insertError } = await service
     .from("bookings")

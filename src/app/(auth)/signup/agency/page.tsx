@@ -2,9 +2,13 @@
 
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
+import { ArrowRight } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 import { Button } from "@/components/ui/Button";
+import { Select } from "@/components/ui/Select";
 import { SL_CITIES } from "@/data/cities";
+
+const CITY_OPTIONS = SL_CITIES.map((c) => ({ value: c, label: c }));
 
 export default function AgencyOnboardingPage() {
   const router = useRouter();
@@ -87,15 +91,12 @@ export default function AgencyOnboardingPage() {
 
         <div>
           <label className="text-slate-400 text-xs mb-1 block">City</label>
-          <select
+          <Select
             value={form.city}
-            onChange={(e) => set("city", e.target.value)}
-            required
-            className="w-full px-4 py-2.5 bg-slate-800 border border-slate-700 rounded-xl text-white text-sm focus:outline-none focus:border-amber-500"
-          >
-            <option value="">Select city...</option>
-            {SL_CITIES.map((c) => <option key={c} value={c}>{c}</option>)}
-          </select>
+            onChange={(v) => set("city", v)}
+            options={CITY_OPTIONS}
+            placeholder="Select city..."
+          />
         </div>
 
         <div>
@@ -138,7 +139,7 @@ export default function AgencyOnboardingPage() {
         {error && <p className="text-red-400 text-sm">{error}</p>}
 
         <Button type="submit" loading={loading} className="w-full" size="lg">
-          Create agency profile →
+          <span className="inline-flex items-center gap-1.5">Create agency profile <ArrowRight size={16} /></span>
         </Button>
       </form>
     </div>

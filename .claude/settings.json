@@ -37,7 +37,10 @@
       "Bash(vercel logs *)",
       "Bash(git config *)",
       "Bash(git filter-branch -f --env-filter ' *)",
-      "Bash(git commit *)"
+      "Bash(git commit *)",
+      "Bash(git push *)",
+      "Bash(vercel list *)",
+      "Bash(node -e \"console.log\\(require\\('./node_modules/lucide-react/package.json'\\).version\\)\")"
     ],
     "additionalDirectories": [
       "C:\\Users\\Beast\\Downloads\\DriveLink\\src\\app\\(marketplace)\\bookings"

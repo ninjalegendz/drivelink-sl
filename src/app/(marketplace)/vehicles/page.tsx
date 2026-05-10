@@ -1,6 +1,7 @@
 import { createClient } from "@/lib/supabase/server";
+import { Search } from "lucide-react";
 import { VehicleCard } from "@/components/vehicles/VehicleCard";
-import { SL_CITIES } from "@/data/cities";
+import { VehiclesFilter } from "@/components/vehicles/VehiclesFilter";
 import type { VehicleWithAgency } from "@/types/queries";
 import type { Metadata } from "next";
 
@@ -24,7 +25,12 @@ export default async function VehiclesPage({ searchParams }: Props) {
     .eq("status", "available")
     .order("created_at", { ascending: false });
 
-  if (q) query = query.or(`make.ilike.%${q}%,model.ilike.%${q}%`);
+  if (q) {
+    // Strip PostgREST filter delimiters and LIKE wildcards before splicing
+    // a user-controlled string into the .or() filter.
+    const safe = q.replace(/[%_,():*.\\]/g, "").trim();
+    if (safe) query = query.or(`make.ilike.%${safe}%,model.ilike.%${safe}%`);
+  }
   if (city) query = query.ilike("city", city);
   if (max_price) query = query.lte("daily_rate_lkr", parseInt(max_price));
 
@@ -33,52 +39,7 @@ export default async function VehiclesPage({ searchParams }: Props) {
 
   return (
     <div className="max-w-6xl mx-auto px-4 py-8">
-      {/* Filters bar */}
-      <form className="flex flex-wrap gap-3 mb-8">
-        <input
-          name="q"
-          defaultValue={q}
-          type="text"
-          placeholder="Make or model..."
-          className="flex-1 min-w-48 px-4 py-2 bg-slate-900 border border-slate-700 rounded-xl text-sm text-white placeholder-slate-500 focus:outline-none focus:border-amber-500"
-        />
-
-        <select
-          name="city"
-          defaultValue={city ?? ""}
-          className="px-4 py-2 bg-slate-900 border border-slate-700 rounded-xl text-sm text-white focus:outline-none focus:border-amber-500"
-        >
-          <option value="">All cities</option>
-          {SL_CITIES.map((c) => (
-            <option key={c} value={c}>{c}</option>
-          ))}
-        </select>
-
-        <select
-          name="max_price"
-          defaultValue={max_price ?? ""}
-          className="px-4 py-2 bg-slate-900 border border-slate-700 rounded-xl text-sm text-white focus:outline-none focus:border-amber-500"
-        >
-          <option value="">Any price</option>
-          <option value="3000">Under Rs. 3,000</option>
-          <option value="5000">Under Rs. 5,000</option>
-          <option value="8000">Under Rs. 8,000</option>
-          <option value="12000">Under Rs. 12,000</option>
-        </select>
-
-        <button
-          type="submit"
-          className="px-5 py-2 bg-amber-500 hover:bg-amber-400 text-slate-950 font-semibold rounded-xl text-sm transition-colors"
-        >
-          Filter
-        </button>
-
-        {(q || city || max_price) && (
-          <a href="/vehicles" className="px-4 py-2 text-sm text-slate-400 hover:text-white transition-colors">
-            Clear
-          </a>
-        )}
-      </form>
+      <VehiclesFilter initialQ={q ?? ""} initialCity={city ?? ""} initialMaxPrice={max_price ?? ""} />
 
       <p className="text-slate-400 text-sm mb-4">
         {vehicles.length} vehicles available
@@ -92,7 +53,7 @@ export default async function VehiclesPage({ searchParams }: Props) {
         </div>
       ) : (
         <div className="text-center py-24 text-slate-500">
-          <p className="text-4xl mb-3">🔍</p>
+          <Search size={40} strokeWidth={1.5} className="mx-auto mb-3 text-slate-600" />
           <p>No vehicles found. Try adjusting the filters.</p>
         </div>
       )}

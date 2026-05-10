@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { Car } from "lucide-react";
 import { createClient } from "@/lib/supabase/server";
 import { VehicleCard } from "@/components/vehicles/VehicleCard";
 import { POPULAR_CITIES } from "@/data/cities";
@@ -115,7 +116,7 @@ export default async function HomePage() {
           </div>
         ) : (
           <div className="text-center py-20 text-slate-500">
-            <p className="text-4xl mb-3">🚗</p>
+            <Car size={40} strokeWidth={1.5} className="mx-auto mb-3 text-slate-600" />
             <p>No vehicles listed yet. Be the first agency to list.</p>
             <Link
               href="/signup"

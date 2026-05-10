@@ -1,6 +1,7 @@
 import { createClient } from "@/lib/supabase/server";
 import { redirect } from "next/navigation";
 import Link from "next/link";
+import { AlertTriangle, Plus } from "lucide-react";
 import { reliabilityColor } from "@/lib/vehicles/format";
 import type { AgencyRow } from "@/types/queries";
 
@@ -58,7 +59,7 @@ export default async function DashboardPage() {
       {/* Reliability warning */}
       {agency.reliability_pct !== null && agency.reliability_pct < 80 && (
         <div className="flex gap-3 p-4 bg-red-500/10 border border-red-500/20 rounded-2xl mb-6">
-          <span className="text-red-400 shrink-0">⚠</span>
+          <AlertTriangle size={18} className="text-red-400 shrink-0 mt-0.5" />
           <div>
             <p className="text-red-400 font-semibold text-sm">Low reliability score</p>
             <p className="text-slate-400 text-sm mt-0.5">
@@ -73,9 +74,9 @@ export default async function DashboardPage() {
       <div className="flex gap-3">
         <Link
           href="/dashboard/vehicles/new"
-          className="px-5 py-2.5 bg-amber-500 hover:bg-amber-400 text-slate-950 font-semibold rounded-xl text-sm transition-colors"
+          className="inline-flex items-center gap-1.5 px-5 py-2.5 bg-amber-500 hover:bg-amber-400 text-slate-950 font-semibold rounded-xl text-sm transition-colors"
         >
-          + Add vehicle
+          <Plus size={16} /> Add vehicle
         </Link>
         <Link
           href="/dashboard/bookings"

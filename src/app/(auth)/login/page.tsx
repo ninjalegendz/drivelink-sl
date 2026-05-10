@@ -9,7 +9,7 @@ import { Button } from "@/components/ui/Button";
 function LoginForm() {
   const router = useRouter();
   const searchParams = useSearchParams();
-  const next = searchParams.get("next") ?? "/";
+  const next = searchParams.get("next");
 
   const [email, setEmail]       = useState("");
   const [password, setPassword] = useState("");
@@ -24,9 +24,8 @@ function LoginForm() {
     const supabase = createClient();
     const { error: authError } = await supabase.auth.signInWithPassword({ email, password });
 
-    setLoading(false);
-
     if (authError) {
+      setLoading(false);
       const msg = authError.message;
       if (msg.includes("Email not confirmed"))
         setError("Please confirm your email first — check your inbox for a verification link.");
@@ -37,7 +36,29 @@ function LoginForm() {
       return;
     }
 
-    router.push(next);
+    // Honour an explicit `next` redirect (e.g. a user hit a protected page first).
+    // Otherwise route by role: admin → /admin, agency_owner → /dashboard, renter → /.
+    let dest = next;
+    if (!dest) {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (user) {
+        const { data: profile } = await supabase
+          .from("profiles")
+          .select("role")
+          .eq("id", user.id)
+          .single();
+        const role = (profile as { role?: string } | null)?.role;
+        dest =
+          role === "admin"        ? "/admin" :
+          role === "agency_owner" ? "/dashboard" :
+                                    "/";
+      } else {
+        dest = "/";
+      }
+    }
+
+    setLoading(false);
+    router.push(dest);
     router.refresh();
   }
 

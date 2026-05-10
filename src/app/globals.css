@@ -1,1 +1,87 @@
 @import "tailwindcss";
+
+/* ─── Form control theming ─────────────────────────────────── */
+/* Replace OS-native chrome on selects, number inputs, and date
+   pickers with theme-matching styling. Applies app-wide so we
+   don't have to repeat utilities on every input. */
+
+@layer base {
+  /* Fallback chevron for any native <select> still in the app — most are
+     replaced by the custom <Select> component. Compact so it doesn't
+     dominate small inputs. */
+  select {
+    appearance: none;
+    -webkit-appearance: none;
+    -moz-appearance: none;
+    background-image: url("data:image/svg+xml;charset=utf-8,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 20 20' fill='%2394a3b8'%3E%3Cpath fill-rule='evenodd' d='M5.23 7.21a.75.75 0 011.06.02L10 11.06l3.71-3.83a.75.75 0 011.08 1.04l-4.25 4.39a.75.75 0 01-1.08 0L5.21 8.27a.75.75 0 01.02-1.06z' clip-rule='evenodd'/%3E%3C/svg%3E");
+    background-repeat: no-repeat;
+    background-position: right 0.6rem center;
+    background-size: 0.875rem 0.875rem;
+    padding-right: 2rem;
+  }
+
+  /* Hide default browser spinners on number inputs */
+  input[type="number"]::-webkit-inner-spin-button,
+  input[type="number"]::-webkit-outer-spin-button {
+    -webkit-appearance: none;
+    margin: 0;
+  }
+  input[type="number"] {
+    -moz-appearance: textfield;
+  }
+
+  /* Hide browser-native password reveal/clear icons (Edge adds these by
+     default via ::-ms-reveal). We render our own <Eye> button instead. */
+  input[type="password"]::-ms-reveal,
+  input[type="password"]::-ms-clear {
+    display: none;
+  }
+
+  /* Tint the date-picker icon to match the dark theme */
+  input[type="date"]::-webkit-calendar-picker-indicator {
+    filter: invert(0.7);
+    opacity: 0.7;
+    cursor: pointer;
+    transition: opacity 0.15s;
+  }
+  input[type="date"]::-webkit-calendar-picker-indicator:hover {
+    opacity: 1;
+  }
+
+  /* Style the select dropdown options on browsers that respect it */
+  option {
+    background-color: rgb(30 41 59);  /* slate-800 */
+    color: rgb(241 245 249);          /* slate-100 */
+  }
+
+  /* ─── Themed scrollbars ─────────────────────────────────────
+     Replace OS-default scrollbars with thin slate ones so they
+     blend with the dark UI. Applies app-wide. */
+
+  /* Firefox */
+  * {
+    scrollbar-width: thin;
+    scrollbar-color: rgb(51 65 85) transparent;  /* slate-700 thumb on transparent track */
+  }
+
+  /* WebKit / Blink (Chrome, Safari, Edge) */
+  *::-webkit-scrollbar {
+    width: 8px;
+    height: 8px;
+  }
+  *::-webkit-scrollbar-track {
+    background: transparent;
+  }
+  *::-webkit-scrollbar-thumb {
+    background-color: rgb(51 65 85);          /* slate-700 */
+    border-radius: 4px;
+    border: 2px solid transparent;
+    background-clip: padding-box;
+  }
+  *::-webkit-scrollbar-thumb:hover {
+    background-color: rgb(71 85 105);         /* slate-600 */
+  }
+  *::-webkit-scrollbar-corner {
+    background: transparent;
+  }
+}

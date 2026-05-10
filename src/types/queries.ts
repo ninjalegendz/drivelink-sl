@@ -19,10 +19,12 @@ export interface VehicleRow {
   insurance_type: InsuranceType;
   fuel_policy: FuelPolicy;
   daily_rate_lkr: number;
+  monthly_rate_lkr: number | null;
   deposit_lkr: number;
   seats: number;
   transmission: string;
   features: string[] | null;
+  description: string | null;
   status: VehicleStatus;
   city: string;
   slug: string;
@@ -104,6 +106,7 @@ export interface VehicleSnippet {
 export interface AgencyContact {
   name: string;
   whatsapp_number: string;
+  owner_id: string;
 }
 
 export interface RenterSnippet {

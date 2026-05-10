@@ -1,5 +1,6 @@
 import { createClient } from "@/lib/supabase/server";
 import Image from "next/image";
+import { Star, ExternalLink } from "lucide-react";
 import { Badge } from "@/components/ui/Badge";
 import { KycActions } from "@/components/admin/KycActions";
 
@@ -84,7 +85,10 @@ export default async function AdminUsersPage({ searchParams }: Props) {
                 <p className="text-slate-400 text-sm mt-0.5">{u.phone}</p>
                 <div className="flex items-center gap-3 mt-1 text-xs text-slate-500">
                   {u.rating_count > 0 && (
-                    <span>★ {u.rating_avg?.toFixed(1)} ({u.rating_count} reviews)</span>
+                    <span className="inline-flex items-center gap-1">
+                      <Star size={11} fill="currentColor" className="text-amber-400" />
+                      {u.rating_avg?.toFixed(1)} ({u.rating_count} reviews)
+                    </span>
                   )}
                   <span>Joined {new Date(u.created_at).toLocaleDateString("en-LK")}</span>
                   <span className="font-mono text-slate-600">{u.id.slice(0, 8).toUpperCase()}</span>
@@ -111,7 +115,7 @@ export default async function AdminUsersPage({ searchParams }: Props) {
                         />
                         <div className="absolute inset-0 bg-black/0 group-hover:bg-black/20 transition-colors flex items-center justify-center">
                           <span className="opacity-0 group-hover:opacity-100 text-white text-xs bg-black/60 px-2 py-1 rounded transition-opacity">
-                            View full size ↗
+                            <span className="inline-flex items-center gap-1">View full size <ExternalLink size={11} /></span>
                           </span>
                         </div>
                       </div>
@@ -137,7 +141,7 @@ export default async function AdminUsersPage({ searchParams }: Props) {
                         />
                         <div className="absolute inset-0 bg-black/0 group-hover:bg-black/20 transition-colors flex items-center justify-center">
                           <span className="opacity-0 group-hover:opacity-100 text-white text-xs bg-black/60 px-2 py-1 rounded transition-opacity">
-                            View full size ↗
+                            <span className="inline-flex items-center gap-1">View full size <ExternalLink size={11} /></span>
                           </span>
                         </div>
                       </div>

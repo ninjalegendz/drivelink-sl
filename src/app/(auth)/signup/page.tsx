@@ -3,6 +3,7 @@
 import { Suspense, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
+import { ArrowLeft, ArrowRight, Mail } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 import { Button } from "@/components/ui/Button";
 
@@ -68,10 +69,7 @@ function SignupForm() {
     return (
       <div className="bg-slate-900 rounded-2xl border border-slate-800 p-8 text-center">
         <div className="w-16 h-16 bg-amber-500/10 rounded-full flex items-center justify-center mx-auto mb-5">
-          <svg className="w-8 h-8 text-amber-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5}
-              d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
-          </svg>
+          <Mail size={32} className="text-amber-400" strokeWidth={1.5} />
         </div>
         <h2 className="text-white font-bold text-xl mb-2">Check your email</h2>
         <p className="text-slate-400 text-sm leading-relaxed max-w-xs mx-auto">
@@ -80,8 +78,8 @@ function SignupForm() {
           Click the link to activate your account and then sign in.
         </p>
         <p className="text-slate-500 text-xs mt-5">Didn&apos;t get it? Check your spam folder.</p>
-        <Link href="/login" className="mt-6 inline-block text-amber-400 hover:text-amber-300 text-sm">
-          Back to sign in →
+        <Link href="/login" className="mt-6 inline-flex items-center gap-1.5 text-amber-400 hover:text-amber-300 text-sm">
+          <ArrowLeft size={14} /> Back to sign in
         </Link>
       </div>
     );
@@ -150,7 +148,9 @@ function SignupForm() {
         )}
 
         <Button type="submit" loading={loading} className="w-full" size="lg">
-          {role === "agency_owner" ? "Create agency account →" : "Create account"}
+          {role === "agency_owner" ? (
+            <span className="inline-flex items-center gap-1.5">Create agency account <ArrowRight size={16} /></span>
+          ) : "Create account"}
         </Button>
 
         <p className="text-slate-500 text-xs text-center">

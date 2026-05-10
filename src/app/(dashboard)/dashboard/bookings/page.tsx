@@ -1,5 +1,6 @@
 import { createClient } from "@/lib/supabase/server";
 import { redirect } from "next/navigation";
+import { Star } from "lucide-react";
 import { Badge } from "@/components/ui/Badge";
 import { AgencyBookingActions } from "@/components/booking/AgencyBookingActions";
 import { BOOKING_STATUS_LABELS } from "@/lib/booking/state-machine";
@@ -111,7 +112,10 @@ export default async function AgencyBookingsPage({ searchParams }: Props) {
                           <Badge variant="green">ID Verified</Badge>
                         )}
                         {renter.rating_avg && (
-                          <span className="text-slate-400 text-xs">★ {renter.rating_avg.toFixed(1)}</span>
+                          <span className="inline-flex items-center gap-1 text-slate-400 text-xs">
+                            <Star size={11} fill="currentColor" className="text-amber-400" />
+                            {renter.rating_avg.toFixed(1)}
+                          </span>
                         )}
                       </div>
                     )}

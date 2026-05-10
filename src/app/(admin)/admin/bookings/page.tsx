@@ -1,5 +1,6 @@
 import { createClient } from "@/lib/supabase/server";
 import Link from "next/link";
+import { BadgeCheck } from "lucide-react";
 import { Badge } from "@/components/ui/Badge";
 import { formatLKR } from "@/lib/vehicles/format";
 import { BOOKING_STATUS_LABELS } from "@/lib/booking/state-machine";
@@ -115,7 +116,7 @@ export default async function AdminBookingsPage({ searchParams }: Props) {
                   <p className="text-white">{b.profiles?.full_name}</p>
                   <p className="text-slate-500 text-xs">{b.profiles?.phone}</p>
                   {b.profiles?.kyc_status === "verified" && (
-                    <span className="text-emerald-400 text-xs">✓ ID verified</span>
+                    <span className="inline-flex items-center gap-1 text-emerald-400 text-xs"><BadgeCheck size={12} /> ID verified</span>
                   )}
                 </td>
                 <td className="py-3 pr-4 text-slate-300">{b.agencies?.name}</td>

@@ -1,5 +1,6 @@
 import { redirect } from "next/navigation";
 import Link from "next/link";
+import { ArrowRight, Check, ChevronRight, Settings } from "lucide-react";
 import { createClient } from "@/lib/supabase/server";
 import { Badge } from "@/components/ui/Badge";
 import { DiditVerifyButton } from "@/components/account/DiditVerifyButton";
@@ -71,7 +72,15 @@ export default async function AccountPage({ searchParams }: Props) {
           <p className="text-slate-400 text-sm mt-0.5">{user.email}</p>
           <p className="text-slate-500 text-xs">{profile.phone}</p>
         </div>
-        <SignOutButton />
+        <div className="flex items-center gap-2">
+          <Link
+            href="/account/settings"
+            className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs bg-slate-800 hover:bg-slate-700 border border-slate-700 text-white rounded-lg transition-colors"
+          >
+            <Settings size={12} /> Settings
+          </Link>
+          <SignOutButton />
+        </div>
       </div>
 
       {/* Agency created banner */}
@@ -127,9 +136,9 @@ export default async function AccountPage({ searchParams }: Props) {
           )}
           <Link
             href="/dashboard"
-            className="mt-3 inline-block text-amber-400 hover:text-amber-300 text-sm"
+            className="mt-3 inline-flex items-center gap-1.5 text-amber-400 hover:text-amber-300 text-sm"
           >
-            Go to dashboard →
+            Go to dashboard <ArrowRight size={14} />
           </Link>
         </div>
       )}
@@ -144,7 +153,7 @@ export default async function AccountPage({ searchParams }: Props) {
             <p className="text-white font-medium">My bookings</p>
             <p className="text-slate-500 text-xs mt-0.5">View all your rental requests</p>
           </div>
-          <span className="text-slate-400">→</span>
+          <ChevronRight size={20} className="text-slate-400" />
         </Link>
       )}
 
@@ -171,7 +180,7 @@ export default async function AccountPage({ searchParams }: Props) {
                     current ? "bg-amber-500 text-slate-950" :
                               "bg-slate-800 text-slate-500 border border-slate-700"
                   }`}>
-                    {done ? "✓" : i + 1}
+                    {done ? <Check size={14} strokeWidth={3} /> : i + 1}
                   </div>
                   <p className={`text-xs mt-1.5 text-center leading-tight w-20 ${
                     done || current ? "text-white" : "text-slate-500"

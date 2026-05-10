@@ -1,11 +1,21 @@
 import { notFound } from "next/navigation";
 import Image from "next/image";
+import { Car, AlertTriangle } from "lucide-react";
 import { createClient } from "@/lib/supabase/server";
 import { Badge } from "@/components/ui/Badge";
+import { HelpHint } from "@/components/ui/HelpHint";
 import { BookingRequestForm } from "@/components/booking/BookingRequestForm";
 import { formatLKR, insuranceLabel, fuelPolicyLabel, reliabilityColor } from "@/lib/vehicles/format";
 import type { VehicleWithAgency } from "@/types/queries";
 import type { Metadata } from "next";
+
+const INSURANCE_HELP =
+  "Hire Insurance: vehicle is licensed for commercial rental — fully covered if anything goes wrong. " +
+  "Private (P-Number): owner's personal insurance, may not cover rental usage. Always verify with the agency.";
+
+const FUEL_POLICY_HELP =
+  "Full-to-Full: pick up with a full tank, return with a full tank. " +
+  "Same-to-Same: return at whatever fuel level you received it.";
 
 interface Props {
   params: Promise<{ slug: string }>;
@@ -45,6 +55,21 @@ export default async function VehicleDetailPage({ params }: Props) {
   const agency = vehicle.agencies!;
   const photos = vehicle.photos ?? [];
 
+  // Fetch already-blocked date ranges so the booking form can warn renters upfront.
+  // Only confirmed/payment_pending/active count — pending requests don't block.
+  const todayIso = new Date().toISOString().split("T")[0];
+  const { data: bookedRows } = await supabase
+    .from("bookings")
+    .select("start_date, end_date")
+    .eq("vehicle_id", vehicle.id)
+    .in("status", ["confirmed", "payment_pending", "active"])
+    .gte("end_date", todayIso)
+    .order("start_date", { ascending: true });
+
+  const bookedRanges = (bookedRows ?? []).map(
+    (r) => ({ start: (r as { start_date: string }).start_date, end: (r as { end_date: string }).end_date })
+  );
+
   return (
     <div className="max-w-5xl mx-auto px-4 py-8">
       <div className="grid lg:grid-cols-5 gap-8">
@@ -61,7 +86,9 @@ export default async function VehicleDetailPage({ params }: Props) {
                 fill className="object-cover" priority
               />
             ) : (
-              <div className="w-full h-full flex items-center justify-center text-6xl text-slate-700">🚗</div>
+              <div className="w-full h-full flex items-center justify-center text-slate-700">
+                <Car size={64} strokeWidth={1.5} />
+              </div>
             )}
           </div>
 
@@ -88,6 +115,11 @@ export default async function VehicleDetailPage({ params }: Props) {
               <div className="text-right">
                 <p className="text-2xl font-bold text-amber-400">{formatLKR(vehicle.daily_rate_lkr)}</p>
                 <p className="text-slate-500 text-sm">per day</p>
+                {vehicle.monthly_rate_lkr && (
+                  <p className="text-emerald-400 text-xs mt-1 font-medium">
+                    or {formatLKR(vehicle.monthly_rate_lkr)} / month
+                  </p>
+                )}
               </div>
             </div>
             {vehicle.deposit_lkr > 0 && (
@@ -100,20 +132,31 @@ export default async function VehicleDetailPage({ params }: Props) {
             {[
               { label: "Transmission", value: vehicle.transmission },
               { label: "Seats",        value: `${vehicle.seats} seats` },
-              { label: "Fuel Policy",  value: fuelPolicyLabel(vehicle.fuel_policy) },
-              { label: "Insurance",    value: insuranceLabel(vehicle.insurance_type) },
-            ].map(({ label, value }) => (
+              { label: "Fuel Policy",  value: fuelPolicyLabel(vehicle.fuel_policy), help: FUEL_POLICY_HELP },
+              { label: "Insurance",    value: insuranceLabel(vehicle.insurance_type), help: INSURANCE_HELP },
+            ].map(({ label, value, help }) => (
               <div key={label} className="bg-slate-900 rounded-xl p-3 border border-slate-800">
-                <p className="text-slate-500 text-xs">{label}</p>
+                <p className="text-slate-500 text-xs flex items-center">
+                  {label}
+                  {help && <HelpHint text={help} />}
+                </p>
                 <p className="text-white text-sm font-medium mt-0.5">{value}</p>
               </div>
             ))}
           </div>
 
+          {/* Description */}
+          {vehicle.description && (
+            <div>
+              <p className="text-slate-400 text-xs uppercase tracking-widest font-semibold mb-2">About this vehicle</p>
+              <p className="text-slate-300 text-sm whitespace-pre-line leading-relaxed">{vehicle.description}</p>
+            </div>
+          )}
+
           {/* Insurance warning */}
           {vehicle.insurance_type === "private" && (
             <div className="flex gap-3 p-3 bg-yellow-500/10 border border-yellow-500/20 rounded-xl">
-              <span className="text-yellow-400 shrink-0">⚠</span>
+              <AlertTriangle size={18} className="text-yellow-400 shrink-0 mt-0.5" />
               <p className="text-yellow-300 text-sm">
                 This vehicle has Private (P-Number) insurance. Verify coverage with the agency before renting.
               </p>
@@ -174,6 +217,7 @@ export default async function VehicleDetailPage({ params }: Props) {
               vehicleId={vehicle.id}
               agencyId={vehicle.agency_id}
               dailyRateLkr={vehicle.daily_rate_lkr}
+              bookedRanges={bookedRanges}
             />
           </div>
 

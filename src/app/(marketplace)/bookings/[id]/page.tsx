@@ -1,7 +1,10 @@
 import { notFound, redirect } from "next/navigation";
+import { Star } from "lucide-react";
 import { createClient } from "@/lib/supabase/server";
 import { Badge } from "@/components/ui/Badge";
 import { SlipUploadForm } from "@/components/booking/SlipUploadForm";
+import { ReviewForm } from "@/components/booking/ReviewForm";
+import { CancelBookingButton } from "@/components/booking/CancelBookingButton";
 import { BOOKING_STATUS_LABELS } from "@/lib/booking/state-machine";
 import { formatLKR } from "@/lib/vehicles/format";
 import type { BookingWithRelations } from "@/types/queries";
@@ -32,7 +35,7 @@ export default async function BookingDetailPage({ params }: Props) {
 
   const { data } = await supabase
     .from("bookings")
-    .select("*, vehicles(make, model, year, city, slug, photos), agencies(name, whatsapp_number)")
+    .select("*, vehicles(make, model, year, city, slug, photos), agencies(name, whatsapp_number, owner_id)")
     .eq("id", id)
     .eq("renter_id", user.id)
     .single();
@@ -43,6 +46,14 @@ export default async function BookingDetailPage({ params }: Props) {
   const vehicle = booking.vehicles!;
   const agency  = booking.agencies!;
   const status  = booking.status;
+
+  // Has the renter already reviewed this booking?
+  const { data: existingReview } = await supabase
+    .from("reviews")
+    .select("id, rating")
+    .eq("booking_id", booking.id)
+    .eq("reviewer_id", user.id)
+    .maybeSingle();
 
   return (
     <div className="max-w-2xl mx-auto px-4 py-8">
@@ -83,9 +94,10 @@ export default async function BookingDetailPage({ params }: Props) {
       {(status === "requested" || status === "pending_confirmation") && (
         <div className="bg-amber-500/10 border border-amber-500/20 rounded-2xl p-4 mb-4">
           <p className="text-amber-400 font-semibold text-sm">Waiting for agency confirmation</p>
-          <p className="text-slate-400 text-sm mt-1">
+          <p className="text-slate-400 text-sm mt-1 mb-3">
             We have sent a WhatsApp notification to {agency.name}. You will be notified once they confirm.
           </p>
+          <CancelBookingButton bookingId={booking.id} />
         </div>
       )}
 
@@ -109,6 +121,10 @@ export default async function BookingDetailPage({ params }: Props) {
           </div>
 
           <SlipUploadForm bookingId={booking.id} />
+
+          <div className="pt-2 border-t border-slate-800">
+            <CancelBookingButton bookingId={booking.id} />
+          </div>
         </div>
       )}
 
@@ -153,8 +169,26 @@ export default async function BookingDetailPage({ params }: Props) {
 
       {status === "completed" && (
         <div className="bg-slate-900 rounded-2xl border border-slate-800 p-4 mb-4">
-          <p className="text-white font-semibold text-sm">Rental complete — leave a review</p>
-          <p className="text-slate-400 text-sm mt-1">How was your experience with {agency.name}?</p>
+          {existingReview ? (
+            <div className="flex items-center gap-2">
+              <Star size={16} fill="currentColor" className="text-amber-400" />
+              <p className="text-white font-semibold text-sm">
+                You rated this rental {(existingReview as { rating: number }).rating}/5. Thanks!
+              </p>
+            </div>
+          ) : (
+            <>
+              <p className="text-white font-semibold text-sm mb-1">Rental complete — leave a review</p>
+              <p className="text-slate-400 text-sm mb-4">
+                Honest feedback helps other renters and rewards reliable agencies.
+              </p>
+              <ReviewForm
+                bookingId={booking.id}
+                revieweeId={agency.owner_id}
+                agencyName={agency.name}
+              />
+            </>
+          )}
         </div>
       )}
     </div>

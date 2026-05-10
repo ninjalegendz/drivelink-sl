@@ -1,5 +1,6 @@
 import { createClient } from "@/lib/supabase/server";
 import Image from "next/image";
+import { CheckCircle2 } from "lucide-react";
 import { SlipActions } from "@/components/admin/SlipActions";
 import { formatLKR } from "@/lib/vehicles/format";
 
@@ -38,7 +39,7 @@ export default async function AdminSlipsPage() {
 
       {slips.length === 0 ? (
         <div className="text-center py-24 text-slate-500">
-          <p className="text-4xl mb-3">✓</p>
+          <CheckCircle2 size={40} strokeWidth={1.5} className="mx-auto mb-3 text-emerald-500" />
           <p>All clear — no slips waiting for verification.</p>
         </div>
       ) : (

@@ -1,4 +1,5 @@
 import { createClient } from "@/lib/supabase/server";
+import { Search } from "lucide-react";
 import { VehicleCard } from "@/components/vehicles/VehicleCard";
 import { parseRentQuery } from "@/lib/vehicles/slug";
 import Link from "next/link";
@@ -36,16 +37,22 @@ export default async function RentQueryPage({ params }: Props) {
     model = parsed.model.replace(/-/g, " ");
     city  = parsed.city.replace(/-/g, " ");
 
-    const { data } = await supabase
-      .from("vehicles")
-      .select("*, agencies(id, name, city, whatsapp_number, is_verified, reliability_pct, rating_avg, rating_count, cancellation_count)")
-      .eq("status", "available")
-      .or(`make.ilike.%${model}%,model.ilike.%${model}%`)
-      .ilike("city", `%${city}%`)
-      .order("created_at", { ascending: false })
-      .limit(24);
+    // Sanitize before splicing into PostgREST filter strings
+    const safeModel = model.replace(/[%_,():*.\\]/g, "").trim();
+    const safeCity  = city.replace(/[%_,():*.\\]/g, "").trim();
 
-    vehicles = (data ?? []) as VehicleWithAgency[];
+    if (safeModel && safeCity) {
+      const { data } = await supabase
+        .from("vehicles")
+        .select("*, agencies(id, name, city, whatsapp_number, is_verified, reliability_pct, rating_avg, rating_count, cancellation_count)")
+        .eq("status", "available")
+        .or(`make.ilike.%${safeModel}%,model.ilike.%${safeModel}%`)
+        .ilike("city", `%${safeCity}%`)
+        .order("created_at", { ascending: false })
+        .limit(24);
+
+      vehicles = (data ?? []) as VehicleWithAgency[];
+    }
   }
 
   const displayModel = model.replace(/\b\w/g, (c) => c.toUpperCase());
@@ -80,7 +87,7 @@ export default async function RentQueryPage({ params }: Props) {
         </>
       ) : (
         <div className="text-center py-20 text-slate-500">
-          <p className="text-4xl mb-3">🔍</p>
+          <Search size={40} strokeWidth={1.5} className="mx-auto mb-3 text-slate-600" />
           <p className="text-lg">No {displayModel} rentals listed in {displayCity} yet.</p>
           <p className="mt-2 text-sm">
             Try{" "}

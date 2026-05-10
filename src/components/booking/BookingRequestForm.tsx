@@ -6,18 +6,37 @@ import { createClient } from "@/lib/supabase/client";
 import { Button } from "@/components/ui/Button";
 import { formatLKR } from "@/lib/vehicles/format";
 
-interface Props {
-  vehicleId: string;
-  agencyId: string;
-  dailyRateLkr: number;
+export interface DateRange {
+  start: string;  // YYYY-MM-DD
+  end:   string;  // YYYY-MM-DD
 }
 
-export function BookingRequestForm({ vehicleId, agencyId, dailyRateLkr }: Props) {
+interface Props {
+  vehicleId:    string;
+  agencyId:     string;
+  dailyRateLkr: number;
+  bookedRanges?: DateRange[];
+}
+
+// Half-open overlap: [a, b) overlaps [c, d) iff a < d AND c < b.
+// Matches the DB constraint and the API pre-check.
+function rangesOverlap(a: DateRange, b: DateRange): boolean {
+  return a.start < b.end && b.start < a.end;
+}
+
+function formatRange(start: string, end: string): string {
+  const opts: Intl.DateTimeFormatOptions = { month: "short", day: "numeric" };
+  const s = new Date(start).toLocaleDateString("en-LK", opts);
+  const e = new Date(end).toLocaleDateString("en-LK", opts);
+  return `${s} → ${e}`;
+}
+
+export function BookingRequestForm({ vehicleId, agencyId, dailyRateLkr, bookedRanges = [] }: Props) {
   const router = useRouter();
   const [startDate, setStartDate] = useState("");
-  const [endDate, setEndDate] = useState("");
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+  const [endDate, setEndDate]     = useState("");
+  const [loading, setLoading]     = useState(false);
+  const [error, setError]         = useState<string | null>(null);
 
   const today = new Date().toISOString().split("T")[0];
 
@@ -27,6 +46,12 @@ export function BookingRequestForm({ vehicleId, agencyId, dailyRateLkr }: Props)
       : 0;
 
   const subtotal = days * dailyRateLkr;
+
+  // Live conflict check while the user picks dates
+  const conflict =
+    startDate && endDate && days >= 1
+      ? bookedRanges.find((r) => rangesOverlap({ start: startDate, end: endDate }, r))
+      : null;
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -42,6 +67,10 @@ export function BookingRequestForm({ vehicleId, agencyId, dailyRateLkr }: Props)
     }
     if (days > 30) {
       setError("Maximum booking length is 30 days.");
+      return;
+    }
+    if (conflict) {
+      setError(`Those dates overlap with an existing booking (${formatRange(conflict.start, conflict.end)}). Pick different dates.`);
       return;
     }
 
@@ -69,13 +98,14 @@ export function BookingRequestForm({ vehicleId, agencyId, dailyRateLkr }: Props)
 
     setLoading(false);
 
+    const payload = await res.json().catch(() => ({}));
+
     if (!res.ok) {
-      setError("Failed to send request. Please try again.");
+      setError(payload.error ?? "Failed to send request. Please try again.");
       return;
     }
 
-    const { bookingId } = await res.json();
-    router.push(`/bookings/${bookingId}`);
+    router.push(`/bookings/${payload.bookingId}`);
   }
 
   return (
@@ -105,8 +135,31 @@ export function BookingRequestForm({ vehicleId, agencyId, dailyRateLkr }: Props)
         </div>
       </div>
 
+      {/* Already-booked ranges */}
+      {bookedRanges.length > 0 && (
+        <div className="bg-slate-800/60 rounded-lg p-3">
+          <p className="text-slate-400 text-xs font-medium mb-1.5">Unavailable dates</p>
+          <ul className="space-y-0.5">
+            {bookedRanges.map((r) => (
+              <li key={`${r.start}-${r.end}`} className="text-slate-500 text-xs">
+                {formatRange(r.start, r.end)}
+              </li>
+            ))}
+          </ul>
+        </div>
+      )}
+
+      {/* Live conflict warning */}
+      {conflict && (
+        <div className="p-3 bg-red-500/10 border border-red-500/20 rounded-lg">
+          <p className="text-red-400 text-sm">
+            Your selected dates overlap with {formatRange(conflict.start, conflict.end)}.
+          </p>
+        </div>
+      )}
+
       {/* Price breakdown */}
-      {days > 0 && (
+      {days > 0 && !conflict && (
         <div className="bg-slate-800 rounded-lg p-3 space-y-1 text-sm">
           <div className="flex justify-between text-slate-400">
             <span>{formatLKR(dailyRateLkr)} × {days} day{days !== 1 ? "s" : ""}</span>
@@ -126,11 +179,17 @@ export function BookingRequestForm({ vehicleId, agencyId, dailyRateLkr }: Props)
         </div>
       )}
 
-      {error && (
+      {error && !conflict && (
         <p className="text-red-400 text-sm">{error}</p>
       )}
 
-      <Button type="submit" loading={loading} className="w-full" size="lg">
+      <Button
+        type="submit"
+        loading={loading}
+        disabled={!!conflict}
+        className="w-full"
+        size="lg"
+      >
         Request this car — free
       </Button>
 

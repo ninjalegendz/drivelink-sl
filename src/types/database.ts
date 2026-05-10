@@ -1,6 +1,6 @@
 export type InsuranceType = "private" | "hire";
 export type FuelPolicy = "full_to_full" | "same_to_same";
-export type VehicleStatus = "available" | "rented" | "maintenance" | "unlisted";
+export type VehicleStatus = "available" | "rented" | "maintenance" | "unlisted" | "pending_review";
 export type BookingStatus =
   | "requested"
   | "pending_confirmation"
@@ -32,6 +32,7 @@ export type Database = {
           rating_avg: number | null;
           rating_count: number;
           reliability_pct: number | null;
+          avatar_url: string | null;
           created_at: string;
           updated_at: string;
         };
@@ -49,6 +50,7 @@ export type Database = {
           rating_avg?: number | null;
           rating_count?: number;
           reliability_pct?: number | null;
+          avatar_url?: string | null;
         };
         Update: {
           role?: UserRole;
@@ -63,6 +65,7 @@ export type Database = {
           rating_avg?: number | null;
           rating_count?: number;
           reliability_pct?: number | null;
+          avatar_url?: string | null;
         };
         Relationships: [];
       };
@@ -121,10 +124,12 @@ export type Database = {
           insurance_type: InsuranceType;
           fuel_policy: FuelPolicy;
           daily_rate_lkr: number;
+          monthly_rate_lkr: number | null;
           deposit_lkr: number;
           seats: number;
           transmission: string;
           features: string[] | null;
+          description: string | null;
           status: VehicleStatus;
           city: string;
           slug: string;
@@ -143,10 +148,12 @@ export type Database = {
           insurance_type: InsuranceType;
           fuel_policy?: FuelPolicy;
           daily_rate_lkr: number;
+          monthly_rate_lkr?: number | null;
           deposit_lkr?: number;
           seats?: number;
           transmission?: string;
           features?: string[] | null;
+          description?: string | null;
           status?: VehicleStatus;
           city: string;
           slug: string;
@@ -162,10 +169,12 @@ export type Database = {
           insurance_type?: InsuranceType;
           fuel_policy?: FuelPolicy;
           daily_rate_lkr?: number;
+          monthly_rate_lkr?: number | null;
           deposit_lkr?: number;
           seats?: number;
           transmission?: string;
           features?: string[] | null;
+          description?: string | null;
           status?: VehicleStatus;
           city?: string;
           slug?: string;
