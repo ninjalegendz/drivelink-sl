@@ -32,7 +32,10 @@ export async function sendWhatsAppText({ to, text }: TextMessage) {
   return res.json();
 }
 
-// Builds the confirmation ping message sent to an agency when a new booking request arrives
+// Builds the confirmation ping message sent to an agency when a new booking
+// request arrives. SMS-friendly: plain ASCII, no emojis or markdown — staying
+// under 160 chars keeps it to one billable segment. Agency confirms by
+// clicking the dashboard link, not by replying.
 export function buildAgencyPingMessage({
   bookingId,
   renterName,
@@ -50,17 +53,11 @@ export function buildAgencyPingMessage({
   totalDays: number;
   appUrl: string;
 }) {
-  const ref = bookingId.slice(0, 8).toUpperCase();
-
+  const ref  = bookingId.slice(0, 8).toUpperCase();
+  const days = `${totalDays}d`;
   return (
-    `*DriveLink SL — New Booking Request* 🚗\n\n` +
-    `*Ref:* ${ref}\n` +
-    `*Vehicle:* ${vehicleName}\n` +
-    `*Renter:* ${renterName} (ID Verified)\n` +
-    `*Dates:* ${startDate} → ${endDate} (${totalDays} day${totalDays !== 1 ? "s" : ""})\n\n` +
-    `Is this vehicle available?\n\n` +
-    `Reply *YES* to confirm\n` +
-    `Reply *NO* to decline\n\n` +
-    `View booking: ${appUrl}/dashboard/bookings`
+    `DriveLink: new booking ${ref}. ${vehicleName}, ` +
+    `${startDate} to ${endDate} (${days}). Renter: ${renterName}. ` +
+    `Confirm or decline: ${appUrl}/dashboard/bookings`
   );
 }
