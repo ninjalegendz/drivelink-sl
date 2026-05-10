@@ -72,6 +72,12 @@ export default async function VehicleDetailPage({ params }: Props) {
 
   return (
     <div className="max-w-5xl mx-auto px-4 py-8">
+      {vehicle.status === "pending_review" && (
+        <div className="mb-6 px-4 py-3 bg-amber-500/10 border border-amber-500/30 rounded-xl text-sm text-amber-400 flex items-center gap-2">
+          <AlertTriangle size={16} className="shrink-0" />
+          <span><strong>Admin preview</strong> — this listing is pending review and is not visible to the public yet.</span>
+        </div>
+      )}
       <div className="grid lg:grid-cols-5 gap-8">
 
         {/* Left: photos + details */}

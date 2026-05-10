@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { Settings } from "lucide-react";
+import { Settings, User } from "lucide-react";
 import { SignOutButton } from "@/components/account/SignOutButton";
 
 const NAV = [
@@ -28,6 +28,12 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
           ))}
         </nav>
         <div className="pt-3 border-t border-slate-800 space-y-1">
+          <Link
+            href="/account"
+            className="flex items-center gap-2 px-3 py-2 text-sm text-slate-400 hover:text-white hover:bg-slate-800 rounded-lg transition-colors"
+          >
+            <User size={14} /> Account
+          </Link>
           <Link
             href="/account/settings"
             className="flex items-center gap-2 px-3 py-2 text-sm text-slate-400 hover:text-white hover:bg-slate-800 rounded-lg transition-colors"
