@@ -2,17 +2,21 @@
 
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import { Ban, Undo2, Trash2, X } from "lucide-react";
+import { Ban, Undo2, Trash2, X, Pencil } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 import { Button } from "@/components/ui/Button";
+import { EditRenterModal } from "@/components/admin/EditRenterModal";
 
 interface Props {
   userId:        string;
   fullName:      string;
+  phone:         string;
+  email:         string | null;
+  role:          "renter" | "agency_owner" | "admin";
   isBlacklisted: boolean;
 }
 
-export function RenterActions({ userId, fullName, isBlacklisted }: Props) {
+export function RenterActions({ userId, fullName, phone, email, role, isBlacklisted }: Props) {
   const router = useRouter();
   const [loading, setLoading] = useState<string | null>(null);
   const [error, setError]     = useState<string | null>(null);
@@ -21,6 +25,9 @@ export function RenterActions({ userId, fullName, isBlacklisted }: Props) {
   const [modalOpen,    setModalOpen]    = useState(false);
   const [adminReason,  setAdminReason]  = useState("");
   const [publicReason, setPublicReason] = useState("");
+
+  // Edit modal state
+  const [editOpen, setEditOpen] = useState(false);
 
   // Lock body scroll while modal is open + Escape to close
   useEffect(() => {
@@ -99,6 +106,9 @@ export function RenterActions({ userId, fullName, isBlacklisted }: Props) {
   return (
     <div className="flex flex-col items-end gap-1">
       <div className="flex gap-2 shrink-0">
+        <Button size="sm" variant="ghost" onClick={() => setEditOpen(true)}>
+          <Pencil size={14} /> Edit
+        </Button>
         {isBlacklisted ? (
           <Button size="sm" variant="secondary" loading={loading === "unblock"} onClick={unblock}>
             <Undo2 size={14} /> Unblock
@@ -112,6 +122,13 @@ export function RenterActions({ userId, fullName, isBlacklisted }: Props) {
           <Trash2 size={14} /> Delete
         </Button>
       </div>
+      {editOpen && (
+        <EditRenterModal
+          userId={userId}
+          initial={{ full_name: fullName, phone, email, role }}
+          onClose={() => setEditOpen(false)}
+        />
+      )}
       {error && !modalOpen && <p className="text-red-400 text-xs">{error}</p>}
 
       {modalOpen && (

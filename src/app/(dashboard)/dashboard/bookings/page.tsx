@@ -4,7 +4,7 @@ import { Star, ShieldAlert } from "lucide-react";
 import { Badge } from "@/components/ui/Badge";
 import { AgencyBookingActions } from "@/components/booking/AgencyBookingActions";
 import { BOOKING_STATUS_LABELS } from "@/lib/booking/state-machine";
-import { formatLKR } from "@/lib/vehicles/format";
+import { formatLKR, reliabilityColor, reliabilityLabel } from "@/lib/vehicles/format";
 import type { BookingStatus } from "@/types/database";
 
 const statusVariant: Record<BookingStatus, "slate" | "yellow" | "green" | "red" | "blue"> = {
@@ -50,7 +50,7 @@ export default async function AgencyBookingsPage({ searchParams }: Props) {
 
   let query = supabase
     .from("bookings")
-    .select("*, vehicles(make, model, year), profiles(full_name, rating_avg, kyc_status, is_blacklisted, blacklist_reason_public)")
+    .select("*, vehicles(make, model, year), profiles(full_name, rating_avg, rating_count, reliability_pct, kyc_status, is_blacklisted, blacklist_reason_public)")
     .eq("agency_id", agency.id)
     .order("created_at", { ascending: false });
 
@@ -68,6 +68,8 @@ export default async function AgencyBookingsPage({ searchParams }: Props) {
     profiles: {
       full_name: string;
       rating_avg: number | null;
+      rating_count: number;
+      reliability_pct: number | null;
       kyc_status: string;
       is_blacklisted: boolean;
       blacklist_reason_public: string | null;
@@ -136,12 +138,15 @@ export default async function AgencyBookingsPage({ searchParams }: Props) {
                         {renter.kyc_status === "verified" && (
                           <Badge variant="green">ID Verified</Badge>
                         )}
-                        {renter.rating_avg && (
+                        {(renter.rating_count ?? 0) > 0 && (
                           <span className="inline-flex items-center gap-1 text-slate-400 text-xs">
                             <Star size={11} fill="currentColor" className="text-amber-400" />
-                            {renter.rating_avg.toFixed(1)}
+                            {renter.rating_avg?.toFixed(1)}
                           </span>
                         )}
+                        <span className={`text-xs font-medium ${reliabilityColor(renter.reliability_pct)}`}>
+                          {reliabilityLabel(renter.reliability_pct)} reliable
+                        </span>
                       </div>
                     )}
 

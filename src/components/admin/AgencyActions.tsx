@@ -2,20 +2,26 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { Ban, Undo2, Trash2 } from "lucide-react";
+import { Ban, Undo2, Trash2, Pencil } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 import { Button } from "@/components/ui/Button";
+import { EditAgencyModal } from "@/components/admin/EditAgencyModal";
 
 interface Props {
-  agencyId:  string;
-  name:      string;
-  isBlocked: boolean;
+  agencyId:        string;
+  name:            string;
+  city:            string;
+  address:         string | null;
+  whatsapp_number: string;
+  description:     string | null;
+  isBlocked:       boolean;
 }
 
-export function AgencyActions({ agencyId, name, isBlocked }: Props) {
+export function AgencyActions({ agencyId, name, city, address, whatsapp_number, description, isBlocked }: Props) {
   const router = useRouter();
   const [loading, setLoading] = useState<string | null>(null);
   const [error, setError]     = useState<string | null>(null);
+  const [editOpen, setEditOpen] = useState(false);
 
   async function block() {
     if (!confirm(`Block ${name}? Their listings will be hidden from the marketplace.`)) return;
@@ -78,6 +84,9 @@ export function AgencyActions({ agencyId, name, isBlocked }: Props) {
   return (
     <div className="flex flex-col items-end gap-1">
       <div className="flex gap-2 shrink-0">
+        <Button size="sm" variant="ghost" onClick={() => setEditOpen(true)}>
+          <Pencil size={14} /> Edit
+        </Button>
         {isBlocked ? (
           <Button size="sm" variant="secondary" loading={loading === "unblock"} onClick={unblock}>
             <Undo2 size={14} /> Unblock
@@ -92,6 +101,13 @@ export function AgencyActions({ agencyId, name, isBlocked }: Props) {
         </Button>
       </div>
       {error && <p className="text-red-400 text-xs">{error}</p>}
+      {editOpen && (
+        <EditAgencyModal
+          agencyId={agencyId}
+          initial={{ name, city, address, whatsapp_number, description }}
+          onClose={() => setEditOpen(false)}
+        />
+      )}
     </div>
   );
 }

@@ -82,7 +82,15 @@ export default async function AdminAgenciesPage() {
           </div>
           <div className="flex flex-col items-end gap-2 shrink-0">
             <AgencyVerifyAction agencyId={a.id} isVerified={a.is_verified} />
-            <AgencyActions agencyId={a.id} name={a.name} isBlocked={a.is_blocked} />
+            <AgencyActions
+              agencyId={a.id}
+              name={a.name}
+              city={a.city}
+              address={a.address}
+              whatsapp_number={a.whatsapp_number}
+              description={a.description}
+              isBlocked={a.is_blocked}
+            />
           </div>
         </div>
 

@@ -1,7 +1,7 @@
 import { createClient } from "@/lib/supabase/server";
-import { BadgeCheck, ShieldAlert } from "lucide-react";
+import { BadgeCheck, ShieldAlert, Star } from "lucide-react";
 import { Badge } from "@/components/ui/Badge";
-import { formatLKR } from "@/lib/vehicles/format";
+import { formatLKR, reliabilityColor, reliabilityLabel } from "@/lib/vehicles/format";
 import { BOOKING_STATUS_LABELS } from "@/lib/booking/state-machine";
 import type { BookingStatus } from "@/types/database";
 
@@ -36,7 +36,7 @@ export default async function AdminBookingsPage({ searchParams }: Props) {
 
   let query = supabase
     .from("bookings")
-    .select("id, status, start_date, end_date, total_days, subtotal_lkr, booking_fee_lkr, created_at, vehicles(make, model, year, city), profiles(full_name, phone, kyc_status, is_blacklisted, blacklist_reason), agencies(name, city)")
+    .select("id, status, start_date, end_date, total_days, subtotal_lkr, booking_fee_lkr, created_at, vehicles(make, model, year, city), profiles(full_name, phone, kyc_status, is_blacklisted, blacklist_reason, rating_avg, rating_count, reliability_pct), agencies(name, city)")
     .order("created_at", { ascending: false });
 
   if (filterStatus) query = query.eq("status", filterStatus as BookingStatus);
@@ -58,6 +58,9 @@ export default async function AdminBookingsPage({ searchParams }: Props) {
       kyc_status: string;
       is_blacklisted: boolean;
       blacklist_reason: string | null;
+      rating_avg: number | null;
+      rating_count: number;
+      reliability_pct: number | null;
     } | null;
     agencies: { name: string; city: string } | null;
   }[];
@@ -137,9 +140,20 @@ export default async function AdminBookingsPage({ searchParams }: Props) {
                       <p className={isBlacklisted ? "text-red-300 line-through" : "text-white"}>{b.profiles?.full_name}</p>
                     </div>
                     <p className="text-slate-500 text-xs">{b.profiles?.phone}</p>
-                    {b.profiles?.kyc_status === "verified" && (
-                      <span className="inline-flex items-center gap-1 text-emerald-400 text-xs"><BadgeCheck size={12} /> ID verified</span>
-                    )}
+                    <div className="flex items-center gap-2 flex-wrap mt-1">
+                      {b.profiles?.kyc_status === "verified" && (
+                        <span className="inline-flex items-center gap-1 text-emerald-400 text-[11px]"><BadgeCheck size={11} /> ID</span>
+                      )}
+                      {(b.profiles?.rating_count ?? 0) > 0 && (
+                        <span className="inline-flex items-center gap-1 text-amber-400 text-[11px]">
+                          <Star size={10} fill="currentColor" />
+                          {b.profiles?.rating_avg?.toFixed(1)}
+                        </span>
+                      )}
+                      <span className={`text-[11px] font-medium ${reliabilityColor(b.profiles?.reliability_pct ?? null)}`}>
+                        {reliabilityLabel(b.profiles?.reliability_pct ?? null)}
+                      </span>
+                    </div>
                     {isBlacklisted && b.profiles?.blacklist_reason && (
                       <p className="text-red-400/80 text-[11px] mt-0.5 max-w-xs">
                         Reason: {b.profiles.blacklist_reason}
