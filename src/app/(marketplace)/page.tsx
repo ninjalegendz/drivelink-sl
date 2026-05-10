@@ -34,7 +34,7 @@ export default async function HomePage() {
         <div className="absolute inset-0 bg-gradient-to-b from-amber-500/5 to-transparent pointer-events-none" />
         <div className="max-w-6xl mx-auto px-4 pt-20 pb-16 text-center">
           <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-amber-500/10 text-amber-400 text-xs font-medium ring-1 ring-amber-500/20 mb-6">
-            ID-verified renters · Real-time availability · Rs. 1,000 booking lock-in
+            ID-verified renters · Real-time availability · Rs. 500 booking lock-in
           </span>
           <h1 className="text-4xl sm:text-5xl font-bold tracking-tight text-white">
             Car rentals you can actually trust.
@@ -134,7 +134,7 @@ export default async function HomePage() {
           <div>
             <h2 className="text-white font-bold text-xl">Own a rental fleet?</h2>
             <p className="text-slate-400 mt-1">
-              List for free. We bring you ID-verified renters with a Rs. 1,000 booking commitment upfront.
+              List for free. We charge a flat Rs. 200 per completed booking — no upfront fees, no monthly costs.
             </p>
           </div>
           <Link

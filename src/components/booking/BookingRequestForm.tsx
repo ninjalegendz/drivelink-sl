@@ -195,14 +195,14 @@ export function BookingRequestForm({ vehicleId, agencyId, vehicleName, dailyRate
           )}
           <div className="flex justify-between text-slate-400">
             <span>Booking lock-in fee</span>
-            <span>Rs. 1,000</span>
+            <span>Rs. 500</span>
           </div>
           <div className="flex justify-between text-white font-semibold border-t border-slate-700 pt-1 mt-1">
             <span>Total rental cost</span>
             <span>{formatLKR(price.subtotal)}</span>
           </div>
           <p className="text-slate-500 text-xs">
-            Rs. 1,000 due now (if confirmed). Balance paid to agency on collection.
+            Rs. 500 due now (only if the agency confirms). Balance paid to agency on collection.
           </p>
         </div>
       )}

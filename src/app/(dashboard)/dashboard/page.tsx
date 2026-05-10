@@ -1,8 +1,8 @@
 import { createClient } from "@/lib/supabase/server";
 import { redirect } from "next/navigation";
 import Link from "next/link";
-import { AlertTriangle, Plus } from "lucide-react";
-import { reliabilityColor, reliabilityLabel } from "@/lib/vehicles/format";
+import { AlertTriangle, Plus, Receipt } from "lucide-react";
+import { reliabilityColor, reliabilityLabel, formatLKR } from "@/lib/vehicles/format";
 import type { AgencyRow } from "@/types/queries";
 
 export default async function DashboardPage() {
@@ -20,12 +20,21 @@ export default async function DashboardPage() {
 
   const agency = data as AgencyRow;
 
-  const [{ count: vehicleCount }, { count: activeBookings }, { count: pendingBookings }] =
+  const [{ count: vehicleCount }, { count: activeBookings }, { count: pendingBookings }, { data: feeRows }] =
     await Promise.all([
       supabase.from("vehicles").select("*", { count: "exact", head: true }).eq("agency_id", agency.id),
       supabase.from("bookings").select("*", { count: "exact", head: true }).eq("agency_id", agency.id).eq("status", "active"),
       supabase.from("bookings").select("*", { count: "exact", head: true }).eq("agency_id", agency.id).eq("status", "pending_confirmation"),
+      supabase
+        .from("bookings")
+        .select("agency_fee_lkr")
+        .eq("agency_id", agency.id)
+        .eq("status", "completed")
+        .is("agency_fee_collected_at", null),
     ]);
+
+  const feesOwed = ((feeRows ?? []) as { agency_fee_lkr: number }[])
+    .reduce((s, r) => s + r.agency_fee_lkr, 0);
 
   return (
     <div>
@@ -65,6 +74,22 @@ export default async function DashboardPage() {
             <p className="text-slate-400 text-sm mt-0.5">
               Your reliability score is below 80%. Listings are ranked lower in search results.
               Fulfil pending bookings to improve your score.
+            </p>
+          </div>
+        </div>
+      )}
+
+      {/* Platform fees owed — Rs. 200 per completed booking, billed monthly */}
+      {feesOwed > 0 && (
+        <div className="flex items-start gap-3 p-4 bg-slate-900 border border-slate-800 rounded-2xl mb-6">
+          <Receipt size={18} className="text-amber-400 shrink-0 mt-0.5" />
+          <div className="flex-1">
+            <p className="text-white font-medium text-sm">
+              Platform fees: <span className="text-amber-400">{formatLKR(feesOwed)}</span>
+            </p>
+            <p className="text-slate-500 text-xs mt-0.5">
+              Rs. 200 per completed booking. We&apos;ll invoice you monthly; transfer to the DriveLink
+              account once you get the bill.
             </p>
           </div>
         </div>

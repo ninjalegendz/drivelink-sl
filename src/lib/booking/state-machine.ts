@@ -60,4 +60,4 @@ export const BOOKING_STATUS_LABELS: Record<BookingStatus, string> = {
   disputed:             "Under Dispute",
 };
 
-export const BOOKING_FEE_LKR = 1000;
+export const BOOKING_FEE_LKR = 500;

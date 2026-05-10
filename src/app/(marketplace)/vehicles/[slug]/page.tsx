@@ -202,7 +202,7 @@ export default async function VehicleDetailPage({ params }: Props) {
           <div className="bg-slate-900 rounded-2xl border border-slate-800 p-4">
             <h2 className="font-semibold text-white mb-1">Request this vehicle</h2>
             <p className="text-slate-400 text-xs mb-4">
-              No payment yet. The agency confirms first — you pay Rs. 1,000 only after they say yes.
+              No payment yet. The agency confirms first — you pay Rs. 500 only after they say yes.
             </p>
             <BookingRequestForm
               vehicleId={vehicle.id}
@@ -221,7 +221,7 @@ export default async function VehicleDetailPage({ params }: Props) {
               {[
                 "You send a request (free, no payment)",
                 "Agency confirms availability — usually within minutes",
-                "You pay Rs. 1,000 to lock in the booking",
+                "You pay Rs. 500 to lock in the booking",
                 "Agency contact details unlocked instantly",
                 "Meet and collect the car",
               ].map((step, i) => (

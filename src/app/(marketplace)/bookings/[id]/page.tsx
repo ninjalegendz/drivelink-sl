@@ -156,7 +156,7 @@ export default async function BookingDetailPage({ params, searchParams }: Props)
           <div>
             <p className="text-amber-400 font-semibold">Agency confirmed — lock in your booking</p>
             <p className="text-slate-400 text-sm mt-1">
-              Transfer <strong className="text-white">Rs. 1,000</strong> to lock in the vehicle.
+              Transfer <strong className="text-white">Rs. 500</strong> to lock in the vehicle.
               Once verified, you will receive the agency&apos;s contact details.
             </p>
           </div>
@@ -166,7 +166,7 @@ export default async function BookingDetailPage({ params, searchParams }: Props)
             <p className="text-white">Account: <span className="font-mono">DriveLink SL</span></p>
             <p className="text-white">Bank: <span className="font-mono">Commercial Bank</span></p>
             <p className="text-white">Account No: <span className="font-mono">8001234567</span></p>
-            <p className="text-white">Amount: <span className="font-mono text-amber-400">Rs. 1,000.00</span></p>
+            <p className="text-white">Amount: <span className="font-mono text-amber-400">Rs. 500.00</span></p>
             <p className="text-white">Reference: <span className="font-mono">{booking.id.slice(0, 8).toUpperCase()}</span></p>
           </div>
 

@@ -77,7 +77,7 @@ export async function POST(req: NextRequest) {
       end_date,
       daily_rate_lkr:  v.daily_rate_lkr,
       subtotal_lkr:    subtotal,
-      booking_fee_lkr: 1000,
+      booking_fee_lkr: 500,
     })
     .select("id")
     .single();

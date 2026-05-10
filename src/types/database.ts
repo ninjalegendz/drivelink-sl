@@ -209,6 +209,8 @@ export type Database = {
           daily_rate_lkr: number;
           subtotal_lkr: number;
           booking_fee_lkr: number;
+          agency_fee_lkr: number;
+          agency_fee_collected_at: string | null;
           slip_url: string | null;
           slip_verified_at: string | null;
           ocr_amount_lkr: number | null;

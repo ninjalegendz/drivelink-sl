@@ -74,7 +74,7 @@ export default async function RentQueryPage({ params }: Props) {
         </h1>
         <p className="text-slate-400 mt-2">
           Compare verified {displayModel} rentals in {displayCity}, Sri Lanka. All agencies are rated by
-          real renters. Lock in your booking with a Rs. 1,000 confirmation — no more last-minute cancellations.
+          real renters. Lock in your booking with a Rs. 500 confirmation — no more last-minute cancellations.
         </p>
       </div>
 
