@@ -417,6 +417,33 @@ export type Database = {
         Update: Record<string, never>;
         Relationships: [];
       };
+      platform_settings: {
+        Row: {
+          id: boolean;
+          bank_account_name: string;
+          bank_name: string;
+          bank_account_number: string;
+          bank_branch: string | null;
+          updated_at: string;
+          updated_by: string | null;
+        };
+        Insert: {
+          id?: boolean;
+          bank_account_name?: string;
+          bank_name?: string;
+          bank_account_number?: string;
+          bank_branch?: string | null;
+          updated_by?: string | null;
+        };
+        Update: {
+          bank_account_name?: string;
+          bank_name?: string;
+          bank_account_number?: string;
+          bank_branch?: string | null;
+          updated_by?: string | null;
+        };
+        Relationships: [];
+      };
       email_config: {
         Row: {
           id: boolean;

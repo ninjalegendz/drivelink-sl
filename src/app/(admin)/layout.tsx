@@ -1,7 +1,7 @@
 import { redirect } from "next/navigation";
 import Link from "next/link";
 import {
-  LayoutDashboard, ReceiptText, ClipboardList, Users, Building2, Ban, Settings, Car, Mail, Headphones, Receipt,
+  LayoutDashboard, ReceiptText, ClipboardList, Users, Building2, Ban, Settings, Car, Mail, Headphones, Receipt, Landmark,
 } from "lucide-react";
 import { createClient } from "@/lib/supabase/server";
 import { SignOutButton } from "@/components/account/SignOutButton";
@@ -15,8 +15,9 @@ const NAV = [
   { href: "/admin/agencies",        label: "Agencies",      Icon: Building2 },
   { href: "/admin/blacklist",       label: "Blacklist",     Icon: Ban },
   { href: "/admin/support",         label: "Support",       Icon: Headphones, badge: "support" as const },
-  { href: "/admin/invoices",        label: "Invoices",      Icon: Receipt },
-  { href: "/admin/settings/email",  label: "Email setup",   Icon: Mail },
+  { href: "/admin/invoices",          label: "Invoices",     Icon: Receipt },
+  { href: "/admin/settings/payments", label: "Bank account", Icon: Landmark },
+  { href: "/admin/settings/email",    label: "Email setup",  Icon: Mail },
 ];
 
 export default async function AdminLayout({ children }: { children: React.ReactNode }) {

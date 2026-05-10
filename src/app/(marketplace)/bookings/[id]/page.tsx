@@ -54,6 +54,24 @@ export default async function BookingDetailPage({ params, searchParams }: Props)
 
   if (!data) notFound();
 
+  // Bank-transfer details for the pay-to-lock-in panel
+  const { data: settingsRow } = await supabase
+    .from("platform_settings")
+    .select("bank_account_name, bank_name, bank_account_number, bank_branch")
+    .eq("id", true)
+    .single();
+  const bank = (settingsRow ?? {
+    bank_account_name:   "DriveLink SL",
+    bank_name:           "Commercial Bank",
+    bank_account_number: "8001234567",
+    bank_branch:         null,
+  }) as {
+    bank_account_name:   string;
+    bank_name:           string;
+    bank_account_number: string;
+    bank_branch:         string | null;
+  };
+
   const booking = data as unknown as BookingWithRelations;
   const vehicle = booking.vehicles!;
   const agency  = booking.agencies!;
@@ -163,9 +181,12 @@ export default async function BookingDetailPage({ params, searchParams }: Props)
 
           <div className="bg-slate-800 rounded-xl p-3 text-sm space-y-1">
             <p className="text-slate-400 text-xs uppercase tracking-widest font-semibold mb-2">Bank transfer details</p>
-            <p className="text-white">Account: <span className="font-mono">DriveLink SL</span></p>
-            <p className="text-white">Bank: <span className="font-mono">Commercial Bank</span></p>
-            <p className="text-white">Account No: <span className="font-mono">8001234567</span></p>
+            <p className="text-white">Account: <span className="font-mono">{bank.bank_account_name}</span></p>
+            <p className="text-white">Bank: <span className="font-mono">{bank.bank_name}</span></p>
+            <p className="text-white">Account No: <span className="font-mono">{bank.bank_account_number}</span></p>
+            {bank.bank_branch && (
+              <p className="text-white">Branch: <span className="font-mono">{bank.bank_branch}</span></p>
+            )}
             <p className="text-white">Amount: <span className="font-mono text-amber-400">Rs. 500.00</span></p>
             <p className="text-white">Reference: <span className="font-mono">{booking.id.slice(0, 8).toUpperCase()}</span></p>
           </div>
