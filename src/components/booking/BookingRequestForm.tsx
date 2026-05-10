@@ -120,6 +120,7 @@ export function BookingRequestForm({ vehicleId, agencyId, vehicleName, dailyRate
   }
 
   return (
+    <>
     <form onSubmit={handleSubmit} className="space-y-3">
       <div className="grid grid-cols-2 gap-2">
         <div>
@@ -223,21 +224,25 @@ export function BookingRequestForm({ vehicleId, agencyId, vehicleName, dailyRate
       <p className="text-slate-500 text-xs text-center">
         No payment until the agency confirms availability.
       </p>
-
-      {guestModal && days > 0 && (
-        <GuestBookingModal
-          draft={{
-            vehicleId,
-            agencyId,
-            vehicleName,
-            startDate,
-            endDate,
-            totalDays: days,
-            subtotal:  price.subtotal,
-          }}
-          onClose={() => setGuestModal(false)}
-        />
-      )}
     </form>
+
+    {/* Modal renders OUTSIDE the booking form. Nested <form> tags are
+        invalid HTML — browsers hoist the inner one out, which made the
+        modal's "Send code" button submit the booking form instead. */}
+    {guestModal && days > 0 && (
+      <GuestBookingModal
+        draft={{
+          vehicleId,
+          agencyId,
+          vehicleName,
+          startDate,
+          endDate,
+          totalDays: days,
+          subtotal:  price.subtotal,
+        }}
+        onClose={() => setGuestModal(false)}
+      />
+    )}
+    </>
   );
 }
