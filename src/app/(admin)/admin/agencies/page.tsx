@@ -1,6 +1,7 @@
 import { createClient } from "@/lib/supabase/server";
 import { Badge } from "@/components/ui/Badge";
 import { AgencyVerifyAction } from "@/components/admin/AgencyVerifyAction";
+import { AgencyActions } from "@/components/admin/AgencyActions";
 import { reliabilityColor } from "@/lib/vehicles/format";
 
 export default async function AdminAgenciesPage() {
@@ -9,7 +10,7 @@ export default async function AdminAgenciesPage() {
   const { data } = await supabase
     .from("agencies")
     .select(`
-      id, name, city, whatsapp_number, is_verified,
+      id, name, city, whatsapp_number, is_verified, is_blocked,
       reliability_pct, confirmed_count, cancellation_count, strike_count, created_at,
       profiles(full_name, phone, kyc_status)
     `)
@@ -21,6 +22,7 @@ export default async function AdminAgenciesPage() {
     city: string;
     whatsapp_number: string;
     is_verified: boolean;
+    is_blocked: boolean;
     reliability_pct: number | null;
     confirmed_count: number;
     cancellation_count: number;
@@ -55,9 +57,11 @@ export default async function AdminAgenciesPage() {
             {/* Name + badges */}
             <div className="flex items-center gap-2 flex-wrap mb-0.5">
               <p className="text-white font-semibold">{a.name}</p>
-              {a.is_verified
-                ? <Badge variant="green">Live</Badge>
-                : <Badge variant="yellow">Pending review</Badge>
+              {a.is_blocked
+                ? <Badge variant="red">Blocked</Badge>
+                : a.is_verified
+                  ? <Badge variant="green">Live</Badge>
+                  : <Badge variant="yellow">Pending review</Badge>
               }
               {a.strike_count >= 3 && <Badge variant="red">{a.strike_count} strikes</Badge>}
             </div>
@@ -93,7 +97,10 @@ export default async function AdminAgenciesPage() {
             )}
           </div>
 
-          <AgencyVerifyAction agencyId={a.id} isVerified={a.is_verified} />
+          <div className="flex flex-col items-end gap-2 shrink-0">
+            <AgencyVerifyAction agencyId={a.id} isVerified={a.is_verified} />
+            <AgencyActions agencyId={a.id} name={a.name} isBlocked={a.is_blocked} />
+          </div>
         </div>
       </div>
     );

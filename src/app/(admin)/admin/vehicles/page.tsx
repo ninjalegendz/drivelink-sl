@@ -18,11 +18,14 @@ const FILTER_TABS = [
   { label: "Pending review", value: "pending_review" },
   { label: "Live",           value: "available" },
   { label: "Unlisted",       value: "unlisted" },
-  { label: "All",            value: "" },
-];
+  { label: "All",            value: "all" },
+] as const;
 
 export default async function AdminVehiclesPage({ searchParams }: Props) {
-  const { status: filter } = await searchParams;
+  const { status: filterParam } = await searchParams;
+  // Default to pending_review when no filter is in the URL
+  const activeFilter = filterParam ?? "pending_review";
+
   const supabase = await createClient();
 
   let query = supabase
@@ -30,17 +33,12 @@ export default async function AdminVehiclesPage({ searchParams }: Props) {
     .select("*, agencies(name, city, whatsapp_number)")
     .order("created_at", { ascending: false });
 
-  if (filter) {
-    query = query.eq("status", filter);
-  } else {
-    // default = pending review at top
-    query = query.eq("status", "pending_review");
+  if (activeFilter !== "all") {
+    query = query.eq("status", activeFilter);
   }
 
   const { data } = await query.limit(60);
   const vehicles = (data ?? []) as unknown as (VehicleRow & { agencies: AgencyLite | null })[];
-
-  const activeFilter = filter ?? "pending_review";
 
   return (
     <div>
@@ -54,9 +52,9 @@ export default async function AdminVehiclesPage({ searchParams }: Props) {
         {FILTER_TABS.map(({ label, value }) => (
           <a
             key={value}
-            href={value ? `/admin/vehicles?status=${value}` : "/admin/vehicles?status=all"}
+            href={`/admin/vehicles?status=${value}`}
             className={`px-3 py-1.5 rounded-lg text-sm transition-colors ${
-              activeFilter === value || (activeFilter === "pending_review" && value === "pending_review")
+              activeFilter === value
                 ? "bg-slate-700 text-white font-medium"
                 : "text-slate-400 hover:text-white"
             }`}
@@ -132,13 +130,10 @@ export default async function AdminVehiclesPage({ searchParams }: Props) {
                       >
                         Preview <ExternalLink size={11} />
                       </Link>
-                      {v.status === "pending_review" && (
-                        <VehicleApprovalActions vehicleId={v.id} />
-                      )}
-                      {v.status !== "pending_review" && (
-                        <Badge variant={v.status === "available" ? "green" : v.status === "unlisted" ? "red" : "slate"}>
-                          {v.status}
-                        </Badge>
+                      {(v.status === "pending_review" || v.status === "available" || v.status === "unlisted") ? (
+                        <VehicleApprovalActions vehicleId={v.id} status={v.status} />
+                      ) : (
+                        <Badge variant="slate">{v.status}</Badge>
                       )}
                     </div>
                   </div>

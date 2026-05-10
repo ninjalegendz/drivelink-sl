@@ -3,6 +3,7 @@ import Image from "next/image";
 import { Star, ExternalLink } from "lucide-react";
 import { Badge } from "@/components/ui/Badge";
 import { KycActions } from "@/components/admin/KycActions";
+import { RenterActions } from "@/components/admin/RenterActions";
 
 interface Props {
   searchParams: Promise<{ kyc?: string }>;
@@ -95,7 +96,10 @@ export default async function AdminUsersPage({ searchParams }: Props) {
                 </div>
               </div>
 
-              {u.kyc_status === "pending" && <KycActions userId={u.id} />}
+              <div className="flex flex-col items-end gap-2">
+                {u.kyc_status === "pending" && <KycActions userId={u.id} />}
+                <RenterActions userId={u.id} fullName={u.full_name} isBlacklisted={u.is_blacklisted} />
+              </div>
             </div>
 
             {/* KYC document images */}

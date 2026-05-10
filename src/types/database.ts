@@ -79,6 +79,7 @@ export type Database = {
           city: string;
           whatsapp_number: string;
           is_verified: boolean;
+          is_blocked: boolean;
           cancellation_count: number;
           confirmed_count: number;
           strike_count: number;
@@ -94,6 +95,7 @@ export type Database = {
           city: string;
           whatsapp_number: string;
           is_verified?: boolean;
+          is_blocked?: boolean;
           cancellation_count?: number;
           confirmed_count?: number;
           strike_count?: number;
@@ -106,6 +108,7 @@ export type Database = {
           city?: string;
           whatsapp_number?: string;
           is_verified?: boolean;
+          is_blocked?: boolean;
           cancellation_count?: number;
           confirmed_count?: number;
           strike_count?: number;
