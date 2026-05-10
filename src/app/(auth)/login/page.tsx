@@ -5,6 +5,7 @@ import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { ArrowLeft, Mail, Phone } from "lucide-react";
 import { Button } from "@/components/ui/Button";
+import { isValidSLPhone, toLocalSL } from "@/lib/auth/phone-format";
 
 type Stage   = "identifier" | "code" | "verify_link_sent";
 type Channel = "email" | "phone";
@@ -17,10 +18,10 @@ function maskIdentifier(value: string, channel: Channel): string {
     const tail = local.slice(-1);
     return `${head}${"*".repeat(Math.max(local.length - 2, 1))}${tail}@${domain}`;
   }
-  // Phone: keep last 3 digits visible.
-  const digits = value.replace(/\D/g, "");
-  if (digits.length < 5) return value;
-  return `+${digits.slice(0, 2)} ${"*".repeat(digits.length - 5)} ${digits.slice(-3)}`;
+  // Phone: show in local format with last 3 digits visible.
+  const local = toLocalSL(value) ?? value;
+  if (local.length < 5) return value;
+  return `${local.slice(0, 3)} *** *${local.slice(-3)}`;
 }
 
 function detectChannel(value: string): Channel {
@@ -39,7 +40,15 @@ function LoginForm() {
   const [loading,    setLoading]    = useState(false);
   const [error,      setError]      = useState<string | null>(null);
   const [info,       setInfo]       = useState<string | null>(null);
+  const [cooldown,   setCooldown]   = useState(0); // seconds until resend allowed
   const codeRef = useRef<HTMLInputElement>(null);
+
+  // Tick the resend cooldown down by 1s
+  useEffect(() => {
+    if (cooldown <= 0) return;
+    const id = setTimeout(() => setCooldown((c) => c - 1), 1000);
+    return () => clearTimeout(id);
+  }, [cooldown]);
 
   // Surface link errors that came back via /auth/callback?error=...
   useEffect(() => {
@@ -54,20 +63,31 @@ function LoginForm() {
 
   async function sendCode(e?: React.FormEvent) {
     e?.preventDefault();
-    setLoading(true); setError(null); setInfo(null);
 
-    const ch = detectChannel(identifier);
+    // Local-format validation for phone path. Email path defers to backend.
+    const trimmed = identifier.trim();
+    const ch = detectChannel(trimmed);
+    if (ch === "phone" && !isValidSLPhone(trimmed)) {
+      setError("Enter a Sri Lankan phone number like 0771234567.");
+      return;
+    }
+
+    setLoading(true); setError(null); setInfo(null);
     setChannel(ch);
 
     const res = await fetch("/api/auth/login/send-code", {
       method:  "POST",
       headers: { "Content-Type": "application/json" },
-      body:    JSON.stringify({ identifier: identifier.trim() }),
+      body:    JSON.stringify({ identifier: trimmed }),
     });
     const payload = await res.json().catch(() => ({}));
     setLoading(false);
 
-    if (!res.ok) { setError(payload.error ?? "Couldn't send the code."); return; }
+    if (!res.ok) {
+      setError(payload.error ?? "Couldn't send the code.");
+      if (payload.waitSec) setCooldown(payload.waitSec);
+      return;
+    }
 
     if (payload.emailUnverified) {
       setStage("verify_link_sent");
@@ -75,6 +95,7 @@ function LoginForm() {
     }
 
     setStage("code");
+    if (payload.nextCooldownSec) setCooldown(payload.nextCooldownSec);
     if (payload.devOnly && payload.devCode) {
       setInfo(`Dev mode: code is ${payload.devCode}`);
     }
@@ -119,7 +140,7 @@ function LoginForm() {
               required
               autoFocus
               autoComplete="username"
-              placeholder="you@example.com  or  +94 77 123 4567"
+              placeholder="you@example.com  or  0771234567"
               className="w-full px-4 py-2.5 bg-slate-800 border border-slate-700 rounded-xl text-white placeholder-slate-500 text-sm focus:outline-none focus:border-amber-500"
             />
             <p className="text-slate-600 text-xs mt-1.5">
@@ -183,10 +204,10 @@ function LoginForm() {
           <button
             type="button"
             onClick={() => sendCode()}
-            disabled={loading}
-            className="text-xs text-slate-500 hover:text-amber-400 disabled:opacity-50 w-full text-center"
+            disabled={loading || cooldown > 0}
+            className="text-xs text-slate-500 hover:text-amber-400 disabled:opacity-50 disabled:hover:text-slate-500 w-full text-center"
           >
-            Resend code
+            {cooldown > 0 ? `Resend code in ${cooldown}s` : "Resend code"}
           </button>
         </form>
       )}

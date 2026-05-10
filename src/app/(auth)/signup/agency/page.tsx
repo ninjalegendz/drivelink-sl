@@ -107,10 +107,10 @@ export default function AgencyOnboardingPage() {
             onChange={(e) => set("whatsapp_number", e.target.value)}
             required
             className="w-full px-4 py-2.5 bg-slate-800 border border-slate-700 rounded-xl text-white placeholder-slate-500 text-sm focus:outline-none focus:border-amber-500"
-            placeholder="+94 77 123 4567"
+            placeholder="0771234567"
           />
           <p className="text-slate-500 text-xs mt-1">
-            Booking requests arrive here. Reply YES or NO to confirm.
+            Booking alerts arrive here as an SMS — tap the link to confirm in your dashboard.
           </p>
         </div>
 

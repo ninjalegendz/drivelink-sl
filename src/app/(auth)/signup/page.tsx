@@ -124,7 +124,7 @@ function SignupForm() {
           <label className="text-slate-400 text-xs mb-1 block">WhatsApp number</label>
           <input type="tel" value={phone} onChange={(e) => setPhone(e.target.value)} required
             className="w-full px-4 py-2.5 bg-slate-800 border border-slate-700 rounded-xl text-white placeholder-slate-500 text-sm focus:outline-none focus:border-amber-500"
-            placeholder="+94 77 123 4567" />
+            placeholder="0771234567" />
         </div>
 
         <div>

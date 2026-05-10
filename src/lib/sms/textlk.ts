@@ -8,6 +8,8 @@
 // Trial accounts can use sender_id "TextLKDemo". Production: register a
 // custom sender ID with text.lk and put it in TEXTLK_SENDER_ID.
 
+import { toInternationalSL } from "@/lib/auth/phone-format";
+
 const TEXTLK_ENDPOINT = "https://app.text.lk/api/http/sms/send";
 
 export interface SendSmsResult {
@@ -23,8 +25,8 @@ export async function sendSms(to: string, message: string): Promise<SendSmsResul
   const apiToken = process.env.TEXTLK_API_TOKEN;
   const senderId = process.env.TEXTLK_SENDER_ID ?? "TextLKDemo";
 
-  // Normalise: text.lk accepts "947XXXXXXXX" or "+947XXXXXXXX"; strip spaces/dashes.
-  const recipient = to.replace(/\s+/g, "").replace(/-/g, "");
+  // text.lk needs E.164. Accept any SL phone form on the way in.
+  const recipient = toInternationalSL(to) ?? to.replace(/\s+/g, "").replace(/-/g, "");
 
   if (!apiToken) {
     console.warn("[textlk] TEXTLK_API_TOKEN missing — printing instead of sending", { recipient, message });

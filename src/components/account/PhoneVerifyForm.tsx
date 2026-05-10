@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { Phone, Check } from "lucide-react";
 import { Button } from "@/components/ui/Button";
@@ -12,11 +12,18 @@ interface Props {
 
 export function PhoneVerifyForm({ phone, verified }: Props) {
   const router = useRouter();
-  const [stage,   setStage]   = useState<"idle" | "code">("idle");
-  const [code,    setCode]    = useState("");
-  const [loading, setLoading] = useState(false);
-  const [error,   setError]   = useState<string | null>(null);
-  const [info,    setInfo]    = useState<string | null>(null);
+  const [stage,    setStage]    = useState<"idle" | "code">("idle");
+  const [code,     setCode]     = useState("");
+  const [loading,  setLoading]  = useState(false);
+  const [error,    setError]    = useState<string | null>(null);
+  const [info,     setInfo]     = useState<string | null>(null);
+  const [cooldown, setCooldown] = useState(0);
+
+  useEffect(() => {
+    if (cooldown <= 0) return;
+    const id = setTimeout(() => setCooldown((c) => c - 1), 1000);
+    return () => clearTimeout(id);
+  }, [cooldown]);
 
   if (verified) {
     return (
@@ -33,11 +40,15 @@ export function PhoneVerifyForm({ phone, verified }: Props) {
     const payload = await res.json().catch(() => ({}));
     setLoading(false);
 
-    if (!res.ok) { setError(payload.error ?? "Couldn't send the code."); return; }
+    if (!res.ok) {
+      setError(payload.error ?? "Couldn't send the code.");
+      if (payload.waitSec) setCooldown(payload.waitSec);
+      return;
+    }
 
     setStage("code");
+    if (payload.nextCooldownSec) setCooldown(payload.nextCooldownSec);
     if (payload.devOnly && payload.devCode) {
-      // Dev mode (no TEXTLK_API_TOKEN) — surface the code so the flow works locally.
       setInfo(`Dev mode: code is ${payload.devCode}`);
     } else {
       setInfo(`Code sent to ${phone}. Enter it below.`);
@@ -90,10 +101,10 @@ export function PhoneVerifyForm({ phone, verified }: Props) {
           <button
             type="button"
             onClick={requestOtp}
-            disabled={loading}
-            className="text-xs text-slate-500 hover:text-amber-400 disabled:opacity-50 self-start"
+            disabled={loading || cooldown > 0}
+            className="text-xs text-slate-500 hover:text-amber-400 disabled:opacity-50 disabled:hover:text-slate-500 self-start"
           >
-            Resend code
+            {cooldown > 0 ? `Resend code in ${cooldown}s` : "Resend code"}
           </button>
         </form>
       )}

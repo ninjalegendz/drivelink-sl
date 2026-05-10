@@ -91,6 +91,7 @@ export async function POST(req: NextRequest) {
     phone_otp_hash:       null,
     phone_otp_expires_at: null,
     phone_otp_attempts:   0,
+    phone_otp_send_count: 0,
   };
   if (identity.channel === "phone") updates.phone_verified = true;
 

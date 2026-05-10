@@ -1,7 +1,13 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createServiceClient } from "@/lib/supabase/server";
 import { resolveIdentifier, isEmailLike } from "@/lib/auth/identifier";
-import { generateOtp, hashOtp, OTP_TTL_MS, OTP_RESEND_COOLDOWN_MS } from "@/lib/sms/otp";
+import {
+  generateOtp,
+  hashOtp,
+  OTP_TTL_MS,
+  cooldownForSendCount,
+  effectiveSendCount,
+} from "@/lib/sms/otp";
 import { sendSms } from "@/lib/sms/textlk";
 import { sendEmail } from "@/lib/email/send";
 
@@ -48,24 +54,32 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ ok: true, channel: "email", emailUnverified: true });
   }
 
-  // Resend cooldown — re-check existing last_sent
+  // Escalating resend cooldown — pull current burst state
   const { data: cooldownRow } = await service
     .from("profiles")
-    .select("phone_otp_last_sent")
+    .select("phone_otp_last_sent, phone_otp_send_count")
     .eq("id", identity.userId)
     .single();
-  const lastSent = (cooldownRow as { phone_otp_last_sent?: string | null } | null)?.phone_otp_last_sent;
-  if (lastSent) {
-    const elapsed = Date.now() - new Date(lastSent).getTime();
-    if (elapsed < OTP_RESEND_COOLDOWN_MS) {
-      const waitSec = Math.ceil((OTP_RESEND_COOLDOWN_MS - elapsed) / 1000);
-      return NextResponse.json({ error: `Wait ${waitSec}s before requesting another code.` }, { status: 429 });
+  const cd = (cooldownRow as {
+    phone_otp_last_sent:  string | null;
+    phone_otp_send_count: number;
+  } | null) ?? { phone_otp_last_sent: null, phone_otp_send_count: 0 };
+
+  const priorSends   = effectiveSendCount(cd.phone_otp_send_count, cd.phone_otp_last_sent);
+  const requiredGap  = cooldownForSendCount(priorSends);
+  if (cd.phone_otp_last_sent && requiredGap > 0) {
+    const elapsed = Date.now() - new Date(cd.phone_otp_last_sent).getTime();
+    if (elapsed < requiredGap) {
+      const waitSec = Math.ceil((requiredGap - elapsed) / 1000);
+      return NextResponse.json({ error: `Wait ${waitSec}s before requesting another code.`, waitSec }, { status: 429 });
     }
   }
 
-  const code      = generateOtp();
-  const hash      = hashOtp(code, identity.userId);
-  const expiresAt = new Date(Date.now() + OTP_TTL_MS).toISOString();
+  const code         = generateOtp();
+  const hash         = hashOtp(code, identity.userId);
+  const expiresAt    = new Date(Date.now() + OTP_TTL_MS).toISOString();
+  const newSendCount = priorSends + 1;
+  const nextCooldownSec = Math.ceil(cooldownForSendCount(newSendCount) / 1000);
 
   await service
     .from("profiles")
@@ -74,6 +88,7 @@ export async function POST(req: NextRequest) {
       phone_otp_expires_at: expiresAt,
       phone_otp_attempts:   0,
       phone_otp_last_sent:  new Date().toISOString(),
+      phone_otp_send_count: newSendCount,
     })
     .eq("id", identity.userId);
 
@@ -87,10 +102,11 @@ export async function POST(req: NextRequest) {
       html:    `<p>Your DriveLink login code is:</p><p style="font-size:28px;letter-spacing:6px;font-weight:700;font-family:monospace;color:#f59e0b">${code}</p><p>It expires in 10 minutes. If you didn't request this, you can ignore the email.</p>`,
     });
     return NextResponse.json({
-      ok:       true,
-      channel:  "email",
-      devOnly:  result.devOnly ?? false,
-      devCode:  result.devOnly ? code : undefined,
+      ok:               true,
+      channel:          "email",
+      nextCooldownSec,
+      devOnly:          result.devOnly ?? false,
+      devCode:          result.devOnly ? code : undefined,
     });
   }
 
@@ -99,9 +115,10 @@ export async function POST(req: NextRequest) {
     `DriveLink login code: ${code}. Expires in 10 min. Don't share this code.`
   );
   return NextResponse.json({
-    ok:       true,
-    channel:  "phone",
-    devOnly:  smsResult.devOnly ?? false,
-    devCode:  smsResult.devOnly ? code : undefined,
+    ok:               true,
+    channel:          "phone",
+    nextCooldownSec,
+    devOnly:          smsResult.devOnly ?? false,
+    devCode:          smsResult.devOnly ? code : undefined,
   });
 }
