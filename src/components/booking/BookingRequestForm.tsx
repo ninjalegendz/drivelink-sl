@@ -6,6 +6,7 @@ import { createClient } from "@/lib/supabase/client";
 import { Button } from "@/components/ui/Button";
 import { formatLKR } from "@/lib/vehicles/format";
 import { calcBookingPrice } from "@/lib/bookings/pricing";
+import { GuestBookingModal } from "@/components/booking/GuestBookingModal";
 
 export interface DateRange {
   start: string;  // YYYY-MM-DD
@@ -15,6 +16,7 @@ export interface DateRange {
 interface Props {
   vehicleId:      string;
   agencyId:       string;
+  vehicleName:    string;
   dailyRateLkr:   number;
   monthlyRateLkr?: number | null;
   bookedRanges?:  DateRange[];
@@ -33,12 +35,13 @@ function formatRange(start: string, end: string): string {
   return `${s} → ${e}`;
 }
 
-export function BookingRequestForm({ vehicleId, agencyId, dailyRateLkr, monthlyRateLkr, bookedRanges = [] }: Props) {
+export function BookingRequestForm({ vehicleId, agencyId, vehicleName, dailyRateLkr, monthlyRateLkr, bookedRanges = [] }: Props) {
   const router = useRouter();
   const [startDate, setStartDate] = useState("");
   const [endDate, setEndDate]     = useState("");
   const [loading, setLoading]     = useState(false);
   const [error, setError]         = useState<string | null>(null);
+  const [guestModal, setGuestModal] = useState(false);
 
   const today = new Date().toISOString().split("T")[0];
 
@@ -86,7 +89,10 @@ export function BookingRequestForm({ vehicleId, agencyId, dailyRateLkr, monthlyR
     const { data: { user } } = await supabase.auth.getUser();
 
     if (!user) {
-      router.push(`/login?next=${encodeURIComponent(window.location.pathname)}`);
+      // Guest path — open the inline signup/login modal instead of bouncing
+      // them to /login. Booking gets placed by the modal once they're in.
+      setLoading(false);
+      setGuestModal(true);
       return;
     }
 
@@ -217,6 +223,21 @@ export function BookingRequestForm({ vehicleId, agencyId, dailyRateLkr, monthlyR
       <p className="text-slate-500 text-xs text-center">
         No payment until the agency confirms availability.
       </p>
+
+      {guestModal && days > 0 && (
+        <GuestBookingModal
+          draft={{
+            vehicleId,
+            agencyId,
+            vehicleName,
+            startDate,
+            endDate,
+            totalDays: days,
+            subtotal:  price.subtotal,
+          }}
+          onClose={() => setGuestModal(false)}
+        />
+      )}
     </form>
   );
 }

@@ -1,5 +1,6 @@
 import { notFound, redirect } from "next/navigation";
-import { Star } from "lucide-react";
+import Link from "next/link";
+import { Star, Sparkles, ShieldCheck } from "lucide-react";
 import { createClient } from "@/lib/supabase/server";
 import { Badge } from "@/components/ui/Badge";
 import { SlipUploadForm } from "@/components/booking/SlipUploadForm";
@@ -11,7 +12,8 @@ import type { BookingWithRelations } from "@/types/queries";
 import type { BookingStatus } from "@/types/database";
 
 interface Props {
-  params: Promise<{ id: string }>;
+  params:       Promise<{ id: string }>;
+  searchParams: Promise<{ welcome?: string }>;
 }
 
 const statusVariant: Record<BookingStatus, "slate" | "yellow" | "green" | "red" | "blue"> = {
@@ -26,12 +28,22 @@ const statusVariant: Record<BookingStatus, "slate" | "yellow" | "green" | "red" 
   disputed:             "red",
 };
 
-export default async function BookingDetailPage({ params }: Props) {
+export default async function BookingDetailPage({ params, searchParams }: Props) {
   const { id } = await params;
+  const { welcome } = await searchParams;
   const supabase = await createClient();
 
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) redirect(`/login?next=/bookings/${id}`);
+
+  // For the welcome banner: pull KYC status so we know whether to push Didit
+  const { data: renterProfile } = await supabase
+    .from("profiles")
+    .select("kyc_status")
+    .eq("id", user.id)
+    .single();
+  const kycStatus = (renterProfile as { kyc_status?: string } | null)?.kyc_status ?? "unverified";
+  const showDiditNudge = welcome === "1" && kycStatus !== "verified";
 
   const { data } = await supabase
     .from("bookings")
@@ -57,6 +69,44 @@ export default async function BookingDetailPage({ params }: Props) {
 
   return (
     <div className="max-w-2xl mx-auto px-4 py-8">
+      {welcome === "1" && (
+        <div className="mb-6 p-4 bg-emerald-500/10 border border-emerald-500/20 rounded-2xl">
+          <div className="flex items-start gap-3">
+            <Sparkles size={18} className="text-emerald-400 mt-0.5 shrink-0" />
+            <div>
+              <p className="text-emerald-300 font-semibold text-sm">
+                You&apos;re in — booking request sent.
+              </p>
+              <p className="text-emerald-200/80 text-xs mt-0.5">
+                The agency will confirm shortly. We&apos;ll text you when they do.
+              </p>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {showDiditNudge && (
+        <div className="mb-6 p-4 bg-amber-500/10 border border-amber-500/20 rounded-2xl">
+          <div className="flex items-start gap-3">
+            <ShieldCheck size={18} className="text-amber-400 mt-0.5 shrink-0" />
+            <div className="flex-1">
+              <p className="text-amber-300 font-semibold text-sm">
+                Verify your ID to speed this up
+              </p>
+              <p className="text-amber-200/80 text-xs mt-0.5">
+                Agencies confirm verified renters faster — usually within minutes. Takes ~2 minutes via Didit.
+              </p>
+              <Link
+                href="/account"
+                className="inline-block mt-2 text-xs font-medium text-amber-400 hover:text-amber-300"
+              >
+                Verify my ID →
+              </Link>
+            </div>
+          </div>
+        </div>
+      )}
+
       <div className="mb-6">
         <div className="flex items-center justify-between">
           <h1 className="text-xl font-bold text-white">Booking Request</h1>

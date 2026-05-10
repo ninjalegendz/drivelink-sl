@@ -207,6 +207,7 @@ export default async function VehicleDetailPage({ params }: Props) {
             <BookingRequestForm
               vehicleId={vehicle.id}
               agencyId={vehicle.agency_id}
+              vehicleName={`${vehicle.year} ${vehicle.make} ${vehicle.model}`}
               dailyRateLkr={vehicle.daily_rate_lkr}
               monthlyRateLkr={vehicle.monthly_rate_lkr}
               bookedRanges={bookedRanges}
