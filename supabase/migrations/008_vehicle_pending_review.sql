@@ -1,16 +1,11 @@
 -- ============================================================
--- Vehicle review pipeline
+-- Vehicle review pipeline — Part 1: enum value only
 -- ============================================================
--- New listings start as 'pending_review'. They are not visible to
--- the public until an admin moves them to 'available'. Admin can
--- also send a listing back by setting it to 'unlisted'.
+-- Adds 'pending_review' to vehicle_status. Postgres won't let
+-- you USE a new enum value in the same transaction it was added,
+-- so the RLS policy update lives in a separate migration (009).
+--
+-- Run order: 008 first, then 009.
 -- ============================================================
 
--- Add the new enum value (idempotent)
 alter type vehicle_status add value if not exists 'pending_review';
-
--- Tighten the public read policy: hide pending_review and unlisted
-drop policy if exists "Public can read available vehicles" on vehicles;
-
-create policy "Public can read available vehicles"
-  on vehicles for select using (status not in ('unlisted', 'pending_review'));
