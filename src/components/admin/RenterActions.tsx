@@ -2,7 +2,8 @@
 
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import { Ban, Undo2, Trash2, X, Pencil, Star } from "lucide-react";
+import Link from "next/link";
+import { Ban, Undo2, Trash2, X, Pencil, Star, Activity } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 import { Button } from "@/components/ui/Button";
 import { EditRenterModal } from "@/components/admin/EditRenterModal";
@@ -110,6 +111,12 @@ export function RenterActions({ userId, fullName, phone, email, role, isBlacklis
   return (
     <div className="flex flex-col items-end gap-1">
       <div className="flex gap-2 shrink-0 flex-wrap justify-end">
+        <Link
+          href={`/admin/users/${userId}/timeline`}
+          className="inline-flex items-center gap-1 px-2.5 py-1 text-xs text-slate-400 hover:text-amber-400 rounded-lg hover:bg-slate-800 transition-colors"
+        >
+          <Activity size={14} /> Timeline
+        </Link>
         <Button size="sm" variant="ghost" onClick={() => setRatingOpen(true)}>
           <Star size={14} /> Adjust
         </Button>

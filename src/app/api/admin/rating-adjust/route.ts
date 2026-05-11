@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient, createServiceClient } from "@/lib/supabase/server";
+import { logEvent } from "@/lib/activity/log";
 
 // POST /api/admin/rating-adjust
 // body: { target_kind: 'renter' | 'agency', target_id, field, delta, reason }
@@ -64,7 +65,8 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: updateError.message }, { status: 500 });
   }
 
-  // Log the adjustment
+  // Log the adjustment in two places: dedicated audit table (already there)
+  // and the activity timeline (so it appears in the user/agency view).
   await service.from("rating_adjustments").insert({
     target_kind: body.target_kind,
     target_id:   body.target_id,
@@ -73,6 +75,23 @@ export async function POST(req: NextRequest) {
     delta_value: body.delta,
     new_value:   next,
     reason:      body.reason.trim(),
+  });
+
+  await logEvent(service, {
+    actorId:           user.id,
+    actorRole:         "admin",
+    eventType:         "admin.rating_adjusted",
+    subjectKind:       body.target_kind,
+    subjectId:         body.target_id,
+    relatedRenterId:   body.target_kind === "renter" ? body.target_id : null,
+    relatedAgencyId:   body.target_kind === "agency" ? body.target_id : null,
+    metadata: {
+      field:       body.field,
+      delta:       body.delta,
+      previous:    cur,
+      new_value:   next,
+      reason:      body.reason.trim(),
+    },
   });
 
   return NextResponse.json({ ok: true, previous: cur, new_value: next });

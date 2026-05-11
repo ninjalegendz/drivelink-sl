@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { createClient, createServiceClient } from "@/lib/supabase/server";
 import { isValidSLPhone, toInternationalSL } from "@/lib/auth/phone-format";
 import { softDeleteAgency } from "@/lib/account/deletion";
+import { logEvent } from "@/lib/activity/log";
 
 interface RouteContext {
   params: Promise<{ id: string }>;
@@ -69,6 +70,17 @@ export async function PATCH(req: NextRequest, ctx: RouteContext) {
   if (error) {
     return NextResponse.json({ error: error.message }, { status: 500 });
   }
+
+  await logEvent(service, {
+    actorId:         auth.user.id,
+    actorRole:       "admin",
+    eventType:       "admin.agency_edited",
+    subjectKind:     "agency",
+    subjectId:       id,
+    relatedAgencyId: id,
+    metadata:        { fields: Object.keys(update) },
+  });
+
   return NextResponse.json({ ok: true });
 }
 
@@ -113,5 +125,15 @@ export async function DELETE(_req: NextRequest, ctx: RouteContext) {
     console.error("[admin agency soft-delete]", err);
     return NextResponse.json({ error: "Soft-delete failed." }, { status: 500 });
   }
+
+  await logEvent(service, {
+    actorId:         auth.user.id,
+    actorRole:       "admin",
+    eventType:       "admin.agency_deleted",
+    subjectKind:     "agency",
+    subjectId:       id,
+    relatedAgencyId: id,
+  });
+
   return NextResponse.json({ ok: true });
 }

@@ -3,6 +3,7 @@ import { createClient as createAdminClient } from "@supabase/supabase-js";
 import { createClient, createServiceClient } from "@/lib/supabase/server";
 import { isValidSLPhone, toInternationalSL } from "@/lib/auth/phone-format";
 import { softDeleteUser } from "@/lib/account/deletion";
+import { logEvent } from "@/lib/activity/log";
 
 const adminAuth = createAdminClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -75,6 +76,16 @@ export async function PATCH(req: NextRequest, ctx: RouteContext) {
     return NextResponse.json({ error: profileError.message }, { status: 500 });
   }
 
+  await logEvent(service, {
+    actorId:         auth.user.id,
+    actorRole:       "admin",
+    eventType:       "admin.user_edited",
+    subjectKind:     "renter",
+    subjectId:       id,
+    relatedRenterId: id,
+    metadata:        { fields: Object.keys(profileUpdate) },
+  });
+
   // Keep auth.users.email in sync when we changed it (renter login by email
   // needs the auth row to match).
   if ("email" in body) {
@@ -134,6 +145,15 @@ export async function DELETE(_req: NextRequest, ctx: RouteContext) {
     console.error("[admin user soft-delete]", err);
     return NextResponse.json({ error: "Soft-delete failed." }, { status: 500 });
   }
+
+  await logEvent(service, {
+    actorId:         auth.user.id,
+    actorRole:       "admin",
+    eventType:       "admin.user_deleted",
+    subjectKind:     "renter",
+    subjectId:       id,
+    relatedRenterId: id,
+  });
 
   return NextResponse.json({ ok: true });
 }
