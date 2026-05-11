@@ -73,7 +73,36 @@ export default async function BookingDetailPage({ params, searchParams }: Props)
     bank_branch:         string | null;
   };
 
-  const booking = data as unknown as BookingWithRelations;
+  let booking = data as unknown as BookingWithRelations;
+
+  // Inline self-heal: if this booking is past its 12-hour payment window
+  // and the renter never uploaded a slip, expire it the moment they (or
+  // anyone) opens the page. The nightly cron is the backstop; this
+  // catches the much-more-common case of "renter opens page late, sees
+  // countdown, but the daily cron hasn't run yet."
+  if (
+    booking.status === "confirmed" &&
+    booking.confirmed_at &&
+    !booking.slip_url &&
+    new Date(booking.confirmed_at).getTime() + 12 * 3600_000 < Date.now()
+  ) {
+    await supabase
+      .from("bookings")
+      .update({
+        status:              "cancelled",
+        cancelled_at:        new Date().toISOString(),
+        cancellation_reason: "Payment slip not uploaded within 12 hours of confirmation",
+      })
+      .eq("id", booking.id)
+      .eq("status", "confirmed");
+    booking = {
+      ...booking,
+      status:              "cancelled",
+      cancelled_at:        new Date().toISOString(),
+      cancellation_reason: "Payment slip not uploaded within 12 hours of confirmation",
+    };
+  }
+
   const vehicle = booking.vehicles!;
   const agency  = booking.agencies!;
   const status  = booking.status;
