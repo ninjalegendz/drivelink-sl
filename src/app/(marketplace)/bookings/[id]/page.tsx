@@ -254,7 +254,7 @@ export default async function BookingDetailPage({ params, searchParams }: Props)
             <div className="mt-3 flex flex-wrap gap-2">
               <a
                 href={`tel:${agency.whatsapp_number.replace(/\s+/g, "")}`}
-                className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-amber-500 hover:bg-amber-400 text-slate-950 text-xs font-semibold rounded-lg transition-colors"
+                className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-amber-500 hover:bg-amber-400 text-stone-900 text-xs font-semibold rounded-lg transition-colors"
               >
                 Call
               </a>

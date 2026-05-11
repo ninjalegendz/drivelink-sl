@@ -63,7 +63,7 @@ export function VehiclesFilter({ initialQ = "", initialCity = "", initialMaxPric
 
       <button
         type="submit"
-        className="px-5 py-2 bg-amber-500 hover:bg-amber-400 text-slate-950 font-semibold rounded-xl text-sm transition-colors"
+        className="px-5 py-2 bg-amber-500 hover:bg-amber-400 text-stone-900 font-semibold rounded-xl text-sm transition-colors"
       >
         Filter
       </button>

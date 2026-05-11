@@ -53,7 +53,7 @@ export default async function HomePage() {
             />
             <button
               type="submit"
-              className="px-5 py-3 bg-amber-500 hover:bg-amber-400 text-slate-950 font-semibold rounded-xl transition-colors text-sm"
+              className="px-5 py-3 bg-amber-500 hover:bg-amber-400 text-stone-900 font-semibold rounded-xl transition-colors text-sm"
             >
               Search
             </button>
@@ -120,7 +120,7 @@ export default async function HomePage() {
             <p>No vehicles listed yet. Be the first agency to list.</p>
             <Link
               href="/signup"
-              className="mt-4 inline-block px-5 py-2.5 bg-amber-500 text-slate-950 font-semibold rounded-xl text-sm hover:bg-amber-400 transition-colors"
+              className="mt-4 inline-block px-5 py-2.5 bg-amber-500 text-stone-900 font-semibold rounded-xl text-sm hover:bg-amber-400 transition-colors"
             >
               List your fleet for free
             </Link>
@@ -139,7 +139,7 @@ export default async function HomePage() {
           </div>
           <Link
             href="/signup?role=agency"
-            className="shrink-0 px-6 py-3 bg-amber-500 hover:bg-amber-400 text-slate-950 font-semibold rounded-xl transition-colors"
+            className="shrink-0 px-6 py-3 bg-amber-500 hover:bg-amber-400 text-stone-900 font-semibold rounded-xl transition-colors"
           >
             List your fleet →
           </Link>

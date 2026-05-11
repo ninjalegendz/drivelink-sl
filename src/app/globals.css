@@ -1,87 +1,158 @@
 @import "tailwindcss";
 
-/* ─── Form control theming ─────────────────────────────────── */
-/* Replace OS-native chrome on selects, number inputs, and date
-   pickers with theme-matching styling. Applies app-wide so we
-   don't have to repeat utilities on every input. */
+/* ─── Trustable-pastel-light palette + bouncy motion ──────────
+   Override the slate scale so existing class names (bg-slate-950,
+   text-slate-300, etc.) map to light, warm-cream surfaces with
+   dark text. Inverts the entire dark theme via tokens — no
+   component edits required for the bulk of the site.
+
+   Exceptions (handled in component files):
+   - Button primary text was text-slate-950 → text-stone-900 so
+     it stays dark on amber backgrounds (slate-950 is now cream)
+   - VehicleForm photo-overlay badges + AvatarUploader scrim use
+     bg-stone-900 for dark overlays on photos
+   - Navbar / Footer / app-shell backgrounds use the slate-950
+     override (now cream) so the page glows softly */
+@theme inline {
+  /* The slate scale — INVERTED. Higher numbers used to be darker
+     surfaces; now they're lighter so existing markup gets a
+     pastel-light makeover without touching component files. */
+  --color-slate-50:  #020617;  /* darkest text (rare) */
+  --color-slate-100: #0f172a;  /* very dark text */
+  --color-slate-200: #1e293b;  /* dark text */
+  --color-slate-300: #334155;  /* primary-ish text */
+  --color-slate-400: #475569;  /* secondary text */
+  --color-slate-500: #64748b;  /* muted text */
+  --color-slate-600: #94a3b8;  /* very muted / mid border */
+  --color-slate-700: #d4d4cd;  /* soft visible border */
+  --color-slate-800: #ece8dc;  /* warm off-white — input bg */
+  --color-slate-900: #ffffff;  /* white — card surfaces */
+  --color-slate-950: #fbf8f0;  /* warm cream — page bg */
+
+  /* "white" text turns into deep slate — primary headings on the
+     cream surfaces read properly without renaming text-white
+     everywhere. */
+  --color-white: #1a1f2e;
+
+  /* Amber accents bumped darker for legibility on light bg.
+     Primary buttons still use bg-amber-500 which Tailwind keeps
+     at the default warm orange — works on cream. */
+  --color-amber-400: #d97706;  /* effectively amber-600 — link/accent text */
+  --color-amber-300: #ea580c;  /* warmer warning text */
+
+  /* ─── Bouncy easing tokens ────────────────────────────────
+     Snappy is the everyday transition (most hovers, dropdowns).
+     Bouncy overshoots a touch — for click-presses, modal opens. */
+  --ease-snappy: cubic-bezier(0.4, 0, 0.2, 1);
+  --ease-bouncy: cubic-bezier(0.34, 1.56, 0.64, 1);
+}
 
 @layer base {
-  /* Fallback chevron for any native <select> still in the app — most are
-     replaced by the custom <Select> component. Compact so it doesn't
-     dominate small inputs. */
+  /* Snappier default for every Tailwind transition utility.
+     Components opt into the bouncy spring via the .spring-*
+     utility classes below. */
+  *, *::before, *::after {
+    transition-timing-function: var(--ease-snappy);
+  }
+
+  /* Fallback chevron for any native <select> — most are replaced by
+     the custom <Select> component. */
   select {
     appearance: none;
     -webkit-appearance: none;
     -moz-appearance: none;
-    background-image: url("data:image/svg+xml;charset=utf-8,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 20 20' fill='%2394a3b8'%3E%3Cpath fill-rule='evenodd' d='M5.23 7.21a.75.75 0 011.06.02L10 11.06l3.71-3.83a.75.75 0 011.08 1.04l-4.25 4.39a.75.75 0 01-1.08 0L5.21 8.27a.75.75 0 01.02-1.06z' clip-rule='evenodd'/%3E%3C/svg%3E");
+    background-image: url("data:image/svg+xml;charset=utf-8,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 20 20' fill='%23475569'%3E%3Cpath fill-rule='evenodd' d='M5.23 7.21a.75.75 0 011.06.02L10 11.06l3.71-3.83a.75.75 0 011.08 1.04l-4.25 4.39a.75.75 0 01-1.08 0L5.21 8.27a.75.75 0 01.02-1.06z' clip-rule='evenodd'/%3E%3C/svg%3E");
     background-repeat: no-repeat;
     background-position: right 0.6rem center;
     background-size: 0.875rem 0.875rem;
     padding-right: 2rem;
   }
 
-  /* Hide default browser spinners on number inputs */
+  /* Hide default browser number-input spinners */
   input[type="number"]::-webkit-inner-spin-button,
   input[type="number"]::-webkit-outer-spin-button {
     -webkit-appearance: none;
     margin: 0;
   }
-  input[type="number"] {
-    -moz-appearance: textfield;
-  }
+  input[type="number"] { -moz-appearance: textfield; }
 
-  /* Hide browser-native password reveal/clear icons (Edge adds these by
-     default via ::-ms-reveal). We render our own <Eye> button instead. */
+  /* Hide browser-native password reveal/clear icons */
   input[type="password"]::-ms-reveal,
-  input[type="password"]::-ms-clear {
-    display: none;
-  }
+  input[type="password"]::-ms-clear { display: none; }
 
-  /* Tint the date-picker icon to match the dark theme */
+  /* Date-picker icon — keep readable on light bg without inversion */
   input[type="date"]::-webkit-calendar-picker-indicator {
-    filter: invert(0.7);
-    opacity: 0.7;
+    opacity: 0.6;
     cursor: pointer;
-    transition: opacity 0.15s;
+    transition: opacity 0.15s var(--ease-snappy);
   }
-  input[type="date"]::-webkit-calendar-picker-indicator:hover {
-    opacity: 1;
-  }
+  input[type="date"]::-webkit-calendar-picker-indicator:hover { opacity: 1; }
 
-  /* Style the select dropdown options on browsers that respect it */
+  /* Native <option> rendering for the few selects we haven't replaced
+     with the themed component. */
   option {
-    background-color: rgb(30 41 59);  /* slate-800 */
-    color: rgb(241 245 249);          /* slate-100 */
+    background-color: #ffffff;
+    color: #1a1f2e;
   }
 
-  /* ─── Themed scrollbars ─────────────────────────────────────
-     Replace OS-default scrollbars with thin slate ones so they
-     blend with the dark UI. Applies app-wide. */
-
-  /* Firefox */
+  /* Themed scrollbars — soft cream-tinted thumb */
   * {
     scrollbar-width: thin;
-    scrollbar-color: rgb(51 65 85) transparent;  /* slate-700 thumb on transparent track */
+    scrollbar-color: #c8c2b1 transparent;
   }
-
-  /* WebKit / Blink (Chrome, Safari, Edge) */
   *::-webkit-scrollbar {
     width: 8px;
     height: 8px;
   }
-  *::-webkit-scrollbar-track {
-    background: transparent;
-  }
+  *::-webkit-scrollbar-track { background: transparent; }
   *::-webkit-scrollbar-thumb {
-    background-color: rgb(51 65 85);          /* slate-700 */
+    background-color: #c8c2b1;
     border-radius: 4px;
     border: 2px solid transparent;
     background-clip: padding-box;
   }
-  *::-webkit-scrollbar-thumb:hover {
-    background-color: rgb(71 85 105);         /* slate-600 */
+  *::-webkit-scrollbar-thumb:hover { background-color: #a89e7e; }
+  *::-webkit-scrollbar-corner { background: transparent; }
+}
+
+/* ─── Bouncy / bubbly motion utilities ───────────────────────
+   Drop these classes on any element to get the spring feel.
+   Buttons get .spring-press by default via the Button component;
+   cards opt in with .spring-hover. Modals + toasts use
+   .animate-bounce-in for entrance; badges/chips use .animate-pop-in. */
+@layer utilities {
+  .spring-press {
+    transition: transform 0.16s var(--ease-bouncy), box-shadow 0.16s var(--ease-snappy);
   }
-  *::-webkit-scrollbar-corner {
-    background: transparent;
+  .spring-press:hover:not(:disabled) { transform: scale(1.02); }
+  .spring-press:active:not(:disabled) { transform: scale(0.96); }
+
+  .spring-hover {
+    transition: transform 0.22s var(--ease-bouncy),
+                box-shadow 0.22s var(--ease-snappy),
+                border-color 0.2s var(--ease-snappy);
   }
+  .spring-hover:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 18px -8px rgba(80, 50, 0, 0.12);
+  }
+
+  @keyframes bounce-in {
+    0%   { opacity: 0; transform: scale(0.92) translateY(8px); }
+    60%  { opacity: 1; transform: scale(1.02) translateY(-2px); }
+    100% { opacity: 1; transform: scale(1)    translateY(0); }
+  }
+  .animate-bounce-in { animation: bounce-in 0.32s var(--ease-bouncy) both; }
+
+  @keyframes pop-in {
+    0%   { opacity: 0; transform: scale(0.6); }
+    100% { opacity: 1; transform: scale(1); }
+  }
+  .animate-pop-in { animation: pop-in 0.24s var(--ease-bouncy) both; }
+
+  @keyframes fade-up {
+    0%   { opacity: 0; transform: translateY(8px); }
+    100% { opacity: 1; transform: translateY(0); }
+  }
+  .animate-fade-up { animation: fade-up 0.26s var(--ease-snappy) both; }
 }

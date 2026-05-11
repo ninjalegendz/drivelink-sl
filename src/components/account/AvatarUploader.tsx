@@ -90,8 +90,8 @@ export function AvatarUploader({ userId, initialAvatarUrl, fullName }: Props) {
           </div>
         )}
         {loading && (
-          <div className="absolute inset-0 bg-slate-950/70 flex items-center justify-center">
-            <Loader2 size={20} className="text-amber-400 animate-spin" />
+          <div className="absolute inset-0 bg-stone-900/70 flex items-center justify-center">
+            <Loader2 size={20} className="text-amber-300 animate-spin" />
           </div>
         )}
       </div>

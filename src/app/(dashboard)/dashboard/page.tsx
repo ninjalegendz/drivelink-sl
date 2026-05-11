@@ -99,7 +99,7 @@ export default async function DashboardPage() {
       <div className="flex gap-3">
         <Link
           href="/dashboard/vehicles/new"
-          className="inline-flex items-center gap-1.5 px-5 py-2.5 bg-amber-500 hover:bg-amber-400 text-slate-950 font-semibold rounded-xl text-sm transition-colors"
+          className="inline-flex items-center gap-1.5 px-5 py-2.5 bg-amber-500 hover:bg-amber-400 text-stone-900 font-semibold rounded-xl text-sm transition-colors"
         >
           <Plus size={16} /> Add vehicle
         </Link>

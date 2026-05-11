@@ -45,7 +45,7 @@ export async function Navbar() {
             ) : role === "agency_owner" ? (
               <Link
                 href="/dashboard"
-                className="px-4 py-1.5 text-sm bg-amber-500 hover:bg-amber-400 text-slate-950 font-semibold rounded-xl transition-colors"
+                className="px-4 py-1.5 text-sm bg-amber-500 hover:bg-amber-400 text-stone-900 font-semibold rounded-xl transition-colors"
               >
                 Dashboard
               </Link>
@@ -67,7 +67,7 @@ export async function Navbar() {
               </Link>
               <Link
                 href="/signup?role=agency"
-                className="px-4 py-1.5 text-sm bg-amber-500 hover:bg-amber-400 text-slate-950 font-semibold rounded-xl transition-colors"
+                className="px-4 py-1.5 text-sm bg-amber-500 hover:bg-amber-400 text-stone-900 font-semibold rounded-xl transition-colors"
               >
                 List your fleet
               </Link>

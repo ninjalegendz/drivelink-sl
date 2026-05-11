@@ -10,10 +10,12 @@ export interface ButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {
 }
 
 const variantClasses: Record<Variant, string> = {
-  primary:   "bg-amber-500 hover:bg-amber-400 text-slate-950 font-semibold",
+  // text-stone-900 stays dark on amber even after the slate-950 token
+  // is remapped to cream by the new pastel palette.
+  primary:   "bg-amber-500 hover:bg-amber-400 text-stone-900 font-semibold shadow-sm hover:shadow",
   secondary: "bg-slate-800 hover:bg-slate-700 text-white border border-slate-700",
-  ghost:     "hover:bg-slate-800 text-slate-300 hover:text-white",
-  danger:    "bg-red-600 hover:bg-red-500 text-white font-semibold",
+  ghost:     "hover:bg-slate-800 text-slate-400 hover:text-white",
+  danger:    "bg-red-600 hover:bg-red-500 text-white font-semibold shadow-sm",
 };
 
 const sizeClasses: Record<Size, string> = {
@@ -27,7 +29,7 @@ export const Button = forwardRef<HTMLButtonElement, ButtonProps>(
     <button
       ref={ref}
       disabled={disabled || loading}
-      className={`inline-flex items-center justify-center gap-2 transition-colors disabled:opacity-50 disabled:cursor-not-allowed ${variantClasses[variant]} ${sizeClasses[size]} ${className}`}
+      className={`spring-press inline-flex items-center justify-center gap-2 transition disabled:opacity-50 disabled:cursor-not-allowed ${variantClasses[variant]} ${sizeClasses[size]} ${className}`}
       {...props}
     >
       {loading && (

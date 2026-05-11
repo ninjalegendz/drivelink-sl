@@ -166,7 +166,7 @@ export default async function AdminVehiclesPage({ searchParams }: Props) {
                       >
                         <Image src={url} alt={`Photo ${i + 1}`} fill className="object-cover" sizes="176px" />
                         {i === 0 && (
-                          <span className="absolute bottom-1 left-1 text-[10px] bg-amber-500 text-slate-950 font-semibold px-1.5 py-0.5 rounded">Cover</span>
+                          <span className="absolute bottom-1 left-1 text-[10px] bg-amber-500 text-stone-900 font-semibold px-1.5 py-0.5 rounded">Cover</span>
                         )}
                         <div className="absolute inset-0 bg-black/0 group-hover:bg-black/30 flex items-center justify-center transition-colors">
                           <span className="opacity-0 group-hover:opacity-100 text-white text-[10px] bg-black/60 px-2 py-0.5 rounded transition-opacity inline-flex items-center gap-1">

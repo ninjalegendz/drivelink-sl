@@ -210,7 +210,7 @@ export default async function AccountPage({ searchParams }: Props) {
                 <div className="flex flex-col items-center">
                   <div className={`w-7 h-7 rounded-full flex items-center justify-center text-xs font-bold transition-colors ${
                     done    ? "bg-emerald-500 text-white" :
-                    current ? "bg-amber-500 text-slate-950" :
+                    current ? "bg-amber-500 text-stone-900" :
                               "bg-slate-800 text-slate-500 border border-slate-700"
                   }`}>
                     {done ? <Check size={14} strokeWidth={3} /> : i + 1}

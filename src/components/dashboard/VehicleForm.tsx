@@ -459,18 +459,18 @@ function PhotoThumb({
       <button
         type="button"
         onClick={onRemove}
-        className="absolute top-1 right-1 w-6 h-6 rounded-full bg-slate-950/70 hover:bg-red-500 text-white opacity-0 group-hover:opacity-100 transition flex items-center justify-center"
+        className="absolute top-1 right-1 w-6 h-6 rounded-full bg-stone-900/70 hover:bg-red-500 text-white opacity-0 group-hover:opacity-100 transition flex items-center justify-center"
         aria-label="Remove photo"
       >
         <X size={14} />
       </button>
       {isCover && (
-        <span className="absolute bottom-1 left-1 text-[10px] bg-amber-500 text-slate-950 font-semibold px-1.5 py-0.5 rounded">
+        <span className="absolute bottom-1 left-1 text-[10px] bg-amber-500 text-stone-900 font-semibold px-1.5 py-0.5 rounded">
           Cover
         </span>
       )}
       {isPending && (
-        <span className="absolute bottom-1 right-1 text-[10px] bg-slate-950/80 text-amber-400 px-1.5 py-0.5 rounded">
+        <span className="absolute bottom-1 right-1 text-[10px] bg-stone-900/80 text-amber-200 px-1.5 py-0.5 rounded">
           New
         </span>
       )}

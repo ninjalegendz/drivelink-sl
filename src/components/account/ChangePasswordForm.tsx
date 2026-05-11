@@ -119,7 +119,7 @@ export function ChangePasswordForm({ email }: Props) {
           }`}
           aria-hidden
         >
-          {allShown && <Check size={12} strokeWidth={3} className="text-slate-950" />}
+          {allShown && <Check size={12} strokeWidth={3} className="text-stone-900" />}
         </span>
         <span className="text-xs text-slate-400">Show passwords</span>
       </label>

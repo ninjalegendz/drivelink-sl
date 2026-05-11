@@ -62,7 +62,7 @@ export default async function MyBookingsPage() {
           <p className="text-sm">Browse available vehicles and make your first booking.</p>
           <Link
             href="/vehicles"
-            className="mt-4 inline-block px-6 py-2.5 bg-amber-500 hover:bg-amber-400 text-slate-950 font-semibold rounded-xl text-sm transition-colors"
+            className="mt-4 inline-block px-6 py-2.5 bg-amber-500 hover:bg-amber-400 text-stone-900 font-semibold rounded-xl text-sm transition-colors"
           >
             Browse vehicles
           </Link>

@@ -54,7 +54,7 @@ export default function PricingPage() {
 
           <Link
             href="/vehicles"
-            className="mt-5 inline-flex items-center justify-center w-full py-2.5 bg-amber-500 hover:bg-amber-400 text-slate-950 font-semibold rounded-xl text-sm transition-colors"
+            className="mt-5 inline-flex items-center justify-center w-full py-2.5 bg-amber-500 hover:bg-amber-400 text-stone-900 font-semibold rounded-xl text-sm transition-colors"
           >
             Browse vehicles
           </Link>

@@ -133,7 +133,7 @@ export function SupportChat({ threadId, initial, currentRole, currentUserId, aud
                   )}
                   <div className={`px-3 py-2 rounded-2xl text-sm leading-snug whitespace-pre-wrap break-words ${
                     mine
-                      ? "bg-amber-500 text-slate-950 rounded-br-md"
+                      ? "bg-amber-500 text-stone-900 rounded-br-md"
                       : "bg-slate-800 text-slate-100 rounded-bl-md"
                   }`}>
                     {m.body}

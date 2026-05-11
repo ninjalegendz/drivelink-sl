@@ -70,9 +70,9 @@ export default async function AdminOverviewPage() {
         {(pendingSlips ?? 0) > 0 && (
           <Link
             href="/admin/slips"
-            className="flex items-center gap-2 px-4 py-2 bg-amber-500 hover:bg-amber-400 text-slate-950 font-semibold rounded-xl text-sm transition-colors"
+            className="spring-press flex items-center gap-2 px-4 py-2 bg-amber-500 hover:bg-amber-400 text-stone-900 font-semibold rounded-xl text-sm transition shadow-sm"
           >
-            <span className="w-5 h-5 rounded-full bg-slate-950/20 text-xs flex items-center justify-center font-bold">
+            <span className="w-5 h-5 rounded-full bg-stone-900/20 text-xs flex items-center justify-center font-bold">
               {pendingSlips}
             </span>
             Verify slips now
