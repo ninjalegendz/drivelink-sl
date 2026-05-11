@@ -24,6 +24,8 @@ export async function Navbar() {
 
         <nav className="hidden md:flex items-center gap-6 text-sm text-slate-400">
           <Link href="/vehicles" className="hover:text-white transition-colors">Browse</Link>
+          <Link href="/pricing"  className="hover:text-white transition-colors">Pricing</Link>
+          <Link href="/faq"      className="hover:text-white transition-colors">FAQ</Link>
           {!user && (
             <Link href="/signup?role=agency" className="hover:text-white transition-colors">
               List your fleet

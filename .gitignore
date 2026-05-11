@@ -11,3 +11,8 @@ out/
 
 # Supabase CLI scratch (project ref, version cache, etc.)
 supabase/.temp/
+
+# Personal docs — never commit
+WebXPay/
+*.pdf
+Declaration.*
