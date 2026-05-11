@@ -1,6 +1,8 @@
 import { createClient as createPlainClient } from "@supabase/supabase-js";
 import { randomBytes } from "crypto";
 import { createServiceClient } from "@/lib/supabase/server";
+import { sendEmail } from "@/lib/email/send";
+import { generateUndeleteToken } from "@/lib/account/undelete-token";
 
 export interface DeletionBlocker {
   type:     "active_booking" | "unpaid_fees" | "is_admin";
@@ -166,13 +168,16 @@ export async function softDeleteUser(userId: string): Promise<void> {
   const service = await createServiceClient();
   const shortId = userId.slice(0, 8).toUpperCase();
 
-  // Read what we need before scrubbing
+  // Read what we need BEFORE scrubbing — we need email + name for the
+  // confirmation/undelete email.
   const { data: profileRow } = await service
     .from("profiles")
-    .select("nic_url, selfie_url, avatar_url, role")
+    .select("full_name, email, nic_url, selfie_url, avatar_url, role")
     .eq("id", userId)
     .single();
   const profile = profileRow as {
+    full_name: string;
+    email: string | null;
     nic_url: string | null;
     selfie_url: string | null;
     avatar_url: string | null;
@@ -181,7 +186,31 @@ export async function softDeleteUser(userId: string): Promise<void> {
 
   if (!profile) return;
 
-  // Storage cleanup — best-effort
+  // Build the deletion timestamp + undelete token NOW so the email shows
+  // the same `deleted_at` we're about to persist (HMAC binds the two).
+  const deletedAt = new Date().toISOString();
+
+  // Send confirmation email BEFORE the scrub wipes the address.
+  const realEmail = profile.email && !profile.email.endsWith("@phone.drivelink.invalid")
+    ? profile.email
+    : null;
+  if (realEmail) {
+    const token  = generateUndeleteToken(userId, deletedAt);
+    const appUrl = process.env.NEXT_PUBLIC_APP_URL ?? "https://drivelink.lk";
+    const undeleteUrl = `${appUrl}/api/account/undelete?u=${encodeURIComponent(userId)}&t=${token}`;
+    try {
+      await sendEmail({
+        to:      realEmail,
+        subject: "Your DriveLink account was deleted",
+        text:    `Hi ${profile.full_name},\n\nYour DriveLink account was just deleted. We've removed your name, contact info, and identity documents from the platform. Booking history remains visible (anonymised) to the agencies / renters you transacted with.\n\nIf you DID delete the account: no action needed.\n\nIf you DIDN'T delete the account, someone may have access to your phone or email. Click the link below within 7 days to restore the account, and then tighten your login security (change your email password, enable 2FA on your email provider, watch for unauthorised access to your phone number):\n\n${undeleteUrl}\n\nLink expires after 7 days.\n\n— DriveLink Support`,
+        html:    `<p>Hi ${profile.full_name},</p><p>Your DriveLink account was just deleted. We've removed your name, contact info, and identity documents from the platform. Booking history remains visible (anonymised) to the agencies / renters you transacted with.</p><p><strong>If you DID delete the account:</strong> no action needed.</p><p><strong>If you DIDN'T:</strong> someone may have access to your phone or email. Click below within 7 days to restore the account.</p><p><a href="${undeleteUrl}" style="background:#f59e0b;color:#0f172a;padding:12px 18px;border-radius:8px;text-decoration:none;font-weight:600;display:inline-block">Restore my account</a></p><div style="margin-top:20px;padding:12px;background:#fef3c7;border-left:3px solid #f59e0b;color:#92400e;font-size:13px"><strong>⚠ Tighten your account security:</strong><br>• Change your email password and don't reuse it elsewhere<br>• Enable 2FA on your email provider<br>• Watch for unauthorised SIM-swap activity on your phone number<br>• If you suspect compromise, contact us at support@drivelink.lk</div><p style="color:#64748b;font-size:12px;margin-top:20px">Link expires in 7 days. After that the deletion becomes permanent and the account can't be restored.</p>`,
+      });
+    } catch (err) {
+      console.error("[deletion] email send failed (continuing with delete)", err);
+    }
+  }
+
+  // Storage cleanup — best-effort, before nulling the URLs
   if (profile.nic_url)    await deleteStorageObjectByUrl(service, "kyc",     profile.nic_url);
   if (profile.selfie_url) await deleteStorageObjectByUrl(service, "kyc",     profile.selfie_url);
   if (profile.avatar_url) await deleteStorageObjectByUrl(service, "avatars", profile.avatar_url);
@@ -201,9 +230,10 @@ export async function softDeleteUser(userId: string): Promise<void> {
       phone_otp_expires_at: null,
       phone_otp_attempts:   0,
       phone_otp_send_count: 0,
-      deleted_at:           new Date().toISOString(),
+      deleted_at:           deletedAt,
       // PRESERVED on purpose: is_blacklisted, blacklist_reason*,
-      // rating_avg, rating_count, reliability_pct, kyc_status, phone
+      // nic_number, rating_avg, rating_count, reliability_pct,
+      // kyc_status, phone
     })
     .eq("id", userId);
 

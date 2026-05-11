@@ -90,6 +90,7 @@ export default async function AdminAgenciesPage() {
               whatsapp_number={a.whatsapp_number}
               description={a.description}
               isBlocked={a.is_blocked}
+              reliabilityPct={a.reliability_pct}
             />
           </div>
         </div>

@@ -2,21 +2,24 @@
 
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import { Ban, Undo2, Trash2, X, Pencil } from "lucide-react";
+import { Ban, Undo2, Trash2, X, Pencil, Star } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 import { Button } from "@/components/ui/Button";
 import { EditRenterModal } from "@/components/admin/EditRenterModal";
+import { RatingAdjustModal } from "@/components/admin/RatingAdjustModal";
 
 interface Props {
-  userId:        string;
-  fullName:      string;
-  phone:         string;
-  email:         string | null;
-  role:          "renter" | "agency_owner" | "admin";
-  isBlacklisted: boolean;
+  userId:         string;
+  fullName:       string;
+  phone:          string;
+  email:          string | null;
+  role:           "renter" | "agency_owner" | "admin";
+  isBlacklisted:  boolean;
+  ratingAvg?:     number | null;
+  reliabilityPct?: number | null;
 }
 
-export function RenterActions({ userId, fullName, phone, email, role, isBlacklisted }: Props) {
+export function RenterActions({ userId, fullName, phone, email, role, isBlacklisted, ratingAvg, reliabilityPct }: Props) {
   const router = useRouter();
   const [loading, setLoading] = useState<string | null>(null);
   const [error, setError]     = useState<string | null>(null);
@@ -27,7 +30,8 @@ export function RenterActions({ userId, fullName, phone, email, role, isBlacklis
   const [publicReason, setPublicReason] = useState("");
 
   // Edit modal state
-  const [editOpen, setEditOpen] = useState(false);
+  const [editOpen,   setEditOpen]   = useState(false);
+  const [ratingOpen, setRatingOpen] = useState(false);
 
   // Lock body scroll while modal is open + Escape to close
   useEffect(() => {
@@ -105,7 +109,10 @@ export function RenterActions({ userId, fullName, phone, email, role, isBlacklis
 
   return (
     <div className="flex flex-col items-end gap-1">
-      <div className="flex gap-2 shrink-0">
+      <div className="flex gap-2 shrink-0 flex-wrap justify-end">
+        <Button size="sm" variant="ghost" onClick={() => setRatingOpen(true)}>
+          <Star size={14} /> Adjust
+        </Button>
         <Button size="sm" variant="ghost" onClick={() => setEditOpen(true)}>
           <Pencil size={14} /> Edit
         </Button>
@@ -127,6 +134,16 @@ export function RenterActions({ userId, fullName, phone, email, role, isBlacklis
           userId={userId}
           initial={{ full_name: fullName, phone, email, role }}
           onClose={() => setEditOpen(false)}
+        />
+      )}
+      {ratingOpen && (
+        <RatingAdjustModal
+          targetKind="renter"
+          targetId={userId}
+          targetName={fullName}
+          currentRating={ratingAvg ?? null}
+          currentRel={reliabilityPct ?? null}
+          onClose={() => setRatingOpen(false)}
         />
       )}
       {error && !modalOpen && <p className="text-red-400 text-xs">{error}</p>}

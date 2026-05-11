@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { createServiceClient } from "@/lib/supabase/server";
 import { sendEmail } from "@/lib/email/send";
 import { sendSms } from "@/lib/sms/textlk";
+import { sweepOrphanStorage } from "@/lib/storage/sweep";
 
 export const dynamic = "force-dynamic";
 
@@ -130,6 +131,25 @@ export async function GET(req: NextRequest) {
     }
   }
 
-  console.log(`[cron expire-bookings] processed=${processed} notified=${notified}`);
-  return NextResponse.json({ ok: true, processed, notified });
+  // While we're here on the daily run, sweep orphaned storage objects.
+  // These accumulate when a user starts an upload but bails before the
+  // profile row gets updated, or from rare edge cases in the soft-delete
+  // path. Cheap to run.
+  let avatarsRemoved = 0;
+  let kycRemoved     = 0;
+  try {
+    avatarsRemoved = await sweepOrphanStorage(service, "avatars");
+    kycRemoved     = await sweepOrphanStorage(service, "kyc");
+  } catch (err) {
+    console.error("[cron expire-bookings] storage sweep failed", err);
+  }
+
+  console.log(`[cron expire-bookings] processed=${processed} notified=${notified} orphans_swept=${avatarsRemoved + kycRemoved}`);
+  return NextResponse.json({
+    ok:         true,
+    processed,
+    notified,
+    avatarsRemoved,
+    kycRemoved,
+  });
 }

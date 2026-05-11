@@ -151,6 +151,8 @@ export default async function AdminUsersPage({ searchParams }: Props) {
                   email={u.email}
                   role={u.role as "renter" | "agency_owner" | "admin"}
                   isBlacklisted={u.is_blacklisted}
+                  ratingAvg={u.rating_avg}
+                  reliabilityPct={u.reliability_pct}
                 />
               </div>
             </div>

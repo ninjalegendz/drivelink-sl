@@ -106,3 +106,18 @@ export function mapDiditStatus(raw: string): "verified" | "rejected" | "pending"
   if (n === "rejected")            return "rejected";
   return "pending";
 }
+
+// Walk the Didit session payload looking for the verified document
+// number (NIC). Didit's payload shape varies across versions — we
+// check the obvious paths and return the first non-empty hit.
+export function extractDiditNic(session: Record<string, unknown>): string | null {
+  const candidates = [
+    (session.id_verification as Record<string, unknown> | undefined)?.document_number,
+    ((session.id_verification as Record<string, unknown> | undefined)?.document_data as Record<string, unknown> | undefined)?.document_number,
+    (session.decision as Record<string, unknown> | undefined)?.document_number,
+    ((session.decision as Record<string, unknown> | undefined)?.id_verification as Record<string, unknown> | undefined)?.document_number,
+    session.document_number,
+  ];
+  const hit = candidates.find((v) => typeof v === "string" && v.trim().length > 0);
+  return typeof hit === "string" ? hit.trim() : null;
+}

@@ -2,10 +2,11 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { Ban, Undo2, Trash2, Pencil } from "lucide-react";
+import { Ban, Undo2, Trash2, Pencil, Star } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 import { Button } from "@/components/ui/Button";
 import { EditAgencyModal } from "@/components/admin/EditAgencyModal";
+import { RatingAdjustModal } from "@/components/admin/RatingAdjustModal";
 
 interface Props {
   agencyId:        string;
@@ -15,13 +16,15 @@ interface Props {
   whatsapp_number: string;
   description:     string | null;
   isBlocked:       boolean;
+  reliabilityPct?: number | null;
 }
 
-export function AgencyActions({ agencyId, name, city, address, whatsapp_number, description, isBlocked }: Props) {
+export function AgencyActions({ agencyId, name, city, address, whatsapp_number, description, isBlocked, reliabilityPct }: Props) {
   const router = useRouter();
   const [loading, setLoading] = useState<string | null>(null);
   const [error, setError]     = useState<string | null>(null);
-  const [editOpen, setEditOpen] = useState(false);
+  const [editOpen,   setEditOpen]   = useState(false);
+  const [ratingOpen, setRatingOpen] = useState(false);
 
   async function block() {
     if (!confirm(`Block ${name}? Their listings will be hidden from the marketplace.`)) return;
@@ -80,7 +83,10 @@ export function AgencyActions({ agencyId, name, city, address, whatsapp_number, 
 
   return (
     <div className="flex flex-col items-end gap-1">
-      <div className="flex gap-2 shrink-0">
+      <div className="flex gap-2 shrink-0 flex-wrap justify-end">
+        <Button size="sm" variant="ghost" onClick={() => setRatingOpen(true)}>
+          <Star size={14} /> Adjust
+        </Button>
         <Button size="sm" variant="ghost" onClick={() => setEditOpen(true)}>
           <Pencil size={14} /> Edit
         </Button>
@@ -103,6 +109,16 @@ export function AgencyActions({ agencyId, name, city, address, whatsapp_number, 
           agencyId={agencyId}
           initial={{ name, city, address, whatsapp_number, description }}
           onClose={() => setEditOpen(false)}
+        />
+      )}
+      {ratingOpen && (
+        <RatingAdjustModal
+          targetKind="agency"
+          targetId={agencyId}
+          targetName={name}
+          currentRating={null}
+          currentRel={reliabilityPct ?? null}
+          onClose={() => setRatingOpen(false)}
         />
       )}
     </div>

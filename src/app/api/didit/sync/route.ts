@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient, createServiceClient } from "@/lib/supabase/server";
-import { fetchDiditSession, mapDiditStatus } from "@/lib/didit/client";
+import { fetchDiditSession, mapDiditStatus, extractDiditNic } from "@/lib/didit/client";
+import { applyKycVerification } from "@/lib/account/kyc-apply";
 
 // POST /api/didit/sync  body: { userId }
 //
@@ -48,7 +49,19 @@ export async function POST(req: NextRequest) {
   }
 
   const newStatus = mapDiditStatus(session.status);
-  await service.from("profiles").update({ kyc_status: newStatus }).eq("id", userId);
+  const nic = extractDiditNic(session as unknown as Record<string, unknown>);
 
-  return NextResponse.json({ ok: true, kyc_status: newStatus, didit_status: session.status });
+  const { blacklistInherited } = await applyKycVerification(service, {
+    userId,
+    newStatus,
+    nic,
+  });
+
+  return NextResponse.json({
+    ok:               true,
+    kyc_status:       newStatus,
+    didit_status:     session.status,
+    nic_captured:     Boolean(nic),
+    blacklistInherited,
+  });
 }

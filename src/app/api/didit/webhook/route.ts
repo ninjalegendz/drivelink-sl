@@ -1,5 +1,7 @@
 import { NextResponse } from "next/server";
 import { createClient as createSupabase } from "@supabase/supabase-js";
+import { extractDiditNic } from "@/lib/didit/client";
+import { applyKycVerification } from "@/lib/account/kyc-apply";
 
 const adminClient = createSupabase(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -62,24 +64,26 @@ export async function POST(req: Request) {
     normalized === "rejected"  ? "rejected" :
     "pending";
 
-  const { error, data: updated } = await adminClient
+  // Confirm this profile exists before we apply
+  const { data: matched } = await adminClient
     .from("profiles")
-    .update({ kyc_status: kycStatus })
+    .select("id")
     .eq("id", userId)
-    .select("id, kyc_status");
-
-  if (error) {
-    console.error("[Didit webhook] DB update failed:", error, "userId:", userId);
-    return NextResponse.json({ error: "DB error", detail: error.message }, { status: 500 });
-  }
-
-  if (!updated || updated.length === 0) {
+    .maybeSingle();
+  if (!matched) {
     console.warn("[Didit webhook] No profile matched userId:", userId);
     return NextResponse.json({ ok: true, matched: 0 });
   }
 
-  console.log(`[Didit webhook] OK user=${userId} status=${rawStatus} -> kyc_status=${kycStatus}`);
-  return NextResponse.json({ ok: true, kyc_status: kycStatus });
+  const nic = extractDiditNic(body);
+  const { blacklistInherited } = await applyKycVerification(adminClient, {
+    userId,
+    newStatus: kycStatus,
+    nic,
+  });
+
+  console.log(`[Didit webhook] OK user=${userId} status=${rawStatus} -> kyc_status=${kycStatus} nic_captured=${Boolean(nic)} blacklist_inherited=${blacklistInherited}`);
+  return NextResponse.json({ ok: true, kyc_status: kycStatus, blacklist_inherited: blacklistInherited });
 }
 
 // Some webhook providers do a GET on the URL during config to verify it
