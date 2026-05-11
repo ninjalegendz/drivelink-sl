@@ -97,9 +97,8 @@ export default async function BookingDetailPage({ params, searchParams }: Props)
       .eq("status", "confirmed");
     booking = {
       ...booking,
-      status:              "cancelled",
-      cancelled_at:        new Date().toISOString(),
-      cancellation_reason: "Payment slip not uploaded within 12 hours of confirmation",
+      status:       "cancelled",
+      cancelled_at: new Date().toISOString(),
     };
   }
 
