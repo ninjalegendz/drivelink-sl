@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { createClient as createAdminClient } from "@supabase/supabase-js";
 import { createClient, createServiceClient } from "@/lib/supabase/server";
 import { isValidSLPhone, toInternationalSL } from "@/lib/auth/phone-format";
+import { softDeleteUser } from "@/lib/account/deletion";
 
 const adminAuth = createAdminClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -89,7 +90,10 @@ export async function PATCH(req: NextRequest, ctx: RouteContext) {
 }
 
 // DELETE /api/admin/users/{id}
-// Removes the auth user; profile + bookings cascade via on-delete-cascade.
+// Soft-deletes: scrubs PII, removes KYC/avatar storage, scrambles auth
+// email + password so login lookup fails. Booking history is preserved
+// (the OTHER party still needs to see who they transacted with).
+// If the user is an agency owner, their agency is also soft-deleted.
 export async function DELETE(_req: NextRequest, ctx: RouteContext) {
   const auth = await requireAdmin();
   if ("error" in auth) return NextResponse.json({ error: auth.error }, { status: auth.status });
@@ -102,10 +106,33 @@ export async function DELETE(_req: NextRequest, ctx: RouteContext) {
     );
   }
 
-  const { error } = await adminAuth.auth.admin.deleteUser(id);
-  if (error) {
-    console.error("[admin user delete]", error);
-    return NextResponse.json({ error: error.message }, { status: 500 });
+  // Block admin-on-admin deletion to prevent foot-guns
+  const service = await createServiceClient();
+  const { data: target } = await service
+    .from("profiles")
+    .select("role, deleted_at")
+    .eq("id", id)
+    .single();
+  const t = target as { role: string; deleted_at: string | null } | null;
+
+  if (!t) {
+    return NextResponse.json({ error: "User not found." }, { status: 404 });
+  }
+  if (t.deleted_at) {
+    return NextResponse.json({ error: "Account is already deleted." }, { status: 400 });
+  }
+  if (t.role === "admin") {
+    return NextResponse.json(
+      { error: "Admins can only be deleted by direct database access." },
+      { status: 403 }
+    );
+  }
+
+  try {
+    await softDeleteUser(id);
+  } catch (err) {
+    console.error("[admin user soft-delete]", err);
+    return NextResponse.json({ error: "Soft-delete failed." }, { status: 500 });
   }
 
   return NextResponse.json({ ok: true });

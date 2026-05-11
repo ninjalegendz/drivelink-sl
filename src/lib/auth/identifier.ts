@@ -35,6 +35,10 @@ export async function resolveIdentifier(
 
   if (isEmailLike(trimmed)) {
     const lower = trimmed.toLowerCase();
+    // Soft-deleted users have their auth email scrambled to deleted+...@drivelink.invalid
+    // and their profiles.email set to null — both paths return null below.
+    if (lower.endsWith("@drivelink.invalid")) return null;
+
     // Walk listUsers pages — admin API doesn't expose a direct email lookup.
     // Most installs are well under 1000 users, so a single page is enough.
     const { data, error } = await service.auth.admin.listUsers({ page: 1, perPage: 1000 });
@@ -44,10 +48,12 @@ export async function resolveIdentifier(
 
     const { data: profile } = await service
       .from("profiles")
-      .select("phone")
+      .select("phone, deleted_at")
       .eq("id", user.id)
       .single();
-    const phone = (profile as { phone?: string } | null)?.phone ?? "";
+    const p = profile as { phone?: string; deleted_at?: string | null } | null;
+    if (p?.deleted_at) return null; // account is deleted — pretend it doesn't exist
+    const phone = p?.phone ?? "";
 
     return {
       userId:        user.id,
@@ -65,7 +71,8 @@ export async function resolveIdentifier(
   const { data: profiles } = await service
     .from("profiles")
     .select("id, phone")
-    .like("phone", `%${suffix}`);
+    .like("phone", `%${suffix}`)
+    .is("deleted_at", null);
 
   const matches = (profiles ?? []) as { id: string; phone: string }[];
   if (matches.length !== 1) return null; // 0 or ambiguous → bail

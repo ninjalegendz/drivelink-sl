@@ -6,6 +6,7 @@ import { AvatarUploader } from "@/components/account/AvatarUploader";
 import { ProfileDetailsForm } from "@/components/account/ProfileDetailsForm";
 import { AgencyDetailsForm } from "@/components/account/AgencyDetailsForm";
 import { ChangePasswordForm } from "@/components/account/ChangePasswordForm";
+import { DeleteAccountSection } from "@/components/account/DeleteAccountSection";
 import type { Database } from "@/types/database";
 
 type ProfileRow = Database["public"]["Tables"]["profiles"]["Row"];
@@ -109,6 +110,9 @@ export default async function AccountSettingsPage() {
         <Section title="Password">
           <ChangePasswordForm email={user.email ?? ""} />
         </Section>
+
+        {/* Danger zone — admins can't self-delete */}
+        {profile.role !== "admin" && <DeleteAccountSection />}
       </div>
     </div>
   );

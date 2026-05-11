@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient, createServiceClient } from "@/lib/supabase/server";
 import { isValidSLPhone, toInternationalSL } from "@/lib/auth/phone-format";
+import { softDeleteAgency } from "@/lib/account/deletion";
 
 interface RouteContext {
   params: Promise<{ id: string }>;
@@ -67,6 +68,50 @@ export async function PATCH(req: NextRequest, ctx: RouteContext) {
   const { error } = await service.from("agencies").update(update).eq("id", id);
   if (error) {
     return NextResponse.json({ error: error.message }, { status: 500 });
+  }
+  return NextResponse.json({ ok: true });
+}
+
+// DELETE /api/admin/agencies/{id}
+// Soft-deletes the agency. Owner profile is NOT auto-deleted — admin can
+// soft-delete that separately if desired. Vehicles all flip to unlisted.
+export async function DELETE(_req: NextRequest, ctx: RouteContext) {
+  const auth = await requireAdmin();
+  if ("error" in auth) return NextResponse.json({ error: auth.error }, { status: auth.status });
+
+  const { id } = await ctx.params;
+  const service = await createServiceClient();
+
+  // Block re-deletion + check for outstanding fees + active bookings
+  const { data: agencyRow } = await service
+    .from("agencies")
+    .select("deleted_at")
+    .eq("id", id)
+    .single();
+  if (!agencyRow) {
+    return NextResponse.json({ error: "Agency not found." }, { status: 404 });
+  }
+  if ((agencyRow as { deleted_at: string | null }).deleted_at) {
+    return NextResponse.json({ error: "Agency is already deleted." }, { status: 400 });
+  }
+
+  const { data: activeBookings } = await service
+    .from("bookings")
+    .select("id")
+    .eq("agency_id", id)
+    .in("status", ["pending_confirmation", "confirmed", "payment_pending", "active"]);
+  if ((activeBookings ?? []).length > 0) {
+    return NextResponse.json(
+      { error: `Agency has ${(activeBookings ?? []).length} in-progress booking(s). Resolve them first.` },
+      { status: 409 }
+    );
+  }
+
+  try {
+    await softDeleteAgency(id);
+  } catch (err) {
+    console.error("[admin agency soft-delete]", err);
+    return NextResponse.json({ error: "Soft-delete failed." }, { status: 500 });
   }
   return NextResponse.json({ ok: true });
 }

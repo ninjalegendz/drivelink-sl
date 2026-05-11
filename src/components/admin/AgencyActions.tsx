@@ -66,18 +66,15 @@ export function AgencyActions({ agencyId, name, city, address, whatsapp_number, 
   }
 
   async function remove() {
-    if (!confirm(`Permanently delete ${name}? This removes the agency and all its vehicle listings. Bookings stay on record. Cannot be undone.`)) return;
+    if (!confirm(`Soft-delete ${name}? Their identifying info will be scrubbed, vehicles unlisted, but booking history is preserved for renters who transacted with them.`)) return;
     setLoading("delete");
     setError(null);
 
-    const supabase = createClient();
-    const { error: deleteError } = await supabase
-      .from("agencies")
-      .delete()
-      .eq("id", agencyId);
+    const res = await fetch(`/api/admin/agencies/${agencyId}`, { method: "DELETE" });
+    const payload = await res.json().catch(() => ({}));
 
     setLoading(null);
-    if (deleteError) { setError(deleteError.message); return; }
+    if (!res.ok) { setError(payload.error ?? "Delete failed"); return; }
     router.refresh();
   }
 

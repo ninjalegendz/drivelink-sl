@@ -42,6 +42,7 @@ export type Database = {
           email: string | null;
           email_verified_at: string | null;
           didit_session_id: string | null;
+          deleted_at: string | null;
           created_at: string;
           updated_at: string;
         };
