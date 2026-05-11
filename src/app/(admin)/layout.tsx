@@ -1,13 +1,14 @@
 import { redirect } from "next/navigation";
 import Link from "next/link";
 import {
-  LayoutDashboard, ReceiptText, ClipboardList, Users, Building2, Ban, Settings, Car, Mail, Headphones, Receipt, Landmark,
+  LayoutDashboard, ReceiptText, ClipboardList, Users, Building2, Ban, Settings, Car, Mail, Headphones, Receipt, Landmark, BarChart3,
 } from "lucide-react";
 import { createClient } from "@/lib/supabase/server";
 import { SignOutButton } from "@/components/account/SignOutButton";
 
 const NAV = [
   { href: "/admin",                 label: "Overview",      Icon: LayoutDashboard },
+  { href: "/admin/analytics",       label: "Analytics",     Icon: BarChart3 },
   { href: "/admin/slips",           label: "Slip Queue",    Icon: ReceiptText },
   { href: "/admin/vehicles",        label: "Listings",      Icon: Car },
   { href: "/admin/bookings",        label: "All Bookings",  Icon: ClipboardList },

@@ -4,9 +4,10 @@ import { createClient } from "@/lib/supabase/server";
 import { SignOutButton } from "@/components/account/SignOutButton";
 
 const NAV = [
-  { href: "/dashboard",          label: "Overview" },
-  { href: "/dashboard/vehicles", label: "Fleet" },
-  { href: "/dashboard/bookings", label: "Bookings" },
+  { href: "/dashboard",           label: "Overview" },
+  { href: "/dashboard/analytics", label: "Analytics" },
+  { href: "/dashboard/vehicles",  label: "Fleet" },
+  { href: "/dashboard/bookings",  label: "Bookings" },
 ];
 
 export default async function DashboardLayout({ children }: { children: React.ReactNode }) {
