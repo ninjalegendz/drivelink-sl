@@ -79,28 +79,8 @@ export default async function HomePage() {
         </div>
       </section>
 
-      {/* Quick SEO links */}
-      <section className="max-w-6xl mx-auto px-4 pb-12">
-        <h2 className="text-slate-400 text-xs font-semibold uppercase tracking-widest mb-3">
-          Popular searches
-        </h2>
-        <div className="flex flex-wrap gap-2">
-          {POPULAR_MODELS.flatMap((model) =>
-            ["Colombo", "Kandy", "Galle"].map((city) => (
-              <Link
-                key={`${model}-${city}`}
-                href={buildRentPath(model, city)}
-                className="px-3 py-1.5 bg-slate-900 hover:bg-slate-800 border border-slate-800 text-xs text-slate-400 hover:text-slate-200 rounded-lg transition-colors"
-              >
-                Rent {model} · {city}
-              </Link>
-            ))
-          )}
-        </div>
-      </section>
-
       {/* Featured listings */}
-      <section className="max-w-6xl mx-auto px-4 pb-20">
+      <section className="max-w-6xl mx-auto px-4 pb-12">
         <div className="flex items-center justify-between mb-6">
           <h2 className="text-white font-semibold text-lg">Recently listed</h2>
           <Link href="/vehicles" className="text-amber-400 hover:text-amber-300 text-sm transition-colors">
@@ -126,6 +106,26 @@ export default async function HomePage() {
             </Link>
           </div>
         )}
+      </section>
+
+      {/* Quick SEO links */}
+      <section className="max-w-6xl mx-auto px-4 pb-20">
+        <h2 className="text-slate-400 text-xs font-semibold uppercase tracking-widest mb-3">
+          Popular searches
+        </h2>
+        <div className="flex flex-wrap gap-2">
+          {POPULAR_MODELS.flatMap((model) =>
+            ["Colombo", "Kandy", "Galle"].map((city) => (
+              <Link
+                key={`${model}-${city}`}
+                href={buildRentPath(model, city)}
+                className="px-3 py-1.5 bg-slate-900 hover:bg-slate-800 border border-slate-800 text-xs text-slate-400 hover:text-slate-200 rounded-lg transition-colors"
+              >
+                Rent {model} · {city}
+              </Link>
+            ))
+          )}
+        </div>
       </section>
 
       {/* Agency CTA */}
