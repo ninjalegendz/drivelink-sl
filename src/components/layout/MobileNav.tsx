@@ -53,13 +53,26 @@ export interface MobileNavItem {
 }
 
 interface Props {
-  primary:   MobileNavItem[];
-  secondary: MobileNavItem[];
+  primary:    MobileNavItem[];
+  secondary?: MobileNavItem[];
+  /** When true, the bar only renders inside a Capacitor native app (hidden on plain mobile web). */
+  requireApp?: boolean;
 }
 
-export function MobileNav({ primary, secondary }: Props) {
+export function MobileNav({ primary, secondary = [], requireApp = false }: Props) {
   const pathname = usePathname();
   const [moreOpen, setMoreOpen] = useState(false);
+  // Default to "visible" so admin/dashboard mobile-web users still get nav.
+  // When requireApp is true (marketplace), we start hidden and flip on after
+  // detecting window.Capacitor.isNativePlatform() so the bar only shows up
+  // inside the Capacitor-wrapped installable app.
+  const [allowed, setAllowed] = useState(!requireApp);
+
+  useEffect(() => {
+    if (!requireApp) return;
+    const w = window as unknown as { Capacitor?: { isNativePlatform?: () => boolean } };
+    setAllowed(w.Capacitor?.isNativePlatform?.() === true);
+  }, [requireApp]);
 
   useEffect(() => {
     if (!moreOpen) return;
@@ -72,29 +85,41 @@ export function MobileNav({ primary, secondary }: Props) {
 
   useEffect(() => { setMoreOpen(false); }, [pathname]);
 
+  if (!allowed) return null;
+
+  const hasSecondary = secondary.length > 0;
+  const primaryCount = hasSecondary ? Math.min(primary.length, 3) : primary.length;
+  const totalCols = primaryCount + (hasSecondary ? 1 : 0);
+  const gridCols =
+    totalCols >= 4 ? "grid-cols-4" :
+    totalCols === 3 ? "grid-cols-3" :
+    totalCols === 2 ? "grid-cols-2" : "grid-cols-1";
+
   return (
     <>
       <nav className="md:hidden fixed bottom-0 inset-x-0 z-40 glass-strong">
-        <div className="grid grid-cols-4 px-2 pt-1.5 pb-[max(0.5rem,env(safe-area-inset-bottom))]">
-          {primary.slice(0, 3).map((item) => (
+        <div className={`grid ${gridCols} px-2 pt-1.5 pb-[max(0.5rem,env(safe-area-inset-bottom))]`}>
+          {primary.slice(0, primaryCount).map((item) => (
             <MobileTab
               key={item.href}
               item={item}
               active={isActive(pathname, item.href)}
             />
           ))}
-          <button
-            type="button"
-            onClick={() => setMoreOpen(true)}
-            className="spring-press flex flex-col items-center justify-center gap-0.5 py-1.5 px-1 rounded-xl text-slate-500 hover:text-amber-500"
-          >
-            <MoreHorizontal size={20} />
-            <span className="text-[10px] font-medium">More</span>
-          </button>
+          {hasSecondary && (
+            <button
+              type="button"
+              onClick={() => setMoreOpen(true)}
+              className="spring-press flex flex-col items-center justify-center gap-0.5 py-1.5 px-1 rounded-xl text-slate-500 hover:text-amber-500"
+            >
+              <MoreHorizontal size={20} />
+              <span className="text-[10px] font-medium">More</span>
+            </button>
+          )}
         </div>
       </nav>
 
-      {moreOpen && (
+      {hasSecondary && moreOpen && (
         <div
           className="md:hidden fixed inset-0 z-50 bg-stone-900/40 backdrop-blur-sm flex flex-col justify-end"
           onClick={() => setMoreOpen(false)}

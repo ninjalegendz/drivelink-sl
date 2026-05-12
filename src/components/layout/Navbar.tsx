@@ -1,18 +1,22 @@
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/server";
+import { NavBurger } from "./NavBurger";
+
+type NavRole = "admin" | "agency_owner" | "renter" | null;
 
 export async function Navbar() {
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
 
-  let role: string | null = null;
+  let role: NavRole = null;
   if (user) {
     const { data } = await supabase
       .from("profiles")
       .select("role")
       .eq("id", user.id)
       .single();
-    role = data?.role ?? null;
+    const raw = (data as { role?: string } | null)?.role;
+    role = raw === "admin" || raw === "agency_owner" || raw === "renter" ? raw : null;
   }
 
   return (
@@ -27,13 +31,14 @@ export async function Navbar() {
           <Link href="/pricing"  className="hover:text-white transition-colors">Pricing</Link>
           <Link href="/faq"      className="hover:text-white transition-colors">FAQ</Link>
           {!user && (
-            <Link href="/signup?role=agency" className="hover:text-white transition-colors">
+            <Link href="/signup/agency" className="hover:text-white transition-colors">
               List your fleet
             </Link>
           )}
         </nav>
 
-        <div className="flex items-center gap-2">
+        {/* Desktop right-side auth actions */}
+        <div className="hidden md:flex items-center gap-2">
           {user ? (
             role === "admin" ? (
               <Link
@@ -66,7 +71,7 @@ export async function Navbar() {
                 Sign in
               </Link>
               <Link
-                href="/signup?role=agency"
+                href="/signup/agency"
                 className="px-4 py-1.5 text-sm bg-amber-500 hover:bg-amber-400 text-stone-900 font-semibold rounded-xl transition-colors"
               >
                 List your fleet
@@ -74,6 +79,9 @@ export async function Navbar() {
             </>
           )}
         </div>
+
+        {/* Mobile burger replaces the entire mid-nav + right-side actions */}
+        <NavBurger role={role} />
       </div>
     </header>
   );
