@@ -5,6 +5,7 @@ import {
 } from "lucide-react";
 import { createClient } from "@/lib/supabase/server";
 import { SignOutButton } from "@/components/account/SignOutButton";
+import { MobileNav, type MobileNavItem } from "@/components/layout/MobileNav";
 
 const NAV = [
   { href: "/admin",                 label: "Overview",      Icon: LayoutDashboard },
@@ -40,41 +41,56 @@ export default async function AdminLayout({ children }: { children: React.ReactN
     .select("*", { count: "exact", head: true })
     .eq("has_unread_admin", true);
 
+  // Bottom nav: 3 most-touched admin pages + spillover sheet for the rest
+  const mobilePrimary: MobileNavItem[] = [
+    { href: "/admin",                 label: "Home",     Icon: LayoutDashboard },
+    { href: "/admin/bookings",        label: "Bookings", Icon: ClipboardList },
+    { href: "/admin/slips",           label: "Slips",    Icon: ReceiptText },
+  ];
+  const mobileSecondary: MobileNavItem[] = NAV.filter((item) =>
+    !["/admin", "/admin/bookings", "/admin/slips"].includes(item.href)
+  ).map((item) => ({
+    href:  item.href,
+    label: item.label,
+    Icon:  item.Icon,
+    badge: item.badge === "support" && supportUnread && supportUnread > 0 ? supportUnread : undefined,
+  }));
+
   return (
-    <div className="min-h-screen bg-slate-950 text-white flex">
-      {/* Sidebar */}
-      <aside className="w-52 shrink-0 border-r border-slate-800 flex flex-col fixed h-full">
-        <div className="p-4 border-b border-slate-800">
+    <div className="min-h-screen flex">
+      {/* Desktop sidebar (hidden on mobile) */}
+      <aside className="hidden md:flex w-52 shrink-0 border-r border-slate-700 flex-col fixed h-full glass">
+        <div className="p-4 border-b border-slate-700">
           <Link href="/" className="font-bold text-lg">
-            Drive<span className="text-amber-400">Link</span>
+            Drive<span className="text-amber-500">Link</span>
           </Link>
-          <span className="ml-2 text-xs bg-red-500/20 text-red-400 px-2 py-0.5 rounded-full font-medium ring-1 ring-red-500/30">
+          <span className="ml-2 text-xs bg-red-500/15 text-red-500 px-2 py-0.5 rounded-full font-medium ring-1 ring-red-500/25">
             ADMIN
           </span>
         </div>
-        <nav className="flex-1 p-3 space-y-0.5">
+        <nav className="flex-1 p-3 space-y-0.5 overflow-y-auto">
           {NAV.map(({ href, label, Icon, badge }) => (
             <Link
               key={href}
               href={href}
-              className="flex items-center justify-between gap-2.5 px-3 py-2 rounded-lg text-sm text-slate-400 hover:text-white hover:bg-slate-800 transition-colors"
+              className="spring-press flex items-center justify-between gap-2.5 px-3 py-2 rounded-lg text-sm text-slate-500 hover:text-slate-900 hover:bg-white/60 transition-colors"
             >
               <span className="inline-flex items-center gap-2.5">
                 <Icon size={16} className="shrink-0" />
                 {label}
               </span>
               {badge === "support" && supportUnread && supportUnread > 0 && (
-                <span className="text-[10px] font-semibold bg-red-500 text-white px-1.5 py-0.5 rounded-full">
+                <span className="text-[10px] font-semibold bg-red-500 text-white px-1.5 py-0.5 rounded-full animate-pop-in">
                   {supportUnread}
                 </span>
               )}
             </Link>
           ))}
         </nav>
-        <div className="p-3 border-t border-slate-800 space-y-1">
+        <div className="p-3 border-t border-slate-700 space-y-1">
           <Link
             href="/account/settings"
-            className="flex items-center gap-2.5 px-3 py-2 rounded-lg text-sm text-slate-400 hover:text-white hover:bg-slate-800 transition-colors"
+            className="spring-press flex items-center gap-2.5 px-3 py-2 rounded-lg text-sm text-slate-500 hover:text-slate-900 hover:bg-white/60 transition-colors"
           >
             <Settings size={16} className="shrink-0" /> Settings
           </Link>
@@ -85,7 +101,9 @@ export default async function AdminLayout({ children }: { children: React.ReactN
       </aside>
 
       {/* Content */}
-      <main className="flex-1 ml-52 p-8 max-w-full">{children}</main>
+      <main className="flex-1 md:ml-52 p-4 md:p-8 pb-24 md:pb-8 max-w-full min-h-screen">{children}</main>
+
+      <MobileNav primary={mobilePrimary} secondary={mobileSecondary} />
     </div>
   );
 }

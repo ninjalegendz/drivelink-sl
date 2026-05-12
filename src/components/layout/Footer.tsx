@@ -28,7 +28,7 @@ const SECTIONS = [
 
 export function Footer() {
   return (
-    <footer className="border-t border-slate-800 bg-slate-950 mt-16">
+    <footer className="border-t border-white/40 glass mt-16">
       <div className="max-w-6xl mx-auto px-4 py-10">
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-8">
           <div className="col-span-2 sm:col-span-1">

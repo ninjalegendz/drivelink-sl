@@ -115,6 +115,67 @@
   *::-webkit-scrollbar-corner { background: transparent; }
 }
 
+/* ─── Page background: soft layered gradient ─────────────────
+   Subtle cream-to-amber-tint gradient adds depth behind glass
+   surfaces. Fixed attachment so it doesn't scroll out. */
+@layer base {
+  body {
+    background:
+      radial-gradient(ellipse 800px 600px at 10% 0%, rgba(251, 191, 36, 0.06), transparent 60%),
+      radial-gradient(ellipse 1000px 700px at 90% 20%, rgba(245, 158, 11, 0.04), transparent 60%),
+      radial-gradient(ellipse 600px 500px at 50% 100%, rgba(217, 119, 6, 0.03), transparent 60%),
+      #fbf8f0;
+    background-attachment: fixed;
+    min-height: 100vh;
+  }
+}
+
+/* ─── 3D liquid glassmorphism surfaces ────────────────────────
+   .glass         — primary translucent surface (modals, headers)
+   .glass-card    — card-weight glass (translucent + soft shadow)
+   .glass-strong  — heavier blur + opacity (mobile nav, sheets)
+   .glass-tint    — subtle amber-tinted glass for emphasis */
+@layer utilities {
+  .glass {
+    background: rgba(255, 255, 255, 0.55);
+    backdrop-filter: blur(14px) saturate(160%);
+    -webkit-backdrop-filter: blur(14px) saturate(160%);
+    border: 1px solid rgba(255, 255, 255, 0.6);
+    box-shadow:
+      0 1px 0 rgba(255, 255, 255, 0.9) inset,
+      0 0 0 1px rgba(255, 255, 255, 0.3) inset,
+      0 10px 30px -10px rgba(120, 80, 0, 0.12);
+  }
+  .glass-card {
+    background: rgba(255, 255, 255, 0.7);
+    backdrop-filter: blur(10px) saturate(150%);
+    -webkit-backdrop-filter: blur(10px) saturate(150%);
+    border: 1px solid rgba(255, 255, 255, 0.6);
+    box-shadow:
+      0 1px 0 rgba(255, 255, 255, 0.85) inset,
+      0 6px 22px -10px rgba(120, 80, 0, 0.10);
+  }
+  .glass-strong {
+    background: rgba(255, 255, 255, 0.78);
+    backdrop-filter: blur(20px) saturate(170%);
+    -webkit-backdrop-filter: blur(20px) saturate(170%);
+    border: 1px solid rgba(255, 255, 255, 0.65);
+    box-shadow:
+      0 1px 0 rgba(255, 255, 255, 0.9) inset,
+      0 -8px 24px -12px rgba(120, 80, 0, 0.15);
+  }
+  .glass-tint {
+    background:
+      linear-gradient(135deg, rgba(251, 191, 36, 0.12), rgba(255, 255, 255, 0.55));
+    backdrop-filter: blur(12px) saturate(160%);
+    -webkit-backdrop-filter: blur(12px) saturate(160%);
+    border: 1px solid rgba(251, 191, 36, 0.25);
+    box-shadow:
+      0 1px 0 rgba(255, 255, 255, 0.85) inset,
+      0 8px 26px -10px rgba(217, 119, 6, 0.12);
+  }
+}
+
 /* ─── Bouncy / bubbly motion utilities ───────────────────────
    Drop these classes on any element to get the spring feel.
    Buttons get .spring-press by default via the Button component;

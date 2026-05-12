@@ -16,7 +16,7 @@ export async function Navbar() {
   }
 
   return (
-    <header className="sticky top-0 z-50 bg-slate-950/80 backdrop-blur border-b border-slate-800">
+    <header className="sticky top-0 z-40 glass border-b border-white/40">
       <div className="max-w-6xl mx-auto px-4 h-14 flex items-center justify-between">
         <Link href="/" className="font-bold text-white text-lg tracking-tight">
           Drive<span className="text-amber-400">Link</span>
