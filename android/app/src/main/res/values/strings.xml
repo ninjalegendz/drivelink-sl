@@ -1,0 +1,7 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string name="app_name">DriveLink</string>
+    <string name="title_activity_main">DriveLink</string>
+    <string name="package_name">lk.drivelink.app</string>
+    <string name="custom_url_scheme">lk.drivelink.app</string>
+</resources>
