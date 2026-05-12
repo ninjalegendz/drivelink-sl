@@ -102,9 +102,15 @@ function RenterSignupForm() {
   return (
     <div className="bg-slate-900 rounded-2xl border border-slate-800 p-6">
       <h1 className="text-white font-bold text-xl mb-1">Create account</h1>
-      <p className="text-slate-400 text-sm mb-6">
+      <p className="text-slate-400 text-sm">
         Already have an account?{" "}
         <Link href="/login" className="text-amber-400 hover:text-amber-300">Sign in</Link>
+      </p>
+      <p className="text-slate-500 text-xs mt-1 mb-6">
+        Running a rental business?{" "}
+        <Link href="/signup/agency" className="text-amber-400 hover:text-amber-300 font-medium">
+          Create an agency account →
+        </Link>
       </p>
 
       {/* Stage 1 — details */}
