@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { Settings, User, Headphones, LayoutDashboard, Car, CalendarCheck, BarChart3 } from "lucide-react";
+import { Settings, User, Headphones } from "lucide-react";
 import { createClient } from "@/lib/supabase/server";
 import { SignOutButton } from "@/components/account/SignOutButton";
 import { MobileNav, type MobileNavItem } from "@/components/layout/MobileNav";
@@ -35,15 +35,15 @@ export default async function DashboardLayout({ children }: { children: React.Re
   }
 
   const mobilePrimary: MobileNavItem[] = [
-    { href: "/dashboard",          label: "Home",     Icon: LayoutDashboard },
-    { href: "/dashboard/bookings", label: "Bookings", Icon: CalendarCheck },
-    { href: "/dashboard/vehicles", label: "Fleet",    Icon: Car },
+    { href: "/dashboard",          label: "Home",     icon: "home" },
+    { href: "/dashboard/bookings", label: "Bookings", icon: "bookings" },
+    { href: "/dashboard/vehicles", label: "Fleet",    icon: "fleet" },
   ];
   const mobileSecondary: MobileNavItem[] = [
-    { href: "/dashboard/analytics", label: "Analytics", Icon: BarChart3 },
-    { href: "/dashboard/support",   label: "Support",   Icon: Headphones, badge: supportUnread ? "NEW" : undefined },
-    { href: "/account",             label: "Account",   Icon: User },
-    { href: "/account/settings",    label: "Settings",  Icon: Settings },
+    { href: "/dashboard/analytics", label: "Analytics", icon: "analytics" },
+    { href: "/dashboard/support",   label: "Support",   icon: "support", badge: supportUnread ? "NEW" : undefined },
+    { href: "/account",             label: "Account",   icon: "account" },
+    { href: "/account/settings",    label: "Settings",  icon: "settings" },
   ];
 
   return (

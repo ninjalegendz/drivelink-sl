@@ -43,16 +43,32 @@ export default async function AdminLayout({ children }: { children: React.ReactN
 
   // Bottom nav: 3 most-touched admin pages + spillover sheet for the rest
   const mobilePrimary: MobileNavItem[] = [
-    { href: "/admin",                 label: "Home",     Icon: LayoutDashboard },
-    { href: "/admin/bookings",        label: "Bookings", Icon: ClipboardList },
-    { href: "/admin/slips",           label: "Slips",    Icon: ReceiptText },
+    { href: "/admin",          label: "Home",     icon: "home" },
+    { href: "/admin/bookings", label: "Bookings", icon: "all-bookings" },
+    { href: "/admin/slips",    label: "Slips",    icon: "slips" },
   ];
+  // Map each NAV href to its MobileNav icon name. Keep this aligned with
+  // the NAV array; if you add a sidebar entry, add it here too.
+  const HREF_TO_ICON: Record<string, MobileNavItem["icon"]> = {
+    "/admin":                 "home",
+    "/admin/analytics":       "analytics",
+    "/admin/slips":           "slips",
+    "/admin/vehicles":        "listings",
+    "/admin/bookings":        "all-bookings",
+    "/admin/users":           "users",
+    "/admin/agencies":        "agencies",
+    "/admin/blacklist":       "blacklist",
+    "/admin/support":         "support",
+    "/admin/invoices":        "invoices",
+    "/admin/settings/payments": "bank",
+    "/admin/settings/email":  "email",
+  };
   const mobileSecondary: MobileNavItem[] = NAV.filter((item) =>
     !["/admin", "/admin/bookings", "/admin/slips"].includes(item.href)
   ).map((item) => ({
     href:  item.href,
     label: item.label,
-    Icon:  item.Icon,
+    icon:  HREF_TO_ICON[item.href] ?? "home",
     badge: item.badge === "support" && supportUnread && supportUnread > 0 ? supportUnread : undefined,
   }));
 

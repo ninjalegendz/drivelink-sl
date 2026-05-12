@@ -1,4 +1,3 @@
-import { Car, Compass, CalendarCheck, User, Tag, HelpCircle, Building2 } from "lucide-react";
 import { createClient } from "@/lib/supabase/server";
 import { Navbar } from "@/components/layout/Navbar";
 import { Footer } from "@/components/layout/Footer";
@@ -16,26 +15,26 @@ export default async function MarketplaceLayout({ children }: { children: React.
   }
 
   const accountTab: MobileNavItem = user
-    ? { href: "/account", label: "Account", Icon: User }
-    : { href: "/login",   label: "Sign in", Icon: User };
+    ? { href: "/account", label: "Account", icon: "account" }
+    : { href: "/login",   label: "Sign in", icon: "signin" };
 
   const primary: MobileNavItem[] =
     role === "agency_owner"
       ? [
-          { href: "/vehicles",  label: "Browse",    Icon: Compass },
-          { href: "/dashboard", label: "Dashboard", Icon: Building2 },
+          { href: "/vehicles",  label: "Browse",    icon: "browse" },
+          { href: "/dashboard", label: "Dashboard", icon: "dashboard" },
           accountTab,
         ]
       : [
-          { href: "/vehicles", label: "Browse",   Icon: Compass },
-          { href: "/bookings", label: "Bookings", Icon: CalendarCheck },
+          { href: "/vehicles", label: "Browse",   icon: "browse" },
+          { href: "/bookings", label: "Bookings", icon: "bookings" },
           accountTab,
         ];
 
   const secondary: MobileNavItem[] = [
-    { href: "/pricing", label: "Pricing", Icon: Tag },
-    { href: "/faq",     label: "FAQ",     Icon: HelpCircle },
-    { href: "/",        label: "Home",    Icon: Car },
+    { href: "/pricing", label: "Pricing", icon: "pricing" },
+    { href: "/faq",     label: "FAQ",     icon: "faq" },
+    { href: "/",        label: "Home",    icon: "car" },
   ];
 
   return (

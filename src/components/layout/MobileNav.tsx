@@ -3,19 +3,57 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useEffect, useState } from "react";
-import { MoreHorizontal, X } from "lucide-react";
+import {
+  MoreHorizontal, X,
+  Car, Compass, CalendarCheck, User, Tag, HelpCircle, Building2,
+  LayoutDashboard, BarChart3, Headphones, Settings,
+  ReceiptText, Users, Ban, Mail, Receipt, Landmark, ClipboardList,
+} from "lucide-react";
+
+// Icon names allowed in MobileNav items. Strings cross the Server →
+// Client boundary cleanly; passing component references (functions)
+// triggers React's "Functions cannot be passed directly to Client
+// Components" error in App Router.
+export type MobileNavIcon =
+  | "browse" | "bookings" | "account" | "signin" | "fleet" | "dashboard"
+  | "home" | "analytics" | "support" | "settings" | "slips" | "listings"
+  | "users" | "agencies" | "blacklist" | "email" | "invoices" | "bank"
+  | "pricing" | "faq" | "car" | "all-bookings";
+
+const ICONS: Record<MobileNavIcon, React.ComponentType<{ size?: number; className?: string }>> = {
+  browse:        Compass,
+  bookings:      CalendarCheck,
+  account:       User,
+  signin:        User,
+  fleet:         Car,
+  dashboard:     Building2,
+  home:          LayoutDashboard,
+  analytics:     BarChart3,
+  support:       Headphones,
+  settings:      Settings,
+  slips:         ReceiptText,
+  listings:      Car,
+  users:         Users,
+  agencies:      Building2,
+  blacklist:     Ban,
+  email:         Mail,
+  invoices:      Receipt,
+  bank:          Landmark,
+  pricing:       Tag,
+  faq:           HelpCircle,
+  car:           Car,
+  "all-bookings": ClipboardList,
+};
 
 export interface MobileNavItem {
-  href:    string;
-  label:   string;
-  Icon:    React.ComponentType<{ size?: number; className?: string }>;
-  badge?:  string | number;
+  href:   string;
+  label:  string;
+  icon:   MobileNavIcon;
+  badge?: string | number;
 }
 
 interface Props {
-  /** Main 3 items shown directly on the bottom bar */
   primary:   MobileNavItem[];
-  /** Spillover surface — opened by tapping More */
   secondary: MobileNavItem[];
 }
 
@@ -32,7 +70,6 @@ export function MobileNav({ primary, secondary }: Props) {
     return () => { document.body.style.overflow = prev; window.removeEventListener("keydown", onKey); };
   }, [moreOpen]);
 
-  // Close sheet whenever route changes
   useEffect(() => { setMoreOpen(false); }, [pathname]);
 
   return (
@@ -49,7 +86,7 @@ export function MobileNav({ primary, secondary }: Props) {
           <button
             type="button"
             onClick={() => setMoreOpen(true)}
-            className="spring-press flex flex-col items-center justify-center gap-0.5 py-1.5 px-1 rounded-xl text-slate-500 hover:text-amber-400"
+            className="spring-press flex flex-col items-center justify-center gap-0.5 py-1.5 px-1 rounded-xl text-slate-500 hover:text-amber-500"
           >
             <MoreHorizontal size={20} />
             <span className="text-[10px] font-medium">More</span>
@@ -81,26 +118,29 @@ export function MobileNav({ primary, secondary }: Props) {
               </button>
             </div>
             <ul className="space-y-1.5 pb-2">
-              {secondary.map((item) => (
-                <li key={item.href}>
-                  <Link
-                    href={item.href}
-                    className="spring-press flex items-center justify-between gap-3 px-4 py-3 rounded-2xl glass-card hover:glass-tint transition-all"
-                  >
-                    <span className="flex items-center gap-3">
-                      <span className="w-9 h-9 rounded-full glass flex items-center justify-center text-amber-400">
-                        <item.Icon size={16} />
+              {secondary.map((item) => {
+                const Icon = ICONS[item.icon];
+                return (
+                  <li key={item.href}>
+                    <Link
+                      href={item.href}
+                      className="spring-press flex items-center justify-between gap-3 px-4 py-3 rounded-2xl glass-card transition-all"
+                    >
+                      <span className="flex items-center gap-3">
+                        <span className="w-9 h-9 rounded-full glass flex items-center justify-center text-amber-500">
+                          <Icon size={16} />
+                        </span>
+                        <span className="text-slate-900 font-medium text-sm">{item.label}</span>
                       </span>
-                      <span className="text-slate-900 font-medium text-sm">{item.label}</span>
-                    </span>
-                    {item.badge && (
-                      <span className="text-[10px] font-semibold bg-red-500 text-white px-1.5 py-0.5 rounded-full animate-pop-in">
-                        {item.badge}
-                      </span>
-                    )}
-                  </Link>
-                </li>
-              ))}
+                      {item.badge && (
+                        <span className="text-[10px] font-semibold bg-red-500 text-white px-1.5 py-0.5 rounded-full animate-pop-in">
+                          {item.badge}
+                        </span>
+                      )}
+                    </Link>
+                  </li>
+                );
+              })}
             </ul>
           </div>
         </div>
@@ -110,15 +150,16 @@ export function MobileNav({ primary, secondary }: Props) {
 }
 
 function MobileTab({ item, active }: { item: MobileNavItem; active: boolean }) {
+  const Icon = ICONS[item.icon];
   return (
     <Link
       href={item.href}
       className={`spring-press relative flex flex-col items-center justify-center gap-0.5 py-1.5 px-1 rounded-xl transition-colors ${
-        active ? "text-amber-500" : "text-slate-500 hover:text-amber-400"
+        active ? "text-amber-500" : "text-slate-500 hover:text-amber-500"
       }`}
     >
       <span className={`relative inline-flex items-center justify-center ${active ? "scale-105" : ""}`}>
-        <item.Icon size={20} />
+        <Icon size={20} />
         {item.badge && (
           <span className="absolute -top-1.5 -right-2 text-[9px] font-bold bg-red-500 text-white min-w-[16px] h-[16px] px-1 rounded-full flex items-center justify-center animate-pop-in">
             {item.badge}
@@ -133,6 +174,5 @@ function MobileTab({ item, active }: { item: MobileNavItem; active: boolean }) {
 
 function isActive(pathname: string, href: string): boolean {
   if (href === "/") return pathname === "/";
-  // Match exact or as a path prefix segment (avoid /admin matching /admin/anything-not-segment-boundary)
   return pathname === href || pathname.startsWith(href + "/");
 }
