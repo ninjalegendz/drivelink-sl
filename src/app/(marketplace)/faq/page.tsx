@@ -153,6 +153,36 @@ const AGENCY_FAQS: QA[] = [
 
 type TabKey = "renters" | "agencies";
 
+function AccordionItem({ q, a }: { q: string; a: React.ReactNode }) {
+  const [open, setOpen] = useState(false);
+  return (
+    <div className="bg-slate-900 border border-slate-200 rounded-2xl shadow-sm overflow-hidden">
+      <button
+        type="button"
+        onClick={() => setOpen((o) => !o)}
+        aria-expanded={open}
+        className="spring-press w-full text-left px-5 py-4 flex items-start justify-between gap-3"
+      >
+        <span className="text-slate-200 font-medium text-sm">{q}</span>
+        <Plus
+          size={16}
+          className={`text-slate-500 shrink-0 mt-0.5 transition-transform duration-300 ${open ? "rotate-45" : ""}`}
+        />
+      </button>
+      <div
+        className="grid transition-[grid-template-rows] duration-300 ease-out"
+        style={{ gridTemplateRows: open ? "1fr" : "0fr" }}
+      >
+        <div className="overflow-hidden min-h-0">
+          <div className="text-slate-400 text-sm leading-relaxed px-5 pb-4 pt-3 border-t border-slate-200">
+            {a}
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 export default function FAQPage() {
   const [tab, setTab] = useState<TabKey>("renters");
   const items = tab === "renters" ? RENTER_FAQS : AGENCY_FAQS;
@@ -191,22 +221,7 @@ export default function FAQPage() {
 
       <div className="space-y-2 animate-fade-up" key={tab}>
         {items.map((item, i) => (
-          <details
-            key={`${tab}-${i}`}
-            className="group bg-slate-900 border border-slate-200 rounded-2xl shadow-sm px-5 py-4 [&_summary::marker]:hidden [&_summary::-webkit-details-marker]:hidden"
-          >
-            <summary className="cursor-pointer flex items-start justify-between gap-3 list-none">
-              <span className="text-slate-200 font-medium text-sm">{item.q}</span>
-              <Plus size={16} className="text-slate-500 shrink-0 mt-0.5 transition-transform group-open:rotate-45" />
-            </summary>
-            <div className="smooth-accordion">
-              <div>
-                <div className="text-slate-400 text-sm leading-relaxed mt-3 pt-3 border-t border-slate-200">
-                  {item.a}
-                </div>
-              </div>
-            </div>
-          </details>
+          <AccordionItem key={`${tab}-${i}`} q={item.q} a={item.a} />
         ))}
       </div>
 
