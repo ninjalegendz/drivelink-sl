@@ -107,9 +107,9 @@ function RenterSignupForm() {
         <Link href="/login" className="text-amber-400 hover:text-amber-300">Sign in</Link>
       </p>
       <p className="text-slate-500 text-xs mt-1 mb-6">
-        Running a rental business?{" "}
+        Are you an agency?{" "}
         <Link href="/signup/agency" className="text-amber-400 hover:text-amber-300 font-medium">
-          Create an agency account →
+          Sign up here
         </Link>
       </p>
 
