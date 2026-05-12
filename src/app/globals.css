@@ -48,12 +48,27 @@
 }
 
 @layer base {
+  /* Smooth-scroll for in-page anchor jumps. */
+  html { scroll-behavior: smooth; }
+
   /* Snappier default for every Tailwind transition utility.
      Components opt into the bouncy spring via the .spring-*
      utility classes below. */
   *, *::before, *::after {
     transition-timing-function: var(--ease-snappy);
   }
+
+  /* Smooth-open accordion: wrap the inner content of any <details>
+     in <div class="smooth-accordion"><div>…</div></div> and the
+     open/close gets animated via CSS grid-template-rows from 0fr → 1fr.
+     Native <details> open state still handles a11y + keyboard. */
+  details > .smooth-accordion {
+    display: grid;
+    grid-template-rows: 0fr;
+    transition: grid-template-rows 0.28s var(--ease-snappy);
+  }
+  details > .smooth-accordion > div { overflow: hidden; }
+  details[open] > .smooth-accordion { grid-template-rows: 1fr; }
 
   /* Fallback chevron for any native <select> — most are replaced by
      the custom <Select> component. */

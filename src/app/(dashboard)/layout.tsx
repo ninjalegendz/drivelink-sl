@@ -58,14 +58,14 @@ export default async function DashboardLayout({ children }: { children: React.Re
             <Link
               key={href}
               href={href}
-              className="spring-press px-3 py-2 rounded-lg text-sm text-slate-500 hover:text-slate-900 hover:bg-white/60 transition-colors"
+              className="spring-press px-3 py-2 rounded-lg text-sm text-slate-500 hover:text-slate-200 hover:bg-white/60 transition-colors"
             >
               {label}
             </Link>
           ))}
           <Link
             href="/dashboard/support"
-            className="spring-press flex items-center justify-between px-3 py-2 rounded-lg text-sm text-slate-500 hover:text-slate-900 hover:bg-white/60 transition-colors"
+            className="spring-press flex items-center justify-between px-3 py-2 rounded-lg text-sm text-slate-500 hover:text-slate-200 hover:bg-white/60 transition-colors"
           >
             <span className="inline-flex items-center gap-2">
               <Headphones size={14} /> Support
@@ -80,13 +80,13 @@ export default async function DashboardLayout({ children }: { children: React.Re
         <div className="pt-3 border-t border-slate-700 space-y-1">
           <Link
             href="/account"
-            className="spring-press flex items-center gap-2 px-3 py-2 text-sm text-slate-500 hover:text-slate-900 hover:bg-white/60 rounded-lg transition-colors"
+            className="spring-press flex items-center gap-2 px-3 py-2 text-sm text-slate-500 hover:text-slate-200 hover:bg-white/60 rounded-lg transition-colors"
           >
             <User size={14} /> Account
           </Link>
           <Link
             href="/account/settings"
-            className="spring-press flex items-center gap-2 px-3 py-2 text-sm text-slate-500 hover:text-slate-900 hover:bg-white/60 rounded-lg transition-colors"
+            className="spring-press flex items-center gap-2 px-3 py-2 text-sm text-slate-500 hover:text-slate-200 hover:bg-white/60 rounded-lg transition-colors"
           >
             <Settings size={14} /> Settings
           </Link>

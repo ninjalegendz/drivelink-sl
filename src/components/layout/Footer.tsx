@@ -14,7 +14,7 @@ const SECTIONS = [
     links: [
       { href: "/signup/agency", label: "List your fleet" },
       { href: "/login",         label: "Agency login" },
-      { href: "/terms#agencies", label: "Agency terms" },
+      { href: "/terms", label: "Agency terms" },
     ],
   },
   {
@@ -32,8 +32,8 @@ export function Footer() {
       <div className="max-w-6xl mx-auto px-4 py-10">
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-8">
           <div className="col-span-2 sm:col-span-1">
-            <Link href="/" className="font-bold text-lg">
-              Drive<span className="text-amber-400">Link</span>
+            <Link href="/" className="font-bold text-lg text-slate-200">
+              Drive<span className="text-amber-500">Link</span>
             </Link>
             <p className="text-slate-500 text-xs mt-2 leading-relaxed">
               Sri Lanka&apos;s transparent vehicle-rental marketplace. ID-verified renters, verified agencies, locked-in pricing.

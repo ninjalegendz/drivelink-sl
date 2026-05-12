@@ -107,7 +107,7 @@ export function MobileNav({ primary, secondary }: Props) {
               <div className="w-12 h-1 bg-stone-300 rounded-full" />
             </div>
             <div className="flex items-center justify-between mb-3">
-              <p className="text-slate-900 font-semibold text-base">More</p>
+              <p className="text-slate-200 font-semibold text-base">More</p>
               <button
                 type="button"
                 onClick={() => setMoreOpen(false)}
@@ -130,7 +130,7 @@ export function MobileNav({ primary, secondary }: Props) {
                         <span className="w-9 h-9 rounded-full glass flex items-center justify-center text-amber-500">
                           <Icon size={16} />
                         </span>
-                        <span className="text-slate-900 font-medium text-sm">{item.label}</span>
+                        <span className="text-slate-200 font-medium text-sm">{item.label}</span>
                       </span>
                       {item.badge && (
                         <span className="text-[10px] font-semibold bg-red-500 text-white px-1.5 py-0.5 rounded-full animate-pop-in">

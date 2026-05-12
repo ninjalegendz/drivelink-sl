@@ -89,7 +89,7 @@ export default async function AdminLayout({ children }: { children: React.ReactN
             <Link
               key={href}
               href={href}
-              className="spring-press flex items-center justify-between gap-2.5 px-3 py-2 rounded-lg text-sm text-slate-500 hover:text-slate-900 hover:bg-white/60 transition-colors"
+              className="spring-press flex items-center justify-between gap-2.5 px-3 py-2 rounded-lg text-sm text-slate-500 hover:text-slate-200 hover:bg-white/60 transition-colors"
             >
               <span className="inline-flex items-center gap-2.5">
                 <Icon size={16} className="shrink-0" />
@@ -106,7 +106,7 @@ export default async function AdminLayout({ children }: { children: React.ReactN
         <div className="p-3 border-t border-slate-700 space-y-1">
           <Link
             href="/account/settings"
-            className="spring-press flex items-center gap-2.5 px-3 py-2 rounded-lg text-sm text-slate-500 hover:text-slate-900 hover:bg-white/60 transition-colors"
+            className="spring-press flex items-center gap-2.5 px-3 py-2 rounded-lg text-sm text-slate-500 hover:text-slate-200 hover:bg-white/60 transition-colors"
           >
             <Settings size={16} className="shrink-0" /> Settings
           </Link>

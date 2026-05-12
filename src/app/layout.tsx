@@ -26,7 +26,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
     <html lang="en">
       {/* Body bg + gradient lives in globals.css so the layered radial-
           gradients can be fixed-attached. Just set text colour here. */}
-      <body className={`${geist.className} text-slate-900 antialiased`} suppressHydrationWarning>
+      <body className={`${geist.className} text-slate-200 antialiased`} suppressHydrationWarning>
         {children}
       </body>
     </html>

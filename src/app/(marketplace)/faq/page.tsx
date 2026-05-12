@@ -1,11 +1,8 @@
-import Link from "next/link";
-import { HelpCircle } from "lucide-react";
-import type { Metadata } from "next";
+"use client";
 
-export const metadata: Metadata = {
-  title: "FAQ — DriveLink SL",
-  description: "Common questions about renting a car and listing your fleet on DriveLink SL.",
-};
+import { useState } from "react";
+import Link from "next/link";
+import { HelpCircle, Plus } from "lucide-react";
 
 interface QA {
   q: string;
@@ -57,7 +54,7 @@ const RENTER_FAQS: QA[] = [
     ),
   },
   {
-    q: "What if I don&apos;t pay the Rs. 500 within 12 hours?",
+    q: "What if I don't pay the Rs. 500 within 12 hours?",
     a: (
       <>
         The booking auto-cancels. The slot is freed up for someone else and your reliability
@@ -66,7 +63,7 @@ const RENTER_FAQS: QA[] = [
     ),
   },
   {
-    q: "Is the agency&apos;s phone number hidden until I pay?",
+    q: "Is the agency's phone number hidden until I pay?",
     a: (
       <>
         Yes. We show the agency&apos;s name, city, and reliability stats publicly so you can
@@ -133,7 +130,7 @@ const AGENCY_FAQS: QA[] = [
     ),
   },
   {
-    q: "What if my listing isn&apos;t approved?",
+    q: "What if my listing isn't approved?",
     a: (
       <>
         New listings go through admin review (usually within 24 hours). The most common rejection
@@ -154,54 +151,70 @@ const AGENCY_FAQS: QA[] = [
   },
 ];
 
-function Section({ title, items, anchor }: { title: string; items: QA[]; anchor: string }) {
-  return (
-    <section id={anchor} className="mb-12">
-      <h2 className="text-xl font-bold text-white mb-4">{title}</h2>
-      <div className="space-y-2">
-        {items.map((item, i) => (
-          <details
-            key={i}
-            className="group bg-slate-900 border border-slate-200 rounded-2xl shadow-sm px-5 py-4 [&_summary::marker]:hidden [&_summary::-webkit-details-marker]:hidden"
-          >
-            <summary className="cursor-pointer flex items-start justify-between gap-3 list-none">
-              <span className="text-white font-medium text-sm">{item.q}</span>
-              <span className="text-slate-500 group-open:rotate-45 transition-transform shrink-0 mt-0.5">+</span>
-            </summary>
-            <div className="text-slate-300 text-sm leading-relaxed mt-3 pt-3 border-t border-slate-800">
-              {item.a}
-            </div>
-          </details>
-        ))}
-      </div>
-    </section>
-  );
-}
+type TabKey = "renters" | "agencies";
 
 export default function FAQPage() {
+  const [tab, setTab] = useState<TabKey>("renters");
+  const items = tab === "renters" ? RENTER_FAQS : AGENCY_FAQS;
+
   return (
     <div className="max-w-3xl mx-auto px-4 py-12">
       <header className="text-center mb-10">
         <div className="inline-flex items-center gap-2 mb-3">
-          <HelpCircle size={20} className="text-amber-400" />
-          <span className="text-amber-400 text-xs font-semibold uppercase tracking-wider">FAQ</span>
+          <HelpCircle size={20} className="text-amber-500" />
+          <span className="text-amber-600 text-xs font-semibold uppercase tracking-wider">FAQ</span>
         </div>
-        <h1 className="text-3xl sm:text-4xl font-bold text-white">Frequently asked questions</h1>
+        <h1 className="text-3xl sm:text-4xl font-bold text-slate-200">Frequently asked questions</h1>
       </header>
 
-      <div className="flex gap-2 justify-center mb-10">
-        <a href="#renters"  className="px-4 py-1.5 bg-slate-800 hover:bg-slate-700 text-white text-sm rounded-full transition-colors">For renters</a>
-        <a href="#agencies" className="px-4 py-1.5 bg-slate-800 hover:bg-slate-700 text-white text-sm rounded-full transition-colors">For agencies</a>
+      {/* Tabs */}
+      <div role="tablist" className="flex gap-1 justify-center mb-8 p-1 glass-card rounded-full w-fit mx-auto">
+        {([
+          { key: "renters",  label: "For renters" },
+          { key: "agencies", label: "For agencies" },
+        ] as const).map((t) => (
+          <button
+            key={t.key}
+            role="tab"
+            aria-selected={tab === t.key}
+            onClick={() => setTab(t.key)}
+            className={`spring-press px-5 py-2 rounded-full text-sm font-medium transition-all ${
+              tab === t.key
+                ? "bg-amber-500 text-stone-900 shadow-sm"
+                : "text-slate-400 hover:text-slate-200"
+            }`}
+          >
+            {t.label}
+          </button>
+        ))}
       </div>
 
-      <Section title="For renters"  items={RENTER_FAQS} anchor="renters" />
-      <Section title="For agencies" items={AGENCY_FAQS} anchor="agencies" />
+      <div className="space-y-2 animate-fade-up" key={tab}>
+        {items.map((item, i) => (
+          <details
+            key={`${tab}-${i}`}
+            className="group bg-slate-900 border border-slate-200 rounded-2xl shadow-sm px-5 py-4 [&_summary::marker]:hidden [&_summary::-webkit-details-marker]:hidden"
+          >
+            <summary className="cursor-pointer flex items-start justify-between gap-3 list-none">
+              <span className="text-slate-200 font-medium text-sm">{item.q}</span>
+              <Plus size={16} className="text-slate-500 shrink-0 mt-0.5 transition-transform group-open:rotate-45" />
+            </summary>
+            <div className="smooth-accordion">
+              <div>
+                <div className="text-slate-400 text-sm leading-relaxed mt-3 pt-3 border-t border-slate-200">
+                  {item.a}
+                </div>
+              </div>
+            </div>
+          </details>
+        ))}
+      </div>
 
-      <div className="text-center mt-12 p-6 bg-slate-900 border border-slate-200 rounded-2xl shadow-sm">
-        <p className="text-white font-medium">Still have a question?</p>
+      <div className="text-center mt-12 p-6 glass-card rounded-2xl">
+        <p className="text-slate-200 font-medium">Still have a question?</p>
         <p className="text-slate-500 text-sm mt-1">
           Agencies can message DriveLink support directly from{" "}
-          <Link href="/dashboard/support" className="text-amber-400 hover:text-amber-300">your dashboard</Link>.
+          <Link href="/dashboard/support" className="text-amber-600 hover:text-amber-700 font-medium">your dashboard</Link>.
         </p>
       </div>
     </div>
