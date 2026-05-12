@@ -114,7 +114,7 @@ export function NavbarShell({ role, signedIn }: Props) {
           onClick={() => setOpen((o) => !o)}
           aria-expanded={open}
           aria-label={open ? "Close menu" : "Open menu"}
-          className="md:hidden spring-press w-10 h-10 rounded-xl bg-white border border-stone-200 flex items-center justify-center text-slate-200"
+          className="md:hidden spring-press w-10 h-10 rounded-xl bg-slate-900 border border-stone-200 flex items-center justify-center text-slate-200"
         >
           <span className="relative block w-5 h-5">
             <span
@@ -137,12 +137,14 @@ export function NavbarShell({ role, signedIn }: Props) {
       </div>
 
       {/* Mobile expanding panel — solid white background, grows the header
-          itself via grid-template-rows so the page below is pushed down. */}
+          itself via grid-template-rows so the page below is pushed down.
+          NB: bg-slate-900 is white under our inverted palette; bg-white
+          would resolve to deep slate. */}
       <div
         className="md:hidden grid transition-[grid-template-rows] duration-300 ease-out"
         style={{ gridTemplateRows: open ? "1fr" : "0fr" }}
       >
-        <div className="overflow-hidden bg-white">
+        <div className="overflow-hidden bg-slate-900">
           <div className="px-4 py-3 border-t border-stone-200 space-y-1">
             {LINKS.map(({ href, label, Icon }) => (
               <Link
