@@ -52,7 +52,7 @@ export default async function AdminSupportListPage() {
       </p>
 
       {threads.length === 0 ? (
-        <div className="bg-slate-900 border border-slate-800 rounded-2xl p-8 text-center text-slate-500 text-sm">
+        <div className="bg-slate-900 border border-slate-200 rounded-2xl shadow-sm p-8 text-center text-slate-500 text-sm">
           No support threads yet. Agencies open a thread by sending their first message from /dashboard/support.
         </div>
       ) : (
@@ -63,7 +63,7 @@ export default async function AdminSupportListPage() {
               <Link
                 key={t.id}
                 href={`/admin/support/${t.id}`}
-                className="block bg-slate-900 border border-slate-800 hover:border-slate-600 rounded-2xl p-4 transition-colors"
+                className="block spring-hover bg-slate-900 border border-slate-200 shadow-sm hover:border-amber-300 rounded-2xl p-4 transition-colors"
               >
                 <div className="flex items-center justify-between gap-3">
                   <div className="min-w-0 flex-1">

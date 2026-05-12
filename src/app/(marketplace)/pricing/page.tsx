@@ -19,7 +19,7 @@ export default function PricingPage() {
 
       <div className="grid md:grid-cols-2 gap-5">
         {/* Renter card */}
-        <div className="bg-slate-900 border border-slate-800 rounded-2xl p-6">
+        <div className="bg-slate-900 border border-slate-200 rounded-2xl shadow-sm p-6">
           <div className="flex items-center gap-2 mb-2">
             <Car size={20} className="text-amber-400" />
             <h2 className="text-lg font-semibold text-white">For renters</h2>
@@ -61,7 +61,7 @@ export default function PricingPage() {
         </div>
 
         {/* Agency card */}
-        <div className="bg-slate-900 border border-slate-800 rounded-2xl p-6 relative overflow-hidden">
+        <div className="bg-slate-900 border border-slate-200 rounded-2xl shadow-sm p-6 relative overflow-hidden">
           <div className="absolute top-3 right-3 px-2 py-0.5 bg-amber-500/10 text-amber-400 text-[10px] font-semibold rounded-full ring-1 ring-amber-500/20">
             FREE TO START
           </div>
@@ -108,7 +108,7 @@ export default function PricingPage() {
       </div>
 
       {/* Worked example */}
-      <section className="mt-12 bg-slate-900 border border-slate-800 rounded-2xl p-6">
+      <section className="mt-12 bg-slate-900 border border-slate-200 rounded-2xl shadow-sm p-6">
         <h2 className="text-xl font-bold text-white mb-3">Worked example: 3-day rental at Rs. 8,000/day</h2>
         <div className="grid sm:grid-cols-2 gap-4 text-sm">
           <div>

@@ -137,7 +137,7 @@ export default async function AdminAnalyticsPage({ searchParams }: Props) {
 
 function Stat({ label, value, Icon }: { label: string; value: number; Icon: React.ComponentType<{ size?: number; className?: string }> }) {
   return (
-    <div className="bg-slate-900 border border-slate-800 rounded-2xl p-4">
+    <div className="bg-slate-900 border border-slate-200 rounded-2xl shadow-sm p-4">
       <div className="flex items-center justify-between mb-1">
         <p className="text-slate-500 text-xs uppercase tracking-wider">{label}</p>
         <Icon size={14} className="text-slate-600" />
@@ -149,7 +149,7 @@ function Stat({ label, value, Icon }: { label: string; value: number; Icon: Reac
 
 function Card({ title, subtitle, children, Icon }: { title: string; subtitle?: string; children: React.ReactNode; Icon?: React.ComponentType<{ size?: number; className?: string }> }) {
   return (
-    <div className="bg-slate-900 border border-slate-800 rounded-2xl p-5 mb-3">
+    <div className="bg-slate-900 border border-slate-200 rounded-2xl shadow-sm p-5 mb-3">
       <div className="flex items-center gap-2 mb-3">
         {Icon && <Icon size={16} className="text-amber-400" />}
         <h2 className="text-white font-semibold">{title}</h2>

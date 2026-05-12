@@ -66,7 +66,7 @@ export default async function FleetPage() {
       </div>
 
       {vehicles.length === 0 ? (
-        <div className="bg-slate-900 border border-slate-800 rounded-2xl p-12 text-center">
+        <div className="bg-slate-900 border border-slate-200 rounded-2xl shadow-sm p-12 text-center">
           <Car size={48} strokeWidth={1.5} className="mx-auto mb-3 text-slate-600" />
           <h2 className="text-white font-semibold mb-1">No vehicles yet</h2>
           <p className="text-slate-400 text-sm mb-6">
@@ -86,7 +86,7 @@ export default async function FleetPage() {
             return (
               <div
                 key={v.id}
-                className="bg-slate-900 border border-slate-800 rounded-2xl overflow-hidden flex flex-col"
+                className="bg-slate-900 border border-slate-200 rounded-2xl shadow-sm overflow-hidden flex flex-col"
               >
                 <div className="relative aspect-[16/9] bg-slate-800">
                   {photo ? (

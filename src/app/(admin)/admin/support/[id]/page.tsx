@@ -44,7 +44,7 @@ export default async function AdminSupportThreadPage({ params }: Props) {
         <ArrowLeft size={12} /> Back to all threads
       </Link>
 
-      <div className="bg-slate-900 border border-slate-800 rounded-2xl p-4 mb-4">
+      <div className="bg-slate-900 border border-slate-200 rounded-2xl shadow-sm p-4 mb-4">
         <div className="flex items-start justify-between gap-3">
           <div>
             <div className="flex items-center gap-2 flex-wrap">

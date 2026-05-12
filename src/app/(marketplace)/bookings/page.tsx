@@ -73,7 +73,7 @@ export default async function MyBookingsPage() {
             <Link
               key={b.id}
               href={`/bookings/${b.id}`}
-              className="block bg-slate-900 border border-slate-800 hover:border-slate-600 rounded-2xl p-4 transition-colors"
+              className="block spring-hover bg-slate-900 border border-slate-200 shadow-sm hover:border-amber-300 rounded-2xl p-4 transition-colors"
             >
               <div className="flex items-start justify-between gap-4">
                 <div className="flex-1 min-w-0">

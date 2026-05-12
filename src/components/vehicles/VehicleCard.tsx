@@ -12,7 +12,7 @@ export function VehicleCard({ vehicle }: { vehicle: VehicleWithAgency }) {
   return (
     <Link
       href={`/vehicles/${vehicle.slug}`}
-      className="group block bg-slate-900 rounded-2xl overflow-hidden border border-slate-800 hover:border-slate-600 transition-colors"
+      className="spring-hover group block bg-slate-900 rounded-3xl overflow-hidden border border-slate-200 shadow-sm hover:border-amber-300"
     >
       {/* Photo */}
       <div className="relative aspect-[16/9] bg-slate-800">

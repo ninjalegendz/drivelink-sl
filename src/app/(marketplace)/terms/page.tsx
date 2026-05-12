@@ -29,7 +29,7 @@ export default function TermsPage() {
       </header>
 
       {/* TOC */}
-      <nav className="mb-10 p-4 bg-slate-900 border border-slate-800 rounded-2xl">
+      <nav className="mb-10 p-4 bg-slate-900 border border-slate-200 rounded-2xl shadow-sm">
         <p className="text-white text-xs font-semibold uppercase tracking-wider mb-2">Contents</p>
         <ul className="grid sm:grid-cols-2 gap-x-4 gap-y-1 text-sm">
           {SECTIONS.map(({ id, label }) => (

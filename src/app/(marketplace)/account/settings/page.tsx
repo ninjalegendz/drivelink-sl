@@ -120,7 +120,7 @@ export default async function AccountSettingsPage() {
 
 function Section({ title, children }: { title: string; children: React.ReactNode }) {
   return (
-    <section className="bg-slate-900 border border-slate-800 rounded-2xl p-5">
+    <section className="bg-slate-900 border border-slate-200 rounded-2xl shadow-sm p-5">
       <h2 className="text-white font-semibold mb-4">{title}</h2>
       {children}
     </section>

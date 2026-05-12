@@ -152,7 +152,7 @@ export default async function AgencyAnalyticsPage({ searchParams }: Props) {
 function Stat({ label, value, subtitle, tone }: { label: string; value: string | number; subtitle?: string; tone?: "red" | "slate" }) {
   const colourClass = tone === "red" ? "text-red-400" : "text-white";
   return (
-    <div className="bg-slate-900 border border-slate-800 rounded-2xl p-4">
+    <div className="bg-slate-900 border border-slate-200 rounded-2xl shadow-sm p-4">
       <p className="text-slate-500 text-xs uppercase tracking-wider mb-1">{label}</p>
       <p className={`text-2xl font-bold ${colourClass}`}>{value}</p>
       {subtitle && <p className="text-slate-500 text-xs mt-1">{subtitle}</p>}
@@ -162,7 +162,7 @@ function Stat({ label, value, subtitle, tone }: { label: string; value: string |
 
 function Card({ title, subtitle, children, Icon }: { title: string; subtitle?: string; children: React.ReactNode; Icon?: React.ComponentType<{ size?: number; className?: string }> }) {
   return (
-    <div className="bg-slate-900 border border-slate-800 rounded-2xl p-5 mb-3">
+    <div className="bg-slate-900 border border-slate-200 rounded-2xl shadow-sm p-5 mb-3">
       <div className="flex items-center gap-2 mb-3">
         {Icon && <Icon size={16} className="text-amber-400" />}
         <h2 className="text-white font-semibold">{title}</h2>

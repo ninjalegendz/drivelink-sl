@@ -106,7 +106,7 @@ export function SupportChat({ threadId, initial, currentRole, currentUserId, aud
   }
 
   return (
-    <div className="flex flex-col h-[calc(100vh-12rem)] min-h-[400px] bg-slate-900 border border-slate-800 rounded-2xl overflow-hidden">
+    <div className="flex flex-col h-[calc(100vh-12rem)] min-h-[400px] bg-slate-900 border border-slate-200 rounded-2xl shadow-sm overflow-hidden">
       {/* Messages */}
       <div ref={scrollRef} className="flex-1 overflow-y-auto p-4 space-y-3">
         {messages.length === 0 ? (

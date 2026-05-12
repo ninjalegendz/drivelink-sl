@@ -71,7 +71,7 @@ export default async function HomePage() {
             <Link
               key={city}
               href={`/vehicles?city=${encodeURIComponent(city)}`}
-              className="px-4 py-2 bg-slate-900 hover:bg-slate-800 border border-slate-800 hover:border-slate-600 text-sm text-slate-300 rounded-xl transition-colors"
+              className="px-4 py-2 spring-hover bg-slate-900 border border-slate-200 shadow-sm hover:border-amber-300 text-sm text-slate-300 rounded-xl transition-colors"
             >
               {city}
             </Link>

@@ -58,7 +58,7 @@ export default async function DashboardPage() {
           { label: "Active bookings",   value: activeBookings ?? 0,  color: "text-emerald-400", href: "/dashboard/bookings?status=active" },
           { label: "Fleet size",        value: vehicleCount ?? 0,    color: "text-white", href: "/dashboard/vehicles" },
         ].map(({ label, value, color, href }) => (
-          <Link key={label} href={href} className="bg-slate-900 border border-slate-800 hover:border-slate-600 rounded-2xl p-4 transition-colors block">
+          <Link key={label} href={href} className="spring-hover bg-slate-900 border border-slate-200 shadow-sm hover:border-amber-300 rounded-2xl p-4 transition-colors block">
             <p className={`text-2xl font-bold ${color}`}>{value}</p>
             <p className="text-slate-400 text-sm mt-1">{label}</p>
           </Link>
@@ -81,7 +81,7 @@ export default async function DashboardPage() {
 
       {/* Platform fees owed — Rs. 200 per completed booking, billed monthly */}
       {feesOwed > 0 && (
-        <div className="flex items-start gap-3 p-4 bg-slate-900 border border-slate-800 rounded-2xl mb-6">
+        <div className="flex items-start gap-3 p-4 bg-slate-900 border border-slate-200 rounded-2xl shadow-sm mb-6">
           <Receipt size={18} className="text-amber-400 shrink-0 mt-0.5" />
           <div className="flex-1">
             <p className="text-white font-medium text-sm">

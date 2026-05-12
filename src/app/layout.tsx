@@ -16,7 +16,7 @@ export const metadata: Metadata = {
 };
 
 export const viewport: Viewport = {
-  themeColor: "#0f172a",
+  themeColor: "#fbf8f0",
   width: "device-width",
   initialScale: 1,
 };
@@ -24,7 +24,9 @@ export const viewport: Viewport = {
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
     <html lang="en">
-      <body className={`${geist.className} bg-slate-950 text-white antialiased`} suppressHydrationWarning>
+      {/* Body bg + gradient lives in globals.css so the layered radial-
+          gradients can be fixed-attached. Just set text colour here. */}
+      <body className={`${geist.className} text-slate-900 antialiased`} suppressHydrationWarning>
         {children}
       </body>
     </html>

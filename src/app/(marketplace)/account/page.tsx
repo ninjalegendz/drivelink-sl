@@ -104,7 +104,7 @@ export default async function AccountPage({ searchParams }: Props) {
 
       {/* Email-verification nudge — only when an email exists and isn't verified yet */}
       {profile.email && !profile.email_verified_at && (
-        <div className="p-3 bg-slate-900 border border-slate-800 rounded-2xl flex items-start gap-3 text-xs">
+        <div className="p-3 bg-slate-900 border border-slate-200 rounded-2xl shadow-sm flex items-start gap-3 text-xs">
           <span className="w-7 h-7 rounded-full bg-slate-800 text-amber-400 flex items-center justify-center shrink-0">@</span>
           <div className="flex-1">
             <p className="text-slate-300 font-medium">Verify your email for a trust badge</p>
@@ -129,17 +129,17 @@ export default async function AccountPage({ searchParams }: Props) {
 
       {/* Stats */}
       <div className="grid grid-cols-3 gap-3">
-        <div className="bg-slate-900 border border-slate-800 rounded-2xl p-4 text-center">
+        <div className="bg-slate-900 border border-slate-200 rounded-2xl shadow-sm p-4 text-center">
           <p className="text-white font-bold text-xl">
             {(profile.rating_count ?? 0) > 0 ? profile.rating_avg?.toFixed(1) : "—"}
           </p>
           <p className="text-slate-500 text-xs mt-1">Rating</p>
         </div>
-        <div className="bg-slate-900 border border-slate-800 rounded-2xl p-4 text-center">
+        <div className="bg-slate-900 border border-slate-200 rounded-2xl shadow-sm p-4 text-center">
           <p className="text-white font-bold text-xl">{profile.rating_count ?? 0}</p>
           <p className="text-slate-500 text-xs mt-1">Reviews</p>
         </div>
-        <div className="bg-slate-900 border border-slate-800 rounded-2xl p-4 text-center">
+        <div className="bg-slate-900 border border-slate-200 rounded-2xl shadow-sm p-4 text-center">
           <Badge variant={kycVariant[profile.kyc_status ?? "unverified"]}>
             {kycLabel[profile.kyc_status ?? "unverified"]}
           </Badge>
@@ -149,7 +149,7 @@ export default async function AccountPage({ searchParams }: Props) {
 
       {/* Agency status (agency owners only) */}
       {profile.role === "agency_owner" && agency && (
-        <div className="bg-slate-900 border border-slate-800 rounded-2xl p-5">
+        <div className="bg-slate-900 border border-slate-200 rounded-2xl shadow-sm p-5">
           <div className="flex items-center justify-between">
             <div>
               <p className="text-white font-semibold">{agency.name}</p>
@@ -180,7 +180,7 @@ export default async function AccountPage({ searchParams }: Props) {
       {profile.role === "renter" && (
         <Link
           href="/bookings"
-          className="flex items-center justify-between bg-slate-900 border border-slate-800 hover:border-slate-600 rounded-2xl p-4 transition-colors"
+          className="flex items-center justify-between spring-hover bg-slate-900 border border-slate-200 shadow-sm hover:border-amber-300 rounded-2xl p-4 transition-colors"
         >
           <div>
             <p className="text-white font-medium">My bookings</p>
@@ -191,7 +191,7 @@ export default async function AccountPage({ searchParams }: Props) {
       )}
 
       {/* Identity verification */}
-      <div className="bg-slate-900 border border-slate-800 rounded-2xl p-5">
+      <div className="bg-slate-900 border border-slate-200 rounded-2xl shadow-sm p-5">
         <div className="flex items-center justify-between mb-5">
           <h2 className="text-white font-semibold">Identity Verification</h2>
           <Badge variant={kycVariant[profile.kyc_status ?? "unverified"]}>
@@ -286,7 +286,7 @@ export default async function AccountPage({ searchParams }: Props) {
       </div>
 
       {/* Account details */}
-      <div className="bg-slate-900 border border-slate-800 rounded-2xl p-5">
+      <div className="bg-slate-900 border border-slate-200 rounded-2xl shadow-sm p-5">
         <h2 className="text-white font-semibold mb-4">Account details</h2>
         <div className="space-y-3 text-sm">
           <div className="flex justify-between">

@@ -55,7 +55,7 @@ export default async function AdminAgenciesPage() {
     const ownerKyc = a.profiles?.kyc_status ?? "unverified";
     const fleetCount = a.vehicles?.[0]?.count ?? 0;
     return (
-      <div className="bg-slate-900 border border-slate-800 rounded-2xl p-5">
+      <div className="bg-slate-900 border border-slate-200 rounded-2xl shadow-sm p-5">
 
         {/* Header: name, badges, actions */}
         <div className="flex items-start justify-between gap-4 mb-3">

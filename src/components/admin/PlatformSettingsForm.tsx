@@ -51,7 +51,7 @@ export function PlatformSettingsForm({ initial, updatedAt }: Props) {
   }
 
   return (
-    <form onSubmit={save} className="space-y-4 bg-slate-900 border border-slate-800 rounded-2xl p-5">
+    <form onSubmit={save} className="space-y-4 bg-slate-900 border border-slate-200 rounded-2xl shadow-sm p-5">
       <div>
         <label className="text-slate-300 text-xs font-medium mb-1.5 block">Account holder name</label>
         <input

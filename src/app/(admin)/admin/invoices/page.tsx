@@ -119,7 +119,7 @@ export default async function AdminInvoicesPage({ searchParams }: Props) {
       </div>
 
       {agencies.length === 0 ? (
-        <div className="bg-slate-900 border border-slate-800 rounded-2xl p-12 text-center text-slate-500 text-sm">
+        <div className="bg-slate-900 border border-slate-200 rounded-2xl shadow-sm p-12 text-center text-slate-500 text-sm">
           No completed bookings in {monthLabel(month)}.
         </div>
       ) : (
@@ -128,7 +128,7 @@ export default async function AdminInvoicesPage({ searchParams }: Props) {
             <Link
               key={a.agency_id}
               href={`/admin/invoices/${a.agency_id}?month=${month}`}
-              className="block bg-slate-900 border border-slate-800 hover:border-slate-600 rounded-2xl p-4 transition-colors"
+              className="block spring-hover bg-slate-900 border border-slate-200 shadow-sm hover:border-amber-300 rounded-2xl p-4 transition-colors"
             >
               <div className="flex items-center justify-between gap-3">
                 <div className="min-w-0 flex-1">

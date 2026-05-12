@@ -29,7 +29,7 @@ export default async function AdminBlacklistPage() {
 
       <div className="space-y-3">
         {reports.map((r) => (
-          <div key={r.id} className="bg-slate-900 border border-slate-800 rounded-2xl p-4">
+          <div key={r.id} className="bg-slate-900 border border-slate-200 rounded-2xl shadow-sm p-4">
             <div className="flex items-start justify-between gap-4">
               <div>
                 <div className="flex items-center gap-2 mb-1">

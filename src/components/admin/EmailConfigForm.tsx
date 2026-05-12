@@ -72,7 +72,7 @@ export function EmailConfigForm({ initial, passwordSet }: Props) {
   }
 
   return (
-    <form onSubmit={save} className="space-y-4 bg-slate-900 border border-slate-800 rounded-2xl p-5">
+    <form onSubmit={save} className="space-y-4 bg-slate-900 border border-slate-200 rounded-2xl shadow-sm p-5">
 
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
         <Field label="From name" required>

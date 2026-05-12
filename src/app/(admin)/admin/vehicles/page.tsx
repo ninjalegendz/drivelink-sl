@@ -65,7 +65,7 @@ export default async function AdminVehiclesPage({ searchParams }: Props) {
       </div>
 
       {vehicles.length === 0 ? (
-        <div className="bg-slate-900 border border-slate-800 rounded-2xl p-12 text-center">
+        <div className="bg-slate-900 border border-slate-200 rounded-2xl shadow-sm p-12 text-center">
           <Car size={40} strokeWidth={1.5} className="mx-auto mb-3 text-slate-600" />
           <p className="text-slate-400 text-sm">
             {activeFilter === "pending_review" ? "No vehicles waiting for review." : "No vehicles match this filter."}
@@ -81,7 +81,7 @@ export default async function AdminVehiclesPage({ searchParams }: Props) {
             if (v.status !== "pending_review") {
               const cover = photos[0];
               return (
-                <div key={v.id} className="bg-slate-900 border border-slate-800 rounded-2xl p-4">
+                <div key={v.id} className="bg-slate-900 border border-slate-200 rounded-2xl shadow-sm p-4">
                   <div className="flex gap-4">
                     <div className="relative w-28 h-20 shrink-0 rounded-lg overflow-hidden bg-slate-800">
                       {cover ? (
@@ -122,7 +122,7 @@ export default async function AdminVehiclesPage({ searchParams }: Props) {
 
             // Full review card — only for pending_review.
             return (
-              <div key={v.id} className="bg-slate-900 border border-slate-800 rounded-2xl p-5">
+              <div key={v.id} className="bg-slate-900 border border-slate-200 rounded-2xl shadow-sm p-5">
 
                 {/* Header: title, agency, price, actions */}
                 <div className="flex items-start justify-between gap-4 mb-4">

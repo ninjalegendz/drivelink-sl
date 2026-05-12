@@ -241,7 +241,7 @@ export function GuestBookingModal({ draft, onClose }: Props) {
       onClick={() => stage !== "booking" && onClose()}
     >
       <div
-        className="bg-slate-900 border border-slate-800 rounded-2xl w-full max-w-md shadow-2xl my-8"
+        className="animate-bounce-in glass-card rounded-3xl w-full max-w-md my-8"
         onClick={(e) => e.stopPropagation()}
       >
         {/* Header */}

@@ -100,7 +100,7 @@ export default async function AdminUsersPage({ searchParams }: Props) {
         {users.map((u) => {
           const stats = bookingsByUser.get(u.id) ?? { total: 0, completed: 0, cancelled: 0, active: 0 };
           return (
-          <div key={u.id} className="bg-slate-900 border border-slate-800 rounded-2xl p-5">
+          <div key={u.id} className="bg-slate-900 border border-slate-200 rounded-2xl shadow-sm p-5">
 
             {/* Top row: avatar + info + actions */}
             <div className="flex items-start justify-between gap-4 mb-4">

@@ -162,7 +162,7 @@ function Section({ title, items, anchor }: { title: string; items: QA[]; anchor:
         {items.map((item, i) => (
           <details
             key={i}
-            className="group bg-slate-900 border border-slate-800 rounded-2xl px-5 py-4 [&_summary::marker]:hidden [&_summary::-webkit-details-marker]:hidden"
+            className="group bg-slate-900 border border-slate-200 rounded-2xl shadow-sm px-5 py-4 [&_summary::marker]:hidden [&_summary::-webkit-details-marker]:hidden"
           >
             <summary className="cursor-pointer flex items-start justify-between gap-3 list-none">
               <span className="text-white font-medium text-sm">{item.q}</span>
@@ -197,7 +197,7 @@ export default function FAQPage() {
       <Section title="For renters"  items={RENTER_FAQS} anchor="renters" />
       <Section title="For agencies" items={AGENCY_FAQS} anchor="agencies" />
 
-      <div className="text-center mt-12 p-6 bg-slate-900 border border-slate-800 rounded-2xl">
+      <div className="text-center mt-12 p-6 bg-slate-900 border border-slate-200 rounded-2xl shadow-sm">
         <p className="text-white font-medium">Still have a question?</p>
         <p className="text-slate-500 text-sm mt-1">
           Agencies can message DriveLink support directly from{" "}

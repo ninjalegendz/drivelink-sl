@@ -45,7 +45,7 @@ export default async function AdminSlipsPage() {
       ) : (
         <div className="space-y-4">
           {slips.map((b) => (
-            <div key={b.id} className="bg-slate-900 border border-slate-800 rounded-2xl overflow-hidden">
+            <div key={b.id} className="bg-slate-900 border border-slate-200 rounded-2xl shadow-sm overflow-hidden">
               <div className="grid lg:grid-cols-3 gap-0">
 
                 {/* Slip image */}

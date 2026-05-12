@@ -95,7 +95,7 @@ export default async function AdminAgencyInvoicePage({ params, searchParams }: P
       </div>
 
       {bookings.length === 0 ? (
-        <div className="bg-slate-900 border border-slate-800 rounded-2xl p-12 text-center text-slate-500 text-sm">
+        <div className="bg-slate-900 border border-slate-200 rounded-2xl shadow-sm p-12 text-center text-slate-500 text-sm">
           No completed bookings for {agency.name} in {monthLabel(month)}.
         </div>
       ) : (

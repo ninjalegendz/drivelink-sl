@@ -161,7 +161,7 @@ export function RenterActions({ userId, fullName, phone, email, role, isBlacklis
           onClick={() => setModalOpen(false)}
         >
           <div
-            className="bg-slate-900 border border-slate-800 rounded-2xl w-full max-w-md p-5 shadow-2xl"
+            className="animate-bounce-in glass-card rounded-3xl w-full max-w-md p-5"
             onClick={(e) => e.stopPropagation()}
           >
             <div className="flex items-start justify-between mb-1">

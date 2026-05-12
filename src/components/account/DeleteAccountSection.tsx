@@ -86,7 +86,7 @@ export function DeleteAccountSection() {
           onClick={() => setOpen(false)}
         >
           <div
-            className="bg-slate-900 border border-slate-800 rounded-2xl w-full max-w-md p-5 shadow-2xl my-8 max-h-[90vh] overflow-y-auto"
+            className="animate-bounce-in glass-card rounded-3xl w-full max-w-md p-5 my-8 max-h-[90vh] overflow-y-auto"
             onClick={(e) => e.stopPropagation()}
           >
             <div className="flex items-start justify-between mb-4">
