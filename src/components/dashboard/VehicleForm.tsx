@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import Image from "next/image";
 import { Camera, X } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
+import { uploadToR2 } from "@/lib/storage/upload";
 import { Button } from "@/components/ui/Button";
 import { HelpHint } from "@/components/ui/HelpHint";
 import { Select } from "@/components/ui/Select";
@@ -118,26 +119,18 @@ export function VehicleForm({ agencyId, agencyCity, vehicle }: Props) {
     const failedFiles: string[]  = [];
 
     // Upload each new photo. If one fails, log it and continue with the rest
-    // — user will see a summary after the save.
+    // — user will see a summary after the save. The sign endpoint roots the
+    // R2 key at the caller's agency-id automatically — no agencyId needed
+    // client-side.
     for (const file of newPhotos) {
-      const ext  = file.name.split(".").pop()?.toLowerCase() ?? "jpg";
-      const path = `${agencyId}/${crypto.randomUUID()}.${ext}`;
-
-      const { error: uploadError } = await supabase.storage
-        .from("vehicle-photos")
-        .upload(path, file, { contentType: file.type });
-
-      if (uploadError) {
-        console.error("[vehicle photo upload]", file.name, uploadError);
-        failedFiles.push(`${file.name}: ${uploadError.message}`);
-        continue;
+      try {
+        const out = await uploadToR2("vehicle-photos", file);
+        uploadedUrls.push(out.publicUrl);
+      } catch (err) {
+        const msg = err instanceof Error ? err.message : "upload failed";
+        console.error("[vehicle photo upload]", file.name, msg);
+        failedFiles.push(`${file.name}: ${msg}`);
       }
-
-      const { data: { publicUrl } } = supabase.storage
-        .from("vehicle-photos")
-        .getPublicUrl(path);
-
-      uploadedUrls.push(publicUrl);
     }
 
     if (failedFiles.length > 0 && uploadedUrls.length === 0 && newPhotos.length > 0) {

@@ -3,6 +3,7 @@ import { randomBytes } from "crypto";
 import { createServiceClient } from "@/lib/supabase/server";
 import { sendEmail } from "@/lib/email/send";
 import { generateUndeleteToken } from "@/lib/account/undelete-token";
+import { deleteObject, extractKeyFromUrl } from "@/lib/storage/r2";
 
 export interface DeletionBlocker {
   type:     "active_booking" | "unpaid_fees" | "is_admin";
@@ -110,22 +111,13 @@ export async function getDeletionBlockers(userId: string): Promise<DeletionBlock
   return blockers;
 }
 
-async function deleteStorageObjectByUrl(
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  service: any,
-  bucket: string,
-  publicUrl: string
-): Promise<void> {
-  // URLs look like https://.../storage/v1/object/public/<bucket>/<path>
-  const marker = `/object/public/${bucket}/`;
-  const idx = publicUrl.indexOf(marker);
-  if (idx === -1) return;
-  const path = publicUrl.slice(idx + marker.length);
-  if (!path) return;
+async function deleteStorageObjectByUrl(publicUrl: string): Promise<void> {
+  const key = extractKeyFromUrl(publicUrl);
+  if (!key) return;
   try {
-    await service.storage.from(bucket).remove([path]);
+    await deleteObject(key);
   } catch (err) {
-    console.warn("[deletion] storage cleanup failed", bucket, path, err);
+    console.warn("[deletion] r2 cleanup failed", key, err);
   }
 }
 
@@ -211,9 +203,9 @@ export async function softDeleteUser(userId: string): Promise<void> {
   }
 
   // Storage cleanup — best-effort, before nulling the URLs
-  if (profile.nic_url)    await deleteStorageObjectByUrl(service, "kyc",     profile.nic_url);
-  if (profile.selfie_url) await deleteStorageObjectByUrl(service, "kyc",     profile.selfie_url);
-  if (profile.avatar_url) await deleteStorageObjectByUrl(service, "avatars", profile.avatar_url);
+  if (profile.nic_url)    await deleteStorageObjectByUrl(profile.nic_url);
+  if (profile.selfie_url) await deleteStorageObjectByUrl(profile.selfie_url);
+  if (profile.avatar_url) await deleteStorageObjectByUrl(profile.avatar_url);
 
   // Scrub profile
   await service

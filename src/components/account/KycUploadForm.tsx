@@ -3,6 +3,7 @@
 import { useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
+import { uploadToR2 } from "@/lib/storage/upload";
 import { Button } from "@/components/ui/Button";
 import Image from "next/image";
 
@@ -45,29 +46,33 @@ export function KycUploadForm({ userId, existingNicUrl, existingSelfieUrl }: Pro
 
     setLoading(true);
     setError(null);
-    const supabase = createClient();
 
     let nicUrl    = existingNicUrl;
     let selfieUrl = existingSelfieUrl;
 
     if (nicFile) {
-      const ext  = nicFile.name.split(".").pop();
-      const path = `${userId}/nic.${ext}`;
-      const { error: up } = await supabase.storage
-        .from("kyc").upload(path, nicFile, { upsert: true });
-      if (up) { setError("NIC upload failed. Try again."); setLoading(false); return; }
-      nicUrl = supabase.storage.from("kyc").getPublicUrl(path).data.publicUrl;
+      try {
+        const out = await uploadToR2("kyc", nicFile);
+        nicUrl = out.publicUrl;
+      } catch (err) {
+        setError(err instanceof Error ? `NIC upload failed: ${err.message}` : "NIC upload failed. Try again.");
+        setLoading(false);
+        return;
+      }
     }
 
     if (selfieFile) {
-      const ext  = selfieFile.name.split(".").pop();
-      const path = `${userId}/selfie.${ext}`;
-      const { error: up } = await supabase.storage
-        .from("kyc").upload(path, selfieFile, { upsert: true });
-      if (up) { setError("Selfie upload failed. Try again."); setLoading(false); return; }
-      selfieUrl = supabase.storage.from("kyc").getPublicUrl(path).data.publicUrl;
+      try {
+        const out = await uploadToR2("kyc", selfieFile);
+        selfieUrl = out.publicUrl;
+      } catch (err) {
+        setError(err instanceof Error ? `Selfie upload failed: ${err.message}` : "Selfie upload failed. Try again.");
+        setLoading(false);
+        return;
+      }
     }
 
+    const supabase = createClient();
     const { error: upErr } = await supabase
       .from("profiles")
       .update({ nic_url: nicUrl, selfie_url: selfieUrl, kyc_status: "pending" })

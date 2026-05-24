@@ -5,6 +5,7 @@ import Image from "next/image";
 import { useRouter } from "next/navigation";
 import { Camera, Loader2, User } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
+import { uploadToR2 } from "@/lib/storage/upload";
 
 interface Props {
   userId:           string;
@@ -35,23 +36,18 @@ export function AvatarUploader({ userId, initialAvatarUrl, fullName }: Props) {
     }
 
     setLoading(true);
-    const supabase = createClient();
 
-    const ext  = file.name.split(".").pop()?.toLowerCase() ?? "jpg";
-    const path = `${userId}/${crypto.randomUUID()}.${ext}`;
-
-    const { error: uploadError } = await supabase.storage
-      .from("avatars")
-      .upload(path, file, { contentType: file.type, upsert: false });
-
-    if (uploadError) {
-      setError(uploadError.message);
+    let publicUrl: string;
+    try {
+      const out = await uploadToR2("avatars", file);
+      publicUrl = out.publicUrl;
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Upload failed");
       setLoading(false);
       return;
     }
 
-    const { data: { publicUrl } } = supabase.storage.from("avatars").getPublicUrl(path);
-
+    const supabase = createClient();
     const { error: updateError } = await supabase
       .from("profiles")
       .update({ avatar_url: publicUrl })

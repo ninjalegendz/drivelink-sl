@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { createClient } from "@/lib/supabase/client";
+import { uploadToR2 } from "@/lib/storage/upload";
 import { Button } from "@/components/ui/Button";
 
 export function SlipUploadForm({ bookingId }: { bookingId: string }) {
@@ -17,24 +18,17 @@ export function SlipUploadForm({ bookingId }: { bookingId: string }) {
     setLoading(true);
     setError(null);
 
-    const supabase = createClient();
-    const ext = file.name.split(".").pop();
-    const path = `slips/${bookingId}.${ext}`;
-
-    const { error: uploadError } = await supabase.storage
-      .from("booking-slips")
-      .upload(path, file, { upsert: true });
-
-    if (uploadError) {
-      setError("Upload failed. Please try again.");
+    let publicUrl: string;
+    try {
+      const out = await uploadToR2("booking-slips", file);
+      publicUrl = out.publicUrl;
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Upload failed. Please try again.");
       setLoading(false);
       return;
     }
 
-    const { data: { publicUrl } } = supabase.storage
-      .from("booking-slips")
-      .getPublicUrl(path);
-
+    const supabase = createClient();
     const { error: updateError } = await supabase
       .from("bookings")
       .update({ slip_url: publicUrl, status: "payment_pending" })
