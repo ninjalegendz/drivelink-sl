@@ -15,7 +15,7 @@ const config: CapacitorConfig = {
   appName: "DriveLink",
   webDir:  "www",
   server: {
-    url: "https://drivelink-sl.vercel.app",
+    url: "https://drivelink.lk",
     androidScheme: "https",
     cleartext: false,
   },

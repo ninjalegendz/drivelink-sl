@@ -1,0 +1,20 @@
+{
+  "$schema": "../node_modules/wrangler/config-schema.json",
+  "name": "drivelink-cron",
+  "main": "worker.ts",
+  "compatibility_date": "2025-11-01",
+
+  // Daily at 3 AM UTC. Matches the schedule the Vercel cron was running on.
+  "triggers": {
+    "crons": ["0 3 * * *"]
+  },
+
+  // TARGET_URL stays in code; CRON_SECRET is pushed via `wrangler secret put`.
+  "vars": {
+    "TARGET_URL": "https://drivelink.lk"
+  },
+
+  "observability": {
+    "enabled": true
+  }
+}
