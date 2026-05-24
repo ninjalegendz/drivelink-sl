@@ -1,9 +1,18 @@
 import { createClient as createPlainClient } from "@supabase/supabase-js";
-import { randomBytes } from "crypto";
 import { createServiceClient } from "@/lib/supabase/server";
 import { sendEmail } from "@/lib/email/send";
 import { generateUndeleteToken } from "@/lib/account/undelete-token";
 import { deleteObject, extractKeyFromUrl } from "@/lib/storage/r2";
+
+// Web Crypto equivalent of node's randomBytes(n).toString("hex").
+// Runs on both Node 18+ and the Cloudflare Workers runtime.
+function randomHex(byteCount: number): string {
+  const bytes = new Uint8Array(byteCount);
+  crypto.getRandomValues(bytes);
+  let out = "";
+  for (let i = 0; i < bytes.length; i++) out += bytes[i].toString(16).padStart(2, "0");
+  return out;
+}
 
 export interface DeletionBlocker {
   type:     "active_booking" | "unpaid_fees" | "is_admin";
@@ -187,7 +196,7 @@ export async function softDeleteUser(userId: string): Promise<void> {
     ? profile.email
     : null;
   if (realEmail) {
-    const token  = generateUndeleteToken(userId, deletedAt);
+    const token  = await generateUndeleteToken(userId, deletedAt);
     const appUrl = process.env.NEXT_PUBLIC_APP_URL ?? "https://drivelink.lk";
     const undeleteUrl = `${appUrl}/api/account/undelete?u=${encodeURIComponent(userId)}&t=${token}`;
     try {
@@ -249,6 +258,6 @@ export async function softDeleteUser(userId: string): Promise<void> {
   );
   await admin.auth.admin.updateUserById(userId, {
     email:    `deleted+${userId.replace(/-/g, "")}@drivelink.invalid`,
-    password: randomBytes(32).toString("hex"),
+    password: randomHex(32),
   });
 }

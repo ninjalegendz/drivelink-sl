@@ -46,7 +46,7 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "Too many failed attempts. Request a new code." }, { status: 429 });
   }
 
-  if (!compareOtp(code, identity.userId, p.phone_otp_hash)) {
+  if (!(await compareOtp(code, identity.userId, p.phone_otp_hash))) {
     await service
       .from("profiles")
       .update({ phone_otp_attempts: p.phone_otp_attempts + 1 })

@@ -46,7 +46,7 @@ export async function POST(req: NextRequest) {
   if (new Date(p.otp_expires_at).getTime() < Date.now())  return NextResponse.json({ error: "Code expired. Request a new one." }, { status: 400 });
   if (p.otp_attempts >= OTP_MAX_ATTEMPTS)                 return NextResponse.json({ error: "Too many failed attempts. Request a new code." }, { status: 429 });
 
-  if (!compareOtp(code, intl, p.otp_hash)) {
+  if (!(await compareOtp(code, intl, p.otp_hash))) {
     await service.from("pending_signups")
       .update({ otp_attempts: p.otp_attempts + 1 })
       .eq("phone", intl);

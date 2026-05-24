@@ -91,7 +91,7 @@ export async function POST(req: NextRequest) {
   }
 
   const code            = generateOtp();
-  const otpHash         = hashOtp(code, intl);
+  const otpHash         = await hashOtp(code, intl);
   const expiresAt       = new Date(Date.now() + OTP_TTL_MS).toISOString();
   const newSendCount    = priorSends + 1;
   const nextCooldownSec = Math.ceil(cooldownForSendCount(newSendCount) / 1000);

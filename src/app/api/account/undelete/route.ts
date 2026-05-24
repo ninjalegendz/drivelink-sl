@@ -30,7 +30,7 @@ export async function GET(req: NextRequest) {
   const p = profile as { id: string; deleted_at: string | null } | null;
   if (!p) return NextResponse.redirect(`${origin}/?undelete_failed=missing`);
 
-  const check = verifyUndeleteToken(userId, p.deleted_at, token);
+  const check = await verifyUndeleteToken(userId, p.deleted_at, token);
   if (!check.ok) {
     return NextResponse.redirect(`${origin}/?undelete_failed=${check.reason}`);
   }

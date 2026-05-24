@@ -37,7 +37,7 @@ export async function POST(req: NextRequest) {
   if (p.phone_otp_attempts >= OTP_MAX_ATTEMPTS)
                                 return NextResponse.json({ error: "Too many failed attempts. Request a new code." }, { status: 429 });
 
-  const matches = compareOtp(code, user.id, p.phone_otp_hash);
+  const matches = await compareOtp(code, user.id, p.phone_otp_hash);
   if (!matches) {
     await service
       .from("profiles")
