@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient, createServiceClient } from "@/lib/supabase/server";
+import { invalidateEmailConfigCache } from "@/lib/email/send";
 
 async function requireAdmin() {
   const supabase = await createClient();
@@ -22,26 +23,21 @@ export async function POST(req: NextRequest) {
   if ("error" in auth) return NextResponse.json({ error: auth.error }, { status: auth.status });
 
   const body = (await req.json().catch(() => ({}))) as Partial<{
-    from_name:     string;
-    from_email:    string;
-    smtp_host:     string;
-    smtp_port:     number;
-    smtp_username: string;
-    smtp_password: string | null;
+    from_name:       string;
+    from_email:      string;
+    resend_api_key:  string | null;
   }>;
 
   const update: Record<string, unknown> = {
-    from_name:     body.from_name?.trim()      || "DriveLink SL",
-    from_email:    body.from_email?.trim()     || null,
-    smtp_host:     body.smtp_host?.trim()      || "smtp.gmail.com",
-    smtp_port:     Number(body.smtp_port) || 587,
-    smtp_username: body.smtp_username?.trim()  || null,
-    updated_by:    auth.user.id,
+    from_name:   body.from_name?.trim()  || "DriveLink SL",
+    from_email:  body.from_email?.trim() || null,
+    updated_by:  auth.user.id,
   };
 
-  // Only overwrite the password if a non-empty value was supplied.
-  if (typeof body.smtp_password === "string" && body.smtp_password.length > 0) {
-    update.smtp_password = body.smtp_password;
+  // Only overwrite the API key if a non-empty value was supplied — empty
+  // string means "keep the existing key".
+  if (typeof body.resend_api_key === "string" && body.resend_api_key.length > 0) {
+    update.resend_api_key = body.resend_api_key;
   }
 
   const service = await createServiceClient();
@@ -51,6 +47,10 @@ export async function POST(req: NextRequest) {
     console.error("[email-config save]", error);
     return NextResponse.json({ error: error.message }, { status: 500 });
   }
+
+  // The next call to sendEmail() picks up the new config without waiting
+  // for the 60s TTL.
+  invalidateEmailConfigCache();
 
   return NextResponse.json({ ok: true });
 }

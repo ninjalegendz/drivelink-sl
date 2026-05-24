@@ -6,22 +6,19 @@ import { Save, Send } from "lucide-react";
 import { Button } from "@/components/ui/Button";
 
 interface Initial {
-  from_name:     string;
-  from_email:    string;
-  smtp_host:     string;
-  smtp_port:     number;
-  smtp_username: string;
+  from_name:  string;
+  from_email: string;
 }
 
 interface Props {
-  initial:     Initial;
-  passwordSet: boolean;
+  initial:    Initial;
+  apiKeySet:  boolean;
 }
 
-export function EmailConfigForm({ initial, passwordSet }: Props) {
+export function EmailConfigForm({ initial, apiKeySet }: Props) {
   const router = useRouter();
-  const [form, setForm]       = useState(initial);
-  const [password, setPassword] = useState("");
+  const [form, setForm]     = useState(initial);
+  const [apiKey, setApiKey] = useState("");
   const [saving,  setSaving]  = useState(false);
   const [testing, setTesting] = useState(false);
   const [testTo,  setTestTo]  = useState("");
@@ -39,7 +36,7 @@ export function EmailConfigForm({ initial, passwordSet }: Props) {
     const res = await fetch("/api/admin/email-config", {
       method:  "POST",
       headers: { "Content-Type": "application/json" },
-      body:    JSON.stringify({ ...form, smtp_password: password || null }),
+      body:    JSON.stringify({ ...form, resend_api_key: apiKey || null }),
     });
     const payload = await res.json().catch(() => ({}));
     setSaving(false);
@@ -47,7 +44,7 @@ export function EmailConfigForm({ initial, passwordSet }: Props) {
     if (!res.ok) { setError(payload.error ?? "Save failed."); return; }
 
     setInfo("Saved.");
-    setPassword(""); // never reflect the password back into the field
+    setApiKey(""); // never reflect the key back into the field
     router.refresh();
   }
 
@@ -65,7 +62,7 @@ export function EmailConfigForm({ initial, passwordSet }: Props) {
 
     if (!res.ok) { setError(payload.error ?? "Test send failed."); return; }
     if (payload.devOnly) {
-      setInfo("Saved but no SMTP credentials yet — message was logged to the server console, not sent.");
+      setInfo("Saved but no API key yet — message was logged to the server console, not sent.");
     } else {
       setInfo(`Test email sent to ${testTo}. Check the inbox.`);
     }
@@ -85,65 +82,29 @@ export function EmailConfigForm({ initial, passwordSet }: Props) {
             className={inputClass}
           />
         </Field>
-        <Field label="From email" required>
+        <Field label="From email" required hint="Must be on a domain verified in Resend.">
           <input
             type="email"
             value={form.from_email}
             onChange={(e) => field("from_email", e.target.value)}
             required
-            placeholder="hello@drivelink.lk"
+            placeholder="noreply@drivelink.lk"
             className={inputClass}
           />
         </Field>
       </div>
 
-      <div className="grid grid-cols-3 gap-4">
-        <div className="col-span-2">
-          <Field label="SMTP host" required>
-            <input
-              type="text"
-              value={form.smtp_host}
-              onChange={(e) => field("smtp_host", e.target.value)}
-              required
-              className={`${inputClass} font-mono`}
-            />
-          </Field>
-        </div>
-        <Field label="Port" required>
-          <input
-            type="number"
-            value={form.smtp_port}
-            onChange={(e) => field("smtp_port", Number(e.target.value))}
-            required
-            min={1}
-            max={65535}
-            className={`${inputClass} font-mono`}
-          />
-        </Field>
-      </div>
-
-      <Field label="SMTP username" required hint="Usually the full email address.">
-        <input
-          type="text"
-          value={form.smtp_username}
-          onChange={(e) => field("smtp_username", e.target.value)}
-          required
-          autoComplete="username"
-          className={inputClass}
-        />
-      </Field>
-
       <Field
-        label="SMTP password / app password"
-        required={!passwordSet}
-        hint={passwordSet ? "Leave blank to keep the existing password." : "Required to enable sending."}
+        label="Resend API key"
+        required={!apiKeySet}
+        hint={apiKeySet ? "Leave blank to keep the existing key." : "Paste the re_... key from resend.com → API Keys."}
       >
         <input
           type="password"
-          value={password}
-          onChange={(e) => setPassword(e.target.value)}
+          value={apiKey}
+          onChange={(e) => setApiKey(e.target.value)}
           autoComplete="new-password"
-          placeholder={passwordSet ? "•••••••• (unchanged)" : "16-character app password"}
+          placeholder={apiKeySet ? "•••••••• (unchanged)" : "re_..."}
           className={`${inputClass} font-mono`}
         />
       </Field>
@@ -160,7 +121,7 @@ export function EmailConfigForm({ initial, passwordSet }: Props) {
       {/* Test send block */}
       <div className="pt-4 mt-4 border-t border-slate-800 space-y-2">
         <p className="text-slate-400 text-xs">
-          Send a test email to verify credentials work. Fill the form, save, then test.
+          Send a test email to verify the API key + sender work. Fill the form, save, then test.
         </p>
         <div className="flex gap-2">
           <input
