@@ -25,3 +25,7 @@ android/local.properties
 android/capacitor-cordova-android-plugins/build/
 *.apk
 *.aab
+
+# OpenNext + wrangler build artefacts
+.open-next/
+.wrangler/

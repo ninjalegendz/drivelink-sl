@@ -1,0 +1,28 @@
+{
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "drivelink",
+  "main": ".open-next/worker.js",
+  "compatibility_date": "2025-11-01",
+  "compatibility_flags": [
+    // Required so Node-style APIs (Buffer, process, etc.) the Next.js
+    // runtime relies on are available inside the Worker.
+    "nodejs_compat",
+    // Lets OpenNext rewrite the request URL before route resolution.
+    "global_fetch_strictly_public"
+  ],
+
+  // Static assets (everything Next.js dumps under .open-next/assets) are
+  // served by Cloudflare's edge directly — never hit the Worker.
+  "assets": {
+    "directory": ".open-next/assets",
+    "binding":   "ASSETS"
+  },
+
+  // Env vars are NOT listed here — they're set per-environment in the
+  // Cloudflare dashboard (or via `wrangler secret put`) so the JSON
+  // stays in git but credentials don't.
+
+  "observability": {
+    "enabled": true
+  }
+}
