@@ -12,6 +12,22 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "Unauthorised" }, { status: 401 });
   }
 
+  // Renter must have completed KYC. Mirrors the RLS guard so the client
+  // gets a clean error code it can branch on instead of a generic 500
+  // from PostgREST.
+  const { data: callerProfile } = await supabase
+    .from("profiles")
+    .select("kyc_status")
+    .eq("id", user.id)
+    .single();
+  const callerKyc = (callerProfile as { kyc_status?: string } | null)?.kyc_status;
+  if (callerKyc !== "verified") {
+    return NextResponse.json({
+      error: "Verify your identity before booking.",
+      code:  "kyc_required",
+    }, { status: 403 });
+  }
+
   const body = await req.json();
   const { vehicle_id, agency_id, start_date, end_date } = body;
 

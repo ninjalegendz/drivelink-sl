@@ -3,6 +3,7 @@ import { notFound, redirect } from "next/navigation";
 import Link from "next/link";
 import { ArrowLeft } from "lucide-react";
 import { VehicleForm } from "@/components/dashboard/VehicleForm";
+import { AgencyVerificationGate } from "@/components/dashboard/AgencyVerificationGate";
 import type { Database } from "@/types/database";
 
 type VehicleRow = Database["public"]["Tables"]["vehicles"]["Row"];
@@ -18,14 +19,18 @@ export default async function EditVehiclePage({ params }: Props) {
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) redirect(`/login?next=/dashboard/vehicles/${id}/edit`);
 
-  const { data: agencyData } = await supabase
-    .from("agencies")
-    .select("id, city")
-    .eq("owner_id", user.id)
-    .single();
+  const [{ data: agencyData }, { data: profileData }] = await Promise.all([
+    supabase.from("agencies").select("id, city, is_verified").eq("owner_id", user.id).single(),
+    supabase.from("profiles").select("kyc_status").eq("id", user.id).single(),
+  ]);
 
   if (!agencyData) redirect("/signup/agency");
-  const agency = agencyData as { id: string; city: string };
+  const agency  = agencyData  as { id: string; city: string; is_verified: boolean };
+  const profile = profileData as { kyc_status: string } | null;
+
+  const ownerKycVerified = profile?.kyc_status === "verified";
+  const agencyApproved   = agency.is_verified;
+  const canEdit          = ownerKycVerified && agencyApproved;
 
   const { data: vehicleData } = await supabase
     .from("vehicles")
@@ -53,7 +58,9 @@ export default async function EditVehiclePage({ params }: Props) {
         Changes go live immediately on the public listing.
       </p>
 
-      <VehicleForm agencyId={agency.id} agencyCity={agency.city} vehicle={vehicle} />
+      {canEdit
+        ? <VehicleForm agencyId={agency.id} agencyCity={agency.city} vehicle={vehicle} />
+        : <AgencyVerificationGate ownerKycVerified={ownerKycVerified} agencyApproved={agencyApproved} />}
     </div>
   );
 }

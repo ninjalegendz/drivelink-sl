@@ -112,6 +112,13 @@ export function BookingRequestForm({ vehicleId, agencyId, vehicleName, dailyRate
     const payload = await res.json().catch(() => ({}));
 
     if (!res.ok) {
+      const errorCode = (payload as { code?: string }).code;
+      if (errorCode === "kyc_required") {
+        // Punt to account page so the renter can start verification.
+        // The /account?next=... param lets us bring them back here later.
+        router.push(`/account?next=${encodeURIComponent(window.location.pathname)}`);
+        return;
+      }
       setError(payload.error ?? "Failed to send request. Please try again.");
       return;
     }

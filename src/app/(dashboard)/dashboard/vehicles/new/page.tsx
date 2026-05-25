@@ -3,20 +3,25 @@ import { redirect } from "next/navigation";
 import Link from "next/link";
 import { ArrowLeft } from "lucide-react";
 import { VehicleForm } from "@/components/dashboard/VehicleForm";
+import { AgencyVerificationGate } from "@/components/dashboard/AgencyVerificationGate";
 
 export default async function NewVehiclePage() {
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) redirect("/login?next=/dashboard/vehicles/new");
 
-  const { data: agencyData } = await supabase
-    .from("agencies")
-    .select("id, city")
-    .eq("owner_id", user.id)
-    .single();
+  const [{ data: agencyData }, { data: profileData }] = await Promise.all([
+    supabase.from("agencies").select("id, city, is_verified").eq("owner_id", user.id).single(),
+    supabase.from("profiles").select("kyc_status").eq("id", user.id).single(),
+  ]);
 
   if (!agencyData) redirect("/signup/agency");
-  const agency = agencyData as { id: string; city: string };
+  const agency  = agencyData  as { id: string; city: string; is_verified: boolean };
+  const profile = profileData as { kyc_status: string } | null;
+
+  const ownerKycVerified = profile?.kyc_status === "verified";
+  const agencyApproved   = agency.is_verified;
+  const canList          = ownerKycVerified && agencyApproved;
 
   return (
     <div>
@@ -32,7 +37,9 @@ export default async function NewVehiclePage() {
         Renters see this listing the moment you save it.
       </p>
 
-      <VehicleForm agencyId={agency.id} agencyCity={agency.city} />
+      {canList
+        ? <VehicleForm agencyId={agency.id} agencyCity={agency.city} />
+        : <AgencyVerificationGate ownerKycVerified={ownerKycVerified} agencyApproved={agencyApproved} />}
     </div>
   );
 }

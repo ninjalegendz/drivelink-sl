@@ -221,6 +221,15 @@ export function GuestBookingModal({ draft, onClose }: Props) {
     setLoading(false);
 
     if (!bookingRes.ok) {
+      const code = (bookingPayload as { code?: string }).code;
+      if (code === "kyc_required") {
+        // Brand-new account never went through Didit — punt them to /account
+        // where the verify CTA is. They re-book from the vehicle page after
+        // verification clears.
+        setLoading(false);
+        router.push("/account");
+        return;
+      }
       // Account exists, just the booking failed. Send them to /bookings to retry.
       setError(`Account ready, but the booking didn't go through: ${bookingPayload.error ?? "unknown error"}. You can try from the vehicle page.`);
       return;
