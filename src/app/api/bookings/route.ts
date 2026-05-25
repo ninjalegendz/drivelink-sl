@@ -126,7 +126,6 @@ export async function POST(req: NextRequest) {
   const renterName  = renter?.full_name ?? "Verified Renter";
 
   const appUrl = process.env.NEXT_PUBLIC_APP_URL!;
-  const bookingShort = booking.id.slice(0, 8).toUpperCase();
 
   // Fire SMS + WhatsApp in parallel. Both non-blocking — don't fail the
   // booking if either notification path fails. The dashboard realtime
@@ -144,18 +143,19 @@ export async function POST(req: NextRequest) {
         appUrl,
       })
     ),
+    // Template body has 5 variables (vars can't be at the start/end and
+    // Meta enforces a max-density ratio). The dashboard URL is a static
+    // CTA button on the template — not a body variable.
     sendWhatsAppTemplate({
       to:           agency.whatsapp_number,
       templateName: "new_booking_request",
       languageCode: "en",
       bodyParams: [
-        renterName,
-        vehicleName,
-        start_date,
-        end_date,
-        String(days),
-        bookingShort,
-        `${appUrl}/dashboard/bookings`,
+        agency.name,                       // {{1}} — who we're addressing
+        renterName,                        // {{2}} — renter requesting
+        vehicleName,                       // {{3}} — vehicle
+        `${start_date} → ${end_date}`,     // {{4}} — date range, single var
+        String(days),                      // {{5}} — duration
       ],
     }),
   ]);
