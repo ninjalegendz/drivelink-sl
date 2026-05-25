@@ -142,6 +142,12 @@ export default async function FleetPage() {
                         Edit
                       </Link>
                       <Link
+                        href={`/dashboard/vehicles/${v.id}/availability`}
+                        className="text-xs text-amber-400 hover:text-amber-300"
+                      >
+                        Availability
+                      </Link>
+                      <Link
                         href={`/vehicles/${v.slug}`}
                         target="_blank"
                         className="inline-flex items-center gap-1 text-xs text-slate-500 hover:text-slate-300"

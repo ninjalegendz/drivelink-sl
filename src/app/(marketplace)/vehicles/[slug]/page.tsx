@@ -55,20 +55,38 @@ export default async function VehicleDetailPage({ params }: Props) {
   const agency = vehicle.agencies!;
   const photos = vehicle.photos ?? [];
 
-  // Fetch already-blocked date ranges so the booking form can warn renters upfront.
-  // Only confirmed/payment_pending/active count — pending requests don't block.
+  // Fetch already-blocked date ranges so the booking form can warn renters
+  // upfront. Two sources:
+  //   1. ANY in-flight booking — including requested + pending_confirmation.
+  //      A slot only frees when the booking is declined/cancelled. (Earlier
+  //      versions ignored pending requests, which let renters double-book.)
+  //   2. vehicle_blocks rows — agency-managed maintenance / off-roster periods.
   const todayIso = new Date().toISOString().split("T")[0];
-  const { data: bookedRows } = await supabase
-    .from("bookings")
-    .select("start_date, end_date")
-    .eq("vehicle_id", vehicle.id)
-    .in("status", ["confirmed", "payment_pending", "active"])
-    .gte("end_date", todayIso)
-    .order("start_date", { ascending: true });
+  const [{ data: bookedRows }, { data: blockRows }] = await Promise.all([
+    supabase
+      .from("bookings")
+      .select("start_date, end_date")
+      .eq("vehicle_id", vehicle.id)
+      .in("status", ["requested", "pending_confirmation", "confirmed", "payment_pending", "active", "disputed"])
+      .gte("end_date", todayIso)
+      .order("start_date", { ascending: true }),
+    supabase
+      .from("vehicle_blocks")
+      .select("start_date, end_date")
+      .eq("vehicle_id", vehicle.id)
+      .gte("end_date", todayIso),
+  ]);
 
-  const bookedRanges = (bookedRows ?? []).map(
-    (r) => ({ start: (r as { start_date: string }).start_date, end: (r as { end_date: string }).end_date })
-  );
+  const bookedRanges = [
+    ...(bookedRows ?? []).map((r) => ({
+      start: (r as { start_date: string }).start_date,
+      end:   (r as { end_date: string }).end_date,
+    })),
+    ...(blockRows ?? []).map((r) => ({
+      start: (r as { start_date: string }).start_date,
+      end:   (r as { end_date: string }).end_date,
+    })),
+  ].sort((a, b) => a.start.localeCompare(b.start));
 
   return (
     <div className="max-w-5xl mx-auto px-4 py-8">

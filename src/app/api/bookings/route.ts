@@ -51,21 +51,37 @@ export async function POST(req: NextRequest) {
 
   const v = vehicle as { make: string; model: string; year: number; daily_rate_lkr: number; monthly_rate_lkr: number | null };
 
-  // Reject if the dates clash with an already-confirmed/active booking on the
-  // same vehicle. Pending requests are allowed to stack — agency picks one.
+  // Reject if the dates clash with any in-flight booking (incl. pending
+  // requests) OR an agency-set maintenance block. The slot only frees
+  // when the existing booking moves to declined/cancelled.
   // Overlap rule: existing.start < new.end AND existing.end > new.start
-  const { data: conflicts } = await service
-    .from("bookings")
-    .select("id")
-    .eq("vehicle_id", vehicle_id)
-    .in("status", ["confirmed", "payment_pending", "active"])
-    .lt("start_date", end_date)
-    .gt("end_date", start_date)
-    .limit(1);
+  const [{ data: bookingConflicts }, { data: blockConflicts }] = await Promise.all([
+    service
+      .from("bookings")
+      .select("id")
+      .eq("vehicle_id", vehicle_id)
+      .in("status", ["requested", "pending_confirmation", "confirmed", "payment_pending", "active", "disputed"])
+      .lt("start_date", end_date)
+      .gt("end_date", start_date)
+      .limit(1),
+    service
+      .from("vehicle_blocks")
+      .select("id")
+      .eq("vehicle_id", vehicle_id)
+      .lt("start_date", end_date)
+      .gt("end_date", start_date)
+      .limit(1),
+  ]);
 
-  if (conflicts && conflicts.length > 0) {
+  if (bookingConflicts && bookingConflicts.length > 0) {
     return NextResponse.json(
       { error: "These dates are already booked. Try different dates." },
+      { status: 409 }
+    );
+  }
+  if (blockConflicts && blockConflicts.length > 0) {
+    return NextResponse.json(
+      { error: "The agency has marked these dates as unavailable. Try different dates." },
       { status: 409 }
     );
   }
