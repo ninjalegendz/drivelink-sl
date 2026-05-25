@@ -104,7 +104,12 @@ export function BookingNotifier({ agencyId, viewHref }: Props) {
       // 1. Sound
       playDing();
 
-      // 2. OS-level notification (only if the tab isn't focused; otherwise
+      // 2. Refresh the current page's server-rendered data so any list/
+      //    table on screen (admin/bookings, dashboard/bookings) re-fetches
+      //    and shows the new booking without the user having to F5.
+      router.refresh();
+
+      // 3. OS-level notification (only if the tab isn't focused; otherwise
       //    the in-app toast is enough)
       if (permission === "granted" && typeof document !== "undefined" && document.hidden) {
         try {
@@ -124,13 +129,13 @@ export function BookingNotifier({ agencyId, viewHref }: Props) {
         }
       }
 
-      // 3. In-app toast
+      // 4. In-app toast. Sticks around for 30s so the agent has time to
+      //    actually notice it; manual dismiss button always works.
       const toast: ToastBooking = { ...row, createdAt: Date.now() };
       setToasts((prev) => [...prev, toast]);
-      // Auto-dismiss after 12s
       setTimeout(() => {
         setToasts((prev) => prev.filter((t) => t.id !== toast.id));
-      }, 12_000);
+      }, 30_000);
     }
   }, [agencyId, viewHref, permission, router]);
 
@@ -141,35 +146,35 @@ export function BookingNotifier({ agencyId, viewHref }: Props) {
   if (toasts.length === 0) return null;
 
   return (
-    <div className="fixed bottom-4 right-4 z-50 space-y-2 max-w-sm">
+    <div className="fixed top-4 inset-x-4 sm:inset-x-auto sm:right-4 sm:max-w-md z-[60] space-y-2">
       {toasts.map((t) => (
         <div
           key={t.id}
-          className="glass-card rounded-2xl border border-amber-500/40 shadow-lg p-4 animate-bounce-in"
+          className="bg-amber-500 border-2 border-amber-600 rounded-2xl shadow-2xl p-4 animate-bounce-in ring-4 ring-amber-500/30"
         >
           <div className="flex items-start gap-3">
-            <span className="w-9 h-9 rounded-full bg-amber-500/15 text-amber-500 flex items-center justify-center shrink-0">
-              <Bell size={16} />
+            <span className="w-10 h-10 rounded-full bg-stone-900 text-amber-300 flex items-center justify-center shrink-0 animate-pulse">
+              <Bell size={18} />
             </span>
             <div className="flex-1 min-w-0">
-              <p className="text-slate-200 font-semibold text-sm">New booking request</p>
-              <p className="text-slate-500 text-xs mt-0.5">
+              <p className="text-stone-900 font-bold text-base">New booking request</p>
+              <p className="text-stone-800 text-sm mt-0.5">
                 {t.start_date} → {t.end_date}
               </p>
               <a
                 href={viewHref}
-                className="inline-flex items-center gap-1 text-amber-500 hover:text-amber-600 text-xs font-medium mt-2"
+                className="inline-flex items-center gap-1 mt-2 px-3 py-1.5 bg-stone-900 hover:bg-stone-800 text-amber-300 rounded-lg text-xs font-semibold transition-colors"
               >
-                Open <ExternalLink size={12} />
+                Open booking <ExternalLink size={12} />
               </a>
             </div>
             <button
               type="button"
               onClick={() => dismiss(t.id)}
-              className="text-slate-500 hover:text-slate-200 shrink-0"
+              className="text-stone-800 hover:text-stone-900 shrink-0"
               aria-label="Dismiss"
             >
-              <X size={16} />
+              <X size={18} />
             </button>
           </div>
         </div>
