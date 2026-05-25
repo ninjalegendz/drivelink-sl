@@ -85,7 +85,11 @@ export async function fetchDiditSession(sessionId: string): Promise<DiditSession
   const apiKey = process.env.DIDIT_API_KEY;
   if (!apiKey) throw new Error("DIDIT_API_KEY is not set in .env.local");
 
-  const res = await fetch(`${SESSION_BASE}/${sessionId}/`, {
+  // Didit v3 exposes the verification result at the /decision/ subpath,
+  // not on the bare session URL — hitting just /session/{id}/ returns
+  // 404. The decision payload includes the same status + vendor_data
+  // shape the webhook sends, so the rest of the sync flow Just Works.
+  const res = await fetch(`${SESSION_BASE}/${sessionId}/decision/`, {
     method:  "GET",
     headers: { "x-api-key": apiKey },
     cache:   "no-store",
