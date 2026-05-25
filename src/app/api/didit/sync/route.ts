@@ -44,8 +44,15 @@ export async function POST(req: NextRequest) {
   try {
     session = await fetchDiditSession(sessionId);
   } catch (err) {
-    console.error("[didit sync]", err);
-    return NextResponse.json({ error: "Couldn't fetch session from Didit." }, { status: 502 });
+    // Admin-only endpoint — safe to surface the underlying error so we
+    // can debug why Didit rejected the request (wrong key, stale
+    // session id, endpoint moved, etc.) without spelunking through logs.
+    const detail = err instanceof Error ? err.message : String(err);
+    console.error("[didit sync]", detail);
+    return NextResponse.json({
+      error: `Didit API call failed: ${detail}`,
+      sessionId,
+    }, { status: 502 });
   }
 
   const newStatus = mapDiditStatus(session.status);
