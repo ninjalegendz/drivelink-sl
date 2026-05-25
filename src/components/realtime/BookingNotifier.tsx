@@ -82,6 +82,7 @@ export function BookingNotifier({ agencyId, viewHref }: Props) {
     const supabase = createClient();
     const channelName = agencyId ? `bookings-agency-${agencyId}` : "bookings-all";
 
+    console.log("[BookingNotifier] subscribing", { channelName, agencyId });
     const channel = supabase
       .channel(channelName)
       .on(
@@ -90,17 +91,22 @@ export function BookingNotifier({ agencyId, viewHref }: Props) {
           ? { event: "INSERT", schema: "public", table: "bookings", filter: `agency_id=eq.${agencyId}` }
           : { event: "INSERT", schema: "public", table: "bookings" },
         (payload) => {
+          console.log("[BookingNotifier] event received", payload);
           const row = payload.new as { id: string; start_date: string; end_date: string };
           handleNewBooking(row);
         }
       )
-      .subscribe();
+      .subscribe((status) => {
+        console.log("[BookingNotifier] subscribe status:", status);
+      });
 
     return () => {
       supabase.removeChannel(channel);
     };
 
     function handleNewBooking(row: { id: string; start_date: string; end_date: string }) {
+      console.log("[BookingNotifier] handleNewBooking", row);
+
       // 1. Sound
       playDing();
 

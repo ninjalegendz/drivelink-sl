@@ -7,6 +7,7 @@ import { SlipUploadForm } from "@/components/booking/SlipUploadForm";
 import { ReviewForm } from "@/components/booking/ReviewForm";
 import { CancelBookingButton } from "@/components/booking/CancelBookingButton";
 import { PaymentExpiryCountdown } from "@/components/booking/PaymentExpiryCountdown";
+import { BookingRefresher } from "@/components/realtime/BookingRefresher";
 import { BOOKING_STATUS_LABELS } from "@/lib/booking/state-machine";
 import { formatLKR } from "@/lib/vehicles/format";
 import type { BookingWithRelations } from "@/types/queries";
@@ -116,6 +117,7 @@ export default async function BookingDetailPage({ params, searchParams }: Props)
 
   return (
     <div className="max-w-2xl mx-auto px-4 py-8">
+      <BookingRefresher bookingId={booking.id} />
       {welcome === "1" && (
         <div className="mb-6 p-4 bg-emerald-500/10 border border-emerald-500/20 rounded-2xl">
           <div className="flex items-start gap-3">
