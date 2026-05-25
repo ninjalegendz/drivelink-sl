@@ -3,6 +3,7 @@ import { Settings, User, Headphones } from "lucide-react";
 import { createClient } from "@/lib/supabase/server";
 import { SignOutButton } from "@/components/account/SignOutButton";
 import { MobileNav, type MobileNavItem } from "@/components/layout/MobileNav";
+import { BookingNotifier } from "@/components/realtime/BookingNotifier";
 
 const NAV = [
   { href: "/dashboard",           label: "Overview" },
@@ -18,6 +19,7 @@ export default async function DashboardLayout({ children }: { children: React.Re
   const { data: { user } } = await supabase.auth.getUser();
 
   let supportUnread = false;
+  let agencyId: string | null = null;
   if (user) {
     const { data: agency } = await supabase
       .from("agencies")
@@ -25,10 +27,11 @@ export default async function DashboardLayout({ children }: { children: React.Re
       .eq("owner_id", user.id)
       .maybeSingle();
     if (agency) {
+      agencyId = (agency as { id: string }).id;
       const { data: thread } = await supabase
         .from("support_threads")
         .select("has_unread_agency")
-        .eq("agency_id", (agency as { id: string }).id)
+        .eq("agency_id", agencyId)
         .maybeSingle();
       supportUnread = Boolean((thread as { has_unread_agency?: boolean } | null)?.has_unread_agency);
     }
@@ -100,6 +103,9 @@ export default async function DashboardLayout({ children }: { children: React.Re
       <main className="flex-1 md:ml-56 p-4 md:p-8 pb-24 md:pb-8 min-h-screen">{children}</main>
 
       <MobileNav primary={mobilePrimary} secondary={mobileSecondary} />
+
+      {/* Live booking-request toasts + sound + OS push, scoped to this agency. */}
+      {agencyId && <BookingNotifier agencyId={agencyId} viewHref="/dashboard/bookings" />}
     </div>
   );
 }

@@ -3,6 +3,7 @@ import { BadgeCheck, ShieldAlert, Star } from "lucide-react";
 import { Badge } from "@/components/ui/Badge";
 import { formatLKR, reliabilityColor, reliabilityLabel } from "@/lib/vehicles/format";
 import { BOOKING_STATUS_LABELS } from "@/lib/booking/state-machine";
+import { AdminBookingActions } from "@/components/admin/AdminBookingActions";
 import type { BookingStatus } from "@/types/database";
 
 const statusVariant: Record<BookingStatus, "slate" | "yellow" | "green" | "red" | "blue"> = {
@@ -100,7 +101,8 @@ export default async function AdminBookingsPage({ searchParams }: Props) {
               <th className="pb-3 pr-4 font-medium">Agency</th>
               <th className="pb-3 pr-4 font-medium">Dates</th>
               <th className="pb-3 pr-4 font-medium">Rental</th>
-              <th className="pb-3 font-medium">Fee</th>
+              <th className="pb-3 pr-4 font-medium">Fee</th>
+              <th className="pb-3 font-medium">Actions</th>
             </tr>
           </thead>
           <tbody className="divide-y divide-slate-800/50">
@@ -167,7 +169,10 @@ export default async function AdminBookingsPage({ searchParams }: Props) {
                     <span className="text-slate-500">{b.total_days}d</span>
                   </td>
                   <td className="py-3 pr-4 text-slate-300">{formatLKR(b.subtotal_lkr)}</td>
-                  <td className="py-3 text-amber-400 font-medium">{formatLKR(b.booking_fee_lkr)}</td>
+                  <td className="py-3 pr-4 text-amber-400 font-medium">{formatLKR(b.booking_fee_lkr)}</td>
+                  <td className="py-3">
+                    <AdminBookingActions bookingId={b.id} status={b.status} />
+                  </td>
                 </tr>
               );
             })}

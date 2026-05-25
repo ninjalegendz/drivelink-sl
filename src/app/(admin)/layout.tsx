@@ -6,6 +6,7 @@ import {
 import { createClient } from "@/lib/supabase/server";
 import { SignOutButton } from "@/components/account/SignOutButton";
 import { MobileNav, type MobileNavItem } from "@/components/layout/MobileNav";
+import { BookingNotifier } from "@/components/realtime/BookingNotifier";
 
 const NAV = [
   { href: "/admin",                 label: "Overview",      Icon: LayoutDashboard },
@@ -120,6 +121,9 @@ export default async function AdminLayout({ children }: { children: React.ReactN
       <main className="flex-1 md:ml-52 p-4 md:p-8 pb-24 md:pb-8 max-w-full min-h-screen">{children}</main>
 
       <MobileNav primary={mobilePrimary} secondary={mobileSecondary} />
+
+      {/* Admins see every new booking land in real-time. No agencyId = no filter. */}
+      <BookingNotifier viewHref="/admin/bookings" />
     </div>
   );
 }

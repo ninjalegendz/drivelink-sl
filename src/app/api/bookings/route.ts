@@ -3,6 +3,7 @@ import { createClient, createServiceClient } from "@/lib/supabase/server";
 import { sendSms } from "@/lib/sms/textlk";
 import { buildAgencyPingMessage } from "@/lib/sms/messages";
 import { calcBookingPrice } from "@/lib/bookings/pricing";
+import { sendWhatsAppTemplate } from "@/lib/whatsapp/send";
 
 export async function POST(req: NextRequest) {
   const supabase = await createClient();
@@ -124,21 +125,43 @@ export async function POST(req: NextRequest) {
   const vehicleName = `${v.year} ${v.make} ${v.model}`;
   const renterName  = renter?.full_name ?? "Verified Renter";
 
-  const result = await sendSms(
-    agency.whatsapp_number,
-    buildAgencyPingMessage({
-      bookingId:  booking.id,
-      renterName,
-      vehicleName,
-      startDate:  start_date,
-      endDate:    end_date,
-      totalDays:  days,
-      appUrl:     process.env.NEXT_PUBLIC_APP_URL!,
-    })
-  );
-  if (!result.ok) {
-    console.error("[booking notify] SMS failed", booking.id, result.error);
-  }
+  const appUrl = process.env.NEXT_PUBLIC_APP_URL!;
+  const bookingShort = booking.id.slice(0, 8).toUpperCase();
+
+  // Fire SMS + WhatsApp in parallel. Both non-blocking — don't fail the
+  // booking if either notification path fails. The dashboard realtime
+  // subscription is the third channel (silent push to any open tab).
+  const [smsResult, waResult] = await Promise.all([
+    sendSms(
+      agency.whatsapp_number,
+      buildAgencyPingMessage({
+        bookingId:  booking.id,
+        renterName,
+        vehicleName,
+        startDate:  start_date,
+        endDate:    end_date,
+        totalDays:  days,
+        appUrl,
+      })
+    ),
+    sendWhatsAppTemplate({
+      to:           agency.whatsapp_number,
+      templateName: "new_booking_request",
+      languageCode: "en",
+      bodyParams: [
+        renterName,
+        vehicleName,
+        start_date,
+        end_date,
+        String(days),
+        bookingShort,
+        `${appUrl}/dashboard/bookings`,
+      ],
+    }),
+  ]);
+
+  if (!smsResult.ok) console.error("[booking notify] SMS failed", booking.id, smsResult.error);
+  if (!waResult.ok)  console.error("[booking notify] WhatsApp failed", booking.id, waResult.error);
 
   return NextResponse.json({ bookingId: booking.id }, { status: 201 });
 }
