@@ -1,5 +1,11 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient, createServiceClient } from "@/lib/supabase/server";
+import { sendSms } from "@/lib/sms/textlk";
+import {
+  buildRenterConfirmedMessage,
+  buildRenterDeclinedMessage,
+  buildRenterCancelledMessage,
+} from "@/lib/sms/messages";
 
 // POST /api/admin/bookings/transition
 // body: { bookingId: string, to: "confirmed" | "declined" | "completed" | "cancelled", note?: string }
@@ -92,6 +98,49 @@ export async function POST(req: NextRequest) {
       note:            body.note ?? null,
     },
   });
+
+  // Renter SMS for confirm / decline / cancel. Completed → no SMS (renter
+  // just used the car). Same content as the agency-side endpoint.
+  if (to === "confirmed" || to === "declined" || to === "cancelled") {
+    const { data: joined } = await service
+      .from("bookings")
+      .select("id, vehicles(make, model, year), agencies(name)")
+      .eq("id", body.bookingId)
+      .single();
+    type Joined = {
+      id:       string;
+      vehicles: { make: string; model: string; year: number } | null;
+      agencies: { name: string } | null;
+    };
+    const row = joined as Joined | null;
+
+    const { data: renter } = await service
+      .from("profiles")
+      .select("phone")
+      .eq("id", prev.renter_id)
+      .single();
+    const renterPhone = (renter as { phone?: string } | null)?.phone;
+
+    if (row?.vehicles && row.agencies && renterPhone) {
+      const vehicleName = `${row.vehicles.year} ${row.vehicles.make} ${row.vehicles.model}`;
+      const appUrl      = process.env.NEXT_PUBLIC_APP_URL!;
+      const msgArgs = {
+        bookingId:  body.bookingId,
+        vehicleName,
+        agencyName: row.agencies.name,
+        appUrl,
+      };
+      const message =
+        to === "confirmed" ? buildRenterConfirmedMessage(msgArgs) :
+        to === "declined"  ? buildRenterDeclinedMessage(msgArgs)  :
+                             buildRenterCancelledMessage(msgArgs);
+
+      const smsResult = await sendSms(renterPhone, message);
+      if (!smsResult.ok) {
+        console.error("[admin booking transition] renter SMS failed", body.bookingId, smsResult.error);
+      }
+    }
+  }
 
   return NextResponse.json({ ok: true, previousStatus: prev.status, newStatus: to });
 }

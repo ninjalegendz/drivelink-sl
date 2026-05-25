@@ -1,9 +1,8 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { useRouter } from "next/navigation";
 import { Bell, X, ExternalLink } from "lucide-react";
-import { createClient } from "@/lib/supabase/client";
+import { createClient, realtimeReady } from "@/lib/supabase/client";
 
 interface Props {
   agencyId?: string;
@@ -17,15 +16,16 @@ interface ToastBooking {
 }
 
 /**
- * Realtime subscription to bookings INSERTs. Plays a sound + shows a
- * top-of-screen banner + calls router.refresh() so any visible list
- * re-fetches when a new booking lands.
+ * Realtime subscription to bookings INSERTs. Pure visual notifier:
+ * ding + top-of-screen banner + OS notification. Lists subscribe to
+ * realtime themselves and update surgically (see useBookingsRealtime),
+ * so this component never calls router.refresh — that would unmount the
+ * banner and nuke any in-progress form/upload on the page.
  *
- * Existing RLS gates the SELECT so agency subscribers only get their
+ * RLS gates the underlying SELECT, so agency subscribers only get their
  * own rows; admin gets all (no filter).
  */
 export function BookingNotifier({ agencyId, viewHref }: Props) {
-  const router = useRouter();
   const [toasts, setToasts] = useState<ToastBooking[]>([]);
 
   // OS notification permission, asked once
@@ -70,33 +70,34 @@ export function BookingNotifier({ agencyId, viewHref }: Props) {
   useEffect(() => {
     const supabase = createClient();
     const channelName = agencyId ? `bookings-agency-${agencyId}` : "bookings-all";
+    let cancelled = false;
+    let channel: ReturnType<typeof supabase.channel> | null = null;
 
-    console.log("[BookingNotifier] subscribing", { channelName, agencyId });
-    const channel = supabase
-      .channel(channelName)
-      .on(
-        "postgres_changes",
-        agencyId
-          ? { event: "INSERT", schema: "public", table: "bookings", filter: `agency_id=eq.${agencyId}` }
-          : { event: "INSERT", schema: "public", table: "bookings" },
-        (payload) => {
-          console.log("[BookingNotifier] event received", payload);
-          const row = payload.new as { id: string; start_date: string; end_date: string };
-          handleNewBooking(row);
-        }
-      )
-      .subscribe((status) => {
-        console.log("[BookingNotifier] subscribe status:", status);
-      });
+    void realtimeReady().then(() => {
+      if (cancelled) return;
+      channel = supabase
+        .channel(channelName)
+        .on(
+          "postgres_changes",
+          agencyId
+            ? { event: "INSERT", schema: "public", table: "bookings", filter: `agency_id=eq.${agencyId}` }
+            : { event: "INSERT", schema: "public", table: "bookings" },
+          (payload) => {
+            const row = payload.new as { id: string; start_date: string; end_date: string };
+            handleNewBooking(row);
+          },
+        )
+        .subscribe();
+    });
 
     return () => {
-      supabase.removeChannel(channel);
+      cancelled = true;
+      if (channel) supabase.removeChannel(channel);
     };
 
     function handleNewBooking(row: ToastBooking) {
       console.log("[BookingNotifier] handleNewBooking", row);
       playDing();
-      router.refresh();
 
       if (permission === "granted" && typeof document !== "undefined" && document.hidden) {
         try {
@@ -105,7 +106,7 @@ export function BookingNotifier({ agencyId, viewHref }: Props) {
             icon: "/icon-192.png",
             tag:  row.id,
           });
-          notif.onclick = () => { window.focus(); router.push(viewHref); notif.close(); };
+          notif.onclick = () => { window.focus(); window.location.href = viewHref; notif.close(); };
         } catch { /* non-fatal */ }
       }
 
@@ -115,7 +116,7 @@ export function BookingNotifier({ agencyId, viewHref }: Props) {
         setToasts((prev) => prev.filter((t) => t.id !== toast.id));
       }, 30_000);
     }
-  }, [agencyId, viewHref, permission, router]);
+  }, [agencyId, viewHref, permission]);
 
   function dismiss(id: string) {
     setToasts((prev) => prev.filter((t) => t.id !== id));

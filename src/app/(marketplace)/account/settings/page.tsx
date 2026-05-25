@@ -91,6 +91,8 @@ export default async function AccountSettingsPage() {
               initialAddress={agency.address}
               initialPhone={agency.whatsapp_number}
               initialDescription={agency.description}
+              initialSmsEnabled={(agency as AgencyRow & { sms_notifications_enabled?: boolean }).sms_notifications_enabled ?? true}
+              initialWhatsappEnabled={(agency as AgencyRow & { whatsapp_notifications_enabled?: boolean }).whatsapp_notifications_enabled ?? true}
             />
           </Section>
         )}

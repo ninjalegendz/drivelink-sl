@@ -41,7 +41,11 @@ export async function POST(req: NextRequest) {
 
   // Fetch the vehicle's canonical rates server-side — never trust client-supplied prices.
   const [{ data: agency }, { data: vehicle }, { data: renter }] = await Promise.all([
-    service.from("agencies").select("id, name, whatsapp_number").eq("id", agency_id).single(),
+    service
+      .from("agencies")
+      .select("id, name, whatsapp_number, sms_notifications_enabled, whatsapp_notifications_enabled")
+      .eq("id", agency_id)
+      .single(),
     service.from("vehicles").select("make, model, year, daily_rate_lkr, monthly_rate_lkr").eq("id", vehicle_id).single(),
     service.from("profiles").select("full_name").eq("id", user.id).single(),
   ]);
@@ -50,6 +54,13 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "Vehicle or agency not found" }, { status: 404 });
   }
 
+  const a = agency as {
+    id:                              string;
+    name:                            string;
+    whatsapp_number:                 string;
+    sms_notifications_enabled:       boolean;
+    whatsapp_notifications_enabled:  boolean;
+  };
   const v = vehicle as { make: string; model: string; year: number; daily_rate_lkr: number; monthly_rate_lkr: number | null };
 
   // Reject if the dates clash with any in-flight booking (incl. pending
@@ -127,38 +138,44 @@ export async function POST(req: NextRequest) {
 
   const appUrl = process.env.NEXT_PUBLIC_APP_URL!;
 
-  // Fire SMS + WhatsApp in parallel. Both non-blocking — don't fail the
-  // booking if either notification path fails. The dashboard realtime
-  // subscription is the third channel (silent push to any open tab).
-  const [smsResult, waResult] = await Promise.all([
-    sendSms(
-      agency.whatsapp_number,
-      buildAgencyPingMessage({
-        bookingId:  booking.id,
-        renterName,
-        vehicleName,
-        startDate:  start_date,
-        endDate:    end_date,
-        totalDays:  days,
-        appUrl,
+  // Fire SMS + WhatsApp in parallel based on the agency's per-channel
+  // preferences. Both non-blocking — don't fail the booking if either
+  // notification path fails. The dashboard realtime toast is the third
+  // channel and fires regardless of these flags.
+  const smsPromise = a.sms_notifications_enabled
+    ? sendSms(
+        a.whatsapp_number,
+        buildAgencyPingMessage({
+          bookingId:  booking.id,
+          renterName,
+          vehicleName,
+          startDate:  start_date,
+          endDate:    end_date,
+          totalDays:  days,
+          appUrl,
+        }),
+      )
+    : Promise.resolve({ ok: true, skipped: true } as const);
+
+  // Template body has 5 variables (vars can't be at the start/end and
+  // Meta enforces a max-density ratio). The dashboard URL is a static
+  // CTA button on the template — not a body variable.
+  const waPromise = a.whatsapp_notifications_enabled
+    ? sendWhatsAppTemplate({
+        to:           a.whatsapp_number,
+        templateName: "new_booking_request",
+        languageCode: "en",
+        bodyParams: [
+          a.name,                            // {{1}} — who we're addressing
+          renterName,                        // {{2}} — renter requesting
+          vehicleName,                       // {{3}} — vehicle
+          `${start_date} → ${end_date}`,     // {{4}} — date range, single var
+          String(days),                      // {{5}} — duration
+        ],
       })
-    ),
-    // Template body has 5 variables (vars can't be at the start/end and
-    // Meta enforces a max-density ratio). The dashboard URL is a static
-    // CTA button on the template — not a body variable.
-    sendWhatsAppTemplate({
-      to:           agency.whatsapp_number,
-      templateName: "new_booking_request",
-      languageCode: "en",
-      bodyParams: [
-        agency.name,                       // {{1}} — who we're addressing
-        renterName,                        // {{2}} — renter requesting
-        vehicleName,                       // {{3}} — vehicle
-        `${start_date} → ${end_date}`,     // {{4}} — date range, single var
-        String(days),                      // {{5}} — duration
-      ],
-    }),
-  ]);
+    : Promise.resolve({ ok: true, skipped: true } as const);
+
+  const [smsResult, waResult] = await Promise.all([smsPromise, waPromise]);
 
   if (!smsResult.ok) console.error("[booking notify] SMS failed", booking.id, smsResult.error);
   if (!waResult.ok)  console.error("[booking notify] WhatsApp failed", booking.id, waResult.error);

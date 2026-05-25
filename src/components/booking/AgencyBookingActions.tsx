@@ -2,7 +2,6 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { createClient } from "@/lib/supabase/client";
 import { Button } from "@/components/ui/Button";
 import type { BookingStatus } from "@/types/database";
 
@@ -11,32 +10,40 @@ interface Props {
   status: BookingStatus;
 }
 
-// Postgres exclusion-constraint violation code
-const EXCLUSION_VIOLATION = "23P01";
+type AgencyTransition = "confirmed" | "declined" | "completed";
 
 export function AgencyBookingActions({ bookingId, status }: Props) {
   const router = useRouter();
   const [loading, setLoading] = useState<"confirm" | "decline" | "complete" | null>(null);
   const [error, setError]     = useState<string | null>(null);
 
-  async function transition(to: BookingStatus, extra?: Record<string, string>) {
+  // Goes through /api/bookings/transition so the server can fire the
+  // renter SMS in addition to flipping the status. Doing this client-side
+  // direct via supabase used to skip the SMS — see /api/bookings/transition.
+  async function transition(to: AgencyTransition) {
     setError(null);
-    const supabase = createClient();
-    const { error: updateError } = await supabase
-      .from("bookings")
-      .update({ status: to, ...extra })
-      .eq("id", bookingId);
-
-    if (updateError) {
-      if (updateError.code === EXCLUSION_VIOLATION) {
-        setError("These dates were just booked by another customer. Refresh to see the latest.");
-      } else {
-        setError(updateError.message);
+    try {
+      const res = await fetch("/api/bookings/transition", {
+        method:  "POST",
+        headers: { "Content-Type": "application/json" },
+        body:    JSON.stringify({ bookingId, to }),
+      });
+      const payload = (await res.json().catch(() => ({}))) as { error?: string; code?: string };
+      if (!res.ok) {
+        if (payload.code === "23P01") {
+          setError("These dates were just booked by another customer. Refresh to see the latest.");
+        } else {
+          setError(payload.error ?? "Transition failed");
+        }
+        return false;
       }
+      router.refresh();
+      return true;
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : "Network error";
+      setError(msg);
       return false;
     }
-    router.refresh();
-    return true;
   }
 
   if (status === "pending_confirmation") {
@@ -48,7 +55,7 @@ export function AgencyBookingActions({ bookingId, status }: Props) {
             loading={loading === "confirm"}
             onClick={async () => {
               setLoading("confirm");
-              await transition("confirmed", { confirmed_at: new Date().toISOString() });
+              await transition("confirmed");
               setLoading(null);
             }}
           >
@@ -60,7 +67,7 @@ export function AgencyBookingActions({ bookingId, status }: Props) {
             loading={loading === "decline"}
             onClick={async () => {
               setLoading("decline");
-              await transition("declined", { declined_at: new Date().toISOString() });
+              await transition("declined");
               setLoading(null);
             }}
           >
@@ -81,7 +88,7 @@ export function AgencyBookingActions({ bookingId, status }: Props) {
           loading={loading === "complete"}
           onClick={async () => {
             setLoading("complete");
-            await transition("completed", { completed_at: new Date().toISOString() });
+            await transition("completed");
             setLoading(null);
           }}
         >

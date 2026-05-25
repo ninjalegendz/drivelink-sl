@@ -1,8 +1,8 @@
 import { createClient } from "@/lib/supabase/server";
 import { redirect } from "next/navigation";
 import Link from "next/link";
-import { AlertTriangle, Plus, Receipt } from "lucide-react";
-import { reliabilityColor, reliabilityLabel, formatLKR } from "@/lib/vehicles/format";
+import { AlertTriangle, Plus } from "lucide-react";
+import { DashboardStatsLive } from "@/components/dashboard/DashboardStatsLive";
 import type { AgencyRow } from "@/types/queries";
 
 export default async function DashboardPage() {
@@ -50,22 +50,17 @@ export default async function DashboardPage() {
         )}
       </div>
 
-      {/* Stats */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
-        {[
-          { label: "Reliability Score", value: reliabilityLabel(agency.reliability_pct), color: reliabilityColor(agency.reliability_pct), href: "#" },
-          { label: "Pending requests",  value: pendingBookings ?? 0, color: "text-amber-400", href: "/dashboard/bookings?status=pending_confirmation" },
-          { label: "Active bookings",   value: activeBookings ?? 0,  color: "text-emerald-400", href: "/dashboard/bookings?status=active" },
-          { label: "Fleet size",        value: vehicleCount ?? 0,    color: "text-white", href: "/dashboard/vehicles" },
-        ].map(({ label, value, color, href }) => (
-          <Link key={label} href={href} className="spring-hover bg-slate-900 border border-slate-200 shadow-sm hover:border-amber-300 rounded-2xl p-4 transition-colors block">
-            <p className={`text-2xl font-bold ${color}`}>{value}</p>
-            <p className="text-slate-400 text-sm mt-1">{label}</p>
-          </Link>
-        ))}
-      </div>
+      <DashboardStatsLive
+        agencyId={agency.id}
+        initial={{
+          reliabilityPct: agency.reliability_pct,
+          pendingCount:   pendingBookings ?? 0,
+          activeCount:    activeBookings ?? 0,
+          vehicleCount:   vehicleCount ?? 0,
+          feesOwed,
+        }}
+      />
 
-      {/* Reliability warning */}
       {agency.reliability_pct !== null && agency.reliability_pct < 80 && (
         <div className="flex gap-3 p-4 bg-red-500/10 border border-red-500/20 rounded-2xl mb-6">
           <AlertTriangle size={18} className="text-red-400 shrink-0 mt-0.5" />
@@ -79,23 +74,6 @@ export default async function DashboardPage() {
         </div>
       )}
 
-      {/* Platform fees owed — Rs. 200 per completed booking, billed monthly */}
-      {feesOwed > 0 && (
-        <div className="flex items-start gap-3 p-4 bg-slate-900 border border-slate-200 rounded-2xl shadow-sm mb-6">
-          <Receipt size={18} className="text-amber-400 shrink-0 mt-0.5" />
-          <div className="flex-1">
-            <p className="text-white font-medium text-sm">
-              Platform fees: <span className="text-amber-400">{formatLKR(feesOwed)}</span>
-            </p>
-            <p className="text-slate-500 text-xs mt-0.5">
-              Rs. 200 per completed booking. We&apos;ll invoice you monthly; transfer to the DriveLink
-              account once you get the bill.
-            </p>
-          </div>
-        </div>
-      )}
-
-      {/* Quick actions */}
       <div className="flex gap-3">
         <Link
           href="/dashboard/vehicles/new"

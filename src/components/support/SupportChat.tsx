@@ -3,7 +3,7 @@
 import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { Send, Headphones, Building2 } from "lucide-react";
-import { createClient } from "@/lib/supabase/client";
+import { createClient, realtimeReady } from "@/lib/supabase/client";
 import { Button } from "@/components/ui/Button";
 
 export interface SupportMessage {
@@ -50,25 +50,37 @@ export function SupportChat({ threadId, initial, currentRole, currentUserId, aud
     });
   }, [threadId, audience, messages.length, router]);
 
-  // Realtime subscription — append rows that arrive after we mounted
+  // Realtime subscription — append rows that arrive after we mounted.
+  // Auth is bootstrapped by createClient(); we await realtimeReady() so
+  // the JOIN carries the access_token (otherwise channel registers as
+  // anon and apply_rls drops every event).
   useEffect(() => {
     const supabase = createClient();
-    const channel = supabase
-      .channel(`support-${threadId}`)
-      .on(
-        "postgres_changes",
-        { event: "INSERT", schema: "public", table: "support_messages", filter: `thread_id=eq.${threadId}` },
-        (payload) => {
-          const incoming = payload.new as SupportMessage;
-          setMessages((prev) => {
-            // Don't dupe a message we just inserted optimistically
-            if (prev.some((m) => m.id === incoming.id)) return prev;
-            return [...prev, incoming];
-          });
-        }
-      )
-      .subscribe();
-    return () => { supabase.removeChannel(channel); };
+    let cancelled = false;
+    let channel: ReturnType<typeof supabase.channel> | null = null;
+
+    void realtimeReady().then(() => {
+      if (cancelled) return;
+      channel = supabase
+        .channel(`support-${threadId}`)
+        .on(
+          "postgres_changes",
+          { event: "INSERT", schema: "public", table: "support_messages", filter: `thread_id=eq.${threadId}` },
+          (payload) => {
+            const incoming = payload.new as SupportMessage;
+            setMessages((prev) => {
+              if (prev.some((m) => m.id === incoming.id)) return prev;
+              return [...prev, incoming];
+            });
+          },
+        )
+        .subscribe();
+    });
+
+    return () => {
+      cancelled = true;
+      if (channel) supabase.removeChannel(channel);
+    };
   }, [threadId]);
 
   // Stick to the bottom on new messages

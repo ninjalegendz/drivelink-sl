@@ -2,54 +2,54 @@
 
 import { useEffect, useRef } from "react";
 import { useRouter } from "next/navigation";
-import { createClient } from "@/lib/supabase/client";
+import { createClient, realtimeReady } from "@/lib/supabase/client";
 
 interface Props {
-  bookingId: string;
+  bookingId:     string;
+  initialStatus: string;
 }
 
-const POLL_INTERVAL_MS = 10_000;
-
 /**
- * Polls a single booking row's updated_at every ~10 seconds and calls
- * router.refresh() whenever it changes, so admin/agency status changes
- * reflect on the renter's open page without F5.
- *
- * Same fallback-from-realtime story as BookingNotifier — polling is
- * less elegant but actually works.
+ * Watches a single booking row over realtime and triggers a soft refresh
+ * ONLY when the status actually changes. Refreshing on every field update
+ * would close dialogs and reset forms (e.g. mid slip-upload) which is
+ * unacceptable on this page. A status transition is the one signal that
+ * unambiguously means "this view is now stale" — the renter's current
+ * status panel is wrong, the form sections need to swap, and any
+ * in-progress action was for the old state anyway.
  */
-export function BookingRefresher({ bookingId }: Props) {
+export function BookingRefresher({ bookingId, initialStatus }: Props) {
   const router = useRouter();
-  const lastUpdatedRef = useRef<string | null>(null);
+  const lastStatusRef = useRef(initialStatus);
 
   useEffect(() => {
     const supabase = createClient();
+    let cancelled = false;
+    let channel: ReturnType<typeof supabase.channel> | null = null;
 
-    async function poll() {
-      const { data, error } = await supabase
-        .from("bookings")
-        .select("updated_at")
-        .eq("id", bookingId)
-        .single();
+    void realtimeReady().then(() => {
+      if (cancelled) return;
+      channel = supabase
+        .channel(`booking-detail-${bookingId}`)
+        .on(
+          "postgres_changes",
+          { event: "UPDATE", schema: "public", table: "bookings", filter: `id=eq.${bookingId}` },
+          (payload) => {
+            const next = (payload.new as { status?: string } | undefined)?.status;
+            if (!next) return;
+            if (next !== lastStatusRef.current) {
+              lastStatusRef.current = next;
+              router.refresh();
+            }
+          },
+        )
+        .subscribe();
+    });
 
-      if (error || !data) return;
-      const next = (data as { updated_at: string }).updated_at;
-
-      // First poll just records the baseline — don't refresh on mount.
-      if (lastUpdatedRef.current === null) {
-        lastUpdatedRef.current = next;
-        return;
-      }
-      if (next !== lastUpdatedRef.current) {
-        lastUpdatedRef.current = next;
-        router.refresh();
-      }
-    }
-
-    // Fire one immediately so we capture the baseline, then poll.
-    poll();
-    const id = setInterval(poll, POLL_INTERVAL_MS);
-    return () => clearInterval(id);
+    return () => {
+      cancelled = true;
+      if (channel) supabase.removeChannel(channel);
+    };
   }, [bookingId, router]);
 
   return null;
