@@ -141,7 +141,11 @@ export default async function AdminUsersPage({ searchParams }: Props) {
               </div>
 
               <div className="flex flex-col items-end gap-2">
-                {u.kyc_status === "pending" && (
+                {/* Show the KYC action row whenever there's a Didit session
+                    on file OR status is pending — covers the case where
+                    Didit's webhook never arrived and status stayed at
+                    "unverified" while a session exists waiting to sync. */}
+                {(u.kyc_status === "pending" || u.didit_session_id) && (
                   <KycActions userId={u.id} hasDiditSession={Boolean(u.didit_session_id)} />
                 )}
                 <RenterActions

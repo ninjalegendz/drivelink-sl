@@ -61,7 +61,12 @@ export default async function AccountPage({ searchParams }: Props) {
   const step      = kycStep(profile.kyc_status ?? "unverified");
   const isVerified = profile.kyc_status === "verified";
   const canVerify  = profile.kyc_status === "unverified" || profile.kyc_status === "rejected";
-  const isPending  = profile.kyc_status === "pending" || didit === "done";
+  // Trust the DB only. The ?didit=done query param used to force this
+  // to true on redirect, but the start-session endpoint now flips
+  // kyc_status to "pending" immediately, so the DB is the truth and the
+  // query param is redundant (and was actively misleading when the
+  // Didit webhook never arrived).
+  const isPending  = profile.kyc_status === "pending";
 
   return (
     <div className="max-w-2xl mx-auto px-4 py-8 space-y-5">

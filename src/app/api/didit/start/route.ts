@@ -30,12 +30,21 @@ export async function POST(req: Request) {
     });
 
     // Stash the session id so admins can fetch latest status if the
-    // webhook misses or fires late.
+    // webhook misses or fires late, and flip kyc_status to "pending" so
+    // the UI honestly reflects "in review" the moment the user starts
+    // verifying — instead of pretending nothing happened until the Didit
+    // webhook arrives (which sometimes never does). The eq filter on
+    // status prevents downgrading an already-verified user if they
+    // somehow hit this endpoint again.
     if (session.session_id) {
       await service
         .from("profiles")
-        .update({ didit_session_id: session.session_id })
-        .eq("id", user.id);
+        .update({
+          didit_session_id: session.session_id,
+          kyc_status:       "pending",
+        })
+        .eq("id", user.id)
+        .in("kyc_status", ["unverified", "rejected", "pending"]);
     }
 
     return NextResponse.json({ url: session.url });
