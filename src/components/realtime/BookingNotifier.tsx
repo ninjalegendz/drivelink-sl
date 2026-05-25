@@ -8,7 +8,7 @@ import { createClient } from "@/lib/supabase/client";
 interface Props {
   /** When set, only fire for bookings on this agency. Omit for admins (sees all). */
   agencyId?: string;
-  /** Where the "View" link in the toast points. /dashboard/bookings or /admin/bookings. */
+  /** Where the "View" link in the toast points. */
   viewHref:  string;
 }
 
@@ -16,40 +16,32 @@ interface ToastBooking {
   id:         string;
   start_date: string;
   end_date:   string;
-  createdAt:  number;
 }
 
+const POLL_INTERVAL_MS = 15_000;
+
 /**
- * Mount once at the top of the dashboard or admin shell. Subscribes to
- * INSERT events on the bookings table via Supabase Realtime and, when
- * one lands, plays a sound + shows an in-app toast + (if granted)
- * fires an OS-level notification.
+ * Polls for new bookings every ~15 seconds. When a new one is found
+ * (created after we mounted), plays a sound + shows a top-of-screen
+ * banner + calls router.refresh() so any visible list re-fetches.
  *
- * Existing RLS gates the SELECT, so subscribers only receive rows they
- * could read normally — agencies see their own, admins see all.
+ * Originally this used Supabase Realtime, but the broadcast leg was
+ * flaky on the free tier — polling is duller but reliable. SMS +
+ * WhatsApp from the booking API are the real-time channels; this just
+ * keeps the open dashboard tab in sync.
+ *
+ * Existing RLS gates the SELECT, so agency callers only see their own
+ * rows, admins see all.
  */
 export function BookingNotifier({ agencyId, viewHref }: Props) {
   const router = useRouter();
   const [toasts, setToasts] = useState<ToastBooking[]>([]);
-  const [permission, setPermission] = useState<NotificationPermission | "unsupported">("unsupported");
+  // High-water mark: the most-recent created_at we've already shown a
+  // toast for. Initialised to mount time so we don't spam the agent with
+  // historical bookings on first poll.
+  const sinceRef = useRef<string>(new Date().toISOString());
 
-  // Ask for OS-level notification permission once on mount. Browser
-  // remembers the choice; no annoying repeat prompts.
-  useEffect(() => {
-    if (typeof window === "undefined" || !("Notification" in window)) {
-      setPermission("unsupported");
-      return;
-    }
-    setPermission(Notification.permission);
-    if (Notification.permission === "default") {
-      Notification.requestPermission().then(setPermission).catch(() => {});
-    }
-  }, []);
-
-  // Synthesise a two-tone "ding" using the Web Audio API. No asset file
-  // needed; works on every modern browser. AudioContext is lazily
-  // created on first call because Chrome blocks construction before any
-  // user gesture in some contexts.
+  // ─── Sound: synthesised two-tone ding via Web Audio ─────────────
   const audioCtxRef = useRef<AudioContext | null>(null);
   function playDing() {
     try {
@@ -74,70 +66,81 @@ export function BookingNotifier({ agencyId, viewHref }: Props) {
       tone(880, 0,    0.18);   // A5
       tone(1320, 0.12, 0.22);  // E6
     } catch {
-      // Autoplay blocked before user interaction — silent fail, toast still shows.
+      /* autoplay blocked before user interaction — silent fail */
     }
   }
 
+  // ─── OS notification permission (asked once) ────────────────────
+  const [permission, setPermission] = useState<NotificationPermission | "unsupported">("unsupported");
+  useEffect(() => {
+    if (typeof window === "undefined" || !("Notification" in window)) {
+      setPermission("unsupported");
+      return;
+    }
+    setPermission(Notification.permission);
+    if (Notification.permission === "default") {
+      Notification.requestPermission().then(setPermission).catch(() => {});
+    }
+  }, []);
+
+  // ─── Polling loop ────────────────────────────────────────────────
   useEffect(() => {
     const supabase = createClient();
-    const channelName = agencyId ? `bookings-agency-${agencyId}` : "bookings-all";
 
-    console.log("[BookingNotifier] subscribing", { channelName, agencyId });
-    const channel = supabase
-      .channel(channelName)
-      .on(
-        "postgres_changes",
-        agencyId
-          ? { event: "INSERT", schema: "public", table: "bookings", filter: `agency_id=eq.${agencyId}` }
-          : { event: "INSERT", schema: "public", table: "bookings" },
-        (payload) => {
-          console.log("[BookingNotifier] event received", payload);
-          const row = payload.new as { id: string; start_date: string; end_date: string };
-          handleNewBooking(row);
-        }
-      )
-      .subscribe((status) => {
-        console.log("[BookingNotifier] subscribe status:", status);
-      });
+    async function poll() {
+      const query = supabase
+        .from("bookings")
+        .select("id, start_date, end_date, created_at")
+        .gt("created_at", sinceRef.current)
+        .order("created_at", { ascending: false })
+        .limit(5);
 
-    return () => {
-      supabase.removeChannel(channel);
-    };
+      const { data, error } = agencyId
+        ? await query.eq("agency_id", agencyId)
+        : await query;
 
-    function handleNewBooking(row: { id: string; start_date: string; end_date: string }) {
-      console.log("[BookingNotifier] handleNewBooking", row);
+      if (error) {
+        console.warn("[BookingNotifier] poll error", error.message);
+        return;
+      }
+      if (!data || data.length === 0) return;
 
-      // 1. Sound
+      // Walk oldest-first so the toasts stack in arrival order.
+      const rows = (data as { id: string; start_date: string; end_date: string; created_at: string }[]).slice().reverse();
+      for (const row of rows) {
+        handleNewBooking({ id: row.id, start_date: row.start_date, end_date: row.end_date });
+      }
+      // Advance the high-water mark to the newest row's timestamp.
+      sinceRef.current = rows[rows.length - 1].created_at;
+
+      // Refresh the page so the server-rendered list re-fetches and the
+      // booking appears without manual F5.
+      router.refresh();
+    }
+
+    const id = setInterval(poll, POLL_INTERVAL_MS);
+    return () => clearInterval(id);
+
+    function handleNewBooking(row: ToastBooking) {
       playDing();
 
-      // 2. Refresh the current page's server-rendered data so any list/
-      //    table on screen (admin/bookings, dashboard/bookings) re-fetches
-      //    and shows the new booking without the user having to F5.
-      router.refresh();
-
-      // 3. OS-level notification (only if the tab isn't focused; otherwise
-      //    the in-app toast is enough)
+      // OS push only when tab is backgrounded
       if (permission === "granted" && typeof document !== "undefined" && document.hidden) {
         try {
           const notif = new Notification("New booking request", {
             body: `${row.start_date} → ${row.end_date}`,
             icon: "/icon-192.png",
-            tag:  row.id, // dedupes if Realtime double-fires
+            tag:  row.id,
           });
           notif.onclick = () => {
             window.focus();
-            router.push(`${viewHref}`);
+            router.push(viewHref);
             notif.close();
           };
-        } catch {
-          // Some browsers throw when Notification is constructed in
-          // service-worker-only contexts — non-fatal.
-        }
+        } catch { /* non-fatal */ }
       }
 
-      // 4. In-app toast. Sticks around for 30s so the agent has time to
-      //    actually notice it; manual dismiss button always works.
-      const toast: ToastBooking = { ...row, createdAt: Date.now() };
+      const toast = { ...row };
       setToasts((prev) => [...prev, toast]);
       setTimeout(() => {
         setToasts((prev) => prev.filter((t) => t.id !== toast.id));

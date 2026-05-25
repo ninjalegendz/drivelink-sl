@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect } from "react";
+import { useEffect, useRef } from "react";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 
@@ -8,37 +8,48 @@ interface Props {
   bookingId: string;
 }
 
+const POLL_INTERVAL_MS = 10_000;
+
 /**
- * Drop this on any server-rendered page that displays a single booking
- * row. It subscribes to UPDATE events for that booking id and calls
- * router.refresh() whenever the row changes, so status flips, slip
- * verifications, and admin overrides reflect without F5.
+ * Polls a single booking row's updated_at every ~10 seconds and calls
+ * router.refresh() whenever it changes, so admin/agency status changes
+ * reflect on the renter's open page without F5.
  *
- * Renders nothing. Same pattern as BookingNotifier but scoped to a
- * specific booking and fires on UPDATE rather than INSERT.
+ * Same fallback-from-realtime story as BookingNotifier — polling is
+ * less elegant but actually works.
  */
 export function BookingRefresher({ bookingId }: Props) {
   const router = useRouter();
+  const lastUpdatedRef = useRef<string | null>(null);
 
   useEffect(() => {
     const supabase = createClient();
-    const channel = supabase
-      .channel(`booking-detail-${bookingId}`)
-      .on(
-        "postgres_changes",
-        { event: "UPDATE", schema: "public", table: "bookings", filter: `id=eq.${bookingId}` },
-        (payload) => {
-          console.log("[BookingRefresher] update received", payload);
-          router.refresh();
-        }
-      )
-      .subscribe((status) => {
-        console.log("[BookingRefresher] subscribe", bookingId, status);
-      });
 
-    return () => {
-      supabase.removeChannel(channel);
-    };
+    async function poll() {
+      const { data, error } = await supabase
+        .from("bookings")
+        .select("updated_at")
+        .eq("id", bookingId)
+        .single();
+
+      if (error || !data) return;
+      const next = (data as { updated_at: string }).updated_at;
+
+      // First poll just records the baseline — don't refresh on mount.
+      if (lastUpdatedRef.current === null) {
+        lastUpdatedRef.current = next;
+        return;
+      }
+      if (next !== lastUpdatedRef.current) {
+        lastUpdatedRef.current = next;
+        router.refresh();
+      }
+    }
+
+    // Fire one immediately so we capture the baseline, then poll.
+    poll();
+    const id = setInterval(poll, POLL_INTERVAL_MS);
+    return () => clearInterval(id);
   }, [bookingId, router]);
 
   return null;
