@@ -1,14 +1,16 @@
 import { redirect } from "next/navigation";
 import Link from "next/link";
-import { ArrowRight, Check, ChevronRight, Settings } from "lucide-react";
+import { Check, ChevronRight, Settings } from "lucide-react";
 import { createClient } from "@/lib/supabase/server";
+import { getOwnedPages } from "@/lib/pages/active-page";
 import { Badge } from "@/components/ui/Badge";
 import { DiditVerifyButton } from "@/components/account/DiditVerifyButton";
 import { PhoneVerifyForm } from "@/components/account/PhoneVerifyForm";
 import { SignOutButton } from "@/components/account/SignOutButton";
+import { RentalPageList } from "@/components/account/RentalPageList";
 
 interface Props {
-  searchParams: Promise<{ didit?: string; agency?: string; welcome?: string }>;
+  searchParams: Promise<{ didit?: string; welcome?: string }>;
 }
 
 const kycVariant: Record<string, "slate" | "yellow" | "green" | "red"> = {
@@ -38,22 +40,18 @@ function kycStep(status: string) {
 }
 
 export default async function AccountPage({ searchParams }: Props) {
-  const { didit, agency: agencyCreated, welcome } = await searchParams;
+  const { didit, welcome } = await searchParams;
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) redirect("/login?next=/account");
 
-  const [{ data: profile }, { data: agency }] = await Promise.all([
+  const [{ data: profile }, pages] = await Promise.all([
     supabase
       .from("profiles")
       .select("full_name, phone, phone_verified, email, email_verified_at, role, kyc_status, rating_avg, rating_count, created_at")
       .eq("id", user.id)
       .single(),
-    supabase
-      .from("agencies")
-      .select("id, name, city, is_verified, created_at")
-      .eq("owner_id", user.id)
-      .maybeSingle(),
+    getOwnedPages(supabase, user.id),
   ]);
 
   if (!profile) redirect("/login");
@@ -121,17 +119,6 @@ export default async function AccountPage({ searchParams }: Props) {
         </div>
       )}
 
-      {/* Agency created banner */}
-      {agencyCreated && (
-        <div className="p-4 bg-emerald-500/10 border border-emerald-500/20 rounded-2xl text-sm">
-          <p className="text-emerald-700 font-semibold mb-1">Agency profile created!</p>
-          <p className="text-emerald-700/90 text-xs">
-            One last step, verify your identity below so we can approve your listing.
-            This is done through Didit, a trusted third-party verifier. It takes about 2 minutes.
-          </p>
-        </div>
-      )}
-
       {/* Stats */}
       <div className="grid grid-cols-3 gap-3">
         <div className="bg-white border border-slate-200 rounded-2xl shadow-sm p-4 text-center">
@@ -152,34 +139,8 @@ export default async function AccountPage({ searchParams }: Props) {
         </div>
       </div>
 
-      {/* Agency status (agency owners only) */}
-      {profile.role === "agency_owner" && agency && (
-        <div className="bg-white border border-slate-200 rounded-2xl shadow-sm p-5">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-slate-900 font-semibold">{agency.name}</p>
-              <p className="text-slate-600 text-sm">{agency.city}</p>
-            </div>
-            {agency.is_verified
-              ? <Badge variant="green">Live</Badge>
-              : <Badge variant="yellow">Pending admin review</Badge>
-            }
-          </div>
-          {!agency.is_verified && (
-            <p className="text-slate-500 text-xs mt-3">
-              {isVerified
-                ? "Your identity is verified. An admin will review your agency listing shortly."
-                : "Complete identity verification below so an admin can approve your listing."}
-            </p>
-          )}
-          <Link
-            href="/dashboard"
-            className="mt-3 inline-flex items-center gap-1.5 text-blue-600 hover:text-blue-500 text-sm"
-          >
-            Go to dashboard <ArrowRight size={14} />
-          </Link>
-        </div>
-      )}
+      {/* My Rental Pages (every signed-in account can host now) */}
+      <RentalPageList pages={pages} />
 
       {/* Bookings link (renters) */}
       {profile.role === "renter" && (

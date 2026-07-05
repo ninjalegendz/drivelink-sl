@@ -19,7 +19,8 @@ const PAGE_COLUMNS =
   "id, owner_id, name, description, address, city, whatsapp_number, email, " +
   "page_type, logo_url, cover_url, business_hours, business_reg_no, business_reg_url, " +
   "is_verified, is_blocked, cancellation_count, confirmed_count, strike_count, " +
-  "reliability_pct, created_at, updated_at";
+  "reliability_pct, sms_notifications_enabled, whatsapp_notifications_enabled, " +
+  "created_at, updated_at";
 
 /** All live (non-deleted) Rental Pages owned by the user, oldest first. */
 export async function getOwnedPages(

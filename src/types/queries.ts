@@ -94,6 +94,9 @@ export interface AgencyRow {
   business_hours: string | null;
   business_reg_no: string | null;
   business_reg_url: string | null;
+  // Per-page notification channel preferences (037), read at booking-notify time.
+  sms_notifications_enabled: boolean;
+  whatsapp_notifications_enabled: boolean;
 }
 
 // Product name for the agencies table under the Rental Pages model.

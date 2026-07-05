@@ -1,15 +1,13 @@
 import { redirect } from "next/navigation";
 import Link from "next/link";
-import { ArrowLeft } from "lucide-react";
+import { ArrowLeft, ArrowRight } from "lucide-react";
 import { createClient } from "@/lib/supabase/server";
 import { AvatarUploader } from "@/components/account/AvatarUploader";
 import { ProfileDetailsForm } from "@/components/account/ProfileDetailsForm";
-import { AgencyDetailsForm } from "@/components/account/AgencyDetailsForm";
 import { DeleteAccountSection } from "@/components/account/DeleteAccountSection";
 import type { Database } from "@/types/database";
 
 type ProfileRow = Database["public"]["Tables"]["profiles"]["Row"];
-type AgencyRow  = Database["public"]["Tables"]["agencies"]["Row"];
 
 export const metadata = {
   title: "Account Settings",
@@ -29,16 +27,6 @@ export default async function AccountSettingsPage() {
   if (!profileData) redirect("/login");
   const profile = profileData as ProfileRow;
 
-  let agency: AgencyRow | null = null;
-  if (profile.role === "agency_owner") {
-    const { data } = await supabase
-      .from("agencies")
-      .select("*")
-      .eq("owner_id", user.id)
-      .single();
-    agency = data as AgencyRow | null;
-  }
-
   // Where "Back" should go for each role
   const backHref =
     profile.role === "admin"        ? "/admin" :
@@ -56,7 +44,7 @@ export default async function AccountSettingsPage() {
 
       <h1 className="text-2xl font-bold text-slate-900 mb-1">Account settings</h1>
       <p className="text-slate-600 text-sm mb-8">
-        Update your profile, password, and {profile.role === "agency_owner" ? "agency" : "personal"} details.
+        Update your profile, password, and personal details.
       </p>
 
       <div className="space-y-6">
@@ -80,32 +68,18 @@ export default async function AccountSettingsPage() {
           />
         </Section>
 
-        {/* Agency details (agency owners only) */}
-        {profile.role === "agency_owner" && agency && (
-          <Section title="Agency details">
-            <AgencyDetailsForm
-              agencyId={agency.id}
-              initialName={agency.name}
-              initialCity={agency.city}
-              initialAddress={agency.address}
-              initialPhone={agency.whatsapp_number}
-              initialDescription={agency.description}
-              initialSmsEnabled={(agency as AgencyRow & { sms_notifications_enabled?: boolean }).sms_notifications_enabled ?? true}
-              initialWhatsappEnabled={(agency as AgencyRow & { whatsapp_notifications_enabled?: boolean }).whatsapp_notifications_enabled ?? true}
-            />
-          </Section>
-        )}
-
-        {profile.role === "agency_owner" && !agency && (
-          <Section title="Agency details">
-            <p className="text-slate-600 text-sm">
-              You haven&apos;t set up your agency yet.{" "}
-              <Link href="/signup?intent=provider" className="text-blue-600 hover:text-blue-500">
-                Complete onboarding →
-              </Link>
-            </p>
-          </Section>
-        )}
+        {/* Rental Pages, managed per-page from each page's own dashboard */}
+        <Section title="Rental Pages">
+          <p className="text-slate-600 text-sm mb-3">
+            Page details are managed from each page&apos;s dashboard.
+          </p>
+          <Link
+            href="/account"
+            className="inline-flex items-center gap-1.5 text-blue-600 hover:text-blue-500 text-sm"
+          >
+            Manage my Rental Pages <ArrowRight size={14} />
+          </Link>
+        </Section>
 
         {/* Danger zone, admins can't self-delete */}
         {profile.role !== "admin" && <DeleteAccountSection />}
