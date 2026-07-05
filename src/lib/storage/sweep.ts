@@ -3,7 +3,7 @@ import { listPrefix, deleteObjects, extractKeyFromUrl } from "./r2";
 
 /**
  * Walks an R2 prefix and deletes blobs that no profile references via
- * avatar_url / nic_url / selfie_url. Cheap to run daily — even a thousand
+ * avatar_url / nic_url / selfie_url. Cheap to run daily, even a thousand
  * users adds up to a few hundred file lookups.
  *
  * The key layout is `<prefix>/<userId>/<uuid>.<ext>`. We list every key

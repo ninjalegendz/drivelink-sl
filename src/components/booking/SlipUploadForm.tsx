@@ -47,7 +47,7 @@ export function SlipUploadForm({ bookingId }: { bookingId: string }) {
   if (done) {
     return (
       <div className="p-3 bg-blue-500/10 border border-blue-500/20 rounded-xl text-blue-400 text-sm">
-        Slip uploaded. We are verifying your payment — you will be notified shortly.
+        Slip uploaded. We are verifying your payment, you will be notified shortly.
       </div>
     );
   }
@@ -55,12 +55,12 @@ export function SlipUploadForm({ bookingId }: { bookingId: string }) {
   return (
     <form onSubmit={handleUpload} className="space-y-3">
       <div>
-        <label className="text-slate-400 text-xs mb-1 block">Upload bank transfer slip</label>
+        <label className="text-slate-600 text-xs mb-1 block">Upload bank transfer slip</label>
         <input
           type="file"
           accept="image/*,.pdf"
           onChange={(e) => setFile(e.target.files?.[0] ?? null)}
-          className="w-full text-sm text-slate-400 file:mr-3 file:py-1.5 file:px-3 file:rounded-lg file:border-0 file:bg-slate-700 file:text-white file:text-sm file:cursor-pointer cursor-pointer"
+          className="w-full text-sm text-slate-600 file:mr-3 file:py-1.5 file:px-3 file:rounded-lg file:border-0 file:bg-slate-200 file:text-slate-900 file:text-sm file:cursor-pointer cursor-pointer"
           required
         />
       </div>

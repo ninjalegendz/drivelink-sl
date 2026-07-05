@@ -30,7 +30,7 @@ export async function createClient() {
 // from an unauthenticated endpoint (signup, login OTP), or operations
 // that span users.
 //
-// Important: this MUST NOT use @supabase/ssr's createServerClient — that
+// Important: this MUST NOT use @supabase/ssr's createServerClient, that
 // path uses the caller's cookies for the Authorization header, which
 // downgrades to anon when there's no session, and anon can't see
 // service-only tables (e.g. email_config). createClient from
@@ -50,4 +50,16 @@ export async function createServiceClient(): Promise<SupabaseClient> {
     }
   );
   return cachedServiceClient;
+}
+
+// Cookieless anon client. Reads NO request cookies, so it's safe to call inside
+// `unstable_cache` (which can't touch dynamic request state). RLS sees it as
+// anon, use ONLY for genuinely public data (e.g. available marketplace
+// listings), never for anything user-specific.
+export function createPublicClient(): SupabaseClient {
+  return createPlainClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+    { auth: { autoRefreshToken: false, persistSession: false } },
+  );
 }

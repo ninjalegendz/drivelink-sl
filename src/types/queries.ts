@@ -4,6 +4,7 @@ import type {
   InsuranceType,
   FuelPolicy,
   VehicleStatus,
+  VehicleType,
 } from "./database";
 
 // ─── Vehicles ────────────────────────────────────────────────
@@ -19,6 +20,7 @@ export interface VehicleRow {
   insurance_type: InsuranceType;
   fuel_policy: FuelPolicy;
   daily_rate_lkr: number;
+  daily_rate_usd: number | null;
   monthly_rate_lkr: number | null;
   deposit_lkr: number;
   seats: number;
@@ -29,20 +31,36 @@ export interface VehicleRow {
   city: string;
   slug: string;
   photos: string[] | null;
+  // ── verticals + rental options + trust (migration 039) ──
+  vehicle_type: VehicleType;
+  self_drive: boolean;
+  with_driver: boolean;
+  airport_pickup: boolean;
+  mileage_limit: string | null;
+  extra_mileage_lkr: number | null;
+  rules: string[];
+  badges: string[];
+  // ── featured + listing quality (migration 042) ──
+  is_featured: boolean;
+  fuel_type: string | null;
+  luggage: number | null;
   created_at: string;
   updated_at: string;
 }
 
 export interface AgencySnippet {
   id: string;
+  owner_id: string;
   name: string;
   city: string;
+  provider_type?: string | null;
   is_verified: boolean;
   reliability_pct: number | null;
   cancellation_count: number;
-  // Rating lives on the owner's profile — joined via agencies.owner_id
+  avg_response_minutes?: number | null;
+  // Rating lives on the owner's profile, joined via agencies.owner_id
   profiles: { rating_avg: number | null; rating_count: number } | null;
-  // whatsapp_number deliberately omitted — not exposed to the public marketplace.
+  // whatsapp_number deliberately omitted, not exposed to the public marketplace.
   // Available only via agency dashboards and the renter's own /bookings/[id] page.
 }
 
@@ -80,6 +98,10 @@ export interface BookingRow {
   status: BookingStatus;
   start_date: string;
   end_date: string;
+  start_time: string;   // "HH:mm:ss"
+  end_time: string;     // "HH:mm:ss"
+  start_at: string;     // combined timestamp (generated)
+  end_at: string;       // combined timestamp (generated)
   total_days: number;
   daily_rate_lkr: number;
   subtotal_lkr: number;
@@ -92,6 +114,10 @@ export interface BookingRow {
   declined_at: string | null;
   cancelled_at: string | null;
   damage_reported: boolean;
+  pickup_photo_urls: string[] | null;
+  return_photo_urls: string[] | null;
+  renter_returned_at: string | null;   // renter reported the car returned
+  return_confirmed_at: string | null;  // agency confirmed receipt on completion
   created_at: string;
   updated_at: string;
 }

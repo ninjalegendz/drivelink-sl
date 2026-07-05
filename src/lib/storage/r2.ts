@@ -1,4 +1,4 @@
-// Cloudflare R2 object storage. R2 is S3-compatible — we use the AWS
+// Cloudflare R2 object storage. R2 is S3-compatible, we use the AWS
 // SDK pointed at R2's endpoint.
 //
 // Pattern:
@@ -17,7 +17,7 @@
 import { S3Client, DeleteObjectCommand, ListObjectsV2Command, PutObjectCommand } from "@aws-sdk/client-s3";
 import { getSignedUrl } from "@aws-sdk/s3-request-presigner";
 
-export type StoragePrefix = "vehicle-photos" | "kyc" | "avatars" | "booking-slips";
+export type StoragePrefix = "vehicle-photos" | "vehicle-docs" | "kyc" | "avatars" | "booking-slips" | "booking-photos";
 
 let cachedClient: S3Client | null = null;
 
@@ -28,7 +28,7 @@ function client(): S3Client {
   const keyId     = process.env.R2_ACCESS_KEY_ID;
   const secret    = process.env.R2_SECRET_ACCESS_KEY;
   if (!accountId || !keyId || !secret) {
-    throw new Error("R2 not configured — set R2_ACCOUNT_ID, R2_ACCESS_KEY_ID, R2_SECRET_ACCESS_KEY");
+    throw new Error("R2 not configured, set R2_ACCOUNT_ID, R2_ACCESS_KEY_ID, R2_SECRET_ACCESS_KEY");
   }
 
   cachedClient = new S3Client({
@@ -41,13 +41,13 @@ function client(): S3Client {
 
 function bucket(): string {
   const b = process.env.R2_BUCKET;
-  if (!b) throw new Error("R2 not configured — set R2_BUCKET");
+  if (!b) throw new Error("R2 not configured, set R2_BUCKET");
   return b;
 }
 
 function publicBase(): string {
   const b = process.env.R2_PUBLIC_URL;
-  if (!b) throw new Error("R2 not configured — set R2_PUBLIC_URL to the r2.dev or custom-domain URL");
+  if (!b) throw new Error("R2 not configured, set R2_PUBLIC_URL to the r2.dev or custom-domain URL");
   return b.replace(/\/+$/, "");
 }
 
@@ -81,7 +81,7 @@ export function buildKey(prefix: StoragePrefix, ownerId: string, filename: strin
 
 /**
  * Mint a short-lived presigned PUT URL. The browser PUTs the file bytes
- * directly to this URL with no auth header — the signature already
+ * directly to this URL with no auth header, the signature already
  * authenticates the request.
  *
  * Defaults to 5 minutes which is plenty for one-shot uploads.
@@ -102,7 +102,7 @@ export async function deleteObject(key: string): Promise<void> {
 
 /** Server-side delete in chunks (S3 API takes 1000 keys per DeleteObjects call). */
 export async function deleteObjects(keys: string[]): Promise<void> {
-  // We just loop singletons — DeleteObjects batch is slightly faster but
+  // We just loop singletons, DeleteObjects batch is slightly faster but
   // requires extra XML setup. At our orphan-sweep volumes the perf
   // difference is negligible.
   for (const key of keys) {

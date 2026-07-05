@@ -19,7 +19,7 @@ interface ToastBooking {
  * Realtime subscription to bookings INSERTs. Pure visual notifier:
  * ding + top-of-screen banner + OS notification. Lists subscribe to
  * realtime themselves and update surgically (see useBookingsRealtime),
- * so this component never calls router.refresh — that would unmount the
+ * so this component never calls router.refresh, that would unmount the
  * banner and nuke any in-progress form/upload on the page.
  *
  * RLS gates the underlying SELECT, so agency subscribers only get their
@@ -129,18 +129,18 @@ export function BookingNotifier({ agencyId, viewHref }: Props) {
       {toasts.map((t) => (
         <div
           key={t.id}
-          className="bg-amber-500 border-2 border-amber-600 rounded-2xl shadow-2xl p-4 animate-bounce-in ring-4 ring-amber-500/30"
+          className="bg-blue-600 border-2 border-blue-600 rounded-2xl shadow-2xl p-4 animate-bounce-in ring-4 ring-blue-500/30"
         >
           <div className="flex items-start gap-3">
-            <span className="w-10 h-10 rounded-full bg-stone-900 text-amber-300 flex items-center justify-center shrink-0 animate-pulse">
+            <span className="w-10 h-10 rounded-full bg-stone-900 text-blue-500 flex items-center justify-center shrink-0 animate-pulse">
               <Bell size={18} />
             </span>
             <div className="flex-1 min-w-0">
-              <p className="text-stone-900 font-bold text-base">New booking request</p>
-              <p className="text-stone-800 text-sm mt-0.5">{t.start_date} → {t.end_date}</p>
+              <p className="text-slate-900 font-bold text-base">New booking request</p>
+              <p className="text-slate-900 text-sm mt-0.5">{t.start_date} → {t.end_date}</p>
               <a
                 href={viewHref}
-                className="inline-flex items-center gap-1 mt-2 px-3 py-1.5 bg-stone-900 hover:bg-stone-800 text-amber-300 rounded-lg text-xs font-semibold transition-colors"
+                className="inline-flex items-center gap-1 mt-2 px-3 py-1.5 bg-stone-900 hover:bg-stone-800 text-blue-500 rounded-lg text-xs font-semibold transition-colors"
               >
                 Open booking <ExternalLink size={12} />
               </a>
@@ -148,7 +148,7 @@ export function BookingNotifier({ agencyId, viewHref }: Props) {
             <button
               type="button"
               onClick={() => dismiss(t.id)}
-              className="text-stone-800 hover:text-stone-900 shrink-0"
+              className="text-slate-900 hover:text-slate-900 shrink-0"
               aria-label="Dismiss"
             >
               <X size={18} />

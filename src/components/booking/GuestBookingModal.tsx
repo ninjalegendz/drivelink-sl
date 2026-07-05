@@ -16,6 +16,8 @@ interface BookingDraft {
   vehicleName: string;
   startDate:   string;
   endDate:     string;
+  startTime?:  string;
+  endTime?:    string;
   totalDays:   number;
   subtotal:    number;
 }
@@ -54,7 +56,7 @@ export function GuestBookingModal({ draft, onClose }: Props) {
   const [info,       setInfo]       = useState<string | null>(null);
   const [cooldown,   setCooldown]   = useState(0);
 
-  // Resolved during the OTP step — used to mask back to the user and to
+  // Resolved during the OTP step, used to mask back to the user and to
   // re-send if needed.
   const [phoneForOtp, setPhoneForOtp] = useState("");
   const [emailForOtp, setEmailForOtp] = useState("");
@@ -107,7 +109,7 @@ export function GuestBookingModal({ draft, onClose }: Props) {
   // ─── Stage 1: send OTP ──────────────────────────────────────────────
   async function startSignup() {
     if (fullName.trim().length < 2)            { setError("Enter your full name."); return; }
-    if (!isValidSLPhone(identifier))           { setError("Enter a Sri Lankan phone number like 0771234567."); return; }
+    if (!isValidSLPhone(identifier))           { setError("Enter a valid mobile number. For a non-Sri-Lankan number, include the country code (e.g. +44 7911 123456)."); return; }
     if (email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) { setError("That email doesn't look right."); return; }
 
     setLoading(true); setError(null); setInfo(null);
@@ -142,7 +144,7 @@ export function GuestBookingModal({ draft, onClose }: Props) {
     if (!identifier.trim()) { setError("Enter your email or phone number."); return; }
     const isEmail = identifier.includes("@");
     if (!isEmail && !isValidSLPhone(identifier)) {
-      setError("Enter a Sri Lankan phone number like 0771234567.");
+      setError("Enter a valid mobile number. For a non-Sri-Lankan number, include the country code (e.g. +44 7911 123456).");
       return;
     }
 
@@ -215,6 +217,8 @@ export function GuestBookingModal({ draft, onClose }: Props) {
         agency_id:  draft.agencyId,
         start_date: draft.startDate,
         end_date:   draft.endDate,
+        start_time: draft.startTime ?? "10:00",
+        end_time:   draft.endTime ?? "10:00",
       }),
     });
     const bookingPayload = await bookingRes.json().catch(() => ({}));
@@ -223,7 +227,7 @@ export function GuestBookingModal({ draft, onClose }: Props) {
     if (!bookingRes.ok) {
       const code = (bookingPayload as { code?: string }).code;
       if (code === "kyc_required") {
-        // Brand-new account never went through Didit — punt them to /account
+        // Brand-new account never went through Didit, punt them to /account
         // where the verify CTA is. They re-book from the vehicle page after
         // verification clears.
         setLoading(false);
@@ -256,12 +260,12 @@ export function GuestBookingModal({ draft, onClose }: Props) {
         {/* Header */}
         <div className="flex items-start justify-between p-5 pb-3">
           <div>
-            <h2 className="text-white font-semibold text-lg">
+            <h2 className="text-slate-900 font-semibold text-lg">
               {stage === "booking" ? "Booking sent!" : "One last step"}
             </h2>
             {stage !== "booking" && (
               <p className="text-slate-500 text-xs mt-0.5">
-                Almost done — verify your phone to confirm the booking.
+                Almost done, verify your phone to confirm the booking.
               </p>
             )}
           </div>
@@ -269,7 +273,7 @@ export function GuestBookingModal({ draft, onClose }: Props) {
             <button
               type="button"
               onClick={onClose}
-              className="text-slate-500 hover:text-white"
+              className="text-slate-500 hover:text-slate-900"
               aria-label="Close"
             >
               <X size={18} />
@@ -277,14 +281,14 @@ export function GuestBookingModal({ draft, onClose }: Props) {
           )}
         </div>
 
-        {/* Booking summary — visible on every stage so they remember what they're confirming */}
+        {/* Booking summary, visible on every stage so they remember what they're confirming */}
         <div className="px-5 pb-3">
-          <div className="bg-slate-800/60 border border-slate-700/50 rounded-xl px-3 py-2.5 text-xs">
-            <p className="text-white font-medium">{draft.vehicleName}</p>
-            <p className="text-slate-400 mt-0.5">
+          <div className="bg-slate-100 border border-slate-200/60 rounded-xl px-3 py-2.5 text-xs">
+            <p className="text-slate-900 font-medium">{draft.vehicleName}</p>
+            <p className="text-slate-600 mt-0.5">
               {draft.startDate} → {draft.endDate} ·{" "}
               <span>{draft.totalDays} day{draft.totalDays !== 1 ? "s" : ""}</span> ·{" "}
-              <span className="text-amber-400">{formatLKR(draft.subtotal)}</span>
+              <span className="text-blue-600">{formatLKR(draft.subtotal)}</span>
             </p>
           </div>
         </div>
@@ -292,18 +296,18 @@ export function GuestBookingModal({ draft, onClose }: Props) {
         {/* Body */}
         <div className="px-5 pb-5">
 
-          {/* Stage 1 — identity */}
+          {/* Stage 1, identity */}
           {stage === "identity" && (
             <>
               {/* Mode tabs */}
-              <div className="flex gap-1 bg-slate-800/60 rounded-xl p-1 mb-4">
+              <div className="flex gap-1 bg-slate-100 rounded-xl p-1 mb-4">
                 <button
                   type="button"
                   onClick={() => switchMode("signup")}
                   className={`flex-1 px-3 py-1.5 rounded-lg text-xs font-medium transition-colors ${
                     mode === "signup"
-                      ? "bg-slate-700 text-white"
-                      : "text-slate-400 hover:text-white"
+                      ? "bg-slate-200 text-slate-900"
+                      : "text-slate-600 hover:text-slate-900"
                   }`}
                 >
                   New account
@@ -313,8 +317,8 @@ export function GuestBookingModal({ draft, onClose }: Props) {
                   onClick={() => switchMode("login")}
                   className={`flex-1 px-3 py-1.5 rounded-lg text-xs font-medium transition-colors ${
                     mode === "login"
-                      ? "bg-slate-700 text-white"
-                      : "text-slate-400 hover:text-white"
+                      ? "bg-slate-200 text-slate-900"
+                      : "text-slate-600 hover:text-slate-900"
                   }`}
                 >
                   Sign in
@@ -328,7 +332,7 @@ export function GuestBookingModal({ draft, onClose }: Props) {
                 {mode === "signup" && (
                   <>
                     <div>
-                      <label className="text-slate-400 text-xs mb-1 block">Your full name</label>
+                      <label className="text-slate-600 text-xs mb-1 block">Your full name</label>
                       <input
                         type="text"
                         value={fullName}
@@ -337,11 +341,11 @@ export function GuestBookingModal({ draft, onClose }: Props) {
                         autoFocus
                         autoComplete="name"
                         placeholder="As on your NIC"
-                        className="w-full px-3 py-2 bg-slate-800 border border-slate-700 rounded-lg text-white placeholder-slate-500 text-sm focus:outline-none focus:border-amber-500"
+                        className="w-full px-3 py-2 bg-slate-100 border border-slate-200 rounded-lg text-slate-900 placeholder-slate-400 text-sm focus:outline-none focus:border-blue-500"
                       />
                     </div>
                     <div>
-                      <label className="text-slate-400 text-xs mb-1 block">Mobile number</label>
+                      <label className="text-slate-600 text-xs mb-1 block">Mobile number</label>
                       <input
                         type="tel"
                         value={identifier}
@@ -349,12 +353,12 @@ export function GuestBookingModal({ draft, onClose }: Props) {
                         required
                         autoComplete="tel"
                         placeholder="0771234567"
-                        className="w-full px-3 py-2 bg-slate-800 border border-slate-700 rounded-lg text-white placeholder-slate-500 text-sm focus:outline-none focus:border-amber-500"
+                        className="w-full px-3 py-2 bg-slate-100 border border-slate-200 rounded-lg text-slate-900 placeholder-slate-400 text-sm focus:outline-none focus:border-blue-500"
                       />
                     </div>
                     <div>
-                      <label className="text-slate-400 text-xs mb-1 block">
-                        Email <span className="text-slate-600 font-normal">(optional)</span>
+                      <label className="text-slate-600 text-xs mb-1 block">
+                        Email <span className="text-slate-400 font-normal">(optional)</span>
                       </label>
                       <input
                         type="email"
@@ -362,10 +366,10 @@ export function GuestBookingModal({ draft, onClose }: Props) {
                         onChange={(e) => setEmail(e.target.value)}
                         autoComplete="email"
                         placeholder="you@example.com"
-                        className="w-full px-3 py-2 bg-slate-800 border border-slate-700 rounded-lg text-white placeholder-slate-500 text-sm focus:outline-none focus:border-amber-500"
+                        className="w-full px-3 py-2 bg-slate-100 border border-slate-200 rounded-lg text-slate-900 placeholder-slate-400 text-sm focus:outline-none focus:border-blue-500"
                       />
-                      <p className="text-slate-600 text-[11px] mt-1">
-                        Verified email adds a trust badge — agencies confirm faster.
+                      <p className="text-slate-400 text-[11px] mt-1">
+                        Verified email adds a trust badge, agencies confirm faster.
                       </p>
                     </div>
                   </>
@@ -373,7 +377,7 @@ export function GuestBookingModal({ draft, onClose }: Props) {
 
                 {mode === "login" && (
                   <div>
-                    <label className="text-slate-400 text-xs mb-1 block">Email or phone number</label>
+                    <label className="text-slate-600 text-xs mb-1 block">Email or phone number</label>
                     <input
                       type="text"
                       value={identifier}
@@ -382,7 +386,7 @@ export function GuestBookingModal({ draft, onClose }: Props) {
                       autoFocus
                       autoComplete="username"
                       placeholder="you@example.com  or  0771234567"
-                      className="w-full px-3 py-2 bg-slate-800 border border-slate-700 rounded-lg text-white placeholder-slate-500 text-sm focus:outline-none focus:border-amber-500"
+                      className="w-full px-3 py-2 bg-slate-100 border border-slate-200 rounded-lg text-slate-900 placeholder-slate-400 text-sm focus:outline-none focus:border-blue-500"
                     />
                   </div>
                 )}
@@ -393,32 +397,32 @@ export function GuestBookingModal({ draft, onClose }: Props) {
                   Send verification code
                 </Button>
 
-                <p className="text-slate-600 text-[11px] text-center pt-1">
-                  Cancel anytime before the agency confirms — full refund.
+                <p className="text-slate-400 text-[11px] text-center pt-1">
+                  Cancel anytime before the agency confirms, full refund.
                 </p>
               </form>
             </>
           )}
 
-          {/* Stage 2 — OTP */}
+          {/* Stage 2, OTP */}
           {stage === "code" && (
             <form onSubmit={verifyAndBook} className="space-y-3">
               <button
                 type="button"
                 onClick={resetToIdentity}
-                className="inline-flex items-center gap-1 text-slate-500 hover:text-white text-xs"
+                className="inline-flex items-center gap-1 text-slate-500 hover:text-slate-900 text-xs"
               >
                 <ArrowLeft size={12} /> Edit details
               </button>
 
-              <div className="flex items-start gap-3 p-3 bg-slate-800/60 rounded-xl">
+              <div className="flex items-start gap-3 p-3 bg-slate-100 rounded-xl">
                 {otpChannel === "email"
-                  ? <Mail  size={18} className="text-amber-400 mt-0.5 shrink-0" />
-                  : <Phone size={18} className="text-amber-400 mt-0.5 shrink-0" />}
+                  ? <Mail  size={18} className="text-blue-600 mt-0.5 shrink-0" />
+                  : <Phone size={18} className="text-blue-600 mt-0.5 shrink-0" />}
                 <div className="text-xs">
-                  <p className="text-slate-300">
+                  <p className="text-slate-700">
                     Code sent to{" "}
-                    <span className="text-white font-mono">
+                    <span className="text-slate-900 font-mono">
                       {otpChannel === "email"
                         ? maskEmail(emailForOtp || identifier)
                         : maskPhone(phoneForOtp || identifier)}
@@ -428,18 +432,18 @@ export function GuestBookingModal({ draft, onClose }: Props) {
                 </div>
               </div>
 
-              {/* Email-verify nudge — only for signup with email */}
+              {/* Email-verify nudge, only for signup with email */}
               {mode === "signup" && email && (
-                <div className="flex items-start gap-2 p-2.5 bg-slate-800/40 rounded-lg text-[11px] text-slate-400">
+                <div className="flex items-start gap-2 p-2.5 bg-slate-100/60 rounded-lg text-[11px] text-slate-600">
                   <Mail size={12} className="mt-0.5 shrink-0" />
                   <span>
-                    A verify link is on its way to <span className="font-mono">{email}</span> — clicking it adds a trust badge to your profile (optional).
+                    A verify link is on its way to <span className="font-mono">{email}</span>, clicking it adds a trust badge to your profile (optional).
                   </span>
                 </div>
               )}
 
               <div>
-                <label className="text-slate-400 text-xs mb-1 block">6-digit code</label>
+                <label className="text-slate-600 text-xs mb-1 block">6-digit code</label>
                 <input
                   ref={codeRef}
                   type="text"
@@ -449,18 +453,18 @@ export function GuestBookingModal({ draft, onClose }: Props) {
                   value={code}
                   onChange={(e) => setCode(e.target.value.replace(/\D/g, ""))}
                   required
-                  className="w-full px-4 py-3 bg-slate-800 border border-slate-700 rounded-xl text-white text-center font-mono text-2xl tracking-[0.5em] focus:outline-none focus:border-amber-500"
+                  className="w-full px-4 py-3 bg-slate-100 border border-slate-200 rounded-xl text-slate-900 text-center font-mono text-2xl tracking-[0.5em] focus:outline-none focus:border-blue-500"
                 />
               </div>
 
               <div className="flex items-start gap-2 p-2.5 bg-emerald-500/5 border border-emerald-500/20 rounded-lg">
                 <Sparkles size={12} className="text-emerald-400 mt-0.5 shrink-0" />
                 <p className="text-[11px] text-emerald-300/80">
-                  Next time, just punch in your phone — we won&apos;t make you do this again on this device.
+                  Next time, just punch in your phone, we won&apos;t make you do this again on this device.
                 </p>
               </div>
 
-              {info  && <p className="text-amber-400 text-xs">{info}</p>}
+              {info  && <p className="text-blue-600 text-xs">{info}</p>}
               {error && <p className="text-red-400 text-sm">{error}</p>}
 
               <Button
@@ -476,21 +480,21 @@ export function GuestBookingModal({ draft, onClose }: Props) {
                 type="button"
                 onClick={() => { mode === "signup" ? startSignup() : startLogin(); }}
                 disabled={loading || cooldown > 0}
-                className="text-xs text-slate-500 hover:text-amber-400 disabled:opacity-50 disabled:hover:text-slate-500 w-full text-center"
+                className="text-xs text-slate-500 hover:text-blue-600 disabled:opacity-50 disabled:hover:text-slate-500 w-full text-center"
               >
                 {cooldown > 0 ? `Resend code in ${cooldown}s` : "Resend code"}
               </button>
             </form>
           )}
 
-          {/* Stage 3 — booking confirmed (transient before redirect) */}
+          {/* Stage 3, booking confirmed (transient before redirect) */}
           {stage === "booking" && (
             <div className="text-center py-4">
               <div className="w-14 h-14 rounded-full bg-emerald-500/10 flex items-center justify-center mx-auto mb-3">
                 <Check size={28} className="text-emerald-400" strokeWidth={2.5} />
               </div>
-              <p className="text-white font-medium mb-1">Sent to the agency</p>
-              <p className="text-slate-400 text-xs">
+              <p className="text-slate-900 font-medium mb-1">Sent to the agency</p>
+              <p className="text-slate-600 text-xs">
                 Taking you to your booking…
               </p>
             </div>

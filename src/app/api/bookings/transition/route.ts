@@ -1,17 +1,19 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient, createServiceClient } from "@/lib/supabase/server";
-import { sendSms } from "@/lib/sms/textlk";
 import {
   buildRenterConfirmedMessage,
   buildRenterDeclinedMessage,
+  buildRenterCompletedMessage,
 } from "@/lib/sms/messages";
+import { notifyCascade } from "@/lib/notify";
+import { runAfterResponse } from "@/lib/after-response";
 
 // POST /api/bookings/transition
 // body: { bookingId: string, to: "confirmed" | "declined" | "completed" }
 //
 // Agency-owner endpoint. Replaces the previous client-side direct
 // supabase update from AgencyBookingActions so that the renter actually
-// gets notified by SMS on confirm / decline — that was silently missing
+// gets notified by SMS on confirm / decline, that was silently missing
 // when transitions were done client-side.
 //
 // The Postgres-side "Agency can transition booking" RLS policy is the
@@ -20,7 +22,7 @@ import {
 // reject it if they're not the agency owner. On success we read the
 // (now-updated) booking back via the service client to get the joined
 // renter/vehicle/agency data needed for the SMS, then fire-and-forget
-// the SMS. SMS failure is logged but does not fail the transition —
+// the SMS. SMS failure is logged but does not fail the transition,
 // the realtime renter page already updates from the WAL stream.
 
 const ALLOWED = new Set(["confirmed", "declined", "completed"] as const);
@@ -41,11 +43,29 @@ export async function POST(req: NextRequest) {
   }
   const to = body.to as AllowedStatus;
 
-  const now    = new Date().toISOString();
-  const update: Record<string, unknown> = { status: to };
-  if (to === "confirmed") update.confirmed_at = now;
+  const now = new Date().toISOString();
+
+  // Free-launch: when the booking carries no fee, "confirm" goes straight to
+  // active (no pay-to-lock-in step) so the renter immediately gets the
+  // provider's contact. With a fee, confirm enters the payment window.
+  let effective: string = to;
+  if (to === "confirmed") {
+    const svc = await createServiceClient();
+    const { data: feeRow } = await svc.from("bookings").select("booking_fee_lkr").eq("id", body.bookingId).single();
+    const fee = (feeRow as { booking_fee_lkr?: number } | null)?.booking_fee_lkr ?? 0;
+    if (fee <= 0) effective = "active";
+  }
+
+  const update: Record<string, unknown> = { status: effective };
+  if (to === "confirmed") {
+    update.confirmed_at = now;
+    if (effective === "active") update.activated_at = now;
+  }
   if (to === "declined")  update.declined_at  = now;
-  if (to === "completed") update.completed_at = now;
+  if (to === "completed") {
+    update.completed_at        = now;
+    update.return_confirmed_at = now; // agency confirms receipt as it completes
+  }
 
   // Use the caller's cookie-bound client so RLS enforces ownership.
   // Postgres exclusion violation (23P01) bubbles up if the dates clash.
@@ -61,46 +81,56 @@ export async function POST(req: NextRequest) {
     );
   }
 
-  // Fire renter SMS for confirm/decline. Completed doesn't need one —
-  // the renter just used the car. Service client bypasses RLS for the
-  // join read.
-  if (to === "confirmed" || to === "declined") {
-    const service = await createServiceClient();
-    const { data: full } = await service
-      .from("bookings")
-      .select("id, renter_id, vehicles(make, model, year), agencies(name)")
-      .eq("id", body.bookingId)
-      .single();
+  // Fire renter SMS for confirm/decline/complete after the response, the agency
+  // shouldn't wait on the renter's SMS/WhatsApp/email. On completion it thanks
+  // the renter and links them straight to the review form.
+  if (to === "confirmed" || to === "declined" || to === "completed") {
+    runAfterResponse((async () => {
+      const service = await createServiceClient();
+      const { data: full } = await service
+        .from("bookings")
+        .select("id, renter_id, vehicles(make, model, year, plate_number), agencies(name)")
+        .eq("id", body.bookingId)
+        .single();
 
-    type Joined = {
-      id:        string;
-      renter_id: string;
-      vehicles:  { make: string; model: string; year: number } | null;
-      agencies:  { name: string } | null;
-    };
-    const row = full as Joined | null;
+      type Joined = {
+        id:        string;
+        renter_id: string;
+        vehicles:  { make: string; model: string; year: number; plate_number: string | null } | null;
+        agencies:  { name: string } | null;
+      };
+      const row = full as Joined | null;
+      if (!row?.renter_id || !row.vehicles || !row.agencies) return;
 
-    if (row?.renter_id && row.vehicles && row.agencies) {
       const { data: renter } = await service
         .from("profiles")
-        .select("phone")
+        .select("phone, email")
         .eq("id", row.renter_id)
         .single();
-      const renterPhone = (renter as { phone?: string } | null)?.phone;
+      const r = renter as { phone?: string | null; email?: string | null } | null;
 
-      if (renterPhone) {
-        const vehicleName = `${row.vehicles.year} ${row.vehicles.make} ${row.vehicles.model}`;
-        const appUrl      = process.env.NEXT_PUBLIC_APP_URL!;
-        const message = to === "confirmed"
-          ? buildRenterConfirmedMessage({ bookingId: row.id, vehicleName, agencyName: row.agencies.name, appUrl })
-          : buildRenterDeclinedMessage({  bookingId: row.id, vehicleName, agencyName: row.agencies.name, appUrl });
+      const vehicleName  = `${row.vehicles.year} ${row.vehicles.make} ${row.vehicles.model}`;
+      const appUrl       = process.env.NEXT_PUBLIC_APP_URL!;
+      const vehiclePlate = row.vehicles.plate_number ?? undefined;
+      const msgArgs = { bookingId: row.id, vehicleName, vehiclePlate, agencyName: row.agencies.name, appUrl };
+      const message =
+        to === "confirmed" ? buildRenterConfirmedMessage(msgArgs) :
+        to === "declined"  ? buildRenterDeclinedMessage(msgArgs)  :
+                             buildRenterCompletedMessage(msgArgs);
 
-        const smsResult = await sendSms(renterPhone, message);
-        if (!smsResult.ok) {
-          console.error("[booking transition] renter SMS failed", row.id, smsResult.error);
-        }
-      }
-    }
+      // SMS -> WhatsApp -> Email, so foreign renters who can't receive an SMS
+      // still hear back. Skip placeholder emails for the email fallback.
+      const realEmail = r?.email && !r.email.endsWith("@phone.drivelink.invalid") ? r.email : null;
+      const notified = await notifyCascade({
+        phone:        r?.phone ?? undefined,
+        smsKey:       "booking_status_renter",
+        text:         message,
+        email:        realEmail,
+        emailSubject: `DriveLink booking ${row.id.slice(0, 8).toUpperCase()}`,
+        emailText:    message,
+      });
+      if (!notified.delivered) console.error("[booking transition] all channels failed", row.id);
+    })());
   }
 
   return NextResponse.json({ ok: true, newStatus: to });

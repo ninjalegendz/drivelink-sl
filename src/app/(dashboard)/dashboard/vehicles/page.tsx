@@ -37,7 +37,7 @@ export default async function FleetPage() {
     .eq("owner_id", user.id)
     .single();
 
-  if (!agencyData) redirect("/signup/agency");
+  if (!agencyData) redirect("/signup?intent=provider");
   const agency = agencyData as { id: string };
 
   const { data } = await supabase
@@ -52,29 +52,29 @@ export default async function FleetPage() {
     <div>
       <div className="flex items-center justify-between mb-8">
         <div>
-          <h1 className="text-2xl font-bold text-white">Fleet</h1>
-          <p className="text-slate-400 text-sm mt-0.5">
+          <h1 className="text-2xl font-bold text-slate-900">Fleet</h1>
+          <p className="text-slate-600 text-sm mt-0.5">
             {vehicles.length} vehicle{vehicles.length === 1 ? "" : "s"}
           </p>
         </div>
         <Link
           href="/dashboard/vehicles/new"
-          className="inline-flex items-center gap-1.5 px-5 py-2.5 bg-amber-500 hover:bg-amber-400 text-stone-900 font-semibold rounded-xl text-sm transition-colors"
+          className="inline-flex items-center gap-1.5 px-5 py-2.5 bg-blue-600 hover:bg-blue-500 text-white font-semibold rounded-xl text-sm transition-colors"
         >
           <Plus size={16} /> Add vehicle
         </Link>
       </div>
 
       {vehicles.length === 0 ? (
-        <div className="bg-slate-900 border border-slate-200 rounded-2xl shadow-sm p-12 text-center">
-          <Car size={48} strokeWidth={1.5} className="mx-auto mb-3 text-slate-600" />
-          <h2 className="text-white font-semibold mb-1">No vehicles yet</h2>
-          <p className="text-slate-400 text-sm mb-6">
+        <div className="bg-white border border-slate-200 rounded-2xl shadow-sm p-12 text-center">
+          <Car size={48} strokeWidth={1.5} className="mx-auto mb-3 text-slate-400" />
+          <h2 className="text-slate-900 font-semibold mb-1">No vehicles yet</h2>
+          <p className="text-slate-600 text-sm mb-6">
             Add your first vehicle to start receiving booking requests.
           </p>
           <Link
             href="/dashboard/vehicles/new"
-            className="inline-flex items-center gap-1.5 px-5 py-2.5 bg-amber-500 hover:bg-amber-400 text-stone-900 font-semibold rounded-xl text-sm transition-colors"
+            className="inline-flex items-center gap-1.5 px-5 py-2.5 bg-blue-600 hover:bg-blue-500 text-white font-semibold rounded-xl text-sm transition-colors"
           >
             <Plus size={16} /> Add your first vehicle
           </Link>
@@ -86,9 +86,9 @@ export default async function FleetPage() {
             return (
               <div
                 key={v.id}
-                className="bg-slate-900 border border-slate-200 rounded-2xl shadow-sm overflow-hidden flex flex-col"
+                className="bg-white border border-slate-200 rounded-2xl shadow-sm overflow-hidden flex flex-col"
               >
-                <div className="relative aspect-[16/9] bg-slate-800">
+                <div className="relative aspect-[16/9] bg-slate-100">
                   {photo ? (
                     <Image
                       src={photo}
@@ -98,7 +98,7 @@ export default async function FleetPage() {
                       sizes="(max-width: 640px) 100vw, (max-width: 1280px) 50vw, 33vw"
                     />
                   ) : (
-                    <div className="w-full h-full flex items-center justify-center text-slate-700">
+                    <div className="w-full h-full flex items-center justify-center text-slate-300">
                       <Car size={40} strokeWidth={1.5} />
                     </div>
                   )}
@@ -112,13 +112,13 @@ export default async function FleetPage() {
                 <div className="p-4 flex-1 flex flex-col">
                   <div className="flex items-start justify-between gap-2">
                     <div className="min-w-0">
-                      <h3 className="font-semibold text-white text-sm truncate">
+                      <h3 className="font-semibold text-slate-900 text-sm truncate">
                         {v.year} {v.make} {v.model}
                       </h3>
-                      <p className="text-slate-400 text-xs mt-0.5">{v.city}</p>
+                      <p className="text-slate-600 text-xs mt-0.5">{v.city}</p>
                     </div>
                     <div className="text-right shrink-0">
-                      <p className="text-amber-400 font-bold text-sm">
+                      <p className="text-blue-600 font-bold text-sm">
                         {formatLKR(v.daily_rate_lkr)}
                       </p>
                       <p className="text-slate-500 text-xs">/ day</p>
@@ -133,24 +133,32 @@ export default async function FleetPage() {
                     </Badge>
                   </div>
 
-                  <div className="mt-4 pt-3 border-t border-slate-800 flex items-center justify-between">
-                    <div className="flex gap-3">
+                  <div className="mt-4 pt-3 border-t border-slate-100 flex items-center justify-between gap-2">
+                    <div className="flex flex-wrap gap-0.5 -ml-2">
                       <Link
                         href={`/dashboard/vehicles/${v.id}/edit`}
-                        className="text-xs text-amber-400 hover:text-amber-300"
+                        className="inline-flex items-center px-2 py-1.5 rounded-lg text-xs font-medium text-blue-600 hover:bg-blue-50 transition-colors"
                       >
                         Edit
                       </Link>
                       <Link
                         href={`/dashboard/vehicles/${v.id}/availability`}
-                        className="text-xs text-amber-400 hover:text-amber-300"
+                        className="inline-flex items-center px-2 py-1.5 rounded-lg text-xs font-medium text-blue-600 hover:bg-blue-50 transition-colors"
                       >
                         Availability
                       </Link>
                       <Link
+                        href={`/dashboard/vehicles/new?from=${v.id}`}
+                        title="Start a new listing pre-filled from this one"
+                        className="inline-flex items-center px-2 py-1.5 rounded-lg text-xs font-medium text-blue-600 hover:bg-blue-50 transition-colors"
+                      >
+                        Duplicate
+                      </Link>
+                      <Link
                         href={`/vehicles/${v.slug}`}
                         target="_blank"
-                        className="inline-flex items-center gap-1 text-xs text-slate-500 hover:text-slate-300"
+                        rel="noopener noreferrer"
+                        className="inline-flex items-center gap-1 px-2 py-1.5 rounded-lg text-xs text-slate-500 hover:bg-slate-100 transition-colors"
                       >
                         View <ExternalLink size={11} />
                       </Link>

@@ -65,7 +65,7 @@ export default async function AdminInvoicesPage({ searchParams }: Props) {
   }
   const agencies = Array.from(byAgency.values()).sort((a, b) => b.outstanding - a.outstanding);
 
-  // Month nav — previous N months
+  // Month nav, previous N months
   const months: string[] = [];
   for (let i = 0; i < 6; i++) {
     const d = new Date();
@@ -80,22 +80,22 @@ export default async function AdminInvoicesPage({ searchParams }: Props) {
   return (
     <div>
       <div className="flex items-center gap-2 mb-1">
-        <Receipt size={22} className="text-amber-400" strokeWidth={1.75} />
-        <h1 className="text-2xl font-bold text-white">Agency invoices</h1>
+        <Receipt size={22} className="text-blue-600" strokeWidth={1.75} />
+        <h1 className="text-2xl font-bold text-slate-900">Agency invoices</h1>
       </div>
-      <p className="text-slate-400 text-sm mb-5">
-        Rs. 200 per completed booking. Renter lock-in (Rs. 500) is collected at booking confirmation
-        — separately, via the slip-upload flow.
+      <p className="text-slate-600 text-sm mb-5">
+        Platform fee per completed booking. The renter lock-in is collected separately at booking
+        confirmation via the slip-upload flow.
       </p>
 
       {/* Month picker */}
-      <div className="flex gap-1 mb-5 bg-slate-900 rounded-xl p-1 w-fit flex-wrap">
+      <div className="flex gap-1 mb-5 bg-white rounded-xl p-1 w-fit flex-wrap">
         {months.map((m) => (
           <Link
             key={m}
             href={`/admin/invoices?month=${m}`}
             className={`px-3 py-1.5 rounded-lg text-sm transition-colors ${
-              m === month ? "bg-slate-700 text-white font-medium" : "text-slate-400 hover:text-white"
+              m === month ? "bg-slate-200 text-slate-900 font-medium" : "text-slate-600 hover:text-slate-900"
             }`}
           >
             {monthLabel(m)}
@@ -106,12 +106,12 @@ export default async function AdminInvoicesPage({ searchParams }: Props) {
       {/* Month summary */}
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-6">
         {[
-          { label: "Bookings completed", value: totalCompleted,                                color: "text-white" },
-          { label: "Total fees",         value: formatLKR(totalCollected + totalOutstanding),  color: "text-white" },
+          { label: "Bookings completed", value: totalCompleted,                                color: "text-slate-900" },
+          { label: "Total fees",         value: formatLKR(totalCollected + totalOutstanding),  color: "text-slate-900" },
           { label: "Collected",          value: formatLKR(totalCollected),                     color: "text-emerald-400" },
-          { label: "Outstanding",        value: formatLKR(totalOutstanding),                   color: totalOutstanding > 0 ? "text-amber-400" : "text-slate-500" },
+          { label: "Outstanding",        value: formatLKR(totalOutstanding),                   color: totalOutstanding > 0 ? "text-blue-600" : "text-slate-500" },
         ].map(({ label, value, color }) => (
-          <div key={label} className="bg-slate-900 border border-slate-800 rounded-xl p-3">
+          <div key={label} className="bg-white border border-slate-100 rounded-xl p-3">
             <p className="text-slate-500 text-[10px] uppercase tracking-wider">{label}</p>
             <p className={`text-lg font-semibold mt-0.5 ${color}`}>{value}</p>
           </div>
@@ -119,7 +119,7 @@ export default async function AdminInvoicesPage({ searchParams }: Props) {
       </div>
 
       {agencies.length === 0 ? (
-        <div className="bg-slate-900 border border-slate-200 rounded-2xl shadow-sm p-12 text-center text-slate-500 text-sm">
+        <div className="bg-white border border-slate-200 rounded-2xl shadow-sm p-12 text-center text-slate-500 text-sm">
           No completed bookings in {monthLabel(month)}.
         </div>
       ) : (
@@ -128,17 +128,17 @@ export default async function AdminInvoicesPage({ searchParams }: Props) {
             <Link
               key={a.agency_id}
               href={`/admin/invoices/${a.agency_id}?month=${month}`}
-              className="block spring-hover bg-slate-900 border border-slate-200 shadow-sm hover:border-amber-300 rounded-2xl p-4 transition-colors"
+              className="block spring-hover bg-white border border-slate-200 shadow-sm hover:border-blue-300 rounded-2xl p-4 transition-colors"
             >
               <div className="flex items-center justify-between gap-3">
                 <div className="min-w-0 flex-1">
-                  <p className="font-semibold text-white">{a.name}</p>
+                  <p className="font-semibold text-slate-900">{a.name}</p>
                   <p className="text-slate-500 text-xs mt-0.5">
                     {a.completed} booking{a.completed === 1 ? "" : "s"} completed
                   </p>
                 </div>
                 <div className="text-right">
-                  <p className="text-amber-400 font-bold">{formatLKR(a.total)}</p>
+                  <p className="text-blue-600 font-bold">{formatLKR(a.total)}</p>
                   <div className="flex items-center gap-1.5 justify-end mt-0.5">
                     {a.outstanding === 0 ? (
                       <Badge variant="green"><CheckCircle2 size={10} /> All paid</Badge>

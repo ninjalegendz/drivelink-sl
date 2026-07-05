@@ -1,251 +1,112 @@
 "use client";
 
-import { Suspense, useEffect, useRef, useState } from "react";
+import { Suspense, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
-import { ArrowLeft, Phone, Mail, Sparkles } from "lucide-react";
-import { Button } from "@/components/ui/Button";
-import { isValidSLPhone, toLocalSL } from "@/lib/auth/phone-format";
+import { ArrowLeft, ArrowRight, Car, KeyRound, User, Building2 } from "lucide-react";
 
-type Stage = "details" | "code";
+type Step = "role" | "provider";
 
-function maskPhone(value: string): string {
-  const local = toLocalSL(value) ?? value;
-  if (local.length < 5) return value;
-  return `${local.slice(0, 3)} *** *${local.slice(-3)}`;
+function ChoiceCard({
+  icon,
+  title,
+  subtitle,
+  onClick,
+}: {
+  icon: React.ReactNode;
+  title: string;
+  subtitle: string;
+  onClick: () => void;
+}) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      className="spring-press group w-full text-left bg-white border border-slate-200 rounded-2xl p-5 flex items-center gap-4 hover:border-blue-500 hover:shadow-md transition-all"
+    >
+      <span className="shrink-0 w-12 h-12 rounded-xl bg-blue-50 text-blue-600 flex items-center justify-center group-hover:bg-blue-600 group-hover:text-white transition-colors">
+        {icon}
+      </span>
+      <span className="min-w-0 flex-1">
+        <span className="block font-semibold text-slate-900">{title}</span>
+        <span className="block text-slate-500 text-sm mt-0.5">{subtitle}</span>
+      </span>
+      <ArrowRight size={18} className="text-slate-300 group-hover:text-blue-600 transition-colors shrink-0" />
+    </button>
+  );
 }
 
-function RenterSignupForm() {
+function SignupChooser() {
   const router = useRouter();
-  const searchParams = useSearchParams();
+  const params = useSearchParams();
 
-  const [stage,    setStage]    = useState<Stage>("details");
-  const [fullName, setFullName] = useState("");
-  const [phone,    setPhone]    = useState("");
-  const [email,    setEmail]    = useState("");
-  const [code,     setCode]     = useState("");
-  const [loading,  setLoading]  = useState(false);
-  const [error,    setError]    = useState<string | null>(null);
-  const [info,     setInfo]     = useState<string | null>(null);
-  const [cooldown, setCooldown] = useState(0);
-  const codeRef = useRef<HTMLInputElement>(null);
-
-  useEffect(() => {
-    if (cooldown <= 0) return;
-    const id = setTimeout(() => setCooldown((c) => c - 1), 1000);
-    return () => clearTimeout(id);
-  }, [cooldown]);
-
-  useEffect(() => {
-    if (stage === "code") setTimeout(() => codeRef.current?.focus(), 50);
-  }, [stage]);
-
-  async function startSignup(e?: React.FormEvent) {
-    e?.preventDefault();
-
-    if (fullName.trim().length < 2)        { setError("Enter your full name."); return; }
-    if (!isValidSLPhone(phone))            { setError("Enter a Sri Lankan phone number like 0771234567."); return; }
-    if (email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) { setError("That email doesn't look right."); return; }
-
-    setLoading(true); setError(null); setInfo(null);
-
-    const res = await fetch("/api/auth/signup/start", {
-      method:  "POST",
-      headers: { "Content-Type": "application/json" },
-      body:    JSON.stringify({
-        full_name: fullName.trim(),
-        phone:     phone.trim(),
-        email:     email.trim() || undefined,
-      }),
-    });
-    const payload = await res.json().catch(() => ({}));
-    setLoading(false);
-
-    if (!res.ok) {
-      setError(payload.error ?? "Couldn't start signup.");
-      if (payload.waitSec) setCooldown(payload.waitSec);
-      return;
-    }
-
-    setStage("code");
-    if (payload.nextCooldownSec) setCooldown(payload.nextCooldownSec);
-    if (payload.devOnly && payload.devCode) setInfo(`Dev mode: code is ${payload.devCode}`);
-  }
-
-  async function verifyCode(e: React.FormEvent) {
-    e.preventDefault();
-    setLoading(true); setError(null);
-
-    const res = await fetch("/api/auth/signup/verify", {
-      method:  "POST",
-      headers: { "Content-Type": "application/json" },
-      body:    JSON.stringify({ phone: phone.trim(), code }),
-    });
-    const payload = await res.json().catch(() => ({}));
-    setLoading(false);
-
-    if (!res.ok) { setError(payload.error ?? "Verification failed."); return; }
-
-    router.push(payload.dest || "/account?welcome=1");
-    router.refresh();
-  }
-
-  // Agency signup lives at /signup/agency (collects business details up front).
-  const wantsAgency = searchParams.get("role") === "agency";
-  useEffect(() => {
-    if (wantsAgency) router.replace("/signup/agency");
-  }, [wantsAgency, router]);
-  if (wantsAgency) {
-    return <div className="bg-slate-900 rounded-2xl border border-slate-800 p-6 text-slate-400 text-sm">Loading…</div>;
-  }
+  // "List your vehicle" CTAs deep-link straight to the provider sub-choice.
+  // Initialise from the URL synchronously so there's no flash of the role step.
+  const wantsProvider = params.get("intent") === "provider" || params.get("role") === "agency";
+  const [step, setStep] = useState<Step>(wantsProvider ? "provider" : "role");
 
   return (
-    <div className="bg-slate-900 rounded-2xl border border-slate-800 p-6">
-      <h1 className="text-white font-bold text-xl mb-1">Create account</h1>
-      <p className="text-slate-400 text-sm">
-        Already have an account?{" "}
-        <Link href="/login" className="text-amber-400 hover:text-amber-300">Sign in</Link>
-      </p>
-      <p className="text-slate-500 text-xs mt-1 mb-6">
-        Are you an agency?{" "}
-        <Link href="/signup/agency" className="text-amber-400 hover:text-amber-300 font-medium">
-          Sign up here
-        </Link>
-      </p>
+    <div className="bg-white rounded-2xl border border-slate-100 p-6">
+      {step === "role" && (
+        <>
+          <h1 className="text-slate-900 font-bold text-xl mb-1">Join DriveLink</h1>
+          <p className="text-slate-600 text-sm mb-6">What brings you here?</p>
 
-      {/* Stage 1 — details */}
-      {stage === "details" && (
-        <form onSubmit={startSignup} className="space-y-4">
-          <div>
-            <label className="text-slate-400 text-xs mb-1 block">Your full name</label>
-            <input
-              type="text"
-              value={fullName}
-              onChange={(e) => setFullName(e.target.value)}
-              required
-              autoFocus
-              autoComplete="name"
-              placeholder="As on your NIC"
-              className="w-full px-4 py-2.5 bg-slate-800 border border-slate-700 rounded-xl text-white placeholder-slate-500 text-sm focus:outline-none focus:border-amber-500"
+          <div className="space-y-3">
+            <ChoiceCard
+              icon={<Car size={22} />}
+              title="I'm a renter"
+              subtitle="I'm looking to rent a vehicle"
+              onClick={() => router.push("/signup/renter")}
+            />
+            <ChoiceCard
+              icon={<KeyRound size={22} />}
+              title="I'm an agent"
+              subtitle="I'm looking to rent out my vehicles"
+              onClick={() => setStep("provider")}
             />
           </div>
 
-          <div>
-            <label className="text-slate-400 text-xs mb-1 block">Mobile number</label>
-            <input
-              type="tel"
-              value={phone}
-              onChange={(e) => setPhone(e.target.value)}
-              required
-              autoComplete="tel"
-              placeholder="0771234567"
-              className="w-full px-4 py-2.5 bg-slate-800 border border-slate-700 rounded-xl text-white placeholder-slate-500 text-sm focus:outline-none focus:border-amber-500"
-            />
-            <p className="text-slate-600 text-xs mt-1">We&apos;ll text a 6-digit code to this number.</p>
-          </div>
-
-          <div>
-            <label className="text-slate-400 text-xs mb-1 block">
-              Email <span className="text-slate-600 font-normal">(optional)</span>
-            </label>
-            <input
-              type="email"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              autoComplete="email"
-              placeholder="you@example.com"
-              className="w-full px-4 py-2.5 bg-slate-800 border border-slate-700 rounded-xl text-white placeholder-slate-500 text-sm focus:outline-none focus:border-amber-500"
-            />
-            <p className="text-slate-600 text-xs mt-1">
-              Skip it now or add it later — verified email adds a trust badge that helps agencies confirm your bookings faster.
-            </p>
-          </div>
-
-          {error && <p className="text-red-400 text-sm">{error}</p>}
-
-          <Button type="submit" loading={loading} className="w-full" size="lg">
-            Send verification code
-          </Button>
-
-          <p className="text-slate-600 text-xs text-center">
-            No password needed. By continuing you agree to our Terms.
+          <p className="text-slate-500 text-xs text-center mt-6">
+            Already have an account?{" "}
+            <Link href="/login" className="text-blue-600 hover:text-blue-500 font-medium">Sign in</Link>
           </p>
-        </form>
+        </>
       )}
 
-      {/* Stage 2 — code */}
-      {stage === "code" && (
-        <form onSubmit={verifyCode} className="space-y-4">
+      {step === "provider" && (
+        <>
           <button
             type="button"
-            onClick={() => { setStage("details"); setCode(""); setError(null); setInfo(null); }}
-            className="inline-flex items-center gap-1 text-slate-500 hover:text-white text-xs"
+            onClick={() => setStep("role")}
+            className="inline-flex items-center gap-1 text-slate-500 hover:text-slate-900 text-xs mb-4"
           >
-            <ArrowLeft size={12} /> Edit details
+            <ArrowLeft size={12} /> Back
           </button>
 
-          <div className="flex items-start gap-3 p-3 bg-slate-800/60 rounded-xl">
-            <Phone size={18} className="text-amber-400 mt-0.5 shrink-0" />
-            <div className="text-xs">
-              <p className="text-slate-300">
-                Code sent to <span className="text-white font-mono">{maskPhone(phone)}</span>
-              </p>
-              <p className="text-slate-500 mt-0.5">Expires in 10 minutes.</p>
-            </div>
-          </div>
+          <h1 className="text-slate-900 font-bold text-xl mb-1">List your vehicles</h1>
+          <p className="text-slate-600 text-sm mb-6">Which describes you best?</p>
 
-          <div>
-            <label className="text-slate-400 text-xs mb-1 block">6-digit code</label>
-            <input
-              ref={codeRef}
-              type="text"
-              inputMode="numeric"
-              pattern="\d{6}"
-              maxLength={6}
-              value={code}
-              onChange={(e) => setCode(e.target.value.replace(/\D/g, ""))}
-              required
-              className="w-full px-4 py-3 bg-slate-800 border border-slate-700 rounded-xl text-white text-center font-mono text-2xl tracking-[0.5em] focus:outline-none focus:border-amber-500"
+          <div className="space-y-3">
+            <ChoiceCard
+              icon={<User size={22} />}
+              title="I'm an individual"
+              subtitle="Renting out my own vehicle, or a few"
+              onClick={() => router.push("/signup/agency?type=individual")}
+            />
+            <ChoiceCard
+              icon={<Building2 size={22} />}
+              title="I have a registered agency"
+              subtitle="A rental business with a fleet"
+              onClick={() => router.push("/signup/agency?type=agency")}
             />
           </div>
 
-          {/* Reassurance about what happens next */}
-          <div className="flex items-start gap-2 p-3 bg-emerald-500/5 border border-emerald-500/20 rounded-xl">
-            <Sparkles size={14} className="text-emerald-400 mt-0.5 shrink-0" />
-            <div className="text-xs text-emerald-300/80">
-              <p className="font-medium text-emerald-300">After this you&apos;re in</p>
-              <p className="mt-0.5">
-                We&apos;ll never ask you to verify again unless you switch device — just punch in your phone next time and book.
-              </p>
-            </div>
-          </div>
-
-          {info  && <p className="text-amber-400 text-xs">{info}</p>}
-          {error && <p className="text-red-400 text-sm">{error}</p>}
-
-          <Button type="submit" loading={loading} disabled={code.length !== 6} className="w-full" size="lg">
-            Verify and continue
-          </Button>
-
-          <button
-            type="button"
-            onClick={() => startSignup()}
-            disabled={loading || cooldown > 0}
-            className="text-xs text-slate-500 hover:text-amber-400 disabled:opacity-50 disabled:hover:text-slate-500 w-full text-center"
-          >
-            {cooldown > 0 ? `Resend code in ${cooldown}s` : "Resend code"}
-          </button>
-        </form>
-      )}
-
-      {/* Bottom email hint stays the same across stages so the value prop is consistent */}
-      {stage === "details" && (
-        <div className="mt-6 pt-6 border-t border-slate-800 flex items-start gap-2 text-xs text-slate-500">
-          <Mail size={14} className="mt-0.5 shrink-0" />
-          <p>
-            We use your email and phone only for booking communication and verification — no marketing, no sharing.
+          <p className="text-slate-500 text-xs text-center mt-6">
+            Already have an account?{" "}
+            <Link href="/login" className="text-blue-600 hover:text-blue-500 font-medium">Sign in</Link>
           </p>
-        </div>
+        </>
       )}
     </div>
   );
@@ -254,7 +115,7 @@ function RenterSignupForm() {
 export default function SignupPage() {
   return (
     <Suspense>
-      <RenterSignupForm />
+      <SignupChooser />
     </Suspense>
   );
 }

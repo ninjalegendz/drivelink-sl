@@ -24,7 +24,7 @@ export function PaymentExpiryCountdown({ confirmedAt, windowHours = 12 }: Props)
   const [now, setNow] = useState(() => Date.now());
 
   useEffect(() => {
-    const id = setInterval(() => setNow(Date.now()), 30_000); // tick every 30s — minute-precision is fine
+    const id = setInterval(() => setNow(Date.now()), 30_000); // tick every 30s, minute-precision is fine
     return () => clearInterval(id);
   }, []);
 
@@ -35,8 +35,8 @@ export function PaymentExpiryCountdown({ confirmedAt, windowHours = 12 }: Props)
   const tone = expired
     ? "bg-red-500/10 border-red-500/20 text-red-300"
     : urgent
-    ? "bg-amber-500/10 border-amber-500/30 text-amber-300"
-    : "bg-slate-800/60 border-slate-700/50 text-slate-300";
+    ? "bg-blue-500/10 border-blue-500/30 text-blue-500"
+    : "bg-slate-100 border-slate-200/60 text-slate-700";
 
   return (
     <div className={`flex items-start gap-2 p-3 rounded-xl border text-sm ${tone}`}>
@@ -46,7 +46,7 @@ export function PaymentExpiryCountdown({ confirmedAt, windowHours = 12 }: Props)
       <div className="flex-1">
         <p className="font-medium">
           {expired
-            ? "Payment window expired — cancellation pending"
+            ? "Payment window expired, cancellation pending"
             : `Auto-cancels in ${formatRemaining(remaining)}`}
         </p>
         <p className="text-xs opacity-80 mt-0.5">

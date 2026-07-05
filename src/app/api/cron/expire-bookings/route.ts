@@ -1,8 +1,11 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createServiceClient } from "@/lib/supabase/server";
 import { sendEmail } from "@/lib/email/send";
-import { sendSms } from "@/lib/sms/textlk";
+import { sendSmsIfEnabled } from "@/lib/sms/gate";
+import { notifyCascade } from "@/lib/notify";
+import { buildRenterCompletedMessage, buildAgencyCompletedMessage } from "@/lib/sms/messages";
 import { sweepOrphanStorage } from "@/lib/storage/sweep";
+import { formatLKR } from "@/lib/vehicles/format";
 
 export const dynamic = "force-dynamic";
 
@@ -19,10 +22,12 @@ export const dynamic = "force-dynamic";
 //   3. Email + SMS the renter with the cancellation notice.
 //   4. Also notify the agency by SMS so they free up the slot.
 export async function GET(req: NextRequest) {
-  // Auth — only Vercel Cron should hit this
+  // Auth, only the scheduler should hit this. The secret is MANDATORY: if it
+  // isn't configured, reject rather than run open (an unprotected endpoint here
+  // lets anyone trigger mass cancellations + SMS/email blasts).
   const expectedSecret = process.env.CRON_SECRET;
   const authHeader     = req.headers.get("authorization");
-  if (expectedSecret && authHeader !== `Bearer ${expectedSecret}`) {
+  if (!expectedSecret || authHeader !== `Bearer ${expectedSecret}`) {
     return NextResponse.json({ error: "Unauthorised" }, { status: 401 });
   }
 
@@ -33,12 +38,13 @@ export async function GET(req: NextRequest) {
   const { data: expired, error: selectError } = await service
     .from("bookings")
     .select(`
-      id, renter_id, agency_id, start_date, end_date, confirmed_at,
+      id, renter_id, agency_id, start_date, end_date, confirmed_at, booking_fee_lkr,
       vehicles(make, model, year),
       profiles(full_name, email, phone),
       agencies(name, whatsapp_number)
     `)
     .eq("status", "confirmed")
+    .gt("booking_fee_lkr", 0)   // free-launch bookings have no pay window to expire
     .is("slip_url", null)
     .lt("confirmed_at", cutoff)
     .limit(50);
@@ -55,6 +61,7 @@ export async function GET(req: NextRequest) {
     start_date: string;
     end_date: string;
     confirmed_at: string;
+    booking_fee_lkr: number;
     vehicles: { make: string; model: string; year: number } | null;
     profiles: { full_name: string; email: string | null; phone: string } | null;
     agencies: { name: string; whatsapp_number: string } | null;
@@ -74,7 +81,7 @@ export async function GET(req: NextRequest) {
         cancellation_reason: "Payment slip not uploaded within 12 hours of confirmation",
       })
       .eq("id", b.id)
-      .eq("status", "confirmed"); // optimistic — skip if renter just paid this second
+      .eq("status", "confirmed"); // optimistic, skip if renter just paid this second
 
     if (updateError) {
       console.error("[cron expire-bookings] update", b.id, updateError);
@@ -87,8 +94,9 @@ export async function GET(req: NextRequest) {
       : "your booking";
     const ref         = b.id.slice(0, 8).toUpperCase();
     const appUrl      = process.env.NEXT_PUBLIC_APP_URL ?? "https://drivelink.lk";
+    const feeLabel    = formatLKR(b.booking_fee_lkr); // actual lock-in amount, not hardcoded
 
-    // Email renter — only if a real email is on file (skip placeholder)
+    // Email renter, only if a real email is on file (skip placeholder)
     const realEmail = b.profiles?.email && !b.profiles.email.endsWith("@phone.drivelink.invalid")
       ? b.profiles.email
       : null;
@@ -96,9 +104,9 @@ export async function GET(req: NextRequest) {
       try {
         await sendEmail({
           to:      realEmail,
-          subject: `Booking ${ref} cancelled — payment window expired`,
-          text:    `Hi ${b.profiles?.full_name ?? "there"},\n\nYour booking ${ref} for ${vehicleName} (${b.start_date} to ${b.end_date}) has been cancelled.\n\nWe didn't receive your Rs. 500 lock-in payment within 12 hours of the agency confirming. No money was taken.\n\nWant to try again? Open the vehicle and request fresh dates:\n${appUrl}/vehicles\n\n— DriveLink`,
-          html:    `<p>Hi ${b.profiles?.full_name ?? "there"},</p><p>Your booking <strong>${ref}</strong> for ${vehicleName} (${b.start_date} to ${b.end_date}) has been cancelled.</p><p>We didn't receive your <strong>Rs. 500 lock-in</strong> payment within 12 hours of the agency confirming. No money was taken.</p><p>Want to try again? <a href="${appUrl}/vehicles" style="color:#f59e0b">Browse vehicles</a>.</p><p style="color:#64748b;font-size:12px">— DriveLink</p>`,
+          subject: `Booking ${ref} cancelled, payment window expired`,
+          text:    `Hi ${b.profiles?.full_name ?? "there"},\n\nYour booking ${ref} for ${vehicleName} (${b.start_date} to ${b.end_date}) has been cancelled.\n\nWe didn't receive your ${feeLabel} lock-in payment within 12 hours of the agency confirming. No money was taken.\n\nWant to try again? Open the vehicle and request fresh dates:\n${appUrl}/vehicles\n\nThe DriveLink team`,
+          html:    `<p>Hi ${b.profiles?.full_name ?? "there"},</p><p>Your booking <strong>${ref}</strong> for ${vehicleName} (${b.start_date} to ${b.end_date}) has been cancelled.</p><p>We didn't receive your <strong>${feeLabel} lock-in</strong> payment within 12 hours of the agency confirming. No money was taken.</p><p>Want to try again? <a href="${appUrl}/vehicles" style="color:#f59e0b">Browse vehicles</a>.</p><p style="color:#64748b;font-size:12px">The DriveLink team</p>`,
         });
         notified += 1;
       } catch (err) {
@@ -109,9 +117,10 @@ export async function GET(req: NextRequest) {
     // SMS renter (always)
     if (b.profiles?.phone) {
       try {
-        await sendSms(
+        await sendSmsIfEnabled(
+          "expiry_renter",
           b.profiles.phone,
-          `DriveLink: booking ${ref} cancelled — Rs. 500 lock-in not received within 12 hours. No charge. Browse again at ${appUrl}/vehicles`
+          `DriveLink: booking ${ref} cancelled, ${feeLabel} lock-in not received within 12 hours. No charge. Browse again at ${appUrl}/vehicles`
         );
       } catch (err) {
         console.error("[cron expire-bookings] sms renter", b.id, err);
@@ -121,12 +130,93 @@ export async function GET(req: NextRequest) {
     // SMS agency so they free up the slot
     if (b.agencies?.whatsapp_number) {
       try {
-        await sendSms(
+        await sendSmsIfEnabled(
+          "expiry_agency",
           b.agencies.whatsapp_number,
-          `DriveLink: booking ${ref} (${vehicleName}, ${b.start_date}-${b.end_date}) auto-cancelled — renter didn't pay within 12h. Slot is open again.`
+          `DriveLink: booking ${ref} (${vehicleName}, ${b.start_date}-${b.end_date}) auto-cancelled, renter didn't pay within 12h. Slot is open again.`
         );
       } catch (err) {
         console.error("[cron expire-bookings] sms agency", b.id, err);
+      }
+    }
+  }
+
+  // ── Auto-complete finished rentals (backstop) ──
+  // An 'active' booking past its return date + 24h grace never closes if the
+  // agency forgot to "Mark complete". Flip it to 'completed' so the slot frees,
+  // the renter is invited to review, and the agency is nudged to rate the renter.
+  const completeCutoff = new Date(Date.now() - 24 * 60 * 60_000).toISOString();
+  const { data: finished } = await service
+    .from("bookings")
+    .select(`
+      id, renter_id, agency_id, start_date, end_date,
+      vehicles(make, model, year, plate_number),
+      profiles(full_name, email, phone),
+      agencies(name, whatsapp_number)
+    `)
+    .eq("status", "active")
+    .lt("end_at", completeCutoff)
+    .limit(50);
+
+  const finishedRows = (finished ?? []) as unknown as {
+    id: string;
+    vehicles: { make: string; model: string; year: number; plate_number: string | null } | null;
+    profiles: { full_name: string; email: string | null; phone: string | null } | null;
+    agencies: { name: string; whatsapp_number: string | null } | null;
+  }[];
+
+  let autoCompleted = 0;
+  const completeAppUrl = process.env.NEXT_PUBLIC_APP_URL ?? "https://drivelink.lk";
+
+  for (const b of finishedRows) {
+    const { error: completeError } = await service
+      .from("bookings")
+      .update({ status: "completed", completed_at: new Date().toISOString() })
+      .eq("id", b.id)
+      .eq("status", "active"); // optimistic, skip if the agency just completed it
+    if (completeError) {
+      console.error("[cron auto-complete] update", b.id, completeError);
+      continue;
+    }
+    autoCompleted += 1;
+
+    if (!b.vehicles) continue;
+    const vehicleName  = `${b.vehicles.year} ${b.vehicles.make} ${b.vehicles.model}`;
+    const vehiclePlate = b.vehicles.plate_number ?? undefined;
+
+    // Renter: thanks + review link.
+    const realEmail = b.profiles?.email && !b.profiles.email.endsWith("@phone.drivelink.invalid")
+      ? b.profiles.email
+      : null;
+    const renterMsg = buildRenterCompletedMessage({
+      bookingId: b.id, vehicleName, vehiclePlate, agencyName: b.agencies?.name ?? "", appUrl: completeAppUrl,
+    });
+    try {
+      await notifyCascade({
+        phone:        b.profiles?.phone ?? undefined,
+        smsKey:       "booking_status_renter",
+        text:         renterMsg,
+        email:        realEmail,
+        emailSubject: `DriveLink booking ${b.id.slice(0, 8).toUpperCase()} complete`,
+        emailText:    renterMsg,
+      });
+    } catch (err) {
+      console.error("[cron auto-complete] notify renter", b.id, err);
+    }
+
+    // Agency: nudge to rate the renter.
+    if (b.agencies?.whatsapp_number) {
+      try {
+        await notifyCascade({
+          phone:  b.agencies.whatsapp_number,
+          smsKey: "new_booking_agency",
+          text:   buildAgencyCompletedMessage({
+            bookingId: b.id, vehicleName, vehiclePlate,
+            renterName: b.profiles?.full_name ?? "your renter", appUrl: completeAppUrl,
+          }),
+        });
+      } catch (err) {
+        console.error("[cron auto-complete] notify agency", b.id, err);
       }
     }
   }
@@ -144,11 +234,12 @@ export async function GET(req: NextRequest) {
     console.error("[cron expire-bookings] storage sweep failed", err);
   }
 
-  console.log(`[cron expire-bookings] processed=${processed} notified=${notified} orphans_swept=${avatarsRemoved + kycRemoved}`);
+  console.log(`[cron expire-bookings] processed=${processed} notified=${notified} auto_completed=${autoCompleted} orphans_swept=${avatarsRemoved + kycRemoved}`);
   return NextResponse.json({
     ok:         true,
     processed,
     notified,
+    autoCompleted,
     avatarsRemoved,
     kycRemoved,
   });

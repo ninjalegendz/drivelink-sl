@@ -20,7 +20,7 @@ const LABEL: Record<Target, string> = {
 };
 
 /**
- * Admin-side booking actions — used when the admin spoke to the agency
+ * Admin-side booking actions, used when the admin spoke to the agency
  * by phone and wants to apply the agency's decision themselves. Hits
  * /api/admin/bookings/transition which logs the action to activity_events
  * with event_type="booking.<state>_by_admin" so the audit trail is clear.

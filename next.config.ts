@@ -25,6 +25,12 @@ const nextConfig: NextConfig = {
         protocol: "https",
         hostname: "cdn.drivelink.lk",
       },
+      // Unsplash — used by seeded sample listings (safe to remove once
+      // every listing has real owner-uploaded photos).
+      {
+        protocol: "https",
+        hostname: "images.unsplash.com",
+      },
     ],
   },
 };

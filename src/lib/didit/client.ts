@@ -5,14 +5,14 @@
 //
 // The workflow defines what's checked (OCR + face match + liveness etc.).
 // The webhook destination is configured globally in the Didit dashboard,
-// not per-session — Didit POSTs to it when a verification finishes.
+// not per-session, Didit POSTs to it when a verification finishes.
 
 const SESSION_BASE = "https://verification.didit.me/v3/session";
 
 export interface CreateSessionInput {
   userId:       string;
   redirectUrl:  string;
-  // Optional contact details — Didit uses these to email/SMS the user
+  // Optional contact details, Didit uses these to email/SMS the user
   // when verification is approved or rejected. Without them the user
   // sees a "submitted for review" screen but never hears back.
   email?:       string | null;
@@ -71,7 +71,7 @@ export async function createDiditSession({
   return res.json();
 }
 
-// GET a single session — used by the admin "Sync from Didit" button to
+// GET a single session, used by the admin "Sync from Didit" button to
 // pull the latest decision when the webhook didn't fire / is broken.
 export interface DiditSessionDetails {
   session_id:   string;
@@ -86,7 +86,7 @@ export async function fetchDiditSession(sessionId: string): Promise<DiditSession
   if (!apiKey) throw new Error("DIDIT_API_KEY is not set in .env.local");
 
   // Didit v3 exposes the verification result at the /decision/ subpath,
-  // not on the bare session URL — hitting just /session/{id}/ returns
+  // not on the bare session URL, hitting just /session/{id}/ returns
   // 404. The decision payload includes the same status + vendor_data
   // shape the webhook sends, so the rest of the sync flow Just Works.
   const res = await fetch(`${SESSION_BASE}/${sessionId}/decision/`, {
@@ -112,7 +112,7 @@ export function mapDiditStatus(raw: string): "verified" | "rejected" | "pending"
 }
 
 // Walk the Didit session payload looking for the verified document
-// number (NIC). Didit's payload shape varies across versions — we
+// number (NIC). Didit's payload shape varies across versions, we
 // check the obvious paths and return the first non-empty hit.
 export function extractDiditNic(session: Record<string, unknown>): string | null {
   const candidates = [

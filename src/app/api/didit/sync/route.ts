@@ -44,7 +44,7 @@ export async function POST(req: NextRequest) {
   try {
     session = await fetchDiditSession(sessionId);
   } catch (err) {
-    // Admin-only endpoint — safe to surface the underlying error so we
+    // Admin-only endpoint, safe to surface the underlying error so we
     // can debug why Didit rejected the request (wrong key, stale
     // session id, endpoint moved, etc.) without spelunking through logs.
     const detail = err instanceof Error ? err.message : String(err);

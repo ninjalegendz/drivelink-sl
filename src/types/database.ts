@@ -1,6 +1,7 @@
 export type InsuranceType = "private" | "hire";
 export type FuelPolicy = "full_to_full" | "same_to_same";
 export type VehicleStatus = "available" | "rented" | "maintenance" | "unlisted" | "pending_review";
+export type VehicleType = "car" | "suv" | "van" | "bike" | "tuktuk";
 export type BookingStatus =
   | "requested"
   | "pending_confirmation"
@@ -139,6 +140,7 @@ export type Database = {
           insurance_type: InsuranceType;
           fuel_policy: FuelPolicy;
           daily_rate_lkr: number;
+          daily_rate_usd: number | null;
           monthly_rate_lkr: number | null;
           deposit_lkr: number;
           seats: number;
@@ -149,6 +151,17 @@ export type Database = {
           city: string;
           slug: string;
           photos: string[] | null;
+          vehicle_type: VehicleType;
+          self_drive: boolean;
+          with_driver: boolean;
+          airport_pickup: boolean;
+          mileage_limit: string | null;
+          extra_mileage_lkr: number | null;
+          rules: string[];
+          badges: string[];
+          is_featured: boolean;
+          fuel_type: string | null;
+          luggage: number | null;
           created_at: string;
           updated_at: string;
         };
@@ -163,6 +176,7 @@ export type Database = {
           insurance_type: InsuranceType;
           fuel_policy?: FuelPolicy;
           daily_rate_lkr: number;
+          daily_rate_usd?: number | null;
           monthly_rate_lkr?: number | null;
           deposit_lkr?: number;
           seats?: number;
@@ -173,6 +187,17 @@ export type Database = {
           city: string;
           slug: string;
           photos?: string[] | null;
+          vehicle_type?: VehicleType;
+          self_drive?: boolean;
+          with_driver?: boolean;
+          airport_pickup?: boolean;
+          mileage_limit?: string | null;
+          extra_mileage_lkr?: number | null;
+          rules?: string[];
+          badges?: string[];
+          is_featured?: boolean;
+          fuel_type?: string | null;
+          luggage?: number | null;
         };
         Update: {
           agency_id?: string;
@@ -184,6 +209,7 @@ export type Database = {
           insurance_type?: InsuranceType;
           fuel_policy?: FuelPolicy;
           daily_rate_lkr?: number;
+          daily_rate_usd?: number | null;
           monthly_rate_lkr?: number | null;
           deposit_lkr?: number;
           seats?: number;
@@ -194,6 +220,35 @@ export type Database = {
           city?: string;
           slug?: string;
           photos?: string[] | null;
+          vehicle_type?: VehicleType;
+          self_drive?: boolean;
+          with_driver?: boolean;
+          airport_pickup?: boolean;
+          mileage_limit?: string | null;
+          extra_mileage_lkr?: number | null;
+          rules?: string[];
+          badges?: string[];
+          is_featured?: boolean;
+          fuel_type?: string | null;
+          luggage?: number | null;
+        };
+        Relationships: [];
+      };
+      vehicle_documents: {
+        Row: {
+          vehicle_id: string;
+          cr_url: string | null;
+          insurance_url: string | null;
+          updated_at: string;
+        };
+        Insert: {
+          vehicle_id: string;
+          cr_url?: string | null;
+          insurance_url?: string | null;
+        };
+        Update: {
+          cr_url?: string | null;
+          insurance_url?: string | null;
         };
         Relationships: [];
       };
@@ -206,6 +261,10 @@ export type Database = {
           status: BookingStatus;
           start_date: string;
           end_date: string;
+          start_time: string;
+          end_time: string;
+          start_at: string;
+          end_at: string;
           total_days: number;
           daily_rate_lkr: number;
           subtotal_lkr: number;
@@ -228,6 +287,8 @@ export type Database = {
           damage_reported: boolean;
           damage_notes: string | null;
           damage_photo_urls: string[] | null;
+          pickup_photo_urls: string[] | null;
+          return_photo_urls: string[] | null;
           created_at: string;
           updated_at: string;
         };
@@ -239,6 +300,8 @@ export type Database = {
           status?: BookingStatus;
           start_date: string;
           end_date: string;
+          start_time?: string;
+          end_time?: string;
           daily_rate_lkr: number;
           subtotal_lkr?: number;
           booking_fee_lkr?: number;
@@ -258,6 +321,8 @@ export type Database = {
           damage_reported?: boolean;
           damage_notes?: string | null;
           damage_photo_urls?: string[] | null;
+          pickup_photo_urls?: string[] | null;
+          return_photo_urls?: string[] | null;
         };
         Update: {
           status?: BookingStatus;
@@ -277,6 +342,8 @@ export type Database = {
           damage_reported?: boolean;
           damage_notes?: string | null;
           damage_photo_urls?: string[] | null;
+          pickup_photo_urls?: string[] | null;
+          return_photo_urls?: string[] | null;
         };
         Relationships: [];
       };

@@ -39,26 +39,26 @@ export default async function AdminSupportThreadPage({ params }: Props) {
     <div>
       <Link
         href="/admin/support"
-        className="inline-flex items-center gap-1 text-slate-400 hover:text-white text-xs mb-4"
+        className="inline-flex items-center gap-1 text-slate-600 hover:text-slate-900 text-xs mb-4"
       >
         <ArrowLeft size={12} /> Back to all threads
       </Link>
 
-      <div className="bg-slate-900 border border-slate-200 rounded-2xl shadow-sm p-4 mb-4">
+      <div className="bg-white border border-slate-200 rounded-2xl shadow-sm p-4 mb-4">
         <div className="flex items-start justify-between gap-3">
           <div>
             <div className="flex items-center gap-2 flex-wrap">
-              <Building2 size={18} className="text-amber-400" />
-              <p className="font-semibold text-white">{thread.agencies?.name ?? "Unknown"}</p>
+              <Building2 size={18} className="text-blue-600" />
+              <p className="font-semibold text-slate-900">{thread.agencies?.name ?? "Unknown"}</p>
               {thread.agencies?.is_verified && <Badge variant="green">Verified</Badge>}
             </div>
-            <p className="text-slate-400 text-sm mt-0.5">
+            <p className="text-slate-600 text-sm mt-0.5">
               {thread.agencies?.city}{thread.agencies?.whatsapp_number ? ` · ${thread.agencies.whatsapp_number}` : ""}
             </p>
           </div>
           <Link
             href={`/admin/agencies`}
-            className="text-xs text-slate-500 hover:text-amber-400"
+            className="text-xs text-slate-500 hover:text-blue-600"
           >
             View agency →
           </Link>

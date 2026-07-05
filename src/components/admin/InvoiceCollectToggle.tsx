@@ -29,7 +29,7 @@ export function InvoiceCollectToggle({ bookingId, collected }: Props) {
       type="button"
       onClick={toggle}
       disabled={loading}
-      className="text-xs text-slate-500 hover:text-amber-400 disabled:opacity-50"
+      className="text-xs text-slate-500 hover:text-blue-600 disabled:opacity-50"
     >
       {loading ? "…" : collected ? "Mark unpaid" : "Mark paid"}
     </button>

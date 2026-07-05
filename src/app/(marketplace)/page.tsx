@@ -1,148 +1,121 @@
 import Link from "next/link";
-import { Car } from "lucide-react";
-import { createClient } from "@/lib/supabase/server";
-import { VehicleCard } from "@/components/vehicles/VehicleCard";
-import { POPULAR_CITIES } from "@/data/cities";
-import { buildRentPath } from "@/lib/vehicles/slug";
-import type { VehicleWithAgency } from "@/types/queries";
+import { ArrowRight, ShieldCheck, Search, MessageSquare, Car, Truck, Bike, Plane } from "lucide-react";
+import { Hero } from "@/components/layout/Hero";
+import { VehiclesBrowser } from "@/components/vehicles/VehiclesBrowser";
+import { getHomeFeaturedCached } from "@/lib/vehicles/search";
+import { LANDINGS } from "@/data/landings";
 import type { Metadata } from "next";
 
 export const metadata: Metadata = {
-  title: "DriveLink SL — Verified Car Rentals in Sri Lanka",
+  title: "Verified Vehicle Rentals in Sri Lanka",
   description:
-    "Book verified, affordable car rentals across Sri Lanka. ID-checked renters, transparent pricing, real-time availability.",
+    "Rent verified cars, vans, SUVs, bikes and tuk-tuks across Sri Lanka. Choose self-drive, with a driver, or airport pickup. Clear rules, trusted local providers, and no platform fee.",
 };
 
-const POPULAR_MODELS = ["Wagon R", "Aqua", "Alto", "Axio", "Noah", "KDH Van"];
+const VERTICALS = [
+  { href: "/vehicles?type=car",                 label: "Self-Drive Cars", Icon: Car },
+  { href: "/vehicles?option=with-driver",       label: "With Driver",     Icon: Truck },
+  { href: "/vehicles?option=airport-pickup",    label: "Airport Pickup",  Icon: Plane },
+  { href: "/vehicles?type=bike",                label: "Bikes & Scooters", Icon: Bike },
+];
 
 export default async function HomePage() {
-  const supabase = await createClient();
-
-  const { data: featuredVehicles } = await supabase
-    .from("vehicles")
-    .select("*, agencies(id, name, city, is_verified, reliability_pct, cancellation_count, profiles!owner_id(rating_avg, rating_count))")
-    .eq("status", "available")
-    .order("created_at", { ascending: false })
-    .limit(6);
-
-  const vehicles = (featuredVehicles ?? []) as VehicleWithAgency[];
+  const featured = await getHomeFeaturedCached();
 
   return (
-    <div>
-      {/* Hero */}
-      <section className="relative overflow-hidden">
-        <div className="absolute inset-0 bg-gradient-to-b from-amber-500/5 to-transparent pointer-events-none" />
-        <div className="max-w-6xl mx-auto px-4 pt-20 pb-16 text-center">
-          <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-amber-500/10 text-amber-400 text-xs font-medium ring-1 ring-amber-500/20 mb-6">
-            ID-verified renters · Real-time availability · Rs. 500 booking lock-in
-          </span>
-          <h1 className="text-4xl sm:text-5xl font-bold tracking-tight text-white">
-            Car rentals you can actually trust.
-          </h1>
-          <p className="mt-4 text-slate-400 text-lg max-w-xl mx-auto">
-            No more &quot;clutch is out&quot; last-minute cancellations. Every booking is locked in before you hand over a cent.
-          </p>
-
-          {/* Search bar */}
-          <form action="/vehicles" className="mt-8 max-w-xl mx-auto flex gap-2">
-            <input
-              name="q"
-              type="text"
-              placeholder="Search by car model, e.g. Wagon R..."
-              className="flex-1 px-4 py-3 bg-slate-900 border border-slate-700 rounded-xl text-white placeholder-slate-500 focus:outline-none focus:border-amber-500 text-sm"
-            />
-            <button
-              type="submit"
-              className="px-5 py-3 bg-amber-500 hover:bg-amber-400 text-stone-900 font-semibold rounded-xl transition-colors text-sm"
-            >
-              Search
-            </button>
-          </form>
+    <div className="max-w-7xl mx-auto px-4 py-8 space-y-12">
+      <Hero
+        badge="Sri Lanka's Verified Rental Network"
+        title={<>Rent a vehicle, anywhere in Sri Lanka.<br /><span className="text-blue-400">No platform fees.</span></>}
+        subtitle="DriveLink connects you with verified local owners, agencies and tour drivers. Choose self-drive cars with licensing help, vans with drivers, bikes, or airport pickups across the island."
+      >
+        <div className="flex flex-wrap gap-3">
+          <Link
+            href="/vehicles"
+            className="inline-flex items-center gap-2 px-5 py-2.5 rounded-lg font-semibold bg-blue-600 hover:bg-blue-700 text-white shadow-lg shadow-blue-600/20 transition-all"
+          >
+            Explore vehicles <ArrowRight size={16} />
+          </Link>
+          <Link
+            href="/signup?intent=provider"
+            className="inline-flex items-center gap-2 px-5 py-2.5 rounded-lg font-medium bg-white/10 hover:bg-white/15 text-white backdrop-blur-md transition-all"
+          >
+            List your vehicle, 0% fee
+          </Link>
         </div>
-      </section>
+      </Hero>
 
-      {/* Popular cities */}
-      <section className="max-w-6xl mx-auto px-4 pb-10">
-        <h2 className="text-slate-400 text-xs font-semibold uppercase tracking-widest mb-3">
-          Browse by city
-        </h2>
-        <div className="flex flex-wrap gap-2">
-          {POPULAR_CITIES.map((city) => (
-            <Link
-              key={city}
-              href={`/vehicles?city=${encodeURIComponent(city)}`}
-              className="px-4 py-2 spring-hover bg-slate-900 border border-slate-200 shadow-sm hover:border-amber-300 text-sm text-slate-300 rounded-xl transition-colors"
-            >
-              {city}
-            </Link>
-          ))}
-        </div>
-      </section>
+      {/* Verticals strip */}
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+        {VERTICALS.map(({ href, label, Icon }) => (
+          <Link
+            key={href}
+            href={href}
+            className="spring-hover flex items-center gap-3 bg-white border border-slate-100 rounded-xl p-4 shadow-sm"
+          >
+            <span className="w-10 h-10 rounded-lg bg-blue-50 text-blue-600 flex items-center justify-center shrink-0">
+              <Icon size={18} />
+            </span>
+            <span className="font-semibold text-slate-800 text-sm">{label}</span>
+          </Link>
+        ))}
+      </div>
 
-      {/* Featured listings */}
-      <section className="max-w-6xl mx-auto px-4 pb-12">
-        <div className="flex items-center justify-between mb-6">
-          <h2 className="text-white font-semibold text-lg">Recently listed</h2>
-          <Link href="/vehicles" className="text-amber-400 hover:text-amber-300 text-sm transition-colors">
+      {/* Featured vehicles */}
+      <section className="space-y-6">
+        <div className="flex items-center justify-between">
+          <div>
+            <h2 className="text-xl font-bold text-slate-800">Featured vehicles</h2>
+            <p className="text-xs text-slate-400">Verified, tourist-ready rentals from trusted providers</p>
+          </div>
+          <Link href="/vehicles" className="text-blue-600 hover:text-blue-700 text-sm font-semibold transition-colors">
             View all →
           </Link>
         </div>
 
-        {vehicles.length > 0 ? (
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-            {vehicles.map((v) => (
-              <VehicleCard key={v.id} vehicle={v} />
-            ))}
-          </div>
+        {featured.length > 0 ? (
+          <VehiclesBrowser vehicles={featured} />
         ) : (
-          <div className="text-center py-20 text-slate-500">
-            <Car size={40} strokeWidth={1.5} className="mx-auto mb-3 text-slate-600" />
-            <p>No vehicles listed yet. Be the first agency to list.</p>
-            <Link
-              href="/signup"
-              className="mt-4 inline-block px-5 py-2.5 bg-amber-500 text-stone-900 font-semibold rounded-xl text-sm hover:bg-amber-400 transition-colors"
-            >
-              List your fleet for free
-            </Link>
+          <div className="text-center py-16 text-slate-400 bg-white border border-slate-100 rounded-2xl shadow-sm">
+            <Car size={40} strokeWidth={1.5} className="mx-auto mb-3 text-slate-300" />
+            <p>No vehicles listed yet. Check back soon.</p>
           </div>
         )}
       </section>
 
-      {/* Quick SEO links */}
-      <section className="max-w-6xl mx-auto px-4 pb-20">
-        <h2 className="text-slate-400 text-xs font-semibold uppercase tracking-widest mb-3">
-          Popular searches
-        </h2>
-        <div className="flex flex-wrap gap-2">
-          {POPULAR_MODELS.flatMap((model) =>
-            ["Colombo", "Kandy", "Galle"].map((city) => (
-              <Link
-                key={`${model}-${city}`}
-                href={buildRentPath(model, city)}
-                className="px-3 py-1.5 bg-slate-900 hover:bg-slate-800 border border-slate-800 text-xs text-slate-400 hover:text-slate-200 rounded-lg transition-colors"
-              >
-                Rent {model} · {city}
-              </Link>
-            ))
-          )}
-        </div>
+      {/* How it works */}
+      <section className="space-y-6">
+        <h2 className="text-xl font-bold text-slate-800">How DriveLink works</h2>
+        <ol className="grid sm:grid-cols-3 gap-4">
+          {[
+            { n: 1, Icon: Search, title: "Browse verified vehicles", text: "Filter by type, location, and self-drive / with-driver / airport pickup. Every listing is document-checked." },
+            { n: 2, Icon: ShieldCheck, title: "Send a booking request", text: "Tell the owner your dates. We verify your details, with no booking fees and no deposit to DriveLink." },
+            { n: 3, Icon: MessageSquare, title: "Connect & pick up", text: "Once approved, the owner's contact unlocks so you can sync the handover. You pay the host directly." },
+          ].map((s) => (
+            <li key={s.n} className="bg-white border border-slate-100 rounded-2xl shadow-sm p-5">
+              <span className="inline-grid place-items-center w-10 h-10 rounded-xl bg-blue-50 text-blue-600 mb-3">
+                <s.Icon size={18} />
+              </span>
+              <h3 className="font-semibold text-slate-800 mb-1">{s.title}</h3>
+              <p className="text-slate-500 text-sm leading-relaxed">{s.text}</p>
+            </li>
+          ))}
+        </ol>
       </section>
 
-      {/* Agency CTA */}
-      <section className="border-t border-slate-800">
-        <div className="max-w-6xl mx-auto px-4 py-16 flex flex-col sm:flex-row items-center justify-between gap-6">
-          <div>
-            <h2 className="text-white font-bold text-xl">Own a rental fleet?</h2>
-            <p className="text-slate-400 mt-1">
-              List for free. We charge a flat Rs. 200 per completed booking — no upfront fees, no monthly costs.
-            </p>
-          </div>
-          <Link
-            href="/signup?role=agency"
-            className="shrink-0 px-6 py-3 bg-amber-500 hover:bg-amber-400 text-stone-900 font-semibold rounded-xl transition-colors"
-          >
-            List your fleet →
-          </Link>
+      {/* Popular searches, internal links to SEO landing pages */}
+      <section className="space-y-3">
+        <h2 className="text-sm font-bold text-slate-800 uppercase tracking-wider">Popular searches</h2>
+        <div className="flex flex-wrap gap-2">
+          {LANDINGS.map((l) => (
+            <Link
+              key={l.slug}
+              href={`/sri-lanka/${l.slug}`}
+              className="px-3 py-1.5 rounded-full text-xs font-medium bg-white border border-slate-200 text-slate-600 hover:border-blue-300 hover:text-blue-700 transition-colors"
+            >
+              {l.h1}
+            </Link>
+          ))}
         </div>
       </section>
     </div>

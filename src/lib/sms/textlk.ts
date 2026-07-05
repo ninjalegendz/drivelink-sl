@@ -1,4 +1,4 @@
-// text.lk SMS sender — used for phone verification OTPs.
+// text.lk SMS sender, used for phone verification OTPs.
 //
 // API: POST https://app.text.lk/api/http/sms/send
 //   body: { api_token, recipient (E.164), sender_id, message }
@@ -16,7 +16,7 @@ export interface SendSmsResult {
   ok:    boolean;
   uid?:  string;
   error?: string;
-  // True when no API token is configured — the message was logged instead
+  // True when no API token is configured, the message was logged instead
   // of sent. Useful for local dev so you can still test the flow.
   devOnly?: boolean;
 }
@@ -29,7 +29,7 @@ export async function sendSms(to: string, message: string): Promise<SendSmsResul
   const recipient = toInternationalSL(to) ?? to.replace(/\s+/g, "").replace(/-/g, "");
 
   if (!apiToken) {
-    console.warn("[textlk] TEXTLK_API_TOKEN missing — printing instead of sending", { recipient, message });
+    console.warn("[textlk] TEXTLK_API_TOKEN missing, printing instead of sending", { recipient, message });
     return { ok: true, devOnly: true };
   }
 

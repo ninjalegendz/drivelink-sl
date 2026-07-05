@@ -40,7 +40,7 @@ function defaultCompare<T extends BookingRow & HasCreatedAt>(a: T, b: T): number
  * then keeps that state in sync with postgres_changes on `public.bookings`.
  *
  * On INSERT/UPDATE we refetch the single affected row via PostgREST so that
- * joined columns (vehicles, profiles, agencies) come back populated — the
+ * joined columns (vehicles, profiles, agencies) come back populated, the
  * raw WAL payload only carries bookings columns.
  *
  * Channel registers with the user's JWT (setAuth before subscribe) so RLS
@@ -80,7 +80,7 @@ export function useBookingsRealtime<T extends BookingRow & HasCreatedAt>(
       setRows((prev) => {
         const idx = prev.findIndex((r) => r.id === row.id);
         if (!inScope) {
-          // Out of scope now (e.g. status changed off the filter) — drop it.
+          // Out of scope now (e.g. status changed off the filter), drop it.
           return idx >= 0 ? prev.filter((_, i) => i !== idx) : prev;
         }
         if (idx >= 0) {

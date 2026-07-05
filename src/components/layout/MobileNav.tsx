@@ -2,12 +2,13 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import {
   MoreHorizontal, X,
   Car, Compass, CalendarCheck, User, Tag, HelpCircle, Building2,
   LayoutDashboard, BarChart3, Headphones, Settings,
   ReceiptText, Users, Ban, Mail, Receipt, Landmark, ClipboardList,
+  Bell, MessageSquare, Sparkles,
 } from "lucide-react";
 
 // Icon names allowed in MobileNav items. Strings cross the Server →
@@ -18,7 +19,8 @@ export type MobileNavIcon =
   | "browse" | "bookings" | "account" | "signin" | "fleet" | "dashboard"
   | "home" | "analytics" | "support" | "settings" | "slips" | "listings"
   | "users" | "agencies" | "blacklist" | "email" | "invoices" | "bank"
-  | "pricing" | "faq" | "car" | "all-bookings";
+  | "pricing" | "faq" | "car" | "all-bookings" | "notifications"
+  | "requests" | "directory";
 
 const ICONS: Record<MobileNavIcon, React.ComponentType<{ size?: number; className?: string }>> = {
   browse:        Compass,
@@ -43,6 +45,9 @@ const ICONS: Record<MobileNavIcon, React.ComponentType<{ size?: number; classNam
   faq:           HelpCircle,
   car:           Car,
   "all-bookings": ClipboardList,
+  notifications: Bell,
+  requests:      MessageSquare,
+  directory:     Sparkles,
 };
 
 export interface MobileNavItem {
@@ -74,13 +79,55 @@ export function MobileNav({ primary, secondary = [], requireApp = false }: Props
     setAllowed(w.Capacitor?.isNativePlatform?.() === true);
   }, [requireApp]);
 
+  // ── Drag-to-dismiss for the "More" sheet ──
+  const SHEET_HIDDEN = 900;                 // px below the viewport when closed
+  const [sheetY, setSheetY] = useState(SHEET_HIDDEN); // current translateY
+  const [dragging, setDragging] = useState(false);
+  const dragOffset = useRef(0);             // pointerY − sheetY at grab start
+
+  // Slide up on open, reset to hidden when closed/unmounted.
+  useEffect(() => {
+    if (moreOpen) {
+      setSheetY(SHEET_HIDDEN);
+      const id = requestAnimationFrame(() => setSheetY(0));
+      return () => cancelAnimationFrame(id);
+    }
+    setSheetY(SHEET_HIDDEN);
+  }, [moreOpen]);
+
+  // Animate the sheet down, then unmount.
+  function closeSheet() {
+    setDragging(false);
+    setSheetY(SHEET_HIDDEN);
+    window.setTimeout(() => setMoreOpen(false), 260);
+  }
+
+  function onHandleDown(e: React.PointerEvent) {
+    setDragging(true);
+    dragOffset.current = e.clientY - sheetY;
+    e.currentTarget.setPointerCapture(e.pointerId);
+  }
+  function onHandleMove(e: React.PointerEvent) {
+    if (!dragging) return;
+    setSheetY(Math.max(0, e.clientY - dragOffset.current)); // only drag downward
+  }
+  function onHandleUp(e: React.PointerEvent) {
+    if (!dragging) return;
+    setDragging(false);
+    try { e.currentTarget.releasePointerCapture(e.pointerId); } catch { /* ignore */ }
+    // Past ~110px (or a flick) → dismiss, otherwise spring back.
+    if (sheetY > 110) closeSheet();
+    else setSheetY(0);
+  }
+
   useEffect(() => {
     if (!moreOpen) return;
     const prev = document.body.style.overflow;
     document.body.style.overflow = "hidden";
-    function onKey(e: KeyboardEvent) { if (e.key === "Escape") setMoreOpen(false); }
+    function onKey(e: KeyboardEvent) { if (e.key === "Escape") closeSheet(); }
     window.addEventListener("keydown", onKey);
     return () => { document.body.style.overflow = prev; window.removeEventListener("keydown", onKey); };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [moreOpen]);
 
   useEffect(() => { setMoreOpen(false); }, [pathname]);
@@ -110,7 +157,7 @@ export function MobileNav({ primary, secondary = [], requireApp = false }: Props
             <button
               type="button"
               onClick={() => setMoreOpen(true)}
-              className="spring-press flex flex-col items-center justify-center gap-0.5 py-1.5 px-1 rounded-xl text-slate-500 hover:text-amber-500"
+              className="spring-press flex flex-col items-center justify-center gap-0.5 py-1.5 px-1 rounded-xl text-slate-500 hover:text-blue-600"
             >
               <MoreHorizontal size={20} />
               <span className="text-[10px] font-medium">More</span>
@@ -121,21 +168,40 @@ export function MobileNav({ primary, secondary = [], requireApp = false }: Props
 
       {hasSecondary && moreOpen && (
         <div
-          className="md:hidden fixed inset-0 z-50 bg-stone-900/40 backdrop-blur-sm flex flex-col justify-end"
-          onClick={() => setMoreOpen(false)}
+          className="md:hidden fixed inset-0 z-50 flex flex-col justify-end"
+          onClick={closeSheet}
         >
+          {/* Backdrop, fades out as the sheet is dragged down */}
           <div
-            className="glass-strong rounded-t-3xl px-4 pt-2 pb-[max(1.5rem,env(safe-area-inset-bottom))] animate-bounce-in"
+            className="absolute inset-0 bg-slate-900/40 backdrop-blur-sm"
+            style={{
+              opacity: Math.max(0, 1 - sheetY / SHEET_HIDDEN),
+              transition: dragging ? "none" : "opacity 0.26s ease",
+            }}
+          />
+          <div
+            className="relative glass-strong rounded-t-3xl px-4 pt-2 pb-[max(1.5rem,env(safe-area-inset-bottom))] will-change-transform"
+            style={{
+              transform: `translateY(${sheetY}px)`,
+              transition: dragging ? "none" : "transform 0.32s cubic-bezier(0.34,1.56,0.64,1)",
+            }}
             onClick={(e) => e.stopPropagation()}
           >
-            <div className="flex justify-center pt-1 pb-3">
-              <div className="w-12 h-1 bg-stone-300 rounded-full" />
+            {/* Drag handle, grab and pull down to dismiss */}
+            <div
+              className="flex justify-center pt-2 pb-4 -mt-2 cursor-grab active:cursor-grabbing touch-none"
+              onPointerDown={onHandleDown}
+              onPointerMove={onHandleMove}
+              onPointerUp={onHandleUp}
+              onPointerCancel={onHandleUp}
+            >
+              <div className="w-12 h-1.5 bg-slate-300 rounded-full" />
             </div>
             <div className="flex items-center justify-between mb-3">
-              <p className="text-slate-200 font-semibold text-base">More</p>
+              <p className="text-slate-900 font-semibold text-base">More</p>
               <button
                 type="button"
-                onClick={() => setMoreOpen(false)}
+                onClick={closeSheet}
                 className="w-9 h-9 rounded-full glass flex items-center justify-center text-slate-500"
                 aria-label="Close"
               >
@@ -152,13 +218,13 @@ export function MobileNav({ primary, secondary = [], requireApp = false }: Props
                       className="spring-press flex items-center justify-between gap-3 px-4 py-3 rounded-2xl glass-card transition-all"
                     >
                       <span className="flex items-center gap-3">
-                        <span className="w-9 h-9 rounded-full glass flex items-center justify-center text-amber-500">
+                        <span className="w-9 h-9 rounded-full glass flex items-center justify-center text-blue-600">
                           <Icon size={16} />
                         </span>
-                        <span className="text-slate-200 font-medium text-sm">{item.label}</span>
+                        <span className="text-slate-900 font-medium text-sm">{item.label}</span>
                       </span>
                       {item.badge && (
-                        <span className="text-[10px] font-semibold bg-red-500 text-white px-1.5 py-0.5 rounded-full animate-pop-in">
+                        <span className="text-[10px] font-semibold bg-red-500 text-slate-900 px-1.5 py-0.5 rounded-full animate-pop-in">
                           {item.badge}
                         </span>
                       )}
@@ -180,19 +246,19 @@ function MobileTab({ item, active }: { item: MobileNavItem; active: boolean }) {
     <Link
       href={item.href}
       className={`spring-press relative flex flex-col items-center justify-center gap-0.5 py-1.5 px-1 rounded-xl transition-colors ${
-        active ? "text-amber-500" : "text-slate-500 hover:text-amber-500"
+        active ? "text-blue-600" : "text-slate-500 hover:text-blue-600"
       }`}
     >
       <span className={`relative inline-flex items-center justify-center ${active ? "scale-105" : ""}`}>
         <Icon size={20} />
         {item.badge && (
-          <span className="absolute -top-1.5 -right-2 text-[9px] font-bold bg-red-500 text-white min-w-[16px] h-[16px] px-1 rounded-full flex items-center justify-center animate-pop-in">
+          <span className="absolute -top-1.5 -right-2 text-[9px] font-bold bg-red-500 text-slate-900 min-w-[16px] h-[16px] px-1 rounded-full flex items-center justify-center animate-pop-in">
             {item.badge}
           </span>
         )}
       </span>
       <span className="text-[10px] font-medium">{item.label}</span>
-      {active && <span className="absolute -bottom-0.5 w-1 h-1 rounded-full bg-amber-500" />}
+      {active && <span className="absolute -bottom-0.5 w-1 h-1 rounded-full bg-blue-600" />}
     </Link>
   );
 }

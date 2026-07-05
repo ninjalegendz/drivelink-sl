@@ -24,7 +24,7 @@ interface Props {
 
 /**
  * A theme-matched dropdown. Native <select> opens an OS-rendered panel that
- * can't be styled — this component renders a fully styled list ourselves.
+ * can't be styled, this component renders a fully styled list ourselves.
  *
  * Mouse + keyboard (Escape, ArrowUp/Down, Enter) supported. For form-submit
  * scenarios pass `name` so the value is sent like a native field.
@@ -110,11 +110,11 @@ export function Select({
         onClick={() => !disabled && setOpen((o) => !o)}
         aria-haspopup="listbox"
         aria-expanded={open}
-        className={`w-full pl-4 pr-10 py-2.5 bg-slate-800 border rounded-xl text-sm text-left flex items-center justify-between transition-colors disabled:opacity-50 disabled:cursor-not-allowed ${
-          open ? "border-amber-500" : "border-slate-700 hover:border-slate-600"
-        } focus:outline-none focus:border-amber-500`}
+        className={`w-full pl-4 pr-10 py-2.5 bg-white border rounded-xl text-sm text-left flex items-center justify-between transition-colors disabled:opacity-50 disabled:cursor-not-allowed ${
+          open ? "border-blue-500" : "border-slate-200 hover:border-slate-300"
+        } focus:outline-none focus:border-blue-500`}
       >
-        <span className={selected ? "text-white" : "text-slate-500"}>
+        <span className={selected ? "text-slate-900" : "text-slate-400"}>
           {selected?.label ?? placeholder}
         </span>
         <ChevronDown
@@ -126,7 +126,7 @@ export function Select({
       {open && (
         <ul
           role="listbox"
-          className="absolute z-50 mt-1 w-full bg-slate-800 border border-slate-700 rounded-xl shadow-xl overflow-hidden max-h-60 overflow-y-auto py-1"
+          className="absolute z-50 mt-1 w-full bg-white border border-slate-200 rounded-xl shadow-xl overflow-hidden max-h-60 overflow-y-auto py-1"
         >
           {options.map((opt, i) => {
             const isSelected    = opt.value === value;
@@ -143,13 +143,13 @@ export function Select({
                   triggerRef.current?.focus();
                 }}
                 className={`px-4 py-2 text-sm flex items-center justify-between cursor-pointer transition-colors ${
-                  isHighlighted ? "bg-slate-700/70" : ""
+                  isHighlighted ? "bg-slate-100" : ""
                 } ${
-                  isSelected ? "text-amber-400" : "text-white"
+                  isSelected ? "text-blue-600 font-medium" : "text-slate-700"
                 }`}
               >
                 <span>{opt.label}</span>
-                {isSelected && <Check size={14} className="text-amber-400" />}
+                {isSelected && <Check size={14} className="text-blue-600" />}
               </li>
             );
           })}

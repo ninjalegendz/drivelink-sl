@@ -1,44 +1,14 @@
 @import "tailwindcss";
 
-/* ─── Trustable-pastel-light palette + bouncy motion ──────────
-   Override the slate scale so existing class names (bg-slate-950,
-   text-slate-300, etc.) map to light, warm-cream surfaces with
-   dark text. Inverts the entire dark theme via tokens — no
-   component edits required for the bulk of the site.
-
-   Exceptions (handled in component files):
-   - Button primary text was text-slate-950 → text-stone-900 so
-     it stays dark on amber backgrounds (slate-950 is now cream)
-   - VehicleForm photo-overlay badges + AvatarUploader scrim use
-     bg-stone-900 for dark overlays on photos
-   - Navbar / Footer / app-shell backgrounds use the slate-950
-     override (now cream) so the page glows softly */
-@theme inline {
-  /* The slate scale — INVERTED. Higher numbers used to be darker
-     surfaces; now they're lighter so existing markup gets a
-     pastel-light makeover without touching component files. */
-  --color-slate-50:  #020617;  /* darkest text (rare) */
-  --color-slate-100: #0f172a;  /* very dark text */
-  --color-slate-200: #1e293b;  /* dark text */
-  --color-slate-300: #334155;  /* primary-ish text */
-  --color-slate-400: #475569;  /* secondary text */
-  --color-slate-500: #64748b;  /* muted text */
-  --color-slate-600: #94a3b8;  /* very muted / mid border */
-  --color-slate-700: #d4d4cd;  /* soft visible border */
-  --color-slate-800: #ece8dc;  /* warm off-white — input bg */
-  --color-slate-900: #ffffff;  /* white — card surfaces */
-  --color-slate-950: #fbf8f0;  /* warm cream — page bg */
-
-  /* "white" text turns into deep slate — primary headings on the
-     cream surfaces read properly without renaming text-white
-     everywhere. */
-  --color-white: #1a1f2e;
-
-  /* Amber accents bumped darker for legibility on light bg.
-     Primary buttons still use bg-amber-500 which Tailwind keeps
-     at the default warm orange — works on cream. */
-  --color-amber-400: #d97706;  /* effectively amber-600 — link/accent text */
-  --color-amber-300: #ea580c;  /* warmer warning text */
+/* ─── DriveLink theme — cool slate + blue, standard Tailwind scale ───
+   The marketplace theme uses the STANDARD slate scale (slate-50 page,
+   white cards, slate-900 dark surfaces) with a blue-600 primary accent
+   and Inter / Space Grotesk fonts. Fonts are injected by next/font in
+   layout.tsx and surfaced here as the --font-sans / --font-display
+   tokens so `font-sans` and `font-display` utilities resolve to them. */
+@theme {
+  --font-sans: var(--font-inter), ui-sans-serif, system-ui, sans-serif;
+  --font-display: var(--font-space-grotesk), "Space Grotesk", ui-sans-serif, sans-serif;
 
   /* ─── Bouncy easing tokens ────────────────────────────────
      Snappy is the everyday transition (most hovers, dropdowns).
@@ -52,19 +22,18 @@
   html { scroll-behavior: smooth; }
 
   /* Snappier default for every Tailwind transition utility.
-     Components opt into the bouncy spring via the .spring-*
-     utility classes below. */
+     Components opt into the bouncy spring via the .spring-* classes. */
   *, *::before, *::after {
     transition-timing-function: var(--ease-snappy);
   }
 
   /* Fallback chevron for any native <select> — most are replaced by
-     the custom <Select> component. */
+     the custom <Select> component. Slate-500 arrow on light bg. */
   select {
     appearance: none;
     -webkit-appearance: none;
     -moz-appearance: none;
-    background-image: url("data:image/svg+xml;charset=utf-8,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 20 20' fill='%23475569'%3E%3Cpath fill-rule='evenodd' d='M5.23 7.21a.75.75 0 011.06.02L10 11.06l3.71-3.83a.75.75 0 011.08 1.04l-4.25 4.39a.75.75 0 01-1.08 0L5.21 8.27a.75.75 0 01.02-1.06z' clip-rule='evenodd'/%3E%3C/svg%3E");
+    background-image: url("data:image/svg+xml;charset=utf-8,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 20 20' fill='%2364748b'%3E%3Cpath fill-rule='evenodd' d='M5.23 7.21a.75.75 0 011.06.02L10 11.06l3.71-3.83a.75.75 0 011.08 1.04l-4.25 4.39a.75.75 0 01-1.08 0L5.21 8.27a.75.75 0 01.02-1.06z' clip-rule='evenodd'/%3E%3C/svg%3E");
     background-repeat: no-repeat;
     background-position: right 0.6rem center;
     background-size: 0.875rem 0.875rem;
@@ -83,7 +52,7 @@
   input[type="password"]::-ms-reveal,
   input[type="password"]::-ms-clear { display: none; }
 
-  /* Date-picker icon — keep readable on light bg without inversion */
+  /* Date-picker icon — readable on light bg */
   input[type="date"]::-webkit-calendar-picker-indicator {
     opacity: 0.6;
     cursor: pointer;
@@ -91,17 +60,16 @@
   }
   input[type="date"]::-webkit-calendar-picker-indicator:hover { opacity: 1; }
 
-  /* Native <option> rendering for the few selects we haven't replaced
-     with the themed component. */
+  /* Native <option> rendering for the few selects we haven't replaced. */
   option {
     background-color: #ffffff;
-    color: #1a1f2e;
+    color: #0f172a;
   }
 
-  /* Themed scrollbars — soft cream-tinted thumb */
+  /* Themed scrollbars — slate thumb */
   * {
     scrollbar-width: thin;
-    scrollbar-color: #c8c2b1 transparent;
+    scrollbar-color: #cbd5e1 transparent;
   }
   *::-webkit-scrollbar {
     width: 8px;
@@ -109,73 +77,52 @@
   }
   *::-webkit-scrollbar-track { background: transparent; }
   *::-webkit-scrollbar-thumb {
-    background-color: #c8c2b1;
+    background-color: #cbd5e1;
     border-radius: 4px;
     border: 2px solid transparent;
     background-clip: padding-box;
   }
-  *::-webkit-scrollbar-thumb:hover { background-color: #a89e7e; }
+  *::-webkit-scrollbar-thumb:hover { background-color: #94a3b8; }
   *::-webkit-scrollbar-corner { background: transparent; }
 }
 
-/* ─── Page background: soft layered gradient ─────────────────
-   Subtle cream-to-amber-tint gradient adds depth behind glass
-   surfaces. Fixed attachment so it doesn't scroll out. */
+/* ─── Page background ────────────────────────────────────────
+   Clean cool slate-50 with a barely-there blue tint at the top so
+   glass/sticky surfaces read with a little depth. Fixed attachment
+   so it doesn't scroll out. */
 @layer base {
   body {
     background:
-      radial-gradient(ellipse 800px 600px at 10% 0%, rgba(251, 191, 36, 0.06), transparent 60%),
-      radial-gradient(ellipse 1000px 700px at 90% 20%, rgba(245, 158, 11, 0.04), transparent 60%),
-      radial-gradient(ellipse 600px 500px at 50% 100%, rgba(217, 119, 6, 0.03), transparent 60%),
-      #fbf8f0;
+      radial-gradient(ellipse 900px 600px at 50% -10%, rgba(37, 99, 235, 0.05), transparent 60%),
+      #f8fafc;
     background-attachment: fixed;
     min-height: 100vh;
   }
 }
 
-/* ─── 3D liquid glassmorphism surfaces ────────────────────────
-   .glass         — primary translucent surface (modals, headers)
-   .glass-card    — card-weight glass (translucent + soft shadow)
-   .glass-strong  — heavier blur + opacity (mobile nav, sheets)
-   .glass-tint    — subtle amber-tinted glass for emphasis */
+/* ─── Surface utilities ──────────────────────────────────────
+   The theme uses flat white cards. The old glassmorphism class names
+   are kept and REDEFINED to the flat-card look so existing markup that
+   still references .glass / .glass-card upgrades automatically. Only
+   .glass-strong keeps a translucent blur for sticky nav / sheets. */
 @layer utilities {
-  .glass {
-    background: rgba(255, 255, 255, 0.55);
-    backdrop-filter: blur(14px) saturate(160%);
-    -webkit-backdrop-filter: blur(14px) saturate(160%);
-    border: 1px solid rgba(255, 255, 255, 0.6);
-    box-shadow:
-      0 1px 0 rgba(255, 255, 255, 0.9) inset,
-      0 0 0 1px rgba(255, 255, 255, 0.3) inset,
-      0 10px 30px -10px rgba(120, 80, 0, 0.12);
-  }
+  .glass,
   .glass-card {
-    background: rgba(255, 255, 255, 0.7);
-    backdrop-filter: blur(10px) saturate(150%);
-    -webkit-backdrop-filter: blur(10px) saturate(150%);
-    border: 1px solid rgba(255, 255, 255, 0.6);
-    box-shadow:
-      0 1px 0 rgba(255, 255, 255, 0.85) inset,
-      0 6px 22px -10px rgba(120, 80, 0, 0.10);
+    background: #ffffff;
+    border: 1px solid #f1f5f9; /* slate-100 */
+    box-shadow: 0 1px 2px 0 rgba(15, 23, 42, 0.05);
   }
   .glass-strong {
-    background: rgba(255, 255, 255, 0.78);
-    backdrop-filter: blur(20px) saturate(170%);
-    -webkit-backdrop-filter: blur(20px) saturate(170%);
-    border: 1px solid rgba(255, 255, 255, 0.65);
-    box-shadow:
-      0 1px 0 rgba(255, 255, 255, 0.9) inset,
-      0 -8px 24px -12px rgba(120, 80, 0, 0.15);
+    background: rgba(255, 255, 255, 0.85);
+    backdrop-filter: blur(14px) saturate(160%);
+    -webkit-backdrop-filter: blur(14px) saturate(160%);
+    border: 1px solid #e2e8f0; /* slate-200 */
+    box-shadow: 0 10px 30px -12px rgba(15, 23, 42, 0.12);
   }
   .glass-tint {
-    background:
-      linear-gradient(135deg, rgba(251, 191, 36, 0.12), rgba(255, 255, 255, 0.55));
-    backdrop-filter: blur(12px) saturate(160%);
-    -webkit-backdrop-filter: blur(12px) saturate(160%);
-    border: 1px solid rgba(251, 191, 36, 0.25);
-    box-shadow:
-      0 1px 0 rgba(255, 255, 255, 0.85) inset,
-      0 8px 26px -10px rgba(217, 119, 6, 0.12);
+    background: #eff6ff; /* blue-50 */
+    border: 1px solid #dbeafe; /* blue-100 */
+    box-shadow: 0 1px 2px 0 rgba(15, 23, 42, 0.04);
   }
 }
 
@@ -197,8 +144,8 @@
                 border-color 0.2s var(--ease-snappy);
   }
   .spring-hover:hover {
-    transform: translateY(-2px);
-    box-shadow: 0 6px 18px -8px rgba(80, 50, 0, 0.12);
+    transform: translateY(-4px);
+    box-shadow: 0 12px 28px -12px rgba(15, 23, 42, 0.18);
   }
 
   @keyframes bounce-in {
@@ -219,4 +166,30 @@
     100% { opacity: 1; transform: translateY(0); }
   }
   .animate-fade-up { animation: fade-up 0.26s var(--ease-snappy) both; }
+
+  /* ─── Car loader (loading.tsx / <CarLoader/>) ───
+     A little driving car for route-loading states — on theme for a rental app. */
+  .car__body { animation: car-shake 0.2s ease-in-out infinite alternate; }
+  .car__line {
+    transform-origin: center right;
+    stroke-dasharray: 22;
+    animation: car-line 0.8s ease-in-out infinite;
+    animation-fill-mode: both;
+  }
+  .car__line--top    { animation-delay: 0s; }
+  .car__line--middle { animation-delay: 0.2s; }
+  .car__line--bottom { animation-delay: 0.4s; }
+
+  @keyframes car-shake {
+    0%   { transform: translateY(-1%); }
+    100% { transform: translateY(3%); }
+  }
+  @keyframes car-line {
+    0%   { stroke-dashoffset: 22; }
+    25%  { stroke-dashoffset: 22; }
+    50%  { stroke-dashoffset: 0; }
+    51%  { stroke-dashoffset: 0; }
+    80%  { stroke-dashoffset: -22; }
+    100% { stroke-dashoffset: -22; }
+  }
 }

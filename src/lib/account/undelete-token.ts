@@ -1,4 +1,4 @@
-// Undelete-token signing — Web Crypto only (works on Node + Workers).
+// Undelete-token signing, Web Crypto only (works on Node + Workers).
 //
 // The functions are async because Web Crypto's HMAC API is async. Update
 // callers to `await generateUndeleteToken` / `await verifyUndeleteToken`.
@@ -7,7 +7,7 @@ export const UNDELETE_WINDOW_MS = 7 * 24 * 3600_000;
 
 function secret(): string {
   const s = process.env.SUPABASE_SERVICE_ROLE_KEY;
-  if (!s) throw new Error("SUPABASE_SERVICE_ROLE_KEY missing — required for undelete-token signing");
+  if (!s) throw new Error("SUPABASE_SERVICE_ROLE_KEY missing, required for undelete-token signing");
   return s;
 }
 

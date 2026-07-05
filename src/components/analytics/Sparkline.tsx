@@ -9,7 +9,7 @@ interface Props {
 // scaled to fit a fixed box.
 export function Sparkline({ values, width = 200, height = 40, className = "" }: Props) {
   if (values.length < 2) {
-    return <div className={`text-slate-600 text-xs ${className}`}>Not enough data</div>;
+    return <div className={`text-slate-400 text-xs ${className}`}>Not enough data</div>;
   }
 
   const max = Math.max(...values, 1);

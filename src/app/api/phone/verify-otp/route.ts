@@ -50,7 +50,7 @@ export async function POST(req: NextRequest) {
     );
   }
 
-  // Success — flip phone_verified and clear OTP fields.
+  // Success, flip phone_verified and clear OTP fields.
   const { error: updateError } = await service
     .from("profiles")
     .update({

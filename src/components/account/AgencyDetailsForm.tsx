@@ -2,6 +2,7 @@
 
 import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
+import { AlertTriangle } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 import { Button } from "@/components/ui/Button";
 import { Select } from "@/components/ui/Select";
@@ -92,16 +93,16 @@ export function AgencyDetailsForm({
   return (
     <form onSubmit={handleSubmit} className="space-y-4">
       <div>
-        <label className="text-slate-400 text-xs mb-1 block">Agency name</label>
+        <label className="text-slate-600 text-xs mb-1 block">Agency name</label>
         <input
           type="text" value={name} onChange={(e) => { setName(e.target.value); setSuccess(false); }}
           required
-          className="w-full px-4 py-2.5 bg-slate-800 border border-slate-700 rounded-xl text-white text-sm focus:outline-none focus:border-amber-500"
+          className="w-full px-4 py-2.5 bg-slate-100 border border-slate-200 rounded-xl text-slate-900 text-sm focus:outline-none focus:border-blue-500"
         />
       </div>
 
       <div>
-        <label className="text-slate-400 text-xs mb-1 block">City</label>
+        <label className="text-slate-600 text-xs mb-1 block">City</label>
         <Select
           value={city}
           onChange={(v) => { setCity(v); setSuccess(false); }}
@@ -111,37 +112,37 @@ export function AgencyDetailsForm({
       </div>
 
       <div>
-        <label className="text-slate-400 text-xs mb-1 block">Address</label>
+        <label className="text-slate-600 text-xs mb-1 block">Address</label>
         <input
           type="text" value={address} onChange={(e) => { setAddress(e.target.value); setSuccess(false); }}
           placeholder="No. 12, Main Street, Colombo 3"
-          className="w-full px-4 py-2.5 bg-slate-800 border border-slate-700 rounded-xl text-white text-sm focus:outline-none focus:border-amber-500"
+          className="w-full px-4 py-2.5 bg-slate-100 border border-slate-200 rounded-xl text-slate-900 text-sm focus:outline-none focus:border-blue-500"
         />
       </div>
 
       <div>
-        <label className="text-slate-400 text-xs mb-1 block">Mobile number for booking alerts</label>
+        <label className="text-slate-600 text-xs mb-1 block">Mobile number for booking alerts</label>
         <input
           type="tel" value={phone} onChange={(e) => { setPhone(e.target.value); setSuccess(false); }}
           required
-          className="w-full px-4 py-2.5 bg-slate-800 border border-slate-700 rounded-xl text-white text-sm focus:outline-none focus:border-amber-500"
+          className="w-full px-4 py-2.5 bg-slate-100 border border-slate-200 rounded-xl text-slate-900 text-sm focus:outline-none focus:border-blue-500"
         />
-        <p className="text-slate-500 text-xs mt-1">Booking alerts arrive here as an SMS — tap the link to confirm in your dashboard.</p>
+        <p className="text-slate-500 text-xs mt-1">Booking alerts arrive here as an SMS, tap the link to confirm in your dashboard.</p>
       </div>
 
       <div>
-        <label className="text-slate-400 text-xs mb-1 block">Description</label>
+        <label className="text-slate-600 text-xs mb-1 block">Description</label>
         <textarea
           value={description} onChange={(e) => { setDescription(e.target.value); setSuccess(false); }}
           rows={3} maxLength={500}
           placeholder="Tell renters about your fleet..."
-          className="w-full px-4 py-2.5 bg-slate-800 border border-slate-700 rounded-xl text-white placeholder-slate-500 text-sm focus:outline-none focus:border-amber-500 resize-none"
+          className="w-full px-4 py-2.5 bg-slate-100 border border-slate-200 rounded-xl text-slate-900 placeholder-slate-400 text-sm focus:outline-none focus:border-blue-500 resize-none"
         />
-        <span className="text-slate-600 text-xs mt-1 block">{description.length}/500</span>
+        <span className="text-slate-400 text-xs mt-1 block">{description.length}/500</span>
       </div>
 
-      <div className="pt-2 border-t border-slate-800">
-        <p className="text-slate-300 text-sm font-medium mb-1">Booking-request notifications</p>
+      <div className="pt-2 border-t border-slate-100">
+        <p className="text-slate-700 text-sm font-medium mb-1">Booking-request notifications</p>
         <p className="text-slate-500 text-xs mb-3">
           Pick which channels we use to alert you when a renter requests one of your vehicles.
           The realtime dashboard toast fires regardless.
@@ -152,10 +153,10 @@ export function AgencyDetailsForm({
             type="checkbox"
             checked={smsEnabled}
             onChange={(e) => { setSmsEnabled(e.target.checked); setSuccess(false); }}
-            className="mt-0.5 w-4 h-4 accent-amber-500 cursor-pointer"
+            className="mt-0.5 w-4 h-4 accent-blue-600 cursor-pointer"
           />
           <span className="flex-1">
-            <span className="block text-white text-sm">SMS alerts</span>
+            <span className="block text-slate-900 text-sm">SMS alerts</span>
             <span className="block text-slate-500 text-xs">
               Text message to your mobile number with a confirm-link to the dashboard. Most reliable channel.
             </span>
@@ -167,15 +168,25 @@ export function AgencyDetailsForm({
             type="checkbox"
             checked={whatsappEnabled}
             onChange={(e) => { setWhatsappEnabled(e.target.checked); setSuccess(false); }}
-            className="mt-0.5 w-4 h-4 accent-amber-500 cursor-pointer"
+            className="mt-0.5 w-4 h-4 accent-blue-600 cursor-pointer"
           />
           <span className="flex-1">
-            <span className="block text-white text-sm">WhatsApp alerts</span>
+            <span className="block text-slate-900 text-sm">WhatsApp alerts</span>
             <span className="block text-slate-500 text-xs">
               WhatsApp Business template message to the same number. Turn off if duplicate or annoying.
             </span>
           </span>
         </label>
+
+        {!smsEnabled && !whatsappEnabled && (
+          <div className="flex items-start gap-2 mt-2 p-3 bg-amber-50 border border-amber-200 rounded-xl">
+            <AlertTriangle size={15} className="text-amber-600 mt-0.5 shrink-0" />
+            <p className="text-amber-800 text-xs leading-relaxed">
+              Both alerts are off, you&apos;ll only see new bookings when you open your dashboard, with no phone
+              alert. Keep at least one on so you don&apos;t miss time-sensitive requests.
+            </p>
+          </div>
+        )}
       </div>
 
       {error   && <p className="text-red-400 text-sm">{error}</p>}

@@ -113,7 +113,7 @@ export function RenterActions({ userId, fullName, phone, email, role, isBlacklis
       <div className="flex gap-2 shrink-0 flex-wrap justify-end">
         <Link
           href={`/admin/users/${userId}/timeline`}
-          className="inline-flex items-center gap-1 px-2.5 py-1 text-xs text-slate-400 hover:text-amber-400 rounded-lg hover:bg-slate-800 transition-colors"
+          className="inline-flex items-center gap-1 px-2.5 py-1 text-xs text-slate-600 hover:text-blue-600 rounded-lg hover:bg-slate-100 transition-colors"
         >
           <Activity size={14} /> Timeline
         </Link>
@@ -165,11 +165,11 @@ export function RenterActions({ userId, fullName, phone, email, role, isBlacklis
             onClick={(e) => e.stopPropagation()}
           >
             <div className="flex items-start justify-between mb-1">
-              <h2 className="text-white font-semibold">Block {fullName}</h2>
+              <h2 className="text-slate-900 font-semibold">Block {fullName}</h2>
               <button
                 type="button"
                 onClick={() => setModalOpen(false)}
-                className="text-slate-500 hover:text-white"
+                className="text-slate-500 hover:text-slate-900"
                 aria-label="Close"
               >
                 <X size={18} />
@@ -181,8 +181,8 @@ export function RenterActions({ userId, fullName, phone, email, role, isBlacklis
 
             <form onSubmit={submitBlock} className="space-y-4">
               <div>
-                <label className="text-slate-300 text-xs font-medium block mb-1.5">
-                  Admin reason <span className="text-amber-400">*</span>
+                <label className="text-slate-700 text-xs font-medium block mb-1.5">
+                  Admin reason <span className="text-blue-600">*</span>
                 </label>
                 <textarea
                   value={adminReason}
@@ -190,16 +190,16 @@ export function RenterActions({ userId, fullName, phone, email, role, isBlacklis
                   rows={3}
                   required
                   autoFocus
-                  placeholder="Internal note — only admins see this. e.g. 'Police report filed by Beast Cars on 2026-04-12, vehicle returned damaged with smell of alcohol.'"
-                  className="w-full px-3 py-2 bg-slate-800 border border-slate-700 rounded-lg text-white text-sm placeholder-slate-600 focus:outline-none focus:border-amber-500"
+                  placeholder="Internal note, only admins see this. e.g. 'Police report filed by Beast Cars on 2026-04-12, vehicle returned damaged with smell of alcohol.'"
+                  className="w-full px-3 py-2 bg-slate-100 border border-slate-200 rounded-lg text-slate-900 text-sm placeholder-slate-400 focus:outline-none focus:border-blue-500"
                 />
-                <p className="text-slate-600 text-[11px] mt-1">
+                <p className="text-slate-400 text-[11px] mt-1">
                   Private. Other admins see this when reviewing the renter or any of their bookings.
                 </p>
               </div>
 
               <div>
-                <label className="text-slate-300 text-xs font-medium block mb-1.5">
+                <label className="text-slate-700 text-xs font-medium block mb-1.5">
                   Reason shown to agencies
                 </label>
                 <textarea
@@ -207,10 +207,10 @@ export function RenterActions({ userId, fullName, phone, email, role, isBlacklis
                   onChange={(e) => setPublicReason(e.target.value)}
                   rows={2}
                   placeholder="What agencies see on bookings from this renter. e.g. 'Returned a vehicle with damage and refused to pay deposit. Decline at your discretion.'"
-                  className="w-full px-3 py-2 bg-slate-800 border border-slate-700 rounded-lg text-white text-sm placeholder-slate-600 focus:outline-none focus:border-amber-500"
+                  className="w-full px-3 py-2 bg-slate-100 border border-slate-200 rounded-lg text-slate-900 text-sm placeholder-slate-400 focus:outline-none focus:border-blue-500"
                 />
-                <p className="text-slate-600 text-[11px] mt-1">
-                  Visible to any agency that receives a booking from this renter. Keep it factual — no names, no sensitive details.
+                <p className="text-slate-400 text-[11px] mt-1">
+                  Visible to any agency that receives a booking from this renter. Keep it factual, no names, no sensitive details.
                 </p>
               </div>
 

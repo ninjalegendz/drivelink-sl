@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createServiceClient } from "@/lib/supabase/server";
-import { sendSms } from "@/lib/sms/textlk";
+import { sendOtpCascade } from "@/lib/sms/send-otp";
 import {
   generateOtp,
   hashOtp,
@@ -15,7 +15,7 @@ import { isEmailLike, phoneSuffix } from "@/lib/auth/identifier";
 // body: { full_name, phone, email? }
 //
 // Stores a pending_signups row keyed by phone, sends the OTP via SMS, and
-// reports the next-resend cooldown. Does NOT create the auth user yet —
+// reports the next-resend cooldown. Does NOT create the auth user yet,
 // that happens in /verify after the OTP is confirmed.
 export async function POST(req: NextRequest) {
   const body = (await req.json().catch(() => ({}))) as {
@@ -29,7 +29,7 @@ export async function POST(req: NextRequest) {
   const emailIn  = body.email?.trim().toLowerCase() || null;
 
   if (fullName.length < 2)            return NextResponse.json({ error: "Enter your full name." }, { status: 400 });
-  if (!isValidSLPhone(phoneIn))       return NextResponse.json({ error: "Enter a Sri Lankan phone number like 0771234567." }, { status: 400 });
+  if (!isValidSLPhone(phoneIn))       return NextResponse.json({ error: "Enter a valid mobile number. For a non-Sri-Lankan number, include the country code (e.g. +44 7911 123456)." }, { status: 400 });
   if (emailIn && !isEmailLike(emailIn)) return NextResponse.json({ error: "That email doesn't look right." }, { status: 400 });
 
   const intl = toInternationalSL(phoneIn)!;
@@ -65,7 +65,7 @@ export async function POST(req: NextRequest) {
     }
   }
 
-  // Cooldown — mirror the login OTP escalation
+  // Cooldown, mirror the login OTP escalation
   const { data: existingPending } = await service
     .from("pending_signups")
     .select("otp_send_count, otp_last_sent")
@@ -85,7 +85,7 @@ export async function POST(req: NextRequest) {
   }
 
   const code            = generateOtp();
-  // Salt with phone — the userId doesn't exist yet
+  // Salt with phone, the userId doesn't exist yet
   const otpHash         = await hashOtp(code, intl);
   const expiresAt       = new Date(Date.now() + OTP_TTL_MS).toISOString();
   const newSendCount    = priorSends + 1;
@@ -107,12 +107,33 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "Couldn't start signup. Try again." }, { status: 500 });
   }
 
-  const result = await sendSms(intl, `DriveLink signup code: ${code}. Expires in 10 min. Don't share this code.`);
+  const { channel, devOnly } = await sendOtpCascade({
+    phone:  intl,
+    code,
+    smsKey: "signup_renter",
+    email:  emailIn,
+  });
+
+  if (!channel) {
+    return NextResponse.json(
+      {
+        error: emailIn
+          ? "We couldn't send your code right now. Please try again shortly."
+          : "We couldn't reach that number by SMS or WhatsApp. Add an email and we'll send your code there instead.",
+      },
+      { status: 502 },
+    );
+  }
+
+  // Remember the channel so /verify knows whether the phone itself was proven
+  // (SMS/WhatsApp) or only the email.
+  await service.from("pending_signups").update({ otp_channel: channel }).eq("phone", intl);
 
   return NextResponse.json({
-    ok:               true,
+    ok:              true,
     nextCooldownSec,
-    devOnly:          result.devOnly ?? false,
-    devCode:          result.devOnly ? code : undefined,
+    channel,
+    devOnly,
+    devCode:         devOnly ? code : undefined,
   });
 }

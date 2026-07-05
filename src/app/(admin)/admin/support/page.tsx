@@ -44,15 +44,15 @@ export default async function AdminSupportListPage() {
   return (
     <div>
       <div className="flex items-center gap-2 mb-1">
-        <Headphones size={22} className="text-amber-400" strokeWidth={1.75} />
-        <h1 className="text-2xl font-bold text-white">Support</h1>
+        <Headphones size={22} className="text-blue-600" strokeWidth={1.75} />
+        <h1 className="text-2xl font-bold text-slate-900">Support</h1>
       </div>
-      <p className="text-slate-400 text-sm mb-6">
+      <p className="text-slate-600 text-sm mb-6">
         Agency support threads. {threads.length} total{unreadCount > 0 ? ` · ${unreadCount} need a reply` : ""}.
       </p>
 
       {threads.length === 0 ? (
-        <div className="bg-slate-900 border border-slate-200 rounded-2xl shadow-sm p-8 text-center text-slate-500 text-sm">
+        <div className="bg-white border border-slate-200 rounded-2xl shadow-sm p-8 text-center text-slate-500 text-sm">
           No support threads yet. Agencies open a thread by sending their first message from /dashboard/support.
         </div>
       ) : (
@@ -63,19 +63,19 @@ export default async function AdminSupportListPage() {
               <Link
                 key={t.id}
                 href={`/admin/support/${t.id}`}
-                className="block spring-hover bg-slate-900 border border-slate-200 shadow-sm hover:border-amber-300 rounded-2xl p-4 transition-colors"
+                className="block spring-hover bg-white border border-slate-200 shadow-sm hover:border-blue-300 rounded-2xl p-4 transition-colors"
               >
                 <div className="flex items-center justify-between gap-3">
                   <div className="min-w-0 flex-1">
                     <div className="flex items-center gap-2 flex-wrap">
-                      <p className="font-semibold text-white">{t.agencies?.name ?? "Unknown agency"}</p>
+                      <p className="font-semibold text-slate-900">{t.agencies?.name ?? "Unknown agency"}</p>
                       <span className="text-slate-500 text-xs">{t.agencies?.city}</span>
                       {t.has_unread_admin && <Badge variant="red">New</Badge>}
                     </div>
                     {last && (
-                      <p className="text-slate-400 text-sm mt-1 line-clamp-1">{last}</p>
+                      <p className="text-slate-600 text-sm mt-1 line-clamp-1">{last}</p>
                     )}
-                    <p className="text-slate-600 text-xs mt-1">
+                    <p className="text-slate-400 text-xs mt-1">
                       {t.last_message_at
                         ? `Last message ${new Date(t.last_message_at).toLocaleString("en-LK")}`
                         : `Opened ${new Date(t.created_at).toLocaleDateString("en-LK")}`}

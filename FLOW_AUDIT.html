@@ -1,0 +1,486 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>DriveLink — How ratings and bookings actually work</title>
+<style>
+  :root{
+    --bg:#0b1220;
+    --card:#0f172a;
+    --soft:#111c33;
+    --line:#1e293b;
+    --ink:#f1f5f9;
+    --mute:#94a3b8;
+    --dim:#64748b;
+    --amber:#f59e0b;
+    --green:#34d399;
+    --red:#f87171;
+    --blue:#60a5fa;
+  }
+  *{box-sizing:border-box}
+  html,body{margin:0;padding:0}
+  body{
+    background:var(--bg);
+    color:var(--ink);
+    font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",ui-sans-serif,sans-serif;
+    font-size:16px;
+    line-height:1.65;
+    padding:48px 24px 96px;
+  }
+  .wrap{max-width:880px;margin:0 auto}
+
+  /* page header */
+  .hero{margin-bottom:64px}
+  .hero h1{font-size:36px;font-weight:700;margin:0 0 12px;letter-spacing:-0.02em}
+  .hero p{color:var(--mute);font-size:17px;margin:0}
+
+  /* big section */
+  .section{margin-top:80px}
+  .section-num{
+    display:inline-block;
+    font-size:13px;
+    font-weight:700;
+    color:var(--amber);
+    letter-spacing:0.15em;
+    text-transform:uppercase;
+    margin-bottom:8px;
+  }
+  .section h2{font-size:30px;font-weight:700;margin:0 0 12px;letter-spacing:-0.02em}
+  .section-lead{color:var(--mute);font-size:16px;margin:0 0 32px;max-width:680px}
+
+  /* card */
+  .card{
+    background:var(--card);
+    border:1px solid var(--line);
+    border-radius:16px;
+    padding:28px;
+    margin-bottom:20px;
+  }
+  .card h3{font-size:18px;font-weight:600;margin:0 0 16px;color:var(--ink)}
+  .card p{margin:0 0 12px}
+  .card p:last-child{margin-bottom:0}
+
+  /* sub-heading inside a card */
+  .label{
+    font-size:11px;
+    font-weight:700;
+    color:var(--amber);
+    letter-spacing:0.15em;
+    text-transform:uppercase;
+    margin:0 0 6px;
+  }
+
+  /* the flow blocks */
+  .flow{display:flex;flex-direction:column;gap:14px;margin-top:8px}
+  .step{
+    background:var(--soft);
+    border:1px solid var(--line);
+    border-left:3px solid var(--blue);
+    border-radius:10px;
+    padding:16px 18px;
+  }
+  .step .num{
+    display:inline-block;
+    width:24px;height:24px;
+    border-radius:50%;
+    background:var(--blue);
+    color:#0b1220;
+    font-weight:700;
+    font-size:13px;
+    text-align:center;
+    line-height:24px;
+    margin-right:10px;
+  }
+  .step .head{font-weight:600;font-size:15px;display:inline}
+  .step .body{color:var(--mute);font-size:14px;margin:8px 0 0 34px;line-height:1.6}
+
+  /* what-can-go-wrong rows */
+  .branches{margin-top:14px;display:flex;flex-direction:column;gap:8px}
+  .branch{
+    display:flex;
+    gap:14px;
+    align-items:flex-start;
+    padding:10px 14px;
+    background:#0a0f1c;
+    border:1px solid var(--line);
+    border-radius:8px;
+    font-size:14px;
+  }
+  .branch .if{
+    color:var(--amber);
+    font-weight:600;
+    flex-shrink:0;
+    min-width:120px;
+  }
+  .branch .then{color:var(--mute);flex:1}
+
+  /* problem cards */
+  .problem{
+    background:var(--card);
+    border:1px solid var(--line);
+    border-left:4px solid var(--red);
+    border-radius:14px;
+    padding:24px 28px;
+    margin-bottom:16px;
+  }
+  .problem.warn{border-left-color:var(--amber)}
+  .problem.note{border-left-color:var(--blue)}
+  .problem h3{margin:0 0 10px;font-size:18px;font-weight:600}
+  .problem .what{color:var(--mute);font-size:15px;margin:0 0 14px}
+  .problem .why{
+    background:var(--soft);
+    border-radius:8px;
+    padding:12px 14px;
+    font-size:14px;
+    color:var(--ink);
+  }
+  .problem .why b{color:var(--amber)}
+
+  /* simple two column */
+  .two{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+  @media (max-width:720px){.two{grid-template-columns:1fr}}
+
+  /* the rating visual */
+  .rating-block{
+    background:var(--soft);
+    border:1px solid var(--line);
+    border-radius:12px;
+    padding:18px 20px;
+    margin-top:12px;
+  }
+  .rating-block .who{
+    font-size:13px;
+    font-weight:700;
+    color:var(--amber);
+    letter-spacing:0.1em;
+    text-transform:uppercase;
+    margin-bottom:10px;
+  }
+  .signal{
+    display:flex;
+    align-items:flex-start;
+    gap:14px;
+    padding:12px 0;
+    border-top:1px solid var(--line);
+  }
+  .signal:first-of-type{border-top:0;padding-top:4px}
+  .signal .icon{
+    width:32px;height:32px;flex-shrink:0;
+    border-radius:8px;
+    background:#1e293b;
+    display:flex;align-items:center;justify-content:center;
+    font-size:16px;
+  }
+  .signal .text .name{font-weight:600;font-size:15px;margin:0 0 2px}
+  .signal .text .desc{color:var(--mute);font-size:13px;margin:0;line-height:1.55}
+  .signal .text .desc i{color:var(--red);font-style:normal;font-weight:600}
+
+  /* top-of-mind callout at bottom */
+  .priority{
+    margin-top:48px;
+    background:linear-gradient(180deg,#1c1410 0%,#0f172a 100%);
+    border:1px solid var(--amber);
+    border-radius:16px;
+    padding:32px;
+  }
+  .priority h3{
+    font-size:22px;
+    margin:0 0 8px;
+    color:var(--amber);
+  }
+  .priority p.kicker{color:var(--mute);margin:0 0 20px;font-size:14px}
+  .priority ol{margin:0;padding-left:20px}
+  .priority li{margin-bottom:14px;font-size:15px}
+  .priority li b{color:var(--ink)}
+
+  /* footer */
+  .foot{
+    margin-top:80px;
+    padding-top:24px;
+    border-top:1px solid var(--line);
+    color:var(--dim);
+    font-size:13px;
+    text-align:center;
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<!-- ============ HERO ============ -->
+<div class="hero">
+  <h1>How DriveLink actually works today</h1>
+  <p>A plain-English walkthrough of the rating system and the booking flow — and the gaps in both you'll want to think about before launch.</p>
+</div>
+
+<!-- =================================================================
+     SECTION 1 — RATINGS
+     ================================================================= -->
+<div class="section">
+  <span class="section-num">Part 1</span>
+  <h2>How ratings work</h2>
+  <p class="section-lead">There are two kinds of "rating" on DriveLink, and they mean different things. Here's the difference, and who gets which.</p>
+
+  <div class="card">
+    <h3>The two scores, explained</h3>
+    <p><b style="color:var(--amber)">Stars (★ out of 5)</b> — left by a real person after a rental finishes. Like a Google review.</p>
+    <p><b style="color:var(--green)">Reliability % </b> — calculated automatically by the system based on how someone behaves (do they show up, do they cancel last minute, do they actually rent out the car).</p>
+    <p style="color:var(--mute);font-size:14px;margin-top:14px">Both scores can also be manually adjusted by an admin from the dashboard — every adjustment is logged so you can see who changed what and why.</p>
+  </div>
+
+  <!-- Agency side -->
+  <div class="card">
+    <h3>What an agency gets rated on</h3>
+    <p style="color:var(--mute);margin-bottom:4px">When a renter is browsing cars, here's what they see about the agency:</p>
+
+    <div class="rating-block">
+      <div class="who">The agency</div>
+
+      <div class="signal">
+        <div class="icon">★</div>
+        <div class="text">
+          <p class="name">Star rating (1–5)</p>
+          <p class="desc">After a rental is marked complete, the renter sees a "leave a review" form. They pick 1–5 stars and can write a comment. Average is shown on the agency's listing.</p>
+        </div>
+      </div>
+
+      <div class="signal">
+        <div class="icon">%</div>
+        <div class="text">
+          <p class="name">Reliability %</p>
+          <p class="desc">Automatic. The system looks at every booking the agency has had and figures out: of all the bookings, how many actually went through? Shows up as "92% reliable" on the listing. Starts as "N/A" until they have history.</p>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Renter side -->
+  <div class="card">
+    <h3>What a renter gets rated on</h3>
+    <p style="color:var(--mute);margin-bottom:4px">When an agency receives a booking request, here's what they see about the person:</p>
+
+    <div class="rating-block">
+      <div class="who">The renter</div>
+
+      <div class="signal">
+        <div class="icon">★</div>
+        <div class="text">
+          <p class="name">Star rating (1–5) — <i>doesn't actually exist yet</i></p>
+          <p class="desc">The database has a column for it, and the dashboard shows a star icon if a renter has any reviews. But there's no place anywhere in the app for an agency to actually leave a review of a renter. So in practice, no real renter will ever have stars unless you manually add them as an admin.</p>
+        </div>
+      </div>
+
+      <div class="signal">
+        <div class="icon">%</div>
+        <div class="text">
+          <p class="name">Reliability %</p>
+          <p class="desc">Automatic. Starts at "N/A" and ticks down every time the renter cancels. The penalty depends on when they cancel — a quick "oops" the same day costs −2, but cancelling after the agency confirmed costs −10 (and more if it's close to pickup time). Completing a rental gives them +2 back.</p>
+        </div>
+      </div>
+
+      <div class="signal">
+        <div class="icon">⛔</div>
+        <div class="text">
+          <p class="name">Blacklist (separate from rating)</p>
+          <p class="desc">If a renter gets blacklisted by admin, the agency sees a red "Flagged renter" badge with a short reason. There's a private (admin-only) reason and a public reason that's shown to agencies.</p>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="card" style="background:#1c1410;border-color:#451a03">
+    <h3 style="color:var(--amber)">The thing to remember</h3>
+    <p>Agencies are rated <b>both ways</b> — by people and by the system. Renters are only rated by the system. The "agency rates renter" loop isn't built yet, even though the screens look like it exists.</p>
+  </div>
+</div>
+
+<!-- =================================================================
+     SECTION 2 — BOOKINGS
+     ================================================================= -->
+<div class="section">
+  <span class="section-num">Part 2</span>
+  <h2>How a booking flows, step by step</h2>
+  <p class="section-lead">A normal booking goes through 6 steps. At each step, things can go a different direction — here's the happy path first, then what else can happen.</p>
+
+  <div class="card">
+    <h3>The happy path (everything goes right)</h3>
+
+    <div class="flow">
+      <div class="step">
+        <span class="num">1</span>
+        <span class="head">Renter finds a car and requests dates</span>
+        <div class="body">They pick a pickup and return date. No money taken yet. The booking is created with status "waiting for agency".</div>
+      </div>
+
+      <div class="step">
+        <span class="num">2</span>
+        <span class="head">Agency gets an SMS and confirms</span>
+        <div class="body">DriveLink texts the agency that there's a request. The agency opens their dashboard and clicks Confirm. The renter is told to pay the Rs. 500 lock-in fee.</div>
+      </div>
+
+      <div class="step">
+        <span class="num">3</span>
+        <span class="head">Renter has 12 hours to transfer Rs. 500</span>
+        <div class="body">They see the bank details and a countdown. They make the bank transfer, then upload the slip. Status becomes "payment under review".</div>
+      </div>
+
+      <div class="step">
+        <span class="num">4</span>
+        <span class="head">You (admin) check the slip</span>
+        <div class="body">It shows up in the admin slip queue. You eyeball it — right amount, right reference. You click Approve. Booking becomes "active".</div>
+      </div>
+
+      <div class="step">
+        <span class="num">5</span>
+        <span class="head">Renter unlocks the agency's contact and picks up the car</span>
+        <div class="body">Only once approved does the renter see the agency's WhatsApp/phone. They arrange pickup directly. The car is rented for the booked dates.</div>
+      </div>
+
+      <div class="step">
+        <span class="num">6</span>
+        <span class="head">Agency marks the rental complete</span>
+        <div class="body">After the renter returns the car, the agency clicks "Mark complete" on their dashboard. This is when DriveLink officially earns the Rs. 200 completion fee from the agency, and the renter is invited to leave a star rating.</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="card">
+    <h3>What else can happen at each step</h3>
+    <p style="color:var(--mute);margin-bottom:6px">The booking doesn't always reach step 6. Here's every other way it can end:</p>
+
+    <div class="branches">
+      <div class="branch">
+        <div class="if">At step 2</div>
+        <div class="then"><b style="color:var(--ink)">Agency declines</b> — booking ends, nobody pays anything, renter is shown "declined".</div>
+      </div>
+      <div class="branch">
+        <div class="if">At step 2</div>
+        <div class="then"><b style="color:var(--ink)">Agency never responds</b> — booking sits forever in "waiting for agency". Renter can cancel it themselves whenever.</div>
+      </div>
+      <div class="branch">
+        <div class="if">At step 2</div>
+        <div class="then"><b style="color:var(--ink)">Two people requested the same dates</b> — when the agency confirms one, the other is automatically declined with the reason "Dates booked by another renter".</div>
+      </div>
+      <div class="branch">
+        <div class="if">At step 3</div>
+        <div class="then"><b style="color:var(--ink)">Renter doesn't pay within 12 hours</b> — the booking is automatically cancelled. Both renter and agency get an SMS. The renter's reliability score drops.</div>
+      </div>
+      <div class="branch">
+        <div class="if">At step 3</div>
+        <div class="then"><b style="color:var(--ink)">Renter cancels themselves</b> — same thing, booking ends. Reliability drop depends on how late they cancel (closer to pickup = bigger drop).</div>
+      </div>
+      <div class="branch">
+        <div class="if">At step 4</div>
+        <div class="then"><b style="color:var(--ink)">You reject the slip</b> (wrong amount, looks fake) — booking rolls back to step 3, renter is asked to re-upload. They have a fresh chance.</div>
+      </div>
+      <div class="branch">
+        <div class="if">At step 5</div>
+        <div class="then"><b style="color:var(--ink)">Something goes wrong with the car or renter</b> — there's nothing in the app for this. You'd have to handle it manually via WhatsApp / phone.</div>
+      </div>
+      <div class="branch">
+        <div class="if">At step 6</div>
+        <div class="then"><b style="color:var(--ink)">Agency forgets to mark complete</b> — the booking just stays "active" forever. No review prompt, no Rs. 200 fee billed.</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- =================================================================
+     SECTION 3 — PROBLEMS
+     ================================================================= -->
+<div class="section">
+  <span class="section-num">Part 3</span>
+  <h2>Things to be aware of</h2>
+  <p class="section-lead">Nothing here is on fire. But these are the spots where you'll either lose money, lose trust, or end up doing manual cleanup. Grouped by what kind of problem it is.</p>
+
+  <!-- MONEY PROBLEMS -->
+  <h3 style="font-size:18px;color:var(--amber);margin:36px 0 14px;letter-spacing:0.05em;text-transform:uppercase">Money problems</h3>
+
+  <div class="problem">
+    <h3>1 · No refund process if a renter cancels after paying</h3>
+    <p class="what">If a renter transfers the Rs. 500, uploads the slip, and then changes their mind and cancels before you approve the slip — the money is already in your bank, and there's nothing in the app that handles giving it back.</p>
+    <div class="why"><b>Why it matters:</b> The first time this happens, the renter is going to be upset and demand a refund through support. You'll handle it manually, which is fine for now, but expect angry messages. The fastest fix: just don't let renters cancel once they've uploaded a slip — make them contact support instead.</div>
+  </div>
+
+  <div class="problem">
+    <h3>2 · Agencies are not billed automatically</h3>
+    <p class="what">When a rental completes, the Rs. 200 agency fee is recorded — but the actual collecting (bank transfer from agency to you) is a manual checkbox you tick on the admin dashboard. There's no statement, no invoice, no reminder.</p>
+    <div class="why"><b>Why it matters:</b> You'll forget. Agencies will quietly owe you money you don't realise you're owed. Eventually you want a "uncollected fees this month" view, but for the first few months you can survive on a spreadsheet.</div>
+  </div>
+
+  <div class="problem">
+    <h3>3 · "Active" bookings that never get closed out</h3>
+    <p class="what">If an agency forgets to click "Mark complete" after the rental, the booking just sits there forever as "active". That means: you never bill the Rs. 200 fee, and the renter is never asked to leave a review.</p>
+    <div class="why"><b>Why it matters:</b> Direct revenue leak, and you lose the reviews that make the agency look good for future renters. A simple fix is to auto-mark complete a few days after the return date passes — or send the agency a nudge.</div>
+  </div>
+
+  <!-- TRUST PROBLEMS -->
+  <h3 style="font-size:18px;color:var(--amber);margin:36px 0 14px;letter-spacing:0.05em;text-transform:uppercase">Trust / fairness problems</h3>
+
+  <div class="problem warn">
+    <h3>4 · Good agencies get punished for renter cancellations</h3>
+    <p class="what">The agency's reliability % is calculated like this: completed bookings ÷ all finished bookings. But "all finished bookings" includes the ones the <i>renter</i> cancelled — which had nothing to do with the agency.</p>
+    <div class="why"><b>Why it matters:</b> An agency that does everything right but gets a flaky renter will have their score drop. Over time, your best agencies will look worse than they are. The fix is to exclude renter-initiated cancellations from the math.</div>
+  </div>
+
+  <div class="problem warn">
+    <h3>5 · Renter star ratings look real but aren't</h3>
+    <p class="what">The dashboard shows a star icon next to a renter's name when an agency is looking at a booking request. But there's no way for an agency to leave a star review of a renter anywhere in the app. So those stars are either always empty, or only filled in if you manually edit them as admin.</p>
+    <div class="why"><b>Why it matters:</b> An agency seeing "★ 4.2" on a renter's profile will assume real reviews exist. Either build the agency-leaves-review-of-renter form, or hide the stars from the UI until you do.</div>
+  </div>
+
+  <div class="problem warn">
+    <h3>6 · Renters who lose to a competing booking get no notification</h3>
+    <p class="what">When two renters request the same dates and the agency picks one, the other request is silently auto-declined. The losing renter doesn't get a text or email — they only find out if they happen to open the app again.</p>
+    <div class="why"><b>Why it matters:</b> They'll think the agency ghosted them. Bad first impression. A short "Sorry — those dates just got taken" SMS would close the loop.</div>
+  </div>
+
+  <!-- DEAD FEATURES -->
+  <h3 style="font-size:18px;color:var(--amber);margin:36px 0 14px;letter-spacing:0.05em;text-transform:uppercase">Half-built features</h3>
+
+  <div class="problem note">
+    <h3>7 · No way to report a dispute</h3>
+    <p class="what">If a car comes back damaged, or the agency refuses to give the deposit back, or the renter says the car broke down — there's nothing in the app for any of that. There are columns in the database for "damage reported", "damage photos", etc., but no screens use them.</p>
+    <div class="why"><b>Why it matters:</b> Every dispute is going to land in your DMs or on WhatsApp. That's manageable at low volume, but if you launch and something happens day one, you'll be running support from your phone. A simple "Report a problem" button on the booking page would cover most of it.</div>
+  </div>
+
+  <div class="problem note">
+    <h3>8 · No reminder if an agency never replies</h3>
+    <p class="what">When a booking request is made, the agency gets one SMS. If that text fails to deliver, or the agency misses it, the booking just sits in "waiting" forever. Nothing re-pings them, and the renter doesn't get told.</p>
+    <div class="why"><b>Why it matters:</b> Lost bookings = lost trust on both sides. A second nudge after 6 hours, and a "still no answer?" message to the renter, would catch most of these.</div>
+  </div>
+
+  <div class="problem note">
+    <h3>9 · The slip check is fully manual</h3>
+    <p class="what">There's no automatic verification of the bank slip — every one needs a human (you) to eyeball it. The database has spots for "OCR amount" and "OCR date" as if it was planned, but nothing's wired up.</p>
+    <div class="why"><b>Why it matters:</b> Fine for the first hundred bookings. Once you're getting dozens a day, this becomes a real workload. Worth automating eventually, not now.</div>
+  </div>
+
+  <div class="problem note">
+    <h3>10 · Renter can't tell you why they're cancelling</h3>
+    <p class="what">The cancel button just records "Cancelled by renter" with no reason. You have no idea whether they found a better deal, the agency ghosted them, or they just changed plans.</p>
+    <div class="why"><b>Why it matters:</b> This is free product feedback you're throwing away. Adding a 4-option dropdown ("Changed plans / Found another / Agency unresponsive / Other") would tell you a lot about why renters drop off.</div>
+  </div>
+
+</div>
+
+<!-- =================================================================
+     PRIORITIES CALLOUT
+     ================================================================= -->
+<div class="priority">
+  <h3>If you only fix three things before launch</h3>
+  <p class="kicker">These are the ones most likely to actually hurt you in the first month.</p>
+  <ol>
+    <li><b>Decide what happens when a renter cancels after paying.</b> Either block the cancel button after the slip is uploaded, or write a clear refund process you'll handle manually. Don't leave it undefined.</li>
+    <li><b>Fix the agency reliability math.</b> Renter cancellations shouldn't count against the agency's score. This is a small change with a big fairness payoff.</li>
+    <li><b>Add a "Report a problem" button on active bookings.</b> Even if it just emails you, it gives renters and agencies a way to flag issues inside the app instead of finding your DMs.</li>
+  </ol>
+</div>
+
+<div class="foot">
+  Saved as <code>FLOW_AUDIT.html</code> in the project root. Open in any browser.
+</div>
+
+</div>
+</body>
+</html>

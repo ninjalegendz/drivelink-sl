@@ -32,7 +32,7 @@ export async function POST(req: Request) {
     // Stash the session id so admins can fetch latest status if the
     // webhook misses or fires late, and flip kyc_status to "pending" so
     // the UI honestly reflects "in review" the moment the user starts
-    // verifying — instead of pretending nothing happened until the Didit
+    // verifying, instead of pretending nothing happened until the Didit
     // webhook arrives (which sometimes never does). The eq filter on
     // status prevents downgrading an already-verified user if they
     // somehow hit this endpoint again.

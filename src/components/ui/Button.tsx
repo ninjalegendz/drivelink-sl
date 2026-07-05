@@ -10,12 +10,10 @@ export interface ButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {
 }
 
 const variantClasses: Record<Variant, string> = {
-  // text-stone-900 stays dark on amber even after the slate-950 token
-  // is remapped to cream by the new pastel palette.
-  primary:   "bg-amber-500 hover:bg-amber-400 text-stone-900 font-semibold shadow-sm hover:shadow",
-  secondary: "bg-slate-800 hover:bg-slate-700 text-white border border-slate-700",
-  ghost:     "hover:bg-slate-800 text-slate-400 hover:text-white",
-  danger:    "bg-red-600 hover:bg-red-500 text-white font-semibold shadow-sm",
+  primary:   "bg-blue-600 hover:bg-blue-700 text-white font-semibold shadow-sm shadow-blue-600/10 hover:shadow",
+  secondary: "bg-white hover:bg-slate-50 text-slate-700 border border-slate-200",
+  ghost:     "hover:bg-slate-100 text-slate-500 hover:text-slate-800",
+  danger:    "bg-rose-600 hover:bg-rose-500 text-white font-semibold shadow-sm",
 };
 
 const sizeClasses: Record<Size, string> = {

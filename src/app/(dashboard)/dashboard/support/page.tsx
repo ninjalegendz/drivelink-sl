@@ -15,7 +15,7 @@ export default async function AgencySupportPage() {
     .eq("owner_id", user.id)
     .single();
   const agency = agencyRow as { id: string; name: string } | null;
-  if (!agency) redirect("/signup/agency");
+  if (!agency) redirect("/signup?intent=provider");
 
   const thread = await getOrCreateThreadForAgency(supabase, agency.id);
   if (!thread) {
@@ -34,11 +34,11 @@ export default async function AgencySupportPage() {
   return (
     <div>
       <div className="flex items-center gap-2 mb-1">
-        <Headphones size={22} className="text-amber-400" strokeWidth={1.75} />
-        <h1 className="text-2xl font-bold text-white">Support</h1>
+        <Headphones size={22} className="text-blue-600" strokeWidth={1.75} />
+        <h1 className="text-2xl font-bold text-slate-900">Support</h1>
       </div>
-      <p className="text-slate-400 text-sm mb-5">
-        Direct line to the DriveLink admin team — booking issues, payouts, listing review questions, anything.
+      <p className="text-slate-600 text-sm mb-5">
+        Direct line to the DriveLink admin team, booking issues, payouts, listing review questions, anything.
       </p>
 
       <SupportChat

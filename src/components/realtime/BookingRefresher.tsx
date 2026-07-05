@@ -14,7 +14,7 @@ interface Props {
  * ONLY when the status actually changes. Refreshing on every field update
  * would close dialogs and reset forms (e.g. mid slip-upload) which is
  * unacceptable on this page. A status transition is the one signal that
- * unambiguously means "this view is now stale" — the renter's current
+ * unambiguously means "this view is now stale", the renter's current
  * status panel is wrong, the form sections need to swap, and any
  * in-progress action was for the old state anyway.
  */

@@ -69,15 +69,15 @@ export function EditAgencyModal({ agencyId, initial, onClose }: Props) {
     <div className="fixed inset-0 z-50 bg-black/70 flex items-center justify-center p-4" onClick={onClose}>
       <div className="animate-bounce-in glass-card rounded-3xl w-full max-w-md p-5 my-8 max-h-[90vh] overflow-y-auto" onClick={(e) => e.stopPropagation()}>
         <div className="flex items-start justify-between mb-4">
-          <h2 className="text-white font-semibold">Edit agency</h2>
-          <button type="button" onClick={onClose} className="text-slate-500 hover:text-white" aria-label="Close">
+          <h2 className="text-slate-900 font-semibold">Edit agency</h2>
+          <button type="button" onClick={onClose} className="text-slate-500 hover:text-slate-900" aria-label="Close">
             <X size={18} />
           </button>
         </div>
 
         <form onSubmit={submit} className="space-y-3">
           <div>
-            <label className="text-slate-300 text-xs mb-1 block">Agency name</label>
+            <label className="text-slate-700 text-xs mb-1 block">Agency name</label>
             <input
               type="text" value={name} onChange={(e) => setName(e.target.value)}
               required autoFocus
@@ -87,12 +87,12 @@ export function EditAgencyModal({ agencyId, initial, onClose }: Props) {
 
           <div className="grid grid-cols-2 gap-2">
             <div>
-              <label className="text-slate-300 text-xs mb-1 block">City</label>
+              <label className="text-slate-700 text-xs mb-1 block">City</label>
               <Select value={city} onChange={setCity} options={CITY_OPTIONS} />
             </div>
             <div>
-              <label className="text-slate-300 text-xs mb-1 block">
-                Address <span className="text-slate-600 font-normal">(opt)</span>
+              <label className="text-slate-700 text-xs mb-1 block">
+                Address <span className="text-slate-400 font-normal">(opt)</span>
               </label>
               <input
                 type="text" value={address} onChange={(e) => setAddress(e.target.value)}
@@ -103,7 +103,7 @@ export function EditAgencyModal({ agencyId, initial, onClose }: Props) {
           </div>
 
           <div>
-            <label className="text-slate-300 text-xs mb-1 block">Mobile number</label>
+            <label className="text-slate-700 text-xs mb-1 block">Mobile number</label>
             <input
               type="tel" value={phone} onChange={(e) => setPhone(e.target.value)}
               required placeholder="0771234567"
@@ -112,8 +112,8 @@ export function EditAgencyModal({ agencyId, initial, onClose }: Props) {
           </div>
 
           <div>
-            <label className="text-slate-300 text-xs mb-1 block">
-              Description <span className="text-slate-600 font-normal">(opt)</span>
+            <label className="text-slate-700 text-xs mb-1 block">
+              Description <span className="text-slate-400 font-normal">(opt)</span>
             </label>
             <textarea
               value={desc} onChange={(e) => setDesc(e.target.value)}
@@ -135,4 +135,4 @@ export function EditAgencyModal({ agencyId, initial, onClose }: Props) {
 }
 
 const inputClass =
-  "w-full px-3 py-2 bg-slate-800 border border-slate-700 rounded-lg text-white placeholder-slate-500 text-sm focus:outline-none focus:border-amber-500";
+  "w-full px-3 py-2 bg-slate-100 border border-slate-200 rounded-lg text-slate-900 placeholder-slate-400 text-sm focus:outline-none focus:border-blue-500";

@@ -5,7 +5,6 @@ import { createClient } from "@/lib/supabase/server";
 import { AvatarUploader } from "@/components/account/AvatarUploader";
 import { ProfileDetailsForm } from "@/components/account/ProfileDetailsForm";
 import { AgencyDetailsForm } from "@/components/account/AgencyDetailsForm";
-import { ChangePasswordForm } from "@/components/account/ChangePasswordForm";
 import { DeleteAccountSection } from "@/components/account/DeleteAccountSection";
 import type { Database } from "@/types/database";
 
@@ -13,7 +12,7 @@ type ProfileRow = Database["public"]["Tables"]["profiles"]["Row"];
 type AgencyRow  = Database["public"]["Tables"]["agencies"]["Row"];
 
 export const metadata = {
-  title: "Account settings — DriveLink SL",
+  title: "Account Settings",
 };
 
 export default async function AccountSettingsPage() {
@@ -50,13 +49,13 @@ export default async function AccountSettingsPage() {
     <div className="max-w-2xl mx-auto px-4 py-8">
       <Link
         href={backHref}
-        className="inline-flex items-center gap-1.5 text-slate-400 hover:text-white text-sm mb-4"
+        className="inline-flex items-center gap-1.5 text-slate-600 hover:text-slate-900 text-sm mb-4"
       >
         <ArrowLeft size={14} /> Back
       </Link>
 
-      <h1 className="text-2xl font-bold text-white mb-1">Account settings</h1>
-      <p className="text-slate-400 text-sm mb-8">
+      <h1 className="text-2xl font-bold text-slate-900 mb-1">Account settings</h1>
+      <p className="text-slate-600 text-sm mb-8">
         Update your profile, password, and {profile.role === "agency_owner" ? "agency" : "personal"} details.
       </p>
 
@@ -99,21 +98,16 @@ export default async function AccountSettingsPage() {
 
         {profile.role === "agency_owner" && !agency && (
           <Section title="Agency details">
-            <p className="text-slate-400 text-sm">
+            <p className="text-slate-600 text-sm">
               You haven&apos;t set up your agency yet.{" "}
-              <Link href="/signup/agency" className="text-amber-400 hover:text-amber-300">
+              <Link href="/signup?intent=provider" className="text-blue-600 hover:text-blue-500">
                 Complete onboarding →
               </Link>
             </p>
           </Section>
         )}
 
-        {/* Password */}
-        <Section title="Password">
-          <ChangePasswordForm email={user.email ?? ""} />
-        </Section>
-
-        {/* Danger zone — admins can't self-delete */}
+        {/* Danger zone, admins can't self-delete */}
         {profile.role !== "admin" && <DeleteAccountSection />}
       </div>
     </div>
@@ -122,8 +116,8 @@ export default async function AccountSettingsPage() {
 
 function Section({ title, children }: { title: string; children: React.ReactNode }) {
   return (
-    <section className="bg-slate-900 border border-slate-200 rounded-2xl shadow-sm p-5">
-      <h2 className="text-white font-semibold mb-4">{title}</h2>
+    <section className="bg-white border border-slate-200 rounded-2xl shadow-sm p-5">
+      <h2 className="text-slate-900 font-semibold mb-4">{title}</h2>
       {children}
     </section>
   );

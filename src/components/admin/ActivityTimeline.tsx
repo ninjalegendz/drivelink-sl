@@ -105,9 +105,9 @@ function renderEvent(e: ActivityEvent): EventRender {
 }
 
 const TONE_STYLES = {
-  slate:   { icon: "text-slate-400",   bg: "bg-slate-800" },
+  slate:   { icon: "text-slate-600",   bg: "bg-slate-100" },
   emerald: { icon: "text-emerald-400", bg: "bg-emerald-500/10" },
-  amber:   { icon: "text-amber-400",   bg: "bg-amber-500/10" },
+  amber:   { icon: "text-blue-600",   bg: "bg-blue-500/10" },
   red:     { icon: "text-red-400",     bg: "bg-red-500/10" },
   blue:    { icon: "text-blue-400",    bg: "bg-blue-500/10" },
 } as const;
@@ -122,7 +122,7 @@ const ROLE_LABEL: Record<string, string> = {
 export function ActivityTimeline({ events }: { events: ActivityEvent[] }) {
   if (events.length === 0) {
     return (
-      <div className="bg-slate-900 border border-slate-200 rounded-2xl shadow-sm p-12 text-center text-slate-500 text-sm">
+      <div className="bg-white border border-slate-200 rounded-2xl shadow-sm p-12 text-center text-slate-500 text-sm">
         No activity recorded yet.
       </div>
     );
@@ -138,16 +138,16 @@ export function ActivityTimeline({ events }: { events: ActivityEvent[] }) {
             <div className={`shrink-0 w-9 h-9 rounded-full flex items-center justify-center ${tone.bg}`}>
               <r.Icon size={16} className={tone.icon} />
             </div>
-            <div className="flex-1 bg-slate-900 border border-slate-800 rounded-xl px-4 py-3">
+            <div className="flex-1 bg-white border border-slate-100 rounded-xl px-4 py-3">
               <div className="flex items-start justify-between gap-3">
-                <p className="text-white text-sm font-medium">{r.title}</p>
-                <p className="text-slate-600 text-xs font-mono shrink-0">
+                <p className="text-slate-900 text-sm font-medium">{r.title}</p>
+                <p className="text-slate-400 text-xs font-mono shrink-0">
                   {new Date(e.created_at).toLocaleString("en-LK", {
                     month: "short", day: "numeric", hour: "2-digit", minute: "2-digit",
                   })}
                 </p>
               </div>
-              {r.detail && <p className="text-slate-400 text-xs mt-1">{r.detail}</p>}
+              {r.detail && <p className="text-slate-600 text-xs mt-1">{r.detail}</p>}
               <div className="flex items-center gap-3 mt-1.5 text-xs">
                 {e.actor_role && (
                   <span className="text-slate-500">By {ROLE_LABEL[e.actor_role] ?? e.actor_role}</span>
@@ -155,7 +155,7 @@ export function ActivityTimeline({ events }: { events: ActivityEvent[] }) {
                 {e.related_booking_id && (
                   <Link
                     href={`/admin/bookings`}
-                    className="text-amber-400 hover:text-amber-300 font-mono"
+                    className="text-blue-600 hover:text-blue-500 font-mono"
                   >
                     {e.related_booking_id.slice(0, 8).toUpperCase()}
                   </Link>

@@ -48,7 +48,7 @@ export function VehicleStatusToggle({ vehicleId, status: initialStatus }: Props)
     <button
       onClick={toggle}
       disabled={pending}
-      className="text-xs text-slate-400 hover:text-white disabled:opacity-50 transition-colors"
+      className="text-xs text-slate-600 hover:text-slate-900 disabled:opacity-50 transition-colors"
     >
       {pending ? "..." : label}
     </button>

@@ -20,7 +20,7 @@ export interface LogEventInput {
  * doesn't get in the way (the log SELECT policies handle visibility on
  * the read side).
  *
- * Failures are logged + swallowed so they never break the main flow —
+ * Failures are logged + swallowed so they never break the main flow,
  * an audit log that aborts an action is worse than a missing log row.
  */
 export async function logEvent(

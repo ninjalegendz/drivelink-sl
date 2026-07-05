@@ -18,6 +18,15 @@
     "binding":   "ASSETS"
   },
 
+  // R2-backed Next incremental/data cache (see open-next.config.ts). The binding
+  // name is the one OpenNext's r2IncrementalCache looks for.
+  "r2_buckets": [
+    {
+      "binding":     "NEXT_INC_CACHE_R2_BUCKET",
+      "bucket_name": "drivelink-next-cache"
+    }
+  ],
+
   // Env vars are NOT listed here — they're set per-environment in the
   // Cloudflare dashboard (or via `wrangler secret put`) so the JSON
   // stays in git but credentials don't.

@@ -9,10 +9,13 @@ import { Button } from "@/components/ui/Button";
 interface Props {
   bookingId:   string;
   revieweeId:  string;
-  agencyName:  string;
+  /** Who's being reviewed, an agency name (renter→agency) or renter name (agency→renter). */
+  subjectName: string;
+  /** Called after a successful insert (before the page refresh). */
+  onSubmitted?: () => void;
 }
 
-export function ReviewForm({ bookingId, revieweeId, agencyName }: Props) {
+export function ReviewForm({ bookingId, revieweeId, subjectName, onSubmitted }: Props) {
   const router = useRouter();
   const [rating, setRating]     = useState(0);
   const [hover, setHover]       = useState(0);
@@ -55,6 +58,7 @@ export function ReviewForm({ bookingId, revieweeId, agencyName }: Props) {
       return;
     }
 
+    onSubmitted?.();
     startTransition(() => router.refresh());
   }
 
@@ -63,7 +67,7 @@ export function ReviewForm({ bookingId, revieweeId, agencyName }: Props) {
   return (
     <form onSubmit={handleSubmit} className="space-y-3">
       <div>
-        <p className="text-slate-400 text-xs mb-2">How was {agencyName}?</p>
+        <p className="text-slate-600 text-xs mb-2">How was {subjectName}?</p>
         <div className="flex gap-1">
           {[1, 2, 3, 4, 5].map((n) => (
             <button
@@ -73,7 +77,7 @@ export function ReviewForm({ bookingId, revieweeId, agencyName }: Props) {
               onMouseLeave={() => setHover(0)}
               onClick={() => setRating(n)}
               className={`transition-transform hover:scale-110 ${
-                n <= display ? "text-amber-400" : "text-slate-700"
+                n <= display ? "text-amber-400" : "text-slate-300"
               }`}
               aria-label={`${n} star${n === 1 ? "" : "s"}`}
             >
@@ -84,8 +88,8 @@ export function ReviewForm({ bookingId, revieweeId, agencyName }: Props) {
       </div>
 
       <div>
-        <label className="text-slate-400 text-xs mb-1 block">
-          Comment <span className="text-slate-600">(optional)</span>
+        <label className="text-slate-600 text-xs mb-1 block">
+          Comment <span className="text-slate-400">(optional)</span>
         </label>
         <textarea
           value={comment}
@@ -93,7 +97,7 @@ export function ReviewForm({ bookingId, revieweeId, agencyName }: Props) {
           rows={3}
           maxLength={500}
           placeholder="What did you like or wish was better?"
-          className="w-full px-3 py-2 bg-slate-800 border border-slate-700 rounded-lg text-white placeholder-slate-500 text-sm focus:outline-none focus:border-amber-500 resize-none"
+          className="w-full px-3 py-2 bg-slate-100 border border-slate-200 rounded-lg text-slate-900 placeholder-slate-400 text-sm focus:outline-none focus:border-blue-500 resize-none"
         />
       </div>
 

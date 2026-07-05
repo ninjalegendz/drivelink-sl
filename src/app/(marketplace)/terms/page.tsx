@@ -1,9 +1,10 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { RoleTermsTabs } from "./RoleTermsTabs";
+import { siteConfig, whatsappLink } from "@/lib/site-config";
 
 export const metadata: Metadata = {
-  title: "Terms of Service — DriveLink SL",
+  title: "Terms of Service",
   description: "Terms of service for renters and vehicle-rental agencies using DriveLink SL.",
 };
 
@@ -11,38 +12,38 @@ export default function TermsPage() {
   return (
     <div className="max-w-3xl mx-auto px-4 py-12">
       <header className="mb-10">
-        <p className="text-amber-500 text-xs font-semibold uppercase tracking-wider">Legal</p>
-        <h1 className="text-3xl sm:text-4xl font-bold text-slate-200 mt-2">Terms of Service</h1>
+        <p className="text-blue-600 text-xs font-semibold uppercase tracking-wider">Legal</p>
+        <h1 className="text-3xl sm:text-4xl font-bold text-slate-900 mt-2">Terms of Service</h1>
         <p className="text-slate-500 text-sm mt-2">Last updated: 11 May 2026</p>
       </header>
 
-      <article className="space-y-8 text-slate-400 text-sm leading-relaxed">
+      <article className="space-y-8 text-slate-600 text-sm leading-relaxed">
 
         <section>
-          <h2 className="text-xl font-semibold text-slate-200 mb-2">1. Introduction</h2>
+          <h2 className="text-xl font-semibold text-slate-900 mb-2">1. Introduction</h2>
           <p>
             These Terms of Service (&quot;Terms&quot;) govern your use of the DriveLink SL platform
             (&quot;DriveLink&quot;, &quot;we&quot;, &quot;our&quot;), accessible at{" "}
-            <Link href="/" className="text-amber-600 hover:text-amber-700 font-medium">drivelink.lk</Link>.
+            <Link href="/" className="text-blue-700 hover:text-blue-700 font-medium">{siteConfig.domain}</Link>.
             By creating an account or using the platform you agree to be bound by these Terms. If
             you do not agree, do not use the platform.
           </p>
         </section>
 
         <section>
-          <h2 className="text-xl font-semibold text-slate-200 mb-2">2. What DriveLink is</h2>
+          <h2 className="text-xl font-semibold text-slate-900 mb-2">2. What DriveLink is</h2>
           <p>
             DriveLink is a marketplace connecting individuals who wish to rent vehicles
             (&quot;Renters&quot;) with independent vehicle-rental businesses (&quot;Agencies&quot;).
             DriveLink does not own vehicles, employ drivers, or provide rental services
-            directly. We facilitate discovery, booking, identity verification, and a lock-in
-            payment mechanism — the actual rental contract is between the Renter and the
-            Agency.
+            directly. We facilitate discovery, booking requests and identity verification -
+            the actual rental contract, payment and deposit are agreed directly between the
+            Renter and the Agency.
           </p>
         </section>
 
         <section>
-          <h2 className="text-xl font-semibold text-slate-200 mb-2">3. Accounts and eligibility</h2>
+          <h2 className="text-xl font-semibold text-slate-900 mb-2">3. Accounts and eligibility</h2>
           <ul className="list-disc pl-5 space-y-1">
             <li>You must be at least 18 years old to create an account.</li>
             <li>You must provide accurate identity information. Knowingly providing false
@@ -54,30 +55,30 @@ export default function TermsPage() {
           </ul>
         </section>
 
-        {/* Role-specific section — tab-switchable between Renter and Agency terms */}
+        {/* Role-specific section, tab-switchable between Renter and Agency terms */}
         <RoleTermsTabs />
 
         <section>
-          <h2 className="text-xl font-semibold text-slate-200 mb-2">5. Fees and payments</h2>
+          <h2 className="text-xl font-semibold text-slate-900 mb-2">5. Fees and payments</h2>
           <p>
             Detailed pricing is published on our{" "}
-            <Link href="/pricing" className="text-amber-600 hover:text-amber-700 font-medium">pricing page</Link>.
+            <Link href="/pricing" className="text-blue-700 hover:text-blue-700 font-medium">pricing page</Link>.
             In summary:
           </p>
           <ul className="list-disc pl-5 space-y-1 mt-2">
-            <li><strong>Renter lock-in fee:</strong> Rs. 500 per booking, charged only after the
-                agency confirms availability.</li>
-            <li><strong>Agency platform fee:</strong> Rs. 200 per completed booking, invoiced
-                monthly.</li>
-            <li>All amounts are in Sri Lankan Rupees (LKR) and are inclusive of any applicable
-                local taxes payable by DriveLink.</li>
-            <li>Refunds are issued when a booking is cancelled by the agency after Renter
-                payment, or in DriveLink&apos;s sole discretion in cases of platform fault.</li>
+            <li><strong>During our launch period, DriveLink charges no platform fees:</strong>
+                no booking fee for Renters and no commission or listing fee for Agencies.</li>
+            <li>The rental price, security deposit and any extras are set by the Agency and paid
+                by the Renter directly to the Agency. DriveLink does not collect or hold these funds.</li>
+            <li>We may introduce optional paid features (such as featured listings or a booking
+                commission) in future. Any such change will be announced in advance and reflected
+                on the <Link href="/pricing" className="text-blue-700 hover:text-blue-700 font-medium">pricing page</Link>.</li>
+            <li>All amounts are in Sri Lankan Rupees (LKR).</li>
           </ul>
         </section>
 
         <section>
-          <h2 className="text-xl font-semibold text-slate-200 mb-2">6. Liability and disputes</h2>
+          <h2 className="text-xl font-semibold text-slate-900 mb-2">6. Liability and disputes</h2>
           <p>
             DriveLink is a technology platform, not the renting party. We do not warrant that any
             specific Agency will perform a rental satisfactorily, nor do we accept liability for:
@@ -96,7 +97,7 @@ export default function TermsPage() {
         </section>
 
         <section>
-          <h2 className="text-xl font-semibold text-slate-200 mb-2">7. Account termination</h2>
+          <h2 className="text-xl font-semibold text-slate-900 mb-2">7. Account termination</h2>
           <p>
             We may suspend or terminate an account at our discretion for: fraud, repeated late
             cancellations, off-platform bypass attempts, knowingly false information, abuse of
@@ -105,14 +106,14 @@ export default function TermsPage() {
           </p>
           <p className="mt-3">
             You may delete your own account at any time from your{" "}
-            <Link href="/account" className="text-amber-600 hover:text-amber-700 font-medium">account page</Link>.
+            <Link href="/account" className="text-blue-700 hover:text-blue-700 font-medium">account page</Link>.
             Deletion is irreversible. Bookings already in progress will continue until completion or
             cancellation.
           </p>
         </section>
 
         <section>
-          <h2 className="text-xl font-semibold text-slate-200 mb-2">8. Governing law</h2>
+          <h2 className="text-xl font-semibold text-slate-900 mb-2">8. Governing law</h2>
           <p>
             These Terms are governed by the laws of the Democratic Socialist Republic of Sri
             Lanka. Any dispute arising under these Terms is subject to the exclusive jurisdiction
@@ -121,7 +122,7 @@ export default function TermsPage() {
         </section>
 
         <section>
-          <h2 className="text-xl font-semibold text-slate-200 mb-2">9. Changes to these terms</h2>
+          <h2 className="text-xl font-semibold text-slate-900 mb-2">9. Changes to these terms</h2>
           <p>
             We may update these Terms at any time. Material changes will be notified by email
             and/or in-app. Continued use of the platform after a change constitutes acceptance.
@@ -130,11 +131,12 @@ export default function TermsPage() {
           </p>
         </section>
 
-        <section className="pt-8 border-t border-slate-700">
+        <section className="pt-8 border-t border-slate-200">
           <p className="text-slate-500 text-xs">
             Questions about these Terms? Contact us via{" "}
-            <Link href="/dashboard/support" className="text-amber-600 hover:text-amber-700 font-medium">in-app support</Link>{" "}
-            (for agencies) or email <span className="font-mono">support@drivelink.lk</span> (for renters).
+            <Link href="/dashboard/support" className="text-blue-700 hover:text-blue-700 font-medium">in-app support</Link>{" "}
+            (for agencies), email <span className="font-mono">{siteConfig.supportEmail}</span>, or{" "}
+            <a href={whatsappLink()} target="_blank" rel="noopener noreferrer" className="text-blue-700 hover:text-blue-700 font-medium">WhatsApp us</a>.
           </p>
         </section>
       </article>

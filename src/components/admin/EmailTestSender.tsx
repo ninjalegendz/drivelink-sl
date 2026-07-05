@@ -28,15 +28,15 @@ export function EmailTestSender({ disabled }: Props) {
 
     if (!res.ok) { setError(payload.error ?? "Send failed."); return; }
     if (payload.devOnly) {
-      setInfo("Sent to dev console only — env vars are not set on this host.");
+      setInfo("Sent to dev console only, env vars are not set on this host.");
     } else {
       setInfo(`Test email sent to ${to}. Check the inbox (and spam folder).`);
     }
   }
 
   return (
-    <div className="bg-slate-900 border border-slate-200 rounded-2xl shadow-sm p-5">
-      <h2 className="text-white font-semibold text-sm mb-1">Send test email</h2>
+    <div className="bg-white border border-slate-200 rounded-2xl shadow-sm p-5">
+      <h2 className="text-slate-900 font-semibold text-sm mb-1">Send test email</h2>
       <p className="text-slate-500 text-xs mb-3">
         Sends a one-line confirmation to the address below. Use your own email so
         you can verify deliverability + the &quot;from&quot; address looks right.
@@ -49,7 +49,7 @@ export function EmailTestSender({ disabled }: Props) {
           onChange={(e) => setTo(e.target.value)}
           disabled={disabled}
           placeholder="you@example.com"
-          className="flex-1 px-3 py-2 bg-slate-800 border border-slate-700 rounded-lg text-white placeholder-slate-500 text-sm focus:outline-none focus:border-amber-500 disabled:opacity-50"
+          className="flex-1 px-3 py-2 bg-slate-100 border border-slate-200 rounded-lg text-slate-900 placeholder-slate-400 text-sm focus:outline-none focus:border-blue-500 disabled:opacity-50"
         />
         <Button type="button" variant="secondary" loading={sending} disabled={disabled} onClick={send}>
           <Send size={14} /> Send

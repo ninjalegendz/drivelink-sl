@@ -47,7 +47,7 @@ export function SlipActions({ bookingId, renterId }: { bookingId: string; renter
         size="md"
         className="flex-1"
       >
-        <Check size={16} /> Approve — Activate booking
+        <Check size={16} /> Approve, Activate booking
       </Button>
       <Button
         loading={loading === "reject"}
@@ -56,7 +56,7 @@ export function SlipActions({ bookingId, renterId }: { bookingId: string; renter
         size="md"
         className="flex-1"
       >
-        <X size={16} /> Reject — Ask to re-upload
+        <X size={16} /> Reject, Ask to re-upload
       </Button>
     </div>
   );

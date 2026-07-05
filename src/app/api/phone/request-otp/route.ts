@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { createClient, createServiceClient } from "@/lib/supabase/server";
-import { sendSms } from "@/lib/sms/textlk";
+import { sendOtpCascade } from "@/lib/sms/send-otp";
 import {
   generateOtp,
   hashOtp,
@@ -67,17 +67,26 @@ export async function POST() {
     return NextResponse.json({ error: "Could not start verification." }, { status: 500 });
   }
 
-  const message = `Your DriveLink verification code is ${code}. It expires in 10 minutes. Do not share this code.`;
-  const result  = await sendSms(p.phone, message);
+  // Verifying the phone itself, so SMS -> WhatsApp only (no email, an email
+  // can't prove the number is theirs).
+  const { channel, devOnly } = await sendOtpCascade({
+    phone:  p.phone,
+    code,
+    smsKey: "phone_verify",
+  });
 
-  if (!result.ok) {
-    return NextResponse.json({ error: result.error ?? "Could not send SMS." }, { status: 502 });
+  if (!channel) {
+    return NextResponse.json(
+      { error: "We couldn't reach that number by SMS or WhatsApp. Make sure it can receive one of those." },
+      { status: 502 },
+    );
   }
 
   return NextResponse.json({
     ok: true,
+    channel,
     nextCooldownSec,
-    devOnly: result.devOnly ?? false,
-    devCode: result.devOnly ? code : undefined,
+    devOnly,
+    devCode: devOnly ? code : undefined,
   });
 }

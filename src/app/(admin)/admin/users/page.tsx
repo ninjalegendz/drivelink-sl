@@ -50,7 +50,7 @@ export default async function AdminUsersPage({ searchParams }: Props) {
     updated_at: string;
   }[];
 
-  // Booking history per user — useful signal when reviewing a renter's KYC
+  // Booking history per user, useful signal when reviewing a renter's KYC
   const userIds = users.map((u) => u.id);
   const bookingsByUser = new Map<string, { total: number; completed: number; cancelled: number; active: number }>();
   if (userIds.length > 0) {
@@ -78,34 +78,41 @@ export default async function AdminUsersPage({ searchParams }: Props) {
 
   return (
     <div>
-      <h1 className="text-2xl font-bold text-white mb-2">Renters</h1>
+      <h1 className="text-2xl font-bold text-slate-900 mb-2">Renters</h1>
 
-      <div className="flex gap-2 mb-6 flex-wrap">
+      <div className="flex gap-2 mb-6 flex-wrap items-center">
         {TABS.map(({ label, value }) => (
           <a
             key={value}
             href={value ? `/admin/users?kyc=${value}` : "/admin/users"}
             className={`px-3 py-1.5 rounded-lg text-sm transition-colors ${
               kyc === value || (!kyc && !value)
-                ? "bg-slate-700 text-white font-medium"
-                : "text-slate-400 hover:text-white bg-slate-900"
+                ? "bg-slate-200 text-slate-900 font-medium"
+                : "text-slate-600 hover:text-slate-900 bg-white"
             }`}
           >
             {label}
           </a>
         ))}
+        {/* Blacklist lives here now (folded out of the sidebar) */}
+        <a
+          href="/admin/blacklist"
+          className="px-3 py-1.5 rounded-lg text-sm bg-white text-rose-600 hover:bg-rose-50 inline-flex items-center gap-1.5 sm:ml-auto"
+        >
+          <ShieldAlert size={14} /> Blacklist
+        </a>
       </div>
 
       <div className="space-y-4">
         {users.map((u) => {
           const stats = bookingsByUser.get(u.id) ?? { total: 0, completed: 0, cancelled: 0, active: 0 };
           return (
-          <div key={u.id} className="bg-slate-900 border border-slate-200 rounded-2xl shadow-sm p-5">
+          <div key={u.id} className="bg-white border border-slate-200 rounded-2xl shadow-sm p-5">
 
             {/* Top row: avatar + info + actions */}
             <div className="flex items-start justify-between gap-4 mb-4">
               <div className="flex items-start gap-3 flex-1 min-w-0">
-                <div className="relative w-12 h-12 shrink-0 rounded-full overflow-hidden bg-slate-800 border border-slate-700">
+                <div className="relative w-12 h-12 shrink-0 rounded-full overflow-hidden bg-slate-100 border border-slate-200">
                   {u.avatar_url ? (
                     <Image src={u.avatar_url} alt="" fill className="object-cover" sizes="48px" unoptimized />
                   ) : (
@@ -116,12 +123,12 @@ export default async function AdminUsersPage({ searchParams }: Props) {
                 </div>
                 <div className="min-w-0 flex-1">
                   <div className="flex items-center gap-2 flex-wrap">
-                    <p className="text-white font-semibold">{u.full_name}</p>
+                    <p className="text-slate-900 font-semibold">{u.full_name}</p>
                     <Badge variant={kycVariant[u.kyc_status] ?? "slate"}>{u.kyc_status}</Badge>
                     {u.is_blacklisted && <Badge variant="red">Blacklisted</Badge>}
                     {u.phone_verified && <Badge variant="green">Phone verified</Badge>}
                   </div>
-                  <p className="text-slate-400 text-sm mt-0.5">
+                  <p className="text-slate-600 text-sm mt-0.5">
                     {u.phone}{u.role !== "renter" ? ` · ${u.role}` : ""}
                   </p>
                   <div className="flex items-center gap-3 mt-1 text-xs text-slate-500 flex-wrap">
@@ -135,14 +142,14 @@ export default async function AdminUsersPage({ searchParams }: Props) {
                       <span>{u.reliability_pct}% reliability</span>
                     )}
                     <span>Joined {new Date(u.created_at).toLocaleDateString("en-LK")}</span>
-                    <span className="font-mono text-slate-600">{u.id.slice(0, 8).toUpperCase()}</span>
+                    <span className="font-mono text-slate-400">{u.id.slice(0, 8).toUpperCase()}</span>
                   </div>
                 </div>
               </div>
 
               <div className="flex flex-col items-end gap-2">
                 {/* Show the KYC action row whenever there's a Didit session
-                    on file OR status is pending — covers the case where
+                    on file OR status is pending, covers the case where
                     Didit's webhook never arrived and status stayed at
                     "unverified" while a session exists waiting to sync. */}
                 {(u.kyc_status === "pending" || u.didit_session_id) && (
@@ -167,21 +174,21 @@ export default async function AdminUsersPage({ searchParams }: Props) {
                 <ShieldAlert size={16} className="text-red-400 shrink-0 mt-0.5" />
                 <div>
                   <p className="text-red-400 font-medium text-xs">Blacklist reason</p>
-                  <p className="text-red-300/80 text-xs mt-0.5">{u.blacklist_reason}</p>
+                  <p className="text-red-600 text-xs mt-0.5">{u.blacklist_reason}</p>
                 </div>
               </div>
             )}
 
             {/* Booking stats */}
             {stats.total > 0 && (
-              <div className="grid grid-cols-4 gap-2 mb-4">
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 mb-4">
                 {[
-                  { label: "Bookings", value: stats.total, color: "text-white" },
+                  { label: "Bookings", value: stats.total, color: "text-slate-900" },
                   { label: "Completed", value: stats.completed, color: "text-emerald-400" },
-                  { label: "Active", value: stats.active, color: "text-amber-400" },
-                  { label: "Cancelled", value: stats.cancelled, color: stats.cancelled > 0 ? "text-red-400" : "text-slate-400" },
+                  { label: "Active", value: stats.active, color: "text-blue-600" },
+                  { label: "Cancelled", value: stats.cancelled, color: stats.cancelled > 0 ? "text-red-400" : "text-slate-600" },
                 ].map(({ label, value, color }) => (
-                  <div key={label} className="bg-slate-800/40 border border-slate-700/50 rounded-lg px-3 py-2">
+                  <div key={label} className="bg-slate-100/60 border border-slate-200/60 rounded-lg px-3 py-2">
                     <p className="text-slate-500 text-[10px] uppercase tracking-wider">{label}</p>
                     <p className={`text-sm font-semibold mt-0.5 ${color}`}>{value}</p>
                   </div>
@@ -196,7 +203,7 @@ export default async function AdminUsersPage({ searchParams }: Props) {
                   <p className="text-slate-500 text-xs mb-1.5">NIC</p>
                   {u.nic_url ? (
                     <a href={u.nic_url} target="_blank" rel="noopener noreferrer" className="block group">
-                      <div className="relative w-full h-36 bg-slate-800 rounded-xl overflow-hidden border border-slate-700 group-hover:border-amber-500 transition-colors">
+                      <div className="relative w-full h-36 bg-slate-100 rounded-xl overflow-hidden border border-slate-200 group-hover:border-blue-500 transition-colors">
                         <Image
                           src={u.nic_url}
                           alt={`${u.full_name} NIC`}
@@ -212,7 +219,7 @@ export default async function AdminUsersPage({ searchParams }: Props) {
                       </div>
                     </a>
                   ) : (
-                    <div className="w-full h-36 bg-slate-800 rounded-xl border border-slate-700 flex items-center justify-center text-slate-600 text-sm">
+                    <div className="w-full h-36 bg-slate-100 rounded-xl border border-slate-200 flex items-center justify-center text-slate-400 text-sm">
                       Not uploaded
                     </div>
                   )}
@@ -222,7 +229,7 @@ export default async function AdminUsersPage({ searchParams }: Props) {
                   <p className="text-slate-500 text-xs mb-1.5">Selfie with NIC</p>
                   {u.selfie_url ? (
                     <a href={u.selfie_url} target="_blank" rel="noopener noreferrer" className="block group">
-                      <div className="relative w-full h-36 bg-slate-800 rounded-xl overflow-hidden border border-slate-700 group-hover:border-amber-500 transition-colors">
+                      <div className="relative w-full h-36 bg-slate-100 rounded-xl overflow-hidden border border-slate-200 group-hover:border-blue-500 transition-colors">
                         <Image
                           src={u.selfie_url}
                           alt={`${u.full_name} selfie`}
@@ -238,7 +245,7 @@ export default async function AdminUsersPage({ searchParams }: Props) {
                       </div>
                     </a>
                   ) : (
-                    <div className="w-full h-36 bg-slate-800 rounded-xl border border-slate-700 flex items-center justify-center text-slate-600 text-sm">
+                    <div className="w-full h-36 bg-slate-100 rounded-xl border border-slate-200 flex items-center justify-center text-slate-400 text-sm">
                       Not uploaded
                     </div>
                   )}
@@ -248,7 +255,7 @@ export default async function AdminUsersPage({ searchParams }: Props) {
 
             {/* No docs uploaded yet */}
             {!u.nic_url && !u.selfie_url && u.kyc_status === "unverified" && (
-              <div className="text-slate-600 text-xs italic">No documents uploaded yet.</div>
+              <div className="text-slate-400 text-xs italic">No documents uploaded yet.</div>
             )}
           </div>
           );

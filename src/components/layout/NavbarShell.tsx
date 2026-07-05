@@ -1,10 +1,11 @@
 "use client";
 
 import Link from "next/link";
+import Image from "next/image";
 import { usePathname } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
 import {
-  Home as HomeIcon, Compass, Tag, HelpCircle, LogIn, User, Car, Building2, ShieldAlert,
+  Building2, Tag, HelpCircle, LogIn, User, ShieldAlert, Plane, Compass,
 } from "lucide-react";
 
 type NavRole = "admin" | "agency_owner" | "renter" | null;
@@ -15,10 +16,10 @@ interface Props {
 }
 
 const LINKS = [
-  { href: "/",         label: "Home",    Icon: HomeIcon },
-  { href: "/vehicles", label: "Browse",  Icon: Compass },
-  { href: "/pricing",  label: "Pricing", Icon: Tag },
-  { href: "/faq",      label: "FAQ",     Icon: HelpCircle },
+  { href: "/vehicles", label: "Explore Vehicles", Icon: Compass },
+  { href: "/vehicles?option=airport-pickup", label: "Airport Transfers", Icon: Plane },
+  { href: "/pricing",  label: "Pricing",          Icon: Tag },
+  { href: "/faq",      label: "Help",             Icon: HelpCircle },
 ];
 
 export function NavbarShell({ role, signedIn }: Props) {
@@ -47,22 +48,27 @@ export function NavbarShell({ role, signedIn }: Props) {
   }, [open]);
 
   return (
-    <header ref={headerRef} className="sticky top-0 z-40 glass border-b border-white/40">
-      <div className="max-w-6xl mx-auto px-4 h-14 flex items-center justify-between">
-        <Link href="/" className="font-bold text-white text-lg tracking-tight">
-          Drive<span className="text-amber-400">Link</span>
+    <header ref={headerRef} className="sticky top-0 z-40 glass-strong border-b border-slate-200">
+      <div className="max-w-7xl mx-auto px-4 h-16 flex items-center justify-between">
+        {/* Brand */}
+        <Link href="/" className="flex items-center gap-2.5">
+          <Image src="/logo-circle.png" alt="DriveLink logo" width={40} height={40} priority unoptimized className="h-10 w-10 shrink-0" />
+          <span className="leading-none">
+            <span className="flex items-baseline gap-1.5">
+              <span className="font-display font-extrabold text-lg text-slate-900 tracking-tight">DriveLink</span>
+              <span className="text-[10px] font-extrabold uppercase bg-blue-50 text-blue-700 px-1.5 py-0.5 rounded">Beta</span>
+            </span>
+            <span className="hidden sm:block text-[10px] text-slate-400 font-semibold tracking-wider uppercase mt-0.5">
+              Sri Lanka Vehicle Marketplace
+            </span>
+          </span>
         </Link>
 
         {/* Desktop nav */}
-        <nav className="hidden md:flex items-center gap-6 text-sm text-slate-400">
-          <Link href="/vehicles" className="hover:text-white transition-colors">Browse</Link>
-          <Link href="/pricing"  className="hover:text-white transition-colors">Pricing</Link>
-          <Link href="/faq"      className="hover:text-white transition-colors">FAQ</Link>
-          {!signedIn && (
-            <Link href="/signup/agency" className="hover:text-white transition-colors">
-              List your fleet
-            </Link>
-          )}
+        <nav className="hidden lg:flex items-center gap-7 text-sm font-semibold text-slate-500">
+          {LINKS.map(({ href, label }) => (
+            <Link key={href} href={href} className="hover:text-slate-900 transition-colors">{label}</Link>
+          ))}
         </nav>
 
         {/* Desktop auth */}
@@ -71,21 +77,21 @@ export function NavbarShell({ role, signedIn }: Props) {
             role === "admin" ? (
               <Link
                 href="/admin"
-                className="px-4 py-1.5 text-sm bg-red-500/15 hover:bg-red-500/25 text-red-400 font-semibold rounded-xl transition-colors border border-red-500/25"
+                className="px-4 py-2 text-sm bg-rose-50 hover:bg-rose-100 text-rose-600 font-semibold rounded-xl transition-colors border border-rose-200"
               >
                 Admin
               </Link>
             ) : role === "agency_owner" ? (
               <Link
                 href="/dashboard"
-                className="px-4 py-1.5 text-sm bg-amber-500 hover:bg-amber-400 text-stone-900 font-semibold rounded-xl transition-colors"
+                className="px-4 py-2 text-sm bg-blue-600 hover:bg-blue-700 text-white font-semibold rounded-xl transition-colors shadow-sm shadow-blue-600/10"
               >
                 Dashboard
               </Link>
             ) : (
               <Link
                 href="/account"
-                className="px-4 py-1.5 text-sm bg-slate-800 hover:bg-slate-700 text-white font-semibold rounded-xl transition-colors"
+                className="px-4 py-2 text-sm bg-slate-100 hover:bg-slate-200 text-slate-900 font-semibold rounded-xl transition-colors"
               >
                 Account
               </Link>
@@ -94,27 +100,27 @@ export function NavbarShell({ role, signedIn }: Props) {
             <>
               <Link
                 href="/login"
-                className="px-3 py-1.5 text-sm text-slate-300 hover:text-white transition-colors"
+                className="px-3 py-2 text-sm font-semibold text-slate-700 hover:bg-slate-100 rounded-lg transition-colors"
               >
-                Sign in
+                Log In
               </Link>
               <Link
-                href="/signup/agency"
-                className="px-4 py-1.5 text-sm bg-amber-500 hover:bg-amber-400 text-stone-900 font-semibold rounded-xl transition-colors"
+                href="/signup?intent=provider"
+                className="inline-flex items-center gap-1.5 px-4 py-2 text-sm bg-blue-600 hover:bg-blue-700 text-white font-bold rounded-xl transition-colors shadow-sm shadow-blue-600/10"
               >
-                List your fleet
+                <User className="w-3.5 h-3.5" /> List Your Vehicle
               </Link>
             </>
           )}
         </div>
 
-        {/* Mobile burger button — three lines that morph into an X */}
+        {/* Mobile burger button, three lines that morph into an X */}
         <button
           type="button"
           onClick={() => setOpen((o) => !o)}
           aria-expanded={open}
           aria-label={open ? "Close menu" : "Open menu"}
-          className="md:hidden spring-press w-10 h-10 rounded-xl bg-slate-900 border border-stone-200 flex items-center justify-center text-slate-200"
+          className="md:hidden spring-press w-10 h-10 rounded-xl bg-white border border-slate-200 flex items-center justify-center text-slate-900"
         >
           <span className="relative block w-5 h-5">
             <span
@@ -136,49 +142,47 @@ export function NavbarShell({ role, signedIn }: Props) {
         </button>
       </div>
 
-      {/* Mobile expanding panel — solid white background, grows the header
-          itself via grid-template-rows so the page below is pushed down.
-          NB: bg-slate-900 is white under our inverted palette; bg-white
-          would resolve to deep slate. */}
+      {/* Mobile expanding panel, grows the header itself via grid-template-rows
+          so the page below is pushed down. */}
       <div
         className="md:hidden grid transition-[grid-template-rows] duration-300 ease-out"
         style={{ gridTemplateRows: open ? "1fr" : "0fr" }}
       >
-        <div className="overflow-hidden bg-slate-900">
-          <div className="px-4 py-3 border-t border-stone-200 space-y-1">
+        <div className="overflow-hidden bg-white">
+          <div className="px-4 py-3 border-t border-slate-200 space-y-1">
             {LINKS.map(({ href, label, Icon }) => (
               <Link
                 key={href}
                 href={href}
-                className="spring-press flex items-center gap-3 px-3 py-2.5 rounded-xl hover:bg-stone-100 transition-colors"
+                className="spring-press flex items-center gap-3 px-3 py-2.5 rounded-xl hover:bg-slate-100 transition-colors"
               >
-                <span className="w-8 h-8 rounded-lg bg-amber-500/10 text-amber-500 flex items-center justify-center">
+                <span className="w-8 h-8 rounded-lg bg-blue-50 text-blue-600 flex items-center justify-center">
                   <Icon size={14} />
                 </span>
-                <span className="text-slate-200 font-medium text-sm">{label}</span>
+                <span className="text-slate-900 font-medium text-sm">{label}</span>
               </Link>
             ))}
 
-            <div className="border-t border-stone-200 mt-2 pt-2 space-y-1">
+            <div className="border-t border-slate-200 mt-2 pt-2 space-y-1">
               {signedIn ? (
                 role === "admin" ? (
                   <Link
                     href="/admin"
-                    className="spring-press flex items-center gap-3 px-3 py-2.5 rounded-xl bg-red-500/15 border border-red-500/25 text-red-500 font-semibold"
+                    className="spring-press flex items-center gap-3 px-3 py-2.5 rounded-xl bg-rose-50 border border-rose-200 text-rose-600 font-semibold"
                   >
                     <ShieldAlert size={16} /> Admin
                   </Link>
                 ) : role === "agency_owner" ? (
                   <Link
                     href="/dashboard"
-                    className="spring-press flex items-center gap-3 px-3 py-2.5 rounded-xl bg-amber-500 text-stone-900 font-semibold"
+                    className="spring-press flex items-center gap-3 px-3 py-2.5 rounded-xl bg-blue-600 text-white font-semibold"
                   >
                     <Building2 size={16} /> Dashboard
                   </Link>
                 ) : (
                   <Link
                     href="/account"
-                    className="spring-press flex items-center gap-3 px-3 py-2.5 rounded-xl bg-stone-100 text-slate-200 font-medium"
+                    className="spring-press flex items-center gap-3 px-3 py-2.5 rounded-xl bg-slate-100 text-slate-900 font-medium"
                   >
                     <User size={16} /> Account
                   </Link>
@@ -187,15 +191,15 @@ export function NavbarShell({ role, signedIn }: Props) {
                 <>
                   <Link
                     href="/login"
-                    className="spring-press flex items-center gap-3 px-3 py-2.5 rounded-xl bg-stone-100 text-slate-200 font-medium"
+                    className="spring-press flex items-center gap-3 px-3 py-2.5 rounded-xl bg-slate-100 text-slate-900 font-medium"
                   >
-                    <LogIn size={16} /> Sign in
+                    <LogIn size={16} /> Log In
                   </Link>
                   <Link
-                    href="/signup/agency"
-                    className="spring-press flex items-center justify-center gap-2 px-3 py-2.5 rounded-xl bg-amber-500 text-stone-900 font-semibold"
+                    href="/signup?intent=provider"
+                    className="spring-press flex items-center justify-center gap-2 px-3 py-2.5 rounded-xl bg-blue-600 text-white font-semibold"
                   >
-                    <Car size={16} /> List your fleet
+                    <User size={16} /> List Your Vehicle
                   </Link>
                 </>
               )}

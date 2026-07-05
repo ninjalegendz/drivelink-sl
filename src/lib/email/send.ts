@@ -5,7 +5,7 @@
 // endpoint so the send path is a single `fetch`.
 //
 // Credentials live in env vars (RESEND_API_KEY, RESEND_FROM_NAME,
-// RESEND_FROM_EMAIL) — Vercel + Cloudflare Pages both let you set
+// RESEND_FROM_EMAIL), Vercel + Cloudflare Pages both let you set
 // these from their dashboards without touching code.
 
 export interface SendEmailInput {
@@ -18,7 +18,7 @@ export interface SendEmailInput {
 export interface SendEmailResult {
   ok:       boolean;
   error?:   string;
-  // True when env config is missing — message was logged instead of sent.
+  // True when env config is missing, message was logged instead of sent.
   // Lets local dev flows complete end-to-end without an API key.
   devOnly?: boolean;
 }
@@ -31,7 +31,7 @@ export async function sendEmail({ to, subject, text, html }: SendEmailInput): Pr
   const fromAddr = process.env.RESEND_FROM_EMAIL;
 
   if (!apiKey || !fromAddr) {
-    console.warn("[email] RESEND_API_KEY or RESEND_FROM_EMAIL missing — logging instead of sending", { to, subject });
+    console.warn("[email] RESEND_API_KEY or RESEND_FROM_EMAIL missing, logging instead of sending", { to, subject });
     return { ok: true, devOnly: true };
   }
 
@@ -53,7 +53,7 @@ export async function sendEmail({ to, subject, text, html }: SendEmailInput): Pr
 
     if (!res.ok) {
       const body = await res.text().catch(() => "");
-      const msg  = `${res.status} ${res.statusText}${body ? ` — ${body.slice(0, 200)}` : ""}`;
+      const msg  = `${res.status} ${res.statusText}${body ? `, ${body.slice(0, 200)}` : ""}`;
       console.error("[email] resend error", msg);
       return { ok: false, error: msg };
     }
@@ -70,7 +70,7 @@ export async function sendEmail({ to, subject, text, html }: SendEmailInput): Pr
 export async function sendTestEmail(to: string): Promise<SendEmailResult> {
   return sendEmail({
     to,
-    subject: "DriveLink SL — email test",
+    subject: "DriveLink SL, email test",
     text:    "If you're reading this, your Resend env config works. You can send verification and notification emails now.",
     html:    `<p>If you're reading this, your Resend env config works. You can send verification and notification emails now.</p>`,
   });

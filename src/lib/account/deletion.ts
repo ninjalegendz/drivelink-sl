@@ -67,7 +67,7 @@ export async function getDeletionBlockers(userId: string): Promise<DeletionBlock
   for (const b of (renterBookings ?? []) as { id: string; status: string }[]) {
     blockers.push({
       type:    "active_booking",
-      message: `You have an in-progress booking (#${b.id.slice(0, 8).toUpperCase()} — ${b.status.replace(/_/g, " ")}). Cancel or complete it first.`,
+      message: `You have an in-progress booking (#${b.id.slice(0, 8).toUpperCase()}, ${b.status.replace(/_/g, " ")}). Cancel or complete it first.`,
       fix_url: `/bookings/${b.id}`,
     });
   }
@@ -92,7 +92,7 @@ export async function getDeletionBlockers(userId: string): Promise<DeletionBlock
       for (const b of (agencyBookings ?? []) as { id: string; status: string }[]) {
         blockers.push({
           type:    "active_booking",
-          message: `Your agency has an in-progress booking (#${b.id.slice(0, 8).toUpperCase()} — ${b.status.replace(/_/g, " ")}). Complete or decline it first.`,
+          message: `Your agency has an in-progress booking (#${b.id.slice(0, 8).toUpperCase()}, ${b.status.replace(/_/g, " ")}). Complete or decline it first.`,
           fix_url: "/dashboard/bookings",
         });
       }
@@ -144,7 +144,7 @@ export async function softDeleteAgency(agencyId: string): Promise<void> {
       name:            `Former agency #${shortId}`,
       description:     null,
       address:         null,
-      // whatsapp_number is NOT NULL — set to a clearly-invalid marker
+      // whatsapp_number is NOT NULL, set to a clearly-invalid marker
       whatsapp_number: `deleted-${shortId}`,
       is_blocked:      true,
       deleted_at:      new Date().toISOString(),
@@ -169,7 +169,7 @@ export async function softDeleteUser(userId: string): Promise<void> {
   const service = await createServiceClient();
   const shortId = userId.slice(0, 8).toUpperCase();
 
-  // Read what we need BEFORE scrubbing — we need email + name for the
+  // Read what we need BEFORE scrubbing, we need email + name for the
   // confirmation/undelete email.
   const { data: profileRow } = await service
     .from("profiles")
@@ -203,7 +203,7 @@ export async function softDeleteUser(userId: string): Promise<void> {
       await sendEmail({
         to:      realEmail,
         subject: "Your DriveLink account was deleted",
-        text:    `Hi ${profile.full_name},\n\nYour DriveLink account was just deleted. We've removed your name, contact info, and identity documents from the platform. Booking history remains visible (anonymised) to the agencies / renters you transacted with.\n\nIf you DID delete the account: no action needed.\n\nIf you DIDN'T delete the account, someone may have access to your phone or email. Click the link below within 7 days to restore the account, and then tighten your login security (change your email password, enable 2FA on your email provider, watch for unauthorised access to your phone number):\n\n${undeleteUrl}\n\nLink expires after 7 days.\n\n— DriveLink Support`,
+        text:    `Hi ${profile.full_name},\n\nYour DriveLink account was just deleted. We've removed your name, contact info, and identity documents from the platform. Booking history remains visible (anonymised) to the agencies / renters you transacted with.\n\nIf you DID delete the account: no action needed.\n\nIf you DIDN'T delete the account, someone may have access to your phone or email. Click the link below within 7 days to restore the account, and then tighten your login security (change your email password, enable 2FA on your email provider, watch for unauthorised access to your phone number):\n\n${undeleteUrl}\n\nLink expires after 7 days.\n\nDriveLink Support`,
         html:    `<p>Hi ${profile.full_name},</p><p>Your DriveLink account was just deleted. We've removed your name, contact info, and identity documents from the platform. Booking history remains visible (anonymised) to the agencies / renters you transacted with.</p><p><strong>If you DID delete the account:</strong> no action needed.</p><p><strong>If you DIDN'T:</strong> someone may have access to your phone or email. Click below within 7 days to restore the account.</p><p><a href="${undeleteUrl}" style="background:#f59e0b;color:#0f172a;padding:12px 18px;border-radius:8px;text-decoration:none;font-weight:600;display:inline-block">Restore my account</a></p><div style="margin-top:20px;padding:12px;background:#fef3c7;border-left:3px solid #f59e0b;color:#92400e;font-size:13px"><strong>⚠ Tighten your account security:</strong><br>• Change your email password and don't reuse it elsewhere<br>• Enable 2FA on your email provider<br>• Watch for unauthorised SIM-swap activity on your phone number<br>• If you suspect compromise, contact us at support@drivelink.lk</div><p style="color:#64748b;font-size:12px;margin-top:20px">Link expires in 7 days. After that the deletion becomes permanent and the account can't be restored.</p>`,
       });
     } catch (err) {
@@ -211,7 +211,7 @@ export async function softDeleteUser(userId: string): Promise<void> {
     }
   }
 
-  // Storage cleanup — best-effort, before nulling the URLs
+  // Storage cleanup, best-effort, before nulling the URLs
   if (profile.nic_url)    await deleteStorageObjectByUrl(profile.nic_url);
   if (profile.selfie_url) await deleteStorageObjectByUrl(profile.selfie_url);
   if (profile.avatar_url) await deleteStorageObjectByUrl(profile.avatar_url);

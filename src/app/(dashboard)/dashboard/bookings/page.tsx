@@ -1,6 +1,7 @@
 import { createClient } from "@/lib/supabase/server";
 import { redirect } from "next/navigation";
-import { AgencyBookingsList, AGENCY_BOOKINGS_SELECT, type AgencyBookingRow } from "@/components/bookings/AgencyBookingsList";
+import { AgencyBookingsList } from "@/components/bookings/AgencyBookingsList";
+import { AGENCY_BOOKINGS_SELECT, type AgencyBookingRow } from "@/components/bookings/agency-bookings-query";
 import type { BookingStatus } from "@/types/database";
 
 const FILTER_TABS = [
@@ -43,19 +44,26 @@ export default async function AgencyBookingsPage({ searchParams }: Props) {
   const { data } = await query.limit(50);
   const bookings = (data ?? []) as unknown as AgencyBookingRow[];
 
+  // Which of these the agency has already reviewed the renter for.
+  const { data: myReviews } = await supabase
+    .from("reviews")
+    .select("booking_id")
+    .eq("reviewer_id", user.id);
+  const reviewedBookingIds = (myReviews ?? []).map((r) => (r as { booking_id: string }).booking_id);
+
   return (
     <div>
-      <h1 className="text-2xl font-bold text-white mb-6">Bookings</h1>
+      <h1 className="text-2xl font-bold text-slate-900 mb-6">Bookings</h1>
 
-      <div className="flex gap-1 mb-6 bg-slate-900 rounded-xl p-1 w-fit">
+      <div className="flex flex-wrap gap-1 mb-6 bg-white rounded-xl p-1 w-fit max-w-full">
         {FILTER_TABS.map(({ label, value }) => (
           <a
             key={value}
             href={value ? `/dashboard/bookings?status=${value}` : "/dashboard/bookings"}
             className={`px-3 py-1.5 rounded-lg text-sm transition-colors ${
               filterStatus === value || (!filterStatus && !value)
-                ? "bg-slate-700 text-white font-medium"
-                : "text-slate-400 hover:text-white"
+                ? "bg-slate-200 text-slate-900 font-medium"
+                : "text-slate-600 hover:text-slate-900"
             }`}
           >
             {label}
@@ -67,6 +75,7 @@ export default async function AgencyBookingsPage({ searchParams }: Props) {
         initial={bookings}
         agencyId={agency.id}
         filterStatus={(filterStatus ?? "") as BookingStatus | ""}
+        reviewedBookingIds={reviewedBookingIds}
       />
     </div>
   );

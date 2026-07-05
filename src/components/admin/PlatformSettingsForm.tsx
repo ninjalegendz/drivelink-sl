@@ -51,9 +51,9 @@ export function PlatformSettingsForm({ initial, updatedAt }: Props) {
   }
 
   return (
-    <form onSubmit={save} className="space-y-4 bg-slate-900 border border-slate-200 rounded-2xl shadow-sm p-5">
+    <form onSubmit={save} className="space-y-4 bg-white border border-slate-200 rounded-2xl shadow-sm p-5">
       <div>
-        <label className="text-slate-300 text-xs font-medium mb-1.5 block">Account holder name</label>
+        <label className="text-slate-700 text-xs font-medium mb-1.5 block">Account holder name</label>
         <input
           type="text"
           value={form.bank_account_name}
@@ -66,7 +66,7 @@ export function PlatformSettingsForm({ initial, updatedAt }: Props) {
 
       <div className="grid grid-cols-2 gap-3">
         <div>
-          <label className="text-slate-300 text-xs font-medium mb-1.5 block">Bank</label>
+          <label className="text-slate-700 text-xs font-medium mb-1.5 block">Bank</label>
           <input
             type="text"
             value={form.bank_name}
@@ -77,7 +77,7 @@ export function PlatformSettingsForm({ initial, updatedAt }: Props) {
           />
         </div>
         <div>
-          <label className="text-slate-300 text-xs font-medium mb-1.5 block">Account number</label>
+          <label className="text-slate-700 text-xs font-medium mb-1.5 block">Account number</label>
           <input
             type="text"
             value={form.bank_account_number}
@@ -90,8 +90,8 @@ export function PlatformSettingsForm({ initial, updatedAt }: Props) {
       </div>
 
       <div>
-        <label className="text-slate-300 text-xs font-medium mb-1.5 block">
-          Branch <span className="text-slate-600 font-normal">(optional)</span>
+        <label className="text-slate-700 text-xs font-medium mb-1.5 block">
+          Branch <span className="text-slate-400 font-normal">(optional)</span>
         </label>
         <input
           type="text"
@@ -105,7 +105,7 @@ export function PlatformSettingsForm({ initial, updatedAt }: Props) {
       {error && <p className="text-red-400 text-sm">{error}</p>}
       {info  && <p className="text-emerald-400 text-sm">{info}</p>}
       {updatedAt && (
-        <p className="text-slate-600 text-xs">
+        <p className="text-slate-400 text-xs">
           Last updated {new Date(updatedAt).toLocaleString("en-LK")}.
         </p>
       )}
@@ -118,4 +118,4 @@ export function PlatformSettingsForm({ initial, updatedAt }: Props) {
 }
 
 const inputClass =
-  "w-full px-3 py-2 bg-slate-800 border border-slate-700 rounded-lg text-white placeholder-slate-500 text-sm focus:outline-none focus:border-amber-500";
+  "w-full px-3 py-2 bg-slate-100 border border-slate-200 rounded-lg text-slate-900 placeholder-slate-400 text-sm focus:outline-none focus:border-blue-500";

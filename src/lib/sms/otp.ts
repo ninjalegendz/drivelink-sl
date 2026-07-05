@@ -1,4 +1,4 @@
-// OTP helpers — Web Crypto only (no node:crypto) so this runs in both
+// OTP helpers, Web Crypto only (no node:crypto) so this runs in both
 // Node (Vercel) and the Cloudflare Workers runtime we're migrating to.
 //
 // generateOtp/hashOtp/compareOtp are async because Web Crypto's digest

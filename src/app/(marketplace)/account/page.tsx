@@ -74,9 +74,9 @@ export default async function AccountPage({ searchParams }: Props) {
       {/* Header */}
       <div className="flex items-start justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-white">{profile.full_name}</h1>
+          <h1 className="text-2xl font-bold text-slate-900">{profile.full_name}</h1>
           {profile.email && (
-            <p className="text-slate-400 text-sm mt-0.5 inline-flex items-center gap-2">
+            <p className="text-slate-600 text-sm mt-0.5 inline-flex items-center gap-2">
               {profile.email}
               {profile.email_verified_at && (
                 <Badge variant="green">Verified</Badge>
@@ -88,7 +88,7 @@ export default async function AccountPage({ searchParams }: Props) {
         <div className="flex items-center gap-2">
           <Link
             href="/account/settings"
-            className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs bg-slate-800 hover:bg-slate-700 border border-slate-700 text-white rounded-lg transition-colors"
+            className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs bg-slate-100 hover:bg-slate-200 border border-slate-200 text-slate-900 rounded-lg transition-colors"
           >
             <Settings size={12} /> Settings
           </Link>
@@ -96,23 +96,23 @@ export default async function AccountPage({ searchParams }: Props) {
         </div>
       </div>
 
-      {/* Welcome banner — first sight after passwordless signup */}
+      {/* Welcome banner, first sight after passwordless signup */}
       {welcome && (
-        <div className="p-4 bg-amber-500/10 border border-amber-500/20 rounded-2xl text-sm">
-          <p className="text-amber-300 font-semibold mb-1">Welcome to DriveLink!</p>
-          <p className="text-amber-200/80 text-xs leading-relaxed">
-            Your account is live. Verify your ID below to unlock booking — agencies confirm verified
+        <div className="p-4 bg-blue-500/10 border border-blue-500/20 rounded-2xl text-sm">
+          <p className="text-blue-700 font-semibold mb-1">Welcome to DriveLink!</p>
+          <p className="text-slate-600 text-xs leading-relaxed">
+            Your account is live. Verify your ID below to unlock booking, agencies confirm verified
             renters faster, and the whole thing takes about 2 minutes.
           </p>
         </div>
       )}
 
-      {/* Email-verification nudge — only when an email exists and isn't verified yet */}
+      {/* Email-verification nudge, only when an email exists and isn't verified yet */}
       {profile.email && !profile.email_verified_at && (
-        <div className="p-3 bg-slate-900 border border-slate-200 rounded-2xl shadow-sm flex items-start gap-3 text-xs">
-          <span className="w-7 h-7 rounded-full bg-slate-800 text-amber-400 flex items-center justify-center shrink-0">@</span>
+        <div className="p-3 bg-white border border-slate-200 rounded-2xl shadow-sm flex items-start gap-3 text-xs">
+          <span className="w-7 h-7 rounded-full bg-slate-100 text-blue-600 flex items-center justify-center shrink-0">@</span>
           <div className="flex-1">
-            <p className="text-slate-300 font-medium">Verify your email for a trust badge</p>
+            <p className="text-slate-700 font-medium">Verify your email for a trust badge</p>
             <p className="text-slate-500 mt-0.5">
               We&apos;ve sent a link to <span className="font-mono">{profile.email}</span>. Clicking it
               adds a verified badge to your profile that helps agencies confirm bookings faster. Optional.
@@ -124,9 +124,9 @@ export default async function AccountPage({ searchParams }: Props) {
       {/* Agency created banner */}
       {agencyCreated && (
         <div className="p-4 bg-emerald-500/10 border border-emerald-500/20 rounded-2xl text-sm">
-          <p className="text-emerald-400 font-semibold mb-1">Agency profile created!</p>
-          <p className="text-emerald-300/70 text-xs">
-            One last step — verify your identity below so we can approve your listing.
+          <p className="text-emerald-700 font-semibold mb-1">Agency profile created!</p>
+          <p className="text-emerald-700/90 text-xs">
+            One last step, verify your identity below so we can approve your listing.
             This is done through Didit, a trusted third-party verifier. It takes about 2 minutes.
           </p>
         </div>
@@ -134,17 +134,17 @@ export default async function AccountPage({ searchParams }: Props) {
 
       {/* Stats */}
       <div className="grid grid-cols-3 gap-3">
-        <div className="bg-slate-900 border border-slate-200 rounded-2xl shadow-sm p-4 text-center">
-          <p className="text-white font-bold text-xl">
-            {(profile.rating_count ?? 0) > 0 ? profile.rating_avg?.toFixed(1) : "—"}
+        <div className="bg-white border border-slate-200 rounded-2xl shadow-sm p-4 text-center">
+          <p className="text-slate-900 font-bold text-xl">
+            {(profile.rating_count ?? 0) > 0 ? profile.rating_avg?.toFixed(1) : "-"}
           </p>
           <p className="text-slate-500 text-xs mt-1">Rating</p>
         </div>
-        <div className="bg-slate-900 border border-slate-200 rounded-2xl shadow-sm p-4 text-center">
-          <p className="text-white font-bold text-xl">{profile.rating_count ?? 0}</p>
+        <div className="bg-white border border-slate-200 rounded-2xl shadow-sm p-4 text-center">
+          <p className="text-slate-900 font-bold text-xl">{profile.rating_count ?? 0}</p>
           <p className="text-slate-500 text-xs mt-1">Reviews</p>
         </div>
-        <div className="bg-slate-900 border border-slate-200 rounded-2xl shadow-sm p-4 text-center">
+        <div className="bg-white border border-slate-200 rounded-2xl shadow-sm p-4 text-center">
           <Badge variant={kycVariant[profile.kyc_status ?? "unverified"]}>
             {kycLabel[profile.kyc_status ?? "unverified"]}
           </Badge>
@@ -154,11 +154,11 @@ export default async function AccountPage({ searchParams }: Props) {
 
       {/* Agency status (agency owners only) */}
       {profile.role === "agency_owner" && agency && (
-        <div className="bg-slate-900 border border-slate-200 rounded-2xl shadow-sm p-5">
+        <div className="bg-white border border-slate-200 rounded-2xl shadow-sm p-5">
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-white font-semibold">{agency.name}</p>
-              <p className="text-slate-400 text-sm">{agency.city}</p>
+              <p className="text-slate-900 font-semibold">{agency.name}</p>
+              <p className="text-slate-600 text-sm">{agency.city}</p>
             </div>
             {agency.is_verified
               ? <Badge variant="green">Live</Badge>
@@ -174,7 +174,7 @@ export default async function AccountPage({ searchParams }: Props) {
           )}
           <Link
             href="/dashboard"
-            className="mt-3 inline-flex items-center gap-1.5 text-amber-400 hover:text-amber-300 text-sm"
+            className="mt-3 inline-flex items-center gap-1.5 text-blue-600 hover:text-blue-500 text-sm"
           >
             Go to dashboard <ArrowRight size={14} />
           </Link>
@@ -185,20 +185,20 @@ export default async function AccountPage({ searchParams }: Props) {
       {profile.role === "renter" && (
         <Link
           href="/bookings"
-          className="flex items-center justify-between spring-hover bg-slate-900 border border-slate-200 shadow-sm hover:border-amber-300 rounded-2xl p-4 transition-colors"
+          className="flex items-center justify-between spring-hover bg-white border border-slate-200 shadow-sm hover:border-blue-300 rounded-2xl p-4 transition-colors"
         >
           <div>
-            <p className="text-white font-medium">My bookings</p>
+            <p className="text-slate-900 font-medium">My bookings</p>
             <p className="text-slate-500 text-xs mt-0.5">View all your rental requests</p>
           </div>
-          <ChevronRight size={20} className="text-slate-400" />
+          <ChevronRight size={20} className="text-slate-600" />
         </Link>
       )}
 
       {/* Identity verification */}
-      <div className="bg-slate-900 border border-slate-200 rounded-2xl shadow-sm p-5">
+      <div className="bg-white border border-slate-200 rounded-2xl shadow-sm p-5">
         <div className="flex items-center justify-between mb-5">
-          <h2 className="text-white font-semibold">Identity Verification</h2>
+          <h2 className="text-slate-900 font-semibold">Identity Verification</h2>
           <Badge variant={kycVariant[profile.kyc_status ?? "unverified"]}>
             {kycLabel[profile.kyc_status ?? "unverified"]}
           </Badge>
@@ -214,20 +214,20 @@ export default async function AccountPage({ searchParams }: Props) {
               <div key={i} className="flex items-center flex-1">
                 <div className="flex flex-col items-center">
                   <div className={`w-7 h-7 rounded-full flex items-center justify-center text-xs font-bold transition-colors ${
-                    done    ? "bg-emerald-500 text-white" :
-                    current ? "bg-amber-500 text-stone-900" :
-                              "bg-slate-800 text-slate-500 border border-slate-700"
+                    done    ? "bg-emerald-500 text-slate-900" :
+                    current ? "bg-blue-600 text-white" :
+                              "bg-slate-100 text-slate-500 border border-slate-200"
                   }`}>
                     {done ? <Check size={14} strokeWidth={3} /> : i + 1}
                   </div>
                   <p className={`text-xs mt-1.5 text-center leading-tight w-20 ${
-                    done || current ? "text-white" : "text-slate-500"
+                    done || current ? "text-slate-900" : "text-slate-500"
                   }`}>
                     {s.label}
                   </p>
                 </div>
                 {!isLast && (
-                  <div className={`h-px flex-1 mx-2 mb-5 ${done ? "bg-emerald-500" : "bg-slate-800"}`} />
+                  <div className={`h-px flex-1 mx-2 mb-5 ${done ? "bg-emerald-500" : "bg-slate-100"}`} />
                 )}
               </div>
             );
@@ -236,28 +236,28 @@ export default async function AccountPage({ searchParams }: Props) {
 
         {/* Status panel */}
         {isVerified && (
-          <div className="p-4 bg-emerald-500/10 border border-emerald-500/20 rounded-xl text-sm text-emerald-400">
+          <div className="p-4 bg-emerald-500/10 border border-emerald-500/20 rounded-xl text-sm text-emerald-700">
             <p className="font-semibold mb-0.5">Identity verified by Didit</p>
-            <p className="text-emerald-300/70 text-xs">
+            <p className="text-emerald-700/90 text-xs">
               Your ID and face have been confirmed. You can book any vehicle on DriveLink.
             </p>
           </div>
         )}
 
         {isPending && !isVerified && (
-          <div className="p-4 bg-amber-500/10 border border-amber-500/20 rounded-xl text-sm text-amber-400">
+          <div className="p-4 bg-blue-500/10 border border-blue-500/20 rounded-xl text-sm text-blue-600">
             <p className="font-semibold mb-0.5">Verification in progress</p>
-            <p className="text-amber-300/70 text-xs">
+            <p className="text-slate-600 text-xs">
               Didit is reviewing your documents. This usually takes a few minutes.
-              This page will update automatically — you can also refresh.
+              This page will update automatically, you can also refresh.
             </p>
           </div>
         )}
 
         {profile.kyc_status === "rejected" && !didit && (
-          <div className="mb-4 p-4 bg-red-500/10 border border-red-500/20 rounded-xl text-sm text-red-400">
+          <div className="mb-4 p-4 bg-red-500/10 border border-red-500/20 rounded-xl text-sm text-red-700">
             <p className="font-semibold mb-0.5">Verification failed</p>
-            <p className="text-red-300/70 text-xs">
+            <p className="text-red-700/90 text-xs">
               Didit could not verify your identity. Common reasons: blurry photo, glare on ID,
               face not clearly visible. Please try again with better lighting.
             </p>
@@ -276,14 +276,14 @@ export default async function AccountPage({ searchParams }: Props) {
         )}
 
         {/* Trust note */}
-        <p className="text-slate-600 text-xs mt-4 text-center">
+        <p className="text-slate-400 text-xs mt-4 text-center">
           DriveLink never sees or stores your ID documents.
           All verification is handled end-to-end by{" "}
           <a
             href="https://didit.me"
             target="_blank"
             rel="noopener noreferrer"
-            className="text-slate-500 hover:text-slate-300 underline"
+            className="text-slate-500 hover:text-slate-700 underline"
           >
             Didit
           </a>.
@@ -291,29 +291,29 @@ export default async function AccountPage({ searchParams }: Props) {
       </div>
 
       {/* Account details */}
-      <div className="bg-slate-900 border border-slate-200 rounded-2xl shadow-sm p-5">
-        <h2 className="text-white font-semibold mb-4">Account details</h2>
+      <div className="bg-white border border-slate-200 rounded-2xl shadow-sm p-5">
+        <h2 className="text-slate-900 font-semibold mb-4">Account details</h2>
         <div className="space-y-3 text-sm">
           <div className="flex justify-between">
-            <span className="text-slate-400">Name</span>
-            <span className="text-white">{profile.full_name}</span>
+            <span className="text-slate-600">Name</span>
+            <span className="text-slate-900">{profile.full_name}</span>
           </div>
           <div className="flex justify-between">
-            <span className="text-slate-400">Email</span>
-            <span className="text-white">{user.email}</span>
+            <span className="text-slate-600">Email</span>
+            <span className="text-slate-900">{user.email}</span>
           </div>
           <div className="flex justify-between items-start gap-3">
-            <span className="text-slate-400 pt-1">Mobile</span>
+            <span className="text-slate-600 pt-1">Mobile</span>
             <div className="text-right">
-              <span className="text-white">{profile.phone}</span>
+              <span className="text-slate-900">{profile.phone}</span>
               <div className="mt-2">
                 <PhoneVerifyForm phone={profile.phone} verified={profile.phone_verified} />
               </div>
             </div>
           </div>
           <div className="flex justify-between">
-            <span className="text-slate-400">Member since</span>
-            <span className="text-white">
+            <span className="text-slate-600">Member since</span>
+            <span className="text-slate-900">
               {new Date(profile.created_at).toLocaleDateString("en-LK", {
                 year: "numeric",
                 month: "long",

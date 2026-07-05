@@ -41,6 +41,7 @@ export async function POST(req: NextRequest) {
     otp_hash:       string;
     otp_expires_at: string;
     otp_attempts:   number;
+    otp_channel:    string | null;
   } | null;
 
   if (!p)                                                       return NextResponse.json({ error: "No pending signup. Start over." }, { status: 400 });
@@ -80,11 +81,13 @@ export async function POST(req: NextRequest) {
 
   // The handle_new_user() trigger seeds the profile row from
   // raw_user_meta_data. Fill in the extra columns (email, phone_verified).
+  // SMS/WhatsApp prove the phone; an email-only code does not, so the phone
+  // stays unverified in that case (Didit KYC remains the strong identity check).
   await service
     .from("profiles")
     .update({
       email:          p.email,
-      phone_verified: true,
+      phone_verified: p.otp_channel !== "email",
     })
     .eq("id", userId);
 
@@ -103,8 +106,8 @@ export async function POST(req: NextRequest) {
       await sendEmail({
         to:      p.email,
         subject: "Verify your email to add a trust badge to your DriveLink profile",
-        text:    `Hi ${p.full_name},\n\nWelcome to DriveLink. Click the link below to verify your email — it adds a trust badge to your profile, which helps agencies confirm your bookings faster:\n\n${link}\n\nIt's optional. Skip it and your account still works fine.\n\nIf you didn't create this account, ignore the email.`,
-        html:    `<p>Hi ${p.full_name},</p><p>Welcome to DriveLink. Click the button below to verify your email — it adds a trust badge to your profile, which helps agencies confirm your bookings faster:</p><p><a href="${link}" style="background:#f59e0b;color:#0f172a;padding:12px 18px;border-radius:8px;text-decoration:none;font-weight:600;display:inline-block">Verify my email</a></p><p style="color:#64748b;font-size:12px">It's optional. Skip it and your account still works fine. If you didn't create this account, ignore this email.</p>`,
+        text:    `Hi ${p.full_name},\n\nWelcome to DriveLink. Click the link below to verify your email, it adds a trust badge to your profile, which helps agencies confirm your bookings faster:\n\n${link}\n\nIt's optional. Skip it and your account still works fine.\n\nIf you didn't create this account, ignore the email.`,
+        html:    `<p>Hi ${p.full_name},</p><p>Welcome to DriveLink. Click the button below to verify your email, it adds a trust badge to your profile, which helps agencies confirm your bookings faster:</p><p><a href="${link}" style="background:#f59e0b;color:#0f172a;padding:12px 18px;border-radius:8px;text-decoration:none;font-weight:600;display:inline-block">Verify my email</a></p><p style="color:#64748b;font-size:12px">It's optional. Skip it and your account still works fine. If you didn't create this account, ignore this email.</p>`,
       });
       emailVerifyDispatched = true;
     }

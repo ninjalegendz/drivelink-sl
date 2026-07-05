@@ -18,10 +18,10 @@ import { buildKey, getPresignedPutUrl, getPublicUrl, type StoragePrefix } from "
 // the key is rooted at the agency id.
 
 const ALLOWED_PREFIXES: Set<StoragePrefix> = new Set([
-  "avatars", "kyc", "booking-slips", "vehicle-photos",
+  "avatars", "kyc", "booking-slips", "booking-photos", "vehicle-photos", "vehicle-docs",
 ]);
 
-const MAX_BYTES_HINT = 10 * 1024 * 1024; // 10MB — soft hint, R2 doesn't enforce per request
+const MAX_BYTES_HINT = 10 * 1024 * 1024; // 10MB, soft hint, R2 doesn't enforce per request
 
 export async function POST(req: NextRequest) {
   const supabase = await createClient();
@@ -32,6 +32,7 @@ export async function POST(req: NextRequest) {
     prefix:       string;
     filename:     string;
     contentType:  string;
+    size:         number;
   }>;
 
   if (!body.prefix || !ALLOWED_PREFIXES.has(body.prefix as StoragePrefix)) {
@@ -40,12 +41,16 @@ export async function POST(req: NextRequest) {
   if (!body.filename || typeof body.filename !== "string") {
     return NextResponse.json({ error: "Missing filename" }, { status: 400 });
   }
+  // Reject oversized uploads at sign time (the browser also pre-checks).
+  if (typeof body.size === "number" && body.size > MAX_BYTES_HINT) {
+    return NextResponse.json({ error: "File too large (max 10MB)." }, { status: 413 });
+  }
   const contentType = body.contentType || "application/octet-stream";
 
   const prefix = body.prefix as StoragePrefix;
   let ownerId  = user.id;
 
-  if (prefix === "vehicle-photos") {
+  if (prefix === "vehicle-photos" || prefix === "vehicle-docs") {
     // Must own an agency. Key gets rooted at the agency id, not the user id,
     // so the existing folder convention (and the orphan sweeper) keeps working.
     const { data: agency } = await supabase

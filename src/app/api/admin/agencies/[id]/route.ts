@@ -85,7 +85,7 @@ export async function PATCH(req: NextRequest, ctx: RouteContext) {
 }
 
 // DELETE /api/admin/agencies/{id}
-// Soft-deletes the agency. Owner profile is NOT auto-deleted — admin can
+// Soft-deletes the agency. Owner profile is NOT auto-deleted, admin can
 // soft-delete that separately if desired. Vehicles all flip to unlisted.
 export async function DELETE(_req: NextRequest, ctx: RouteContext) {
   const auth = await requireAdmin();

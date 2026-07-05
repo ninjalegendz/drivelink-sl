@@ -55,13 +55,13 @@ export default async function AdminAgenciesPage() {
     const ownerKyc = a.profiles?.kyc_status ?? "unverified";
     const fleetCount = a.vehicles?.[0]?.count ?? 0;
     return (
-      <div className="bg-slate-900 border border-slate-200 rounded-2xl shadow-sm p-5">
+      <div className="bg-white border border-slate-200 rounded-2xl shadow-sm p-5">
 
         {/* Header: name, badges, actions */}
         <div className="flex items-start justify-between gap-4 mb-3">
           <div className="min-w-0 flex-1">
             <div className="flex items-center gap-2 flex-wrap">
-              <p className="text-white font-semibold text-lg">{a.name}</p>
+              <p className="text-slate-900 font-semibold text-lg">{a.name}</p>
               {a.is_blocked
                 ? <Badge variant="red">Blocked</Badge>
                 : a.is_verified
@@ -70,13 +70,13 @@ export default async function AdminAgenciesPage() {
               }
               {a.strike_count >= 3 && <Badge variant="red">{a.strike_count} strikes</Badge>}
             </div>
-            <p className="text-slate-400 text-sm mt-1">
+            <p className="text-slate-600 text-sm mt-1">
               {a.city} · {a.whatsapp_number}
             </p>
             {a.address && (
               <p className="text-slate-500 text-xs mt-0.5">{a.address}</p>
             )}
-            <p className="text-slate-600 text-xs mt-0.5 font-mono">
+            <p className="text-slate-400 text-xs mt-0.5 font-mono">
               {a.id.slice(0, 8).toUpperCase()} · Joined {new Date(a.created_at).toLocaleDateString("en-LK")}
             </p>
           </div>
@@ -99,7 +99,7 @@ export default async function AdminAgenciesPage() {
         {a.description && (
           <div className="mb-3">
             <p className="text-slate-500 text-[10px] uppercase tracking-wider mb-1">About</p>
-            <p className="text-slate-300 text-sm whitespace-pre-line leading-relaxed bg-slate-800/40 border border-slate-700/50 rounded-lg px-3 py-2">
+            <p className="text-slate-700 text-sm whitespace-pre-line leading-relaxed bg-slate-100/60 border border-slate-200/60 rounded-lg px-3 py-2">
               {a.description}
             </p>
           </div>
@@ -110,39 +110,39 @@ export default async function AdminAgenciesPage() {
           {[
             { label: "Reliability", value: reliabilityLabel(a.reliability_pct), color: reliabilityColor(a.reliability_pct) },
             { label: "Confirmed",   value: a.confirmed_count },
-            { label: "Cancellations", value: a.cancellation_count, color: a.cancellation_count > 0 ? "text-amber-400" : "" },
+            { label: "Cancellations", value: a.cancellation_count, color: a.cancellation_count > 0 ? "text-blue-600" : "" },
             { label: "Fleet size",  value: fleetCount },
             { label: "Strikes",     value: a.strike_count, color: a.strike_count > 0 ? "text-red-400" : "" },
           ].map(({ label, value, color }) => (
-            <div key={label} className="bg-slate-800/40 border border-slate-700/50 rounded-lg px-3 py-2">
+            <div key={label} className="bg-slate-100/60 border border-slate-200/60 rounded-lg px-3 py-2">
               <p className="text-slate-500 text-[10px] uppercase tracking-wider">{label}</p>
-              <p className={`text-sm font-semibold mt-0.5 ${color ?? "text-white"}`}>{value}</p>
+              <p className={`text-sm font-semibold mt-0.5 ${color ?? "text-slate-900"}`}>{value}</p>
             </div>
           ))}
         </div>
 
         {/* Owner panel */}
-        <div className="bg-slate-800/40 border border-slate-700/50 rounded-lg px-3 py-2.5">
+        <div className="bg-slate-100/60 border border-slate-200/60 rounded-lg px-3 py-2.5">
           <div className="flex items-center justify-between gap-3 flex-wrap">
             <div className="min-w-0">
               <p className="text-slate-500 text-[10px] uppercase tracking-wider">Owner</p>
-              <p className="text-white text-sm font-medium mt-0.5 truncate">
-                {a.profiles?.full_name ?? "—"}
+              <p className="text-slate-900 text-sm font-medium mt-0.5 truncate">
+                {a.profiles?.full_name ?? "-"}
               </p>
-              <p className="text-slate-400 text-xs">{a.profiles?.phone ?? "—"}</p>
+              <p className="text-slate-600 text-xs">{a.profiles?.phone ?? "-"}</p>
             </div>
             <div className="text-right">
               <Badge variant={kycVariant[ownerKyc]}>{kycLabel[ownerKyc]}</Badge>
               {(a.profiles?.rating_count ?? 0) > 0 && (
-                <p className="text-slate-400 text-xs mt-1">
+                <p className="text-slate-600 text-xs mt-1">
                   ★ {a.profiles?.rating_avg?.toFixed(1)} ({a.profiles?.rating_count})
                 </p>
               )}
             </div>
           </div>
           {!a.is_verified && ownerKyc !== "verified" && (
-            <p className="mt-2 text-amber-400/80 text-xs">
-              Owner has not completed identity verification yet — verify ID before approving.
+            <p className="mt-2 text-blue-600/80 text-xs">
+              Owner has not completed identity verification yet, verify ID before approving.
             </p>
           )}
         </div>
@@ -152,17 +152,17 @@ export default async function AdminAgenciesPage() {
 
   return (
     <div>
-      <h1 className="text-2xl font-bold text-white mb-1">Agencies</h1>
-      <p className="text-slate-400 text-sm mb-6">
+      <h1 className="text-2xl font-bold text-slate-900 mb-1">Agencies</h1>
+      <p className="text-slate-600 text-sm mb-6">
         {agencies.length} total · {pending.length} pending review · {approved.length} live
       </p>
 
       {/* Pending section */}
       {pending.length > 0 && (
         <div className="mb-8">
-          <h2 className="text-white font-semibold mb-3">
+          <h2 className="text-slate-900 font-semibold mb-3">
             Pending review
-            <span className="ml-2 text-xs text-amber-400 font-normal">
+            <span className="ml-2 text-xs text-blue-600 font-normal">
               Verify owner ID is confirmed before approving
             </span>
           </h2>
@@ -175,7 +175,7 @@ export default async function AdminAgenciesPage() {
       {/* Live agencies */}
       {approved.length > 0 && (
         <div>
-          <h2 className="text-white font-semibold mb-3">Live agencies</h2>
+          <h2 className="text-slate-900 font-semibold mb-3">Live agencies</h2>
           <div className="space-y-3">
             {approved.map((a) => <AgencyCard key={a.id} a={a} />)}
           </div>

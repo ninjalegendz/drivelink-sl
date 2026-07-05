@@ -8,14 +8,14 @@ import {
   cooldownForSendCount,
   effectiveSendCount,
 } from "@/lib/sms/otp";
-import { sendSms } from "@/lib/sms/textlk";
+import { sendOtpCascade } from "@/lib/sms/send-otp";
 import { sendEmail } from "@/lib/email/send";
 
 // POST /api/auth/login/send-code  body: { identifier: string }
 //
 // Resolves the identifier (email or phone), generates a 6-digit OTP, stores
 // its hash on the profile, and ships it through the matching channel. The
-// response is intentionally vague about whether an account exists — flooding
+// response is intentionally vague about whether an account exists, flooding
 // stops at rate limiting, not enumeration error messages.
 export async function POST(req: NextRequest) {
   const { identifier } = (await req.json().catch(() => ({}))) as { identifier?: string };
@@ -27,7 +27,7 @@ export async function POST(req: NextRequest) {
   const service = await createServiceClient();
   const identity = await resolveIdentifier(service, identifier);
 
-  // Account doesn't exist — pretend we sent something. Same UX, no leak.
+  // Account doesn't exist, pretend we sent something. Same UX, no leak.
   if (!identity) {
     return NextResponse.json({ ok: true, channel: channelHint });
   }
@@ -54,7 +54,7 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ ok: true, channel: "email", emailUnverified: true });
   }
 
-  // Escalating resend cooldown — pull current burst state
+  // Escalating resend cooldown, pull current burst state
   const { data: cooldownRow } = await service
     .from("profiles")
     .select("phone_otp_last_sent, phone_otp_send_count")
@@ -93,7 +93,7 @@ export async function POST(req: NextRequest) {
     .eq("id", identity.userId);
 
   // Send via the channel the user typed. If they typed phone but no email-
-  // verification ever happened, that's fine — we use phone here.
+  // verification ever happened, that's fine, we use phone here.
   if (identity.channel === "email") {
     const result = await sendEmail({
       to:      identity.email!,
@@ -104,21 +104,35 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({
       ok:               true,
       channel:          "email",
+      deliveredVia:     "email",
       nextCooldownSec,
       devOnly:          result.devOnly ?? false,
       devCode:          result.devOnly ? code : undefined,
     });
   }
 
-  const smsResult = await sendSms(
-    identity.phone,
-    `DriveLink login code: ${code}. Expires in 10 min. Don't share this code.`
-  );
+  // Phone login: SMS -> WhatsApp -> Email (so a foreign user who can't get an
+  // SMS still receives the code). Returns the channel that actually delivered.
+  const { channel: deliveredVia, devOnly } = await sendOtpCascade({
+    phone:  identity.phone,
+    code,
+    smsKey: "login",
+    email:  identity.email ?? null,
+  });
+
+  if (!deliveredVia) {
+    return NextResponse.json(
+      { error: "We couldn't reach you by SMS, WhatsApp, or email. Please contact support." },
+      { status: 502 },
+    );
+  }
+
   return NextResponse.json({
-    ok:               true,
-    channel:          "phone",
+    ok:              true,
+    channel:         "phone",   // input channel (drives the UI mask)
+    deliveredVia,               // sms | whatsapp | email (drives the "check X" hint)
     nextCooldownSec,
-    devOnly:          smsResult.devOnly ?? false,
-    devCode:          smsResult.devOnly ? code : undefined,
+    devOnly,
+    devCode:         devOnly ? code : undefined,
   });
 }

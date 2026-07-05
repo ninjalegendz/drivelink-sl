@@ -50,7 +50,7 @@ export function SupportChat({ threadId, initial, currentRole, currentUserId, aud
     });
   }, [threadId, audience, messages.length, router]);
 
-  // Realtime subscription — append rows that arrive after we mounted.
+  // Realtime subscription, append rows that arrive after we mounted.
   // Auth is bootstrapped by createClient(); we await realtimeReady() so
   // the JOIN carries the access_token (otherwise channel registers as
   // anon and apply_rls drops every event).
@@ -118,14 +118,14 @@ export function SupportChat({ threadId, initial, currentRole, currentUserId, aud
   }
 
   return (
-    <div className="flex flex-col h-[calc(100vh-12rem)] min-h-[400px] bg-slate-900 border border-slate-200 rounded-2xl shadow-sm overflow-hidden">
+    <div className="flex flex-col h-[calc(100vh-12rem)] min-h-[400px] bg-white border border-slate-200 rounded-2xl shadow-sm overflow-hidden">
       {/* Messages */}
       <div ref={scrollRef} className="flex-1 overflow-y-auto p-4 space-y-3">
         {messages.length === 0 ? (
           <div className="h-full flex flex-col items-center justify-center text-center text-slate-500 text-sm">
-            <Headphones size={32} strokeWidth={1.5} className="mb-2 text-slate-600" />
+            <Headphones size={32} strokeWidth={1.5} className="mb-2 text-slate-400" />
             <p>{audience === "admin" ? "No messages yet." : "Tell us how we can help."}</p>
-            <p className="text-xs text-slate-600 mt-1">
+            <p className="text-xs text-slate-400 mt-1">
               {audience === "admin" ? "Wait for the agency to start the thread." : "An admin will respond as soon as possible."}
             </p>
           </div>
@@ -145,12 +145,12 @@ export function SupportChat({ threadId, initial, currentRole, currentUserId, aud
                   )}
                   <div className={`px-3 py-2 rounded-2xl text-sm leading-snug whitespace-pre-wrap break-words ${
                     mine
-                      ? "bg-amber-500 text-stone-900 rounded-br-md"
-                      : "bg-slate-800 text-slate-100 rounded-bl-md"
+                      ? "bg-blue-600 text-white rounded-br-md"
+                      : "bg-slate-100 text-slate-100 rounded-bl-md"
                   }`}>
                     {m.body}
                   </div>
-                  <p className={`text-[10px] mt-0.5 text-slate-600 ${mine ? "text-right" : ""}`}>
+                  <p className={`text-[10px] mt-0.5 text-slate-400 ${mine ? "text-right" : ""}`}>
                     {formatTime(m.created_at)}
                   </p>
                 </div>
@@ -161,7 +161,7 @@ export function SupportChat({ threadId, initial, currentRole, currentUserId, aud
       </div>
 
       {/* Input */}
-      <form onSubmit={send} className="border-t border-slate-800 p-3 bg-slate-900/80">
+      <form onSubmit={send} className="border-t border-slate-100 p-3 bg-white/80">
         {error && <p className="text-red-400 text-xs mb-2">{error}</p>}
         <div className="flex items-end gap-2">
           <textarea
@@ -176,13 +176,13 @@ export function SupportChat({ threadId, initial, currentRole, currentUserId, aud
             rows={1}
             maxLength={4000}
             placeholder="Type a message…"
-            className="flex-1 px-3 py-2 bg-slate-800 border border-slate-700 rounded-xl text-white placeholder-slate-500 text-sm focus:outline-none focus:border-amber-500 resize-none max-h-32"
+            className="flex-1 px-3 py-2 bg-slate-100 border border-slate-200 rounded-xl text-slate-900 placeholder-slate-400 text-sm focus:outline-none focus:border-blue-500 resize-none max-h-32"
           />
           <Button type="submit" loading={sending} disabled={!draft.trim()}>
             <Send size={14} />
           </Button>
         </div>
-        <p className="text-[10px] text-slate-600 mt-1">Enter to send · Shift+Enter for new line</p>
+        <p className="text-[10px] text-slate-400 mt-1">Enter to send · Shift+Enter for new line</p>
       </form>
     </div>
   );

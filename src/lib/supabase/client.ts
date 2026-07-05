@@ -8,7 +8,7 @@ import type { SupabaseClient } from "@supabase/supabase-js";
 //
 //   - supabase-js auto-calls realtime.setAuth(token) on SIGNED_IN,
 //     TOKEN_REFRESHED, and SIGNED_OUT (see _handleTokenChanged).
-//   - It does NOT do this on INITIAL_SESSION — the event that fires when
+//   - It does NOT do this on INITIAL_SESSION, the event that fires when
 //     a tab loads with a persisted cookie session. So on every page reload,
 //     Realtime starts with no token. Channels subscribed during that window
 //     register in realtime.subscription with claims_role = 'anon', and
@@ -35,7 +35,7 @@ export function createClient(): SupabaseClient {
       // restored session (or null) once the auth client is ready.
       const { data: { session } } = await client.auth.getSession();
       if (session?.access_token) {
-        // Explicit token — bypasses the internal accessToken callback so
+        // Explicit token, bypasses the internal accessToken callback so
         // there's no second async hop. accessTokenValue is set before this
         // resolves, so the next channel JOIN carries it.
         await client.realtime.setAuth(session.access_token);

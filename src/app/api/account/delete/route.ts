@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 import { getDeletionBlockers, softDeleteUser } from "@/lib/account/deletion";
 
-// GET /api/account/delete — preview blockers without deleting
+// GET /api/account/delete, preview blockers without deleting
 export async function GET() {
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();

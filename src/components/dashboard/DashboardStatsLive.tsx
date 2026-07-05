@@ -28,7 +28,7 @@ interface Props {
  * so they're held static from the initial server fetch.
  *
  * Re-fetching all three is one count query + one count query + one rows
- * query — cheap, simpler than computing deltas, and bulletproof against
+ * query, cheap, simpler than computing deltas, and bulletproof against
  * status-transition edge cases.
  */
 export function DashboardStatsLive({ agencyId, initial }: Props) {
@@ -42,7 +42,7 @@ export function DashboardStatsLive({ agencyId, initial }: Props) {
     let cancelled = false;
 
     async function refresh() {
-      // Coalesce: if a refresh is already in flight, skip — the in-flight
+      // Coalesce: if a refresh is already in flight, skip, the in-flight
       // query will reflect the latest state when it completes.
       if (inflightRef.current) return;
       inflightRef.current = true;
@@ -116,7 +116,7 @@ export function DashboardStatsLive({ agencyId, initial }: Props) {
     {
       label: "Pending requests",
       value: pendingCount,
-      color: "text-amber-400",
+      color: "text-blue-600",
       href:  "/dashboard/bookings?status=pending_confirmation",
     },
     {
@@ -128,7 +128,7 @@ export function DashboardStatsLive({ agencyId, initial }: Props) {
     {
       label: "Fleet size",
       value: initial.vehicleCount,
-      color: "text-white",
+      color: "text-slate-900",
       href:  "/dashboard/vehicles",
     },
   ];
@@ -140,20 +140,20 @@ export function DashboardStatsLive({ agencyId, initial }: Props) {
           <Link
             key={label}
             href={href}
-            className="spring-hover bg-slate-900 border border-slate-200 shadow-sm hover:border-amber-300 rounded-2xl p-4 transition-colors block"
+            className="spring-hover bg-white border border-slate-200 shadow-sm hover:border-blue-300 rounded-2xl p-4 transition-colors block"
           >
             <p className={`text-2xl font-bold ${color}`}>{value}</p>
-            <p className="text-slate-400 text-sm mt-1">{label}</p>
+            <p className="text-slate-600 text-sm mt-1">{label}</p>
           </Link>
         ))}
       </div>
 
       {feesOwed > 0 && (
-        <div className="flex items-start gap-3 p-4 bg-slate-900 border border-slate-200 rounded-2xl shadow-sm mb-6">
-          <Receipt size={18} className="text-amber-400 shrink-0 mt-0.5" />
+        <div className="flex items-start gap-3 p-4 bg-white border border-slate-200 rounded-2xl shadow-sm mb-6">
+          <Receipt size={18} className="text-blue-600 shrink-0 mt-0.5" />
           <div className="flex-1">
-            <p className="text-white font-medium text-sm">
-              Platform fees: <span className="text-amber-400">{formatLKR(feesOwed)}</span>
+            <p className="text-slate-900 font-medium text-sm">
+              Platform fees: <span className="text-blue-600">{formatLKR(feesOwed)}</span>
             </p>
             <p className="text-slate-500 text-xs mt-0.5">
               Rs. 200 per completed booking. We&apos;ll invoice you monthly; transfer to the DriveLink

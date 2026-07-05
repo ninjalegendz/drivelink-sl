@@ -22,26 +22,26 @@ export default async function AdminBlacklistPage() {
 
   return (
     <div>
-      <h1 className="text-2xl font-bold text-white mb-2">Blacklist Reports</h1>
-      <p className="text-slate-400 text-sm mb-6">
+      <h1 className="text-2xl font-bold text-slate-900 mb-2">Blacklist Reports</h1>
+      <p className="text-slate-600 text-sm mb-6">
         Reported by agencies after vehicle damage or theft. Approved NICs are blocked from future bookings.
       </p>
 
       <div className="space-y-3">
         {reports.map((r) => (
-          <div key={r.id} className="bg-slate-900 border border-slate-200 rounded-2xl shadow-sm p-4">
+          <div key={r.id} className="bg-white border border-slate-200 rounded-2xl shadow-sm p-4">
             <div className="flex items-start justify-between gap-4">
               <div>
                 <div className="flex items-center gap-2 mb-1">
-                  <p className="font-mono text-white font-semibold">{r.reported_nic}</p>
+                  <p className="font-mono text-slate-900 font-semibold">{r.reported_nic}</p>
                   {r.approved === null && <Badge variant="yellow">Pending review</Badge>}
                   {r.approved === true && <Badge variant="red">Blacklisted</Badge>}
                   {r.approved === false && <Badge variant="slate">Dismissed</Badge>}
                 </div>
-                <p className="text-slate-400 text-sm">{r.reason}</p>
+                <p className="text-slate-600 text-sm">{r.reason}</p>
                 <div className="flex gap-3 mt-1 text-xs text-slate-500">
                   <span>Reported by: {r.agencies?.name ?? "Unknown"}</span>
-                  <span>Booking: {r.bookings?.id?.slice(0, 8).toUpperCase() ?? "—"}</span>
+                  <span>Booking: {r.bookings?.id?.slice(0, 8).toUpperCase() ?? "-"}</span>
                   <span>{new Date(r.created_at).toLocaleDateString("en-LK")}</span>
                 </div>
               </div>

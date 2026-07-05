@@ -40,7 +40,27 @@
       "Bash(git commit *)",
       "Bash(git push *)",
       "Bash(vercel list *)",
-      "Bash(node -e \"console.log\\(require\\('./node_modules/lucide-react/package.json'\\).version\\)\")"
+      "Bash(node -e \"console.log\\(require\\('./node_modules/lucide-react/package.json'\\).version\\)\")",
+      "Bash(gh api *)",
+      "Bash(gh repo *)",
+      "Bash(npx vercel *)",
+      "Bash(npx supabase *)",
+      "Bash(git -c user.email=beastsquadgamingchannel@gmail.com commit -m ' *)",
+      "Bash(git -c user.email=beastsquadgamingchannel@gmail.com commit -m \"Signup: link to /signup/agency for businesses creating an agency account\")",
+      "Bash(git -c user.email=beastsquadgamingchannel@gmail.com commit -m \"Signup: shorten agency link copy to 'Are you an agency? Sign up here'\")",
+      "Bash(git -c user.email=beastsquadgamingchannel@gmail.com commit -m \"Auth layout: add py-10 so logo isn't flush with viewport top on tall forms\")",
+      "Bash(git -c user.email=beastsquadgamingchannel@gmail.com commit -m 'Navbar menu: use bg-slate-900 \\(the real white token under inverted palette\\) *)",
+      "Bash(git -c user.email=beastsquadgamingchannel@gmail.com commit -m \"Homepage: move Popular searches below Recently listed\")",
+      "Bash(where adb *)",
+      "Bash(where studio *)",
+      "Bash(where android *)",
+      "Read(//c/Users/Beast/**)",
+      "Read(//c/Program Files/**)",
+      "Bash(curl -s -o /dev/null -w \"%{http_code}\" https://drivelink-sl.vercel.app/)",
+      "Bash(npx cap *)",
+      "Bash(JAVA_HOME=\"/c/Program Files/Java/jdk-17\" ANDROID_HOME=\"/c/Users/Beast/AppData/Local/Android/Sdk\" ./gradlew.bat assembleDebug)",
+      "Bash(JAVA_HOME=\"/c/Program Files/Android/Android Studio/jbr\" ANDROID_HOME=\"/c/Users/Beast/AppData/Local/Android/Sdk\" ./gradlew.bat assembleDebug)",
+      "mcp__claude_ai_Supabase__list_projects"
     ],
     "additionalDirectories": [
       "C:\\Users\\Beast\\Downloads\\DriveLink\\src\\app\\(marketplace)\\bookings"

@@ -24,7 +24,7 @@ export async function getOrCreateThreadForAgency(
     .select("id")
     .single();
   if (error) {
-    // Race on the unique constraint — another tab created it. Re-read.
+    // Race on the unique constraint, another tab created it. Re-read.
     const { data: refetched } = await supabase
       .from("support_threads")
       .select("id")

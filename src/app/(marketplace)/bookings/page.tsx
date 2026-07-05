@@ -1,6 +1,7 @@
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
-import { RenterBookingsList, RENTER_BOOKINGS_SELECT, type RenterBookingRow } from "@/components/bookings/RenterBookingsList";
+import { RenterBookingsList } from "@/components/bookings/RenterBookingsList";
+import { RENTER_BOOKINGS_SELECT, type RenterBookingRow } from "@/components/bookings/renter-bookings-query";
 
 export default async function MyBookingsPage() {
   const supabase = await createClient();
@@ -17,7 +18,7 @@ export default async function MyBookingsPage() {
 
   return (
     <div className="max-w-2xl mx-auto px-4 py-8">
-      <h1 className="text-2xl font-bold text-white mb-2">My Bookings</h1>
+      <h1 className="text-2xl font-bold text-slate-900 mb-2">My Bookings</h1>
       <RenterBookingsList initial={bookings} renterId={user.id} />
     </div>
   );

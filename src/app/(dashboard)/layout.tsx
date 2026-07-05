@@ -1,4 +1,5 @@
 import Link from "next/link";
+import Image from "next/image";
 import { Settings, User, Headphones } from "lucide-react";
 import { createClient } from "@/lib/supabase/server";
 import { SignOutButton } from "@/components/account/SignOutButton";
@@ -52,44 +53,45 @@ export default async function DashboardLayout({ children }: { children: React.Re
   return (
     <div className="min-h-screen flex">
       {/* Desktop sidebar (hidden on mobile) */}
-      <aside className="hidden md:flex w-56 shrink-0 border-r border-slate-700 p-4 flex-col fixed h-full glass">
-        <Link href="/" className="font-bold text-lg mb-6 block">
-          Drive<span className="text-amber-500">Link</span>
+      <aside className="hidden md:flex w-56 shrink-0 border-r border-slate-200 p-4 flex-col fixed h-full glass">
+        <Link href="/" className="flex items-center gap-2 mb-6">
+          <Image src="/logo-circle.png" alt="DriveLink logo" width={28} height={28} unoptimized className="h-7 w-7 shrink-0" />
+          <span className="font-bold text-lg">Drive<span className="text-blue-600">Link</span></span>
         </Link>
         <nav className="flex-1 flex flex-col gap-0.5">
           {NAV.map(({ href, label }) => (
             <Link
               key={href}
               href={href}
-              className="spring-press px-3 py-2 rounded-lg text-sm text-slate-500 hover:text-slate-200 hover:bg-white/60 transition-colors"
+              className="spring-press px-3 py-2 rounded-lg text-sm text-slate-500 hover:text-slate-900 hover:bg-white/60 transition-colors"
             >
               {label}
             </Link>
           ))}
           <Link
             href="/dashboard/support"
-            className="spring-press flex items-center justify-between px-3 py-2 rounded-lg text-sm text-slate-500 hover:text-slate-200 hover:bg-white/60 transition-colors"
+            className="spring-press flex items-center justify-between px-3 py-2 rounded-lg text-sm text-slate-500 hover:text-slate-900 hover:bg-white/60 transition-colors"
           >
             <span className="inline-flex items-center gap-2">
               <Headphones size={14} /> Support
             </span>
             {supportUnread && (
-              <span className="text-[10px] font-semibold bg-red-500 text-white px-1.5 py-0.5 rounded-full animate-pop-in">
+              <span className="text-[10px] font-semibold bg-red-500 text-slate-900 px-1.5 py-0.5 rounded-full animate-pop-in">
                 NEW
               </span>
             )}
           </Link>
         </nav>
-        <div className="pt-3 border-t border-slate-700 space-y-1">
+        <div className="pt-3 border-t border-slate-200 space-y-1">
           <Link
             href="/account"
-            className="spring-press flex items-center gap-2 px-3 py-2 text-sm text-slate-500 hover:text-slate-200 hover:bg-white/60 rounded-lg transition-colors"
+            className="spring-press flex items-center gap-2 px-3 py-2 text-sm text-slate-500 hover:text-slate-900 hover:bg-white/60 rounded-lg transition-colors"
           >
             <User size={14} /> Account
           </Link>
           <Link
             href="/account/settings"
-            className="spring-press flex items-center gap-2 px-3 py-2 text-sm text-slate-500 hover:text-slate-200 hover:bg-white/60 rounded-lg transition-colors"
+            className="spring-press flex items-center gap-2 px-3 py-2 text-sm text-slate-500 hover:text-slate-900 hover:bg-white/60 rounded-lg transition-colors"
           >
             <Settings size={14} /> Settings
           </Link>
@@ -99,8 +101,8 @@ export default async function DashboardLayout({ children }: { children: React.Re
         </div>
       </aside>
 
-      {/* Content — full width on mobile, offset for sidebar on md+ */}
-      <main className="flex-1 md:ml-56 p-4 md:p-8 pb-24 md:pb-8 min-h-screen">{children}</main>
+      {/* Content, full width on mobile, offset for sidebar on md+ */}
+      <main className="flex-1 min-w-0 md:ml-56 p-4 md:p-8 pb-24 md:pb-8 min-h-screen">{children}</main>
 
       <MobileNav primary={mobilePrimary} secondary={mobileSecondary} />
 

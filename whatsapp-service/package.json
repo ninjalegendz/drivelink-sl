@@ -1,0 +1,16 @@
+{
+  "name": "drivelink-whatsapp-service",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "description": "Always-on Baileys WhatsApp sender for DriveLink (runs on the VPS, called by the Cloudflare Worker over HTTP).",
+  "scripts": {
+    "start": "node server.mjs"
+  },
+  "dependencies": {
+    "@whiskeysockets/baileys": "^6.7.16",
+    "express": "^4.21.2",
+    "pino": "^9.5.0",
+    "qrcode": "^1.5.4"
+  }
+}

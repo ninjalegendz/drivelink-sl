@@ -1,6 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createServiceClient } from "@/lib/supabase/server";
-import { sendSms } from "@/lib/sms/textlk";
 import {
   generateOtp,
   hashOtp,
@@ -9,6 +8,7 @@ import {
   effectiveSendCount,
 } from "@/lib/sms/otp";
 import { toInternationalSL, isValidSLPhone } from "@/lib/auth/phone-format";
+import { sendOtpCascade } from "@/lib/sms/send-otp";
 import { isEmailLike, phoneSuffix } from "@/lib/auth/identifier";
 
 // POST /api/auth/signup-agency/start
@@ -26,6 +26,7 @@ export async function POST(req: NextRequest) {
     agency_city:         string;
     agency_address:      string;
     agency_description:  string;
+    provider_type:       string;
   }>;
 
   const fullName  = body.full_name?.trim()           ?? "";
@@ -35,9 +36,11 @@ export async function POST(req: NextRequest) {
   const aCity     = body.agency_city?.trim()         ?? "";
   const aAddress  = body.agency_address?.trim()      || null;
   const aDesc     = body.agency_description?.trim()  || null;
+  // Individual owner ("host") vs registered business ("agency"). Default agency.
+  const providerType = body.provider_type === "individual" ? "individual" : "agency";
 
   if (fullName.length < 2)              return NextResponse.json({ error: "Enter your full name." }, { status: 400 });
-  if (!isValidSLPhone(phoneIn))         return NextResponse.json({ error: "Enter a Sri Lankan phone number like 0771234567." }, { status: 400 });
+  if (!isValidSLPhone(phoneIn))         return NextResponse.json({ error: "Enter a valid mobile number. For a non-Sri-Lankan number, include the country code (e.g. +44 7911 123456)." }, { status: 400 });
   if (emailIn && !isEmailLike(emailIn)) return NextResponse.json({ error: "That email doesn't look right." }, { status: 400 });
   if (aName.length < 2)                 return NextResponse.json({ error: "Enter your agency / business name." }, { status: 400 });
   if (aCity.length < 2)                 return NextResponse.json({ error: "Enter your city." }, { status: 400 });
@@ -45,7 +48,7 @@ export async function POST(req: NextRequest) {
   const intl = toInternationalSL(phoneIn)!;
   const service = await createServiceClient();
 
-  // Phone already on profiles? Block — they need to log in instead.
+  // Phone already on profiles? Block, they need to log in instead.
   const suffix = phoneSuffix(intl);
   const { data: existingProfile } = await service
     .from("profiles")
@@ -101,6 +104,7 @@ export async function POST(req: NextRequest) {
     full_name:           fullName,
     email:               emailIn,
     role:                "agency_owner",
+    provider_type:       providerType,
     agency_name:         aName,
     agency_city:         aCity,
     agency_address:      aAddress,
@@ -117,15 +121,31 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "Couldn't start signup. Try again." }, { status: 500 });
   }
 
-  const result = await sendSms(
-    intl,
-    `DriveLink signup code: ${code}. Expires in 10 min. Don't share this code.`
-  );
+  const { channel, devOnly } = await sendOtpCascade({
+    phone:  intl,
+    code,
+    smsKey: "signup_agency",
+    email:  emailIn,
+  });
+
+  if (!channel) {
+    return NextResponse.json(
+      {
+        error: emailIn
+          ? "We couldn't send your code right now. Please try again shortly."
+          : "We couldn't reach that number by SMS or WhatsApp. Add an email and we'll send your code there instead.",
+      },
+      { status: 502 },
+    );
+  }
+
+  await service.from("pending_signups").update({ otp_channel: channel }).eq("phone", intl);
 
   return NextResponse.json({
-    ok:               true,
+    ok:              true,
     nextCooldownSec,
-    devOnly:          result.devOnly ?? false,
-    devCode:          result.devOnly ? code : undefined,
+    channel,
+    devOnly,
+    devCode:         devOnly ? code : undefined,
   });
 }

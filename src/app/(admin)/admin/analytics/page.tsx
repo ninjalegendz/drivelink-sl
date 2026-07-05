@@ -48,21 +48,21 @@ export default async function AdminAnalyticsPage({ searchParams }: Props) {
   return (
     <div>
       <div className="flex items-center gap-2 mb-1">
-        <BarChart3 size={22} className="text-amber-400" />
-        <h1 className="text-2xl font-bold text-white">Platform analytics</h1>
+        <BarChart3 size={22} className="text-blue-600" />
+        <h1 className="text-2xl font-bold text-slate-900">Platform analytics</h1>
       </div>
-      <p className="text-slate-400 text-sm mb-5">
+      <p className="text-slate-600 text-sm mb-5">
         Live numbers across renters, agencies, and bookings.
       </p>
 
       {/* Range tabs */}
-      <div className="flex gap-1 mb-6 bg-slate-900 rounded-xl p-1 w-fit flex-wrap">
+      <div className="flex gap-1 mb-6 bg-white rounded-xl p-1 w-fit flex-wrap">
         {RANGE_TABS.map((t) => (
           <Link
             key={t.key}
             href={`/admin/analytics?range=${t.key}`}
             className={`px-3 py-1.5 rounded-lg text-sm transition-colors ${
-              rangeKey === t.key ? "bg-slate-700 text-white font-medium" : "text-slate-400 hover:text-white"
+              rangeKey === t.key ? "bg-slate-200 text-slate-900 font-medium" : "text-slate-600 hover:text-slate-900"
             }`}
           >
             {t.label}
@@ -105,7 +105,7 @@ export default async function AdminAnalyticsPage({ searchParams }: Props) {
             <Row label="Rs. 200 agency fees billed"       value={formatLKR(money.platform_fees)}   />
             <Row label="Collected" tone="emerald" value={formatLKR(money.collected_fees)} />
             <Row label="Outstanding" tone="amber"  value={formatLKR(money.outstanding_fees)} />
-            <div className="pt-2 mt-2 border-t border-slate-800 flex items-center justify-between text-white font-semibold">
+            <div className="pt-2 mt-2 border-t border-slate-100 flex items-center justify-between text-slate-900 font-semibold">
               <span>Total received</span>
               <span>{formatLKR(money.lock_in_fees + money.collected_fees)}</span>
             </div>
@@ -113,9 +113,9 @@ export default async function AdminAnalyticsPage({ searchParams }: Props) {
         </Card>
 
         <Card title="Agency-side rental revenue (GMV)" Icon={Wallet}>
-          <p className="text-3xl font-bold text-white">{formatLKR(money.rental_revenue)}</p>
+          <p className="text-3xl font-bold text-slate-900">{formatLKR(money.rental_revenue)}</p>
           <p className="text-slate-500 text-xs mt-1">
-            Total agency-side revenue from {money.completed} completed bookings — what flowed through us, not to us
+            Total agency-side revenue from {money.completed} completed bookings, what flowed through us, not to us
           </p>
         </Card>
       </div>
@@ -124,9 +124,9 @@ export default async function AdminAnalyticsPage({ searchParams }: Props) {
       <Card title="Bookings by status" subtitle="Created in range, regardless of current status">
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
           {(["pending_confirmation", "confirmed", "payment_pending", "active", "completed", "declined", "cancelled", "disputed"] as const).map((s) => (
-            <div key={s} className="bg-slate-800/40 border border-slate-700/50 rounded-lg px-3 py-2">
+            <div key={s} className="bg-slate-100/60 border border-slate-200/60 rounded-lg px-3 py-2">
               <p className="text-slate-500 text-[10px] uppercase tracking-wider">{s.replace(/_/g, " ")}</p>
-              <p className="text-white text-lg font-semibold mt-0.5">{byStatus[s] ?? 0}</p>
+              <p className="text-slate-900 text-lg font-semibold mt-0.5">{byStatus[s] ?? 0}</p>
             </div>
           ))}
         </div>
@@ -137,22 +137,22 @@ export default async function AdminAnalyticsPage({ searchParams }: Props) {
 
 function Stat({ label, value, Icon }: { label: string; value: number; Icon: React.ComponentType<{ size?: number; className?: string }> }) {
   return (
-    <div className="bg-slate-900 border border-slate-200 rounded-2xl shadow-sm p-4">
+    <div className="bg-white border border-slate-200 rounded-2xl shadow-sm p-4">
       <div className="flex items-center justify-between mb-1">
         <p className="text-slate-500 text-xs uppercase tracking-wider">{label}</p>
-        <Icon size={14} className="text-slate-600" />
+        <Icon size={14} className="text-slate-400" />
       </div>
-      <p className="text-2xl font-bold text-white">{value.toLocaleString("en-LK")}</p>
+      <p className="text-2xl font-bold text-slate-900">{value.toLocaleString("en-LK")}</p>
     </div>
   );
 }
 
 function Card({ title, subtitle, children, Icon }: { title: string; subtitle?: string; children: React.ReactNode; Icon?: React.ComponentType<{ size?: number; className?: string }> }) {
   return (
-    <div className="bg-slate-900 border border-slate-200 rounded-2xl shadow-sm p-5 mb-3">
+    <div className="bg-white border border-slate-200 rounded-2xl shadow-sm p-5 mb-3">
       <div className="flex items-center gap-2 mb-3">
-        {Icon && <Icon size={16} className="text-amber-400" />}
-        <h2 className="text-white font-semibold">{title}</h2>
+        {Icon && <Icon size={16} className="text-blue-600" />}
+        <h2 className="text-slate-900 font-semibold">{title}</h2>
         {subtitle && <span className="text-slate-500 text-xs">· {subtitle}</span>}
       </div>
       {children}
@@ -161,10 +161,10 @@ function Card({ title, subtitle, children, Icon }: { title: string; subtitle?: s
 }
 
 function Row({ label, value, tone }: { label: string; value: string; tone?: "emerald" | "amber" }) {
-  const colorClass = tone === "emerald" ? "text-emerald-400" : tone === "amber" ? "text-amber-400" : "text-slate-300";
+  const colorClass = tone === "emerald" ? "text-emerald-400" : tone === "amber" ? "text-blue-600" : "text-slate-700";
   return (
     <div className="flex justify-between">
-      <span className="text-slate-400">{label}</span>
+      <span className="text-slate-600">{label}</span>
       <span className={colorClass}>{value}</span>
     </div>
   );
@@ -175,11 +175,11 @@ function FunnelRow({ label, value, max }: { label: string; value: number; max: n
   return (
     <div>
       <div className="flex justify-between text-xs mb-1">
-        <span className="text-slate-300">{label}</span>
-        <span className="text-white font-mono">{value}</span>
+        <span className="text-slate-700">{label}</span>
+        <span className="text-slate-900 font-mono">{value}</span>
       </div>
-      <div className="h-2 bg-slate-800 rounded-full overflow-hidden">
-        <div className="h-full bg-amber-400 transition-all" style={{ width: `${pct}%` }} />
+      <div className="h-2 bg-slate-100 rounded-full overflow-hidden">
+        <div className="h-full bg-blue-500 transition-all" style={{ width: `${pct}%` }} />
       </div>
     </div>
   );

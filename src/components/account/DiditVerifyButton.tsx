@@ -37,15 +37,15 @@ export function DiditVerifyButton({
 
   return (
     <div className="space-y-3">
-      <div className="flex items-center gap-3 p-3 bg-slate-800 rounded-xl">
-        {/* Didit logo placeholder — replace with <img> if you have their logo asset */}
-        <div className="w-9 h-9 rounded-lg bg-indigo-600 flex items-center justify-center shrink-0 text-white font-bold text-sm">
+      <div className="flex items-center gap-3 p-3 bg-slate-100 rounded-xl">
+        {/* Didit logo placeholder, replace with <img> if you have their logo asset */}
+        <div className="w-9 h-9 rounded-lg bg-indigo-600 flex items-center justify-center shrink-0 text-slate-900 font-bold text-sm">
           D
         </div>
         <div className="text-sm">
-          <p className="text-white font-medium">Powered by Didit</p>
-          <p className="text-slate-400 text-xs">
-            Secure biometric ID verification — your documents are processed by Didit, not stored by DriveLink.
+          <p className="text-slate-900 font-medium">Powered by Didit</p>
+          <p className="text-slate-600 text-xs">
+            Secure biometric ID verification, your documents are processed by Didit, not stored by DriveLink.
           </p>
         </div>
       </div>

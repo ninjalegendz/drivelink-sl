@@ -1,4 +1,4 @@
-// Shared analytics queries — return shapes for the admin + agency
+// Shared analytics queries, return shapes for the admin + agency
 // dashboards. All queries use the supplied supabase client so the
 // caller controls the auth context (admin → all, agency → own).
 
@@ -61,8 +61,8 @@ export async function revenueTotals(
   agencyId?: string
 ): Promise<{
   completed:         number;
-  rental_revenue:    number; // sum of subtotal_lkr — what the agency earned through us
-  platform_fees:     number; // sum of agency_fee_lkr — what we earned
+  rental_revenue:    number; // sum of subtotal_lkr, what the agency earned through us
+  platform_fees:     number; // sum of agency_fee_lkr, what we earned
   collected_fees:    number; // agency_fee_lkr where agency_fee_collected_at IS NOT NULL
   outstanding_fees:  number; // total - collected
   lock_in_fees:      number; // sum of booking_fee_lkr we received

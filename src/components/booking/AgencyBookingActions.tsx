@@ -2,24 +2,27 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
+import { Check } from "lucide-react";
 import { Button } from "@/components/ui/Button";
 import type { BookingStatus } from "@/types/database";
 
 interface Props {
   bookingId: string;
   status: BookingStatus;
+  /** Set when the renter has reported the car returned (return handshake). */
+  renterReturnedAt?: string | null;
 }
 
 type AgencyTransition = "confirmed" | "declined" | "completed";
 
-export function AgencyBookingActions({ bookingId, status }: Props) {
+export function AgencyBookingActions({ bookingId, status, renterReturnedAt }: Props) {
   const router = useRouter();
   const [loading, setLoading] = useState<"confirm" | "decline" | "complete" | null>(null);
   const [error, setError]     = useState<string | null>(null);
 
   // Goes through /api/bookings/transition so the server can fire the
   // renter SMS in addition to flipping the status. Doing this client-side
-  // direct via supabase used to skip the SMS — see /api/bookings/transition.
+  // direct via supabase used to skip the SMS, see /api/bookings/transition.
   async function transition(to: AgencyTransition) {
     setError(null);
     try {
@@ -82,6 +85,11 @@ export function AgencyBookingActions({ bookingId, status }: Props) {
   if (status === "active") {
     return (
       <div className="flex flex-col items-end gap-2 shrink-0">
+        {renterReturnedAt && (
+          <span className="inline-flex items-center gap-1 text-emerald-600 text-[11px] font-medium">
+            <Check size={11} /> Renter reported return
+          </span>
+        )}
         <Button
           size="sm"
           variant="secondary"
@@ -92,7 +100,7 @@ export function AgencyBookingActions({ bookingId, status }: Props) {
             setLoading(null);
           }}
         >
-          Mark complete
+          Confirm return &amp; complete
         </Button>
         {error && <p className="text-red-400 text-xs max-w-xs text-right">{error}</p>}
       </div>

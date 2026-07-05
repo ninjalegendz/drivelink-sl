@@ -14,9 +14,29 @@ export interface PriceBreakdown {
 
 export interface PriceInputs {
   startDate:      string;  // YYYY-MM-DD
-  endDate:        string;  // YYYY-MM-DD (exclusive — return day)
+  endDate:        string;  // YYYY-MM-DD (exclusive, return day)
   dailyRateLkr:   number;
   monthlyRateLkr?: number | null;
+}
+
+/**
+ * Billable days between two pick-up / return datetimes, in STRICT 24-hour
+ * blocks: any started extra time rounds up to a full day, minimum 1 day.
+ * A 15-minute-late return adds a whole day. Mirrors the DB's generated
+ * `total_days` so the form preview, API and database always agree.
+ *
+ * @param startISO "YYYY-MM-DDTHH:mm" (local)
+ * @param endISO   "YYYY-MM-DDTHH:mm" (local)
+ */
+export function billableDaysBetween(startISO: string, endISO: string): number {
+  const ms = new Date(endISO).getTime() - new Date(startISO).getTime();
+  if (!Number.isFinite(ms) || ms <= 0) return 0;
+  return Math.max(1, Math.ceil(ms / 86_400_000));
+}
+
+/** Combine a date + time into the "YYYY-MM-DDTHH:mm" form the helpers expect. */
+export function toDateTime(date: string, time: string): string {
+  return `${date}T${(time || "10:00").slice(0, 5)}`;
 }
 
 function parseUTC(iso: string): Date {
@@ -31,7 +51,7 @@ function daysBetweenUTC(a: Date, b: Date): number {
 
 // Advance a date by exactly one calendar month. If the source day-of-month
 // doesn't exist in the target month (e.g. Jan 31 + 1m), JS Date clamps to
-// the last valid day (Feb 28/29) — exactly the behaviour we want.
+// the last valid day (Feb 28/29), exactly the behaviour we want.
 function addCalendarMonth(d: Date): Date {
   const next = new Date(Date.UTC(d.getUTCFullYear(), d.getUTCMonth() + 1, d.getUTCDate()));
   return next;
@@ -46,7 +66,7 @@ export function calcBookingPrice({ startDate, endDate, dailyRateLkr, monthlyRate
     return { fullMonths: 0, remainingDays: 0, monthsCost: 0, daysCost: 0, subtotal: 0 };
   }
 
-  // No monthly rate configured — straight daily math.
+  // No monthly rate configured, straight daily math.
   if (!monthlyRateLkr) {
     return {
       fullMonths: 0,

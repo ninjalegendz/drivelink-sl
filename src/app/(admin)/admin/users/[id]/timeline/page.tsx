@@ -35,14 +35,14 @@ export default async function AdminUserTimelinePage({ params }: Props) {
     <div>
       <Link
         href="/admin/users"
-        className="inline-flex items-center gap-1 text-slate-400 hover:text-white text-xs mb-4"
+        className="inline-flex items-center gap-1 text-slate-600 hover:text-slate-900 text-xs mb-4"
       >
         <ArrowLeft size={12} /> Back to renters
       </Link>
 
       <div className="flex items-center gap-2 mb-1">
-        <Activity size={22} className="text-amber-400" />
-        <h1 className="text-2xl font-bold text-white">{p.full_name}</h1>
+        <Activity size={22} className="text-blue-600" />
+        <h1 className="text-2xl font-bold text-slate-900">{p.full_name}</h1>
       </div>
       <div className="flex items-center gap-2 mb-6 flex-wrap">
         <span className="text-slate-500 text-sm">{p.phone}</span>

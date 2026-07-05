@@ -46,7 +46,7 @@ export async function GET(req: NextRequest) {
     }
   }
 
-  // Success — figure out where to send them.
+  // Success, figure out where to send them.
   if (next) return NextResponse.redirect(`${origin}${next}`);
 
   const { data: { user } } = await supabase.auth.getUser();

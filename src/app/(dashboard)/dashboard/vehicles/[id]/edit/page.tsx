@@ -24,7 +24,7 @@ export default async function EditVehiclePage({ params }: Props) {
     supabase.from("profiles").select("kyc_status").eq("id", user.id).single(),
   ]);
 
-  if (!agencyData) redirect("/signup/agency");
+  if (!agencyData) redirect("/signup?intent=provider");
   const agency  = agencyData  as { id: string; city: string; is_verified: boolean };
   const profile = profileData as { kyc_status: string } | null;
 
@@ -42,24 +42,31 @@ export default async function EditVehiclePage({ params }: Props) {
   if (!vehicleData) notFound();
   const vehicle = vehicleData as VehicleRow;
 
+  const { data: docData } = await supabase
+    .from("vehicle_documents")
+    .select("cr_url, insurance_url")
+    .eq("vehicle_id", id)
+    .maybeSingle();
+  const documents = (docData ?? null) as { cr_url: string | null; insurance_url: string | null } | null;
+
   return (
     <div>
       <Link
         href="/dashboard/vehicles"
-        className="inline-flex items-center gap-1.5 text-slate-400 hover:text-white text-sm mb-4"
+        className="inline-flex items-center gap-1.5 text-slate-600 hover:text-slate-900 text-sm mb-4"
       >
         <ArrowLeft size={14} /> Back to fleet
       </Link>
 
-      <h1 className="text-2xl font-bold text-white mb-1">
+      <h1 className="text-2xl font-bold text-slate-900 mb-1">
         Edit {vehicle.year} {vehicle.make} {vehicle.model}
       </h1>
-      <p className="text-slate-400 text-sm mb-8">
+      <p className="text-slate-600 text-sm mb-8">
         Changes go live immediately on the public listing.
       </p>
 
       {canEdit
-        ? <VehicleForm agencyId={agency.id} agencyCity={agency.city} vehicle={vehicle} />
+        ? <VehicleForm agencyId={agency.id} agencyCity={agency.city} vehicle={vehicle} documents={documents} />
         : <AgencyVerificationGate ownerKycVerified={ownerKycVerified} agencyApproved={agencyApproved} />}
     </div>
   );

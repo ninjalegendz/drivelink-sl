@@ -92,7 +92,7 @@ export function PhoneVerifyForm({ phone, verified }: Props) {
               placeholder="123456"
               required
               autoFocus
-              className="w-32 px-3 py-2 bg-slate-800 border border-slate-700 rounded-lg text-white text-sm tracking-[0.3em] font-mono text-center focus:outline-none focus:border-amber-500"
+              className="w-32 px-3 py-2 bg-slate-100 border border-slate-200 rounded-lg text-slate-900 text-sm tracking-[0.3em] font-mono text-center focus:outline-none focus:border-blue-500"
             />
             <Button type="submit" size="sm" loading={loading} disabled={code.length !== 6}>
               Verify
@@ -102,7 +102,7 @@ export function PhoneVerifyForm({ phone, verified }: Props) {
             type="button"
             onClick={requestOtp}
             disabled={loading || cooldown > 0}
-            className="text-xs text-slate-500 hover:text-amber-400 disabled:opacity-50 disabled:hover:text-slate-500 self-start"
+            className="text-xs text-slate-500 hover:text-blue-600 disabled:opacity-50 disabled:hover:text-slate-500 self-start"
           >
             {cooldown > 0 ? `Resend code in ${cooldown}s` : "Resend code"}
           </button>

@@ -87,7 +87,7 @@ export function AgencyActions({ agencyId, name, city, address, whatsapp_number, 
       <div className="flex gap-2 shrink-0 flex-wrap justify-end">
         <Link
           href={`/admin/agencies/${agencyId}/timeline`}
-          className="inline-flex items-center gap-1 px-2.5 py-1 text-xs text-slate-400 hover:text-amber-400 rounded-lg hover:bg-slate-800 transition-colors"
+          className="inline-flex items-center gap-1 px-2.5 py-1 text-xs text-slate-600 hover:text-blue-600 rounded-lg hover:bg-slate-100 transition-colors"
         >
           <Activity size={14} /> Timeline
         </Link>

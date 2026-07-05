@@ -89,45 +89,45 @@ export function AvailabilityManager({ vehicleId, agencyId, initial }: Props) {
     <div className="space-y-6">
 
       {/* Add new */}
-      <form onSubmit={addBlock} className="bg-slate-900 border border-slate-200 rounded-2xl shadow-sm p-5 space-y-4">
-        <h2 className="text-white font-semibold text-sm">Block a date range</h2>
+      <form onSubmit={addBlock} className="bg-white border border-slate-200 rounded-2xl shadow-sm p-5 space-y-4">
+        <h2 className="text-slate-900 font-semibold text-sm">Block a date range</h2>
 
         <div className="grid grid-cols-2 gap-3">
           <div>
-            <label className="text-slate-400 text-xs mb-1 block">Start date</label>
+            <label className="text-slate-600 text-xs mb-1 block">Start date</label>
             <input
               type="date"
               value={start}
               min={today}
               onChange={(e) => setStart(e.target.value)}
               required
-              className="w-full px-3 py-2 bg-slate-800 border border-slate-700 rounded-lg text-white text-sm focus:outline-none focus:border-amber-500"
+              className="w-full px-3 py-2 bg-slate-100 border border-slate-200 rounded-lg text-slate-900 text-sm focus:outline-none focus:border-blue-500"
             />
           </div>
           <div>
-            <label className="text-slate-400 text-xs mb-1 block">End date</label>
+            <label className="text-slate-600 text-xs mb-1 block">End date</label>
             <input
               type="date"
               value={end}
               min={start || today}
               onChange={(e) => setEnd(e.target.value)}
               required
-              className="w-full px-3 py-2 bg-slate-800 border border-slate-700 rounded-lg text-white text-sm focus:outline-none focus:border-amber-500"
+              className="w-full px-3 py-2 bg-slate-100 border border-slate-200 rounded-lg text-slate-900 text-sm focus:outline-none focus:border-blue-500"
             />
           </div>
         </div>
 
         <div>
-          <label className="text-slate-400 text-xs mb-1 block">Reason (optional)</label>
+          <label className="text-slate-600 text-xs mb-1 block">Reason (optional)</label>
           <input
             type="text"
             value={reason}
             onChange={(e) => setReason(e.target.value)}
             placeholder="e.g. service, owner using, deep clean"
             maxLength={120}
-            className="w-full px-3 py-2 bg-slate-800 border border-slate-700 rounded-lg text-white placeholder-slate-500 text-sm focus:outline-none focus:border-amber-500"
+            className="w-full px-3 py-2 bg-slate-100 border border-slate-200 rounded-lg text-slate-900 placeholder-slate-400 text-sm focus:outline-none focus:border-blue-500"
           />
-          <p className="text-slate-500 text-xs mt-1">Internal note — renters only see the dates as unavailable, not the reason.</p>
+          <p className="text-slate-500 text-xs mt-1">Internal note, renters only see the dates as unavailable, not the reason.</p>
         </div>
 
         {error && <p className="text-red-400 text-sm">{error}</p>}
@@ -139,10 +139,10 @@ export function AvailabilityManager({ vehicleId, agencyId, initial }: Props) {
 
       {/* Existing blocks */}
       <div>
-        <h2 className="text-white font-semibold text-sm mb-3">Active blocks</h2>
+        <h2 className="text-slate-900 font-semibold text-sm mb-3">Active blocks</h2>
         {blocks.length === 0 ? (
           <div className="text-center py-8 text-slate-500">
-            <CalendarX size={32} strokeWidth={1.5} className="mx-auto mb-2 text-slate-600" />
+            <CalendarX size={32} strokeWidth={1.5} className="mx-auto mb-2 text-slate-400" />
             <p className="text-sm">No blocked periods yet.</p>
           </div>
         ) : (
@@ -150,10 +150,10 @@ export function AvailabilityManager({ vehicleId, agencyId, initial }: Props) {
             {blocks.map((b) => (
               <li
                 key={b.id}
-                className="flex items-center justify-between gap-3 bg-slate-900 border border-slate-200 rounded-xl px-4 py-3"
+                className="flex items-center justify-between gap-3 bg-white border border-slate-200 rounded-xl px-4 py-3"
               >
                 <div className="min-w-0">
-                  <p className="text-white text-sm font-medium">{formatRange(b.start_date, b.end_date)}</p>
+                  <p className="text-slate-900 text-sm font-medium">{formatRange(b.start_date, b.end_date)}</p>
                   {b.reason && (
                     <p className="text-slate-500 text-xs mt-0.5 truncate">{b.reason}</p>
                   )}

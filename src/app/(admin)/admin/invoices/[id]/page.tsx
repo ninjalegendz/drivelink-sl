@@ -64,83 +64,118 @@ export default async function AdminAgencyInvoicePage({ params, searchParams }: P
     <div>
       <Link
         href={`/admin/invoices?month=${month}`}
-        className="inline-flex items-center gap-1 text-slate-400 hover:text-white text-xs mb-4"
+        className="inline-flex items-center gap-1 text-slate-600 hover:text-slate-900 text-xs mb-4"
       >
         <ArrowLeft size={12} /> Back to all invoices
       </Link>
 
       <div className="flex items-center gap-2 mb-1">
-        <Receipt size={22} className="text-amber-400" strokeWidth={1.75} />
-        <h1 className="text-2xl font-bold text-white">{agency.name}</h1>
+        <Receipt size={22} className="text-blue-600" strokeWidth={1.75} />
+        <h1 className="text-2xl font-bold text-slate-900">{agency.name}</h1>
       </div>
-      <p className="text-slate-400 text-sm mb-5">
+      <p className="text-slate-600 text-sm mb-5">
         {agency.city} · {agency.whatsapp_number} · {monthLabel(month)} invoice
       </p>
 
       <div className="grid grid-cols-3 gap-3 mb-6">
-        <div className="bg-slate-900 border border-slate-800 rounded-xl p-3">
+        <div className="bg-white border border-slate-100 rounded-xl p-3">
           <p className="text-slate-500 text-[10px] uppercase tracking-wider">Total</p>
-          <p className="text-white text-lg font-semibold mt-0.5">{formatLKR(total)}</p>
+          <p className="text-slate-900 text-lg font-semibold mt-0.5">{formatLKR(total)}</p>
         </div>
-        <div className="bg-slate-900 border border-slate-800 rounded-xl p-3">
+        <div className="bg-white border border-slate-100 rounded-xl p-3">
           <p className="text-slate-500 text-[10px] uppercase tracking-wider">Collected</p>
           <p className="text-emerald-400 text-lg font-semibold mt-0.5">{formatLKR(collected)}</p>
         </div>
-        <div className="bg-slate-900 border border-slate-800 rounded-xl p-3">
+        <div className="bg-white border border-slate-100 rounded-xl p-3">
           <p className="text-slate-500 text-[10px] uppercase tracking-wider">Outstanding</p>
-          <p className={`text-lg font-semibold mt-0.5 ${outstanding > 0 ? "text-amber-400" : "text-slate-500"}`}>
+          <p className={`text-lg font-semibold mt-0.5 ${outstanding > 0 ? "text-blue-600" : "text-slate-500"}`}>
             {formatLKR(outstanding)}
           </p>
         </div>
       </div>
 
       {bookings.length === 0 ? (
-        <div className="bg-slate-900 border border-slate-200 rounded-2xl shadow-sm p-12 text-center text-slate-500 text-sm">
+        <div className="bg-white border border-slate-200 rounded-2xl shadow-sm p-12 text-center text-slate-500 text-sm">
           No completed bookings for {agency.name} in {monthLabel(month)}.
         </div>
       ) : (
-        <div className="overflow-x-auto">
-          <table className="w-full text-sm">
-            <thead>
-              <tr className="text-left text-slate-500 border-b border-slate-800">
-                <th className="pb-3 pr-4 font-medium">Ref</th>
-                <th className="pb-3 pr-4 font-medium">Vehicle</th>
-                <th className="pb-3 pr-4 font-medium">Renter</th>
-                <th className="pb-3 pr-4 font-medium">Completed</th>
-                <th className="pb-3 pr-4 font-medium">Fee</th>
-                <th className="pb-3 font-medium">Status</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-slate-800/50">
-              {bookings.map((b) => (
-                <tr key={b.id}>
-                  <td className="py-3 pr-4 font-mono text-xs text-slate-400">{b.id.slice(0, 8).toUpperCase()}</td>
-                  <td className="py-3 pr-4 text-white">
-                    {b.vehicles?.year} {b.vehicles?.make} {b.vehicles?.model}
-                  </td>
-                  <td className="py-3 pr-4 text-slate-300">{b.profiles?.full_name ?? "—"}</td>
-                  <td className="py-3 pr-4 text-slate-400 text-xs whitespace-nowrap">
-                    {new Date(b.completed_at).toLocaleDateString("en-LK")}
-                  </td>
-                  <td className="py-3 pr-4 text-amber-400">{formatLKR(b.agency_fee_lkr)}</td>
-                  <td className="py-3">
-                    <div className="flex items-center gap-2">
-                      {b.agency_fee_collected_at ? (
-                        <Badge variant="green">Collected</Badge>
-                      ) : (
-                        <Badge variant="yellow">Due</Badge>
-                      )}
-                      <InvoiceCollectToggle
-                        bookingId={b.id}
-                        collected={Boolean(b.agency_fee_collected_at)}
-                      />
-                    </div>
-                  </td>
+        <>
+          {/* Desktop: table */}
+          <div className="hidden md:block overflow-x-auto">
+            <table className="w-full text-sm">
+              <thead>
+                <tr className="text-left text-slate-500 border-b border-slate-100">
+                  <th className="pb-3 pr-4 font-medium">Ref</th>
+                  <th className="pb-3 pr-4 font-medium">Vehicle</th>
+                  <th className="pb-3 pr-4 font-medium">Renter</th>
+                  <th className="pb-3 pr-4 font-medium">Completed</th>
+                  <th className="pb-3 pr-4 font-medium">Fee</th>
+                  <th className="pb-3 font-medium">Status</th>
                 </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
+              </thead>
+              <tbody className="divide-y divide-slate-100">
+                {bookings.map((b) => (
+                  <tr key={b.id}>
+                    <td className="py-3 pr-4 font-mono text-xs text-slate-600">{b.id.slice(0, 8).toUpperCase()}</td>
+                    <td className="py-3 pr-4 text-slate-900">
+                      {b.vehicles?.year} {b.vehicles?.make} {b.vehicles?.model}
+                    </td>
+                    <td className="py-3 pr-4 text-slate-700">{b.profiles?.full_name ?? "-"}</td>
+                    <td className="py-3 pr-4 text-slate-600 text-xs whitespace-nowrap">
+                      {new Date(b.completed_at).toLocaleDateString("en-LK")}
+                    </td>
+                    <td className="py-3 pr-4 text-blue-600">{formatLKR(b.agency_fee_lkr)}</td>
+                    <td className="py-3">
+                      <div className="flex items-center gap-2">
+                        {b.agency_fee_collected_at ? (
+                          <Badge variant="green">Collected</Badge>
+                        ) : (
+                          <Badge variant="yellow">Due</Badge>
+                        )}
+                        <InvoiceCollectToggle
+                          bookingId={b.id}
+                          collected={Boolean(b.agency_fee_collected_at)}
+                        />
+                      </div>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+
+          {/* Mobile: stacked cards */}
+          <div className="md:hidden space-y-3">
+            {bookings.map((b) => (
+              <div key={b.id} className="rounded-xl border border-slate-200 bg-white p-3">
+                <div className="flex items-center justify-between gap-2 mb-1">
+                  <span className="font-mono text-[11px] text-slate-500">{b.id.slice(0, 8).toUpperCase()}</span>
+                  {b.agency_fee_collected_at ? (
+                    <Badge variant="green">Collected</Badge>
+                  ) : (
+                    <Badge variant="yellow">Due</Badge>
+                  )}
+                </div>
+                <p className="font-semibold text-slate-900 text-sm">
+                  {b.vehicles?.year} {b.vehicles?.make} {b.vehicles?.model}
+                </p>
+                <p className="text-xs text-slate-500 mt-0.5">
+                  {b.profiles?.full_name ?? "-"} · {new Date(b.completed_at).toLocaleDateString("en-LK")}
+                </p>
+                <div className="flex items-center justify-between gap-2 mt-2 pt-2 border-t border-slate-100">
+                  <span className="text-sm">
+                    <span className="text-slate-500 text-xs">Fee: </span>
+                    <span className="text-blue-600 font-medium">{formatLKR(b.agency_fee_lkr)}</span>
+                  </span>
+                  <InvoiceCollectToggle
+                    bookingId={b.id}
+                    collected={Boolean(b.agency_fee_collected_at)}
+                  />
+                </div>
+              </div>
+            ))}
+          </div>
+        </>
       )}
     </div>
   );

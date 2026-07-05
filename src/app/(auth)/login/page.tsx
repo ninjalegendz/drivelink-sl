@@ -37,6 +37,7 @@ function LoginForm() {
   const [identifier, setIdentifier] = useState("");
   const [code,       setCode]       = useState("");
   const [channel,    setChannel]    = useState<Channel>("phone");
+  const [deliveredVia, setDeliveredVia] = useState<string | null>(null);
   const [loading,    setLoading]    = useState(false);
   const [error,      setError]      = useState<string | null>(null);
   const [info,       setInfo]       = useState<string | null>(null);
@@ -68,7 +69,7 @@ function LoginForm() {
     const trimmed = identifier.trim();
     const ch = detectChannel(trimmed);
     if (ch === "phone" && !isValidSLPhone(trimmed)) {
-      setError("Enter a Sri Lankan phone number like 0771234567.");
+      setError("Enter a valid mobile number. For a non-Sri-Lankan number, include the country code (e.g. +44 7911 123456).");
       return;
     }
 
@@ -95,6 +96,7 @@ function LoginForm() {
     }
 
     setStage("code");
+    setDeliveredVia(payload.deliveredVia ?? null);
     if (payload.nextCooldownSec) setCooldown(payload.nextCooldownSec);
     if (payload.devOnly && payload.devCode) {
       setInfo(`Dev mode: code is ${payload.devCode}`);
@@ -121,18 +123,18 @@ function LoginForm() {
   }
 
   return (
-    <div className="bg-slate-900 rounded-2xl border border-slate-800 p-6">
-      <h1 className="text-white font-bold text-xl mb-1">Sign in</h1>
-      <p className="text-slate-400 text-sm mb-6">
+    <div className="bg-white rounded-2xl border border-slate-100 p-6">
+      <h1 className="text-slate-900 font-bold text-xl mb-1">Sign in</h1>
+      <p className="text-slate-600 text-sm mb-6">
         New here?{" "}
-        <Link href="/signup" className="text-amber-400 hover:text-amber-300">Create an account</Link>
+        <Link href="/signup" className="text-blue-600 hover:text-blue-500">Create an account</Link>
       </p>
 
-      {/* Stage 1 — identifier */}
+      {/* Stage 1, identifier */}
       {stage === "identifier" && (
         <form onSubmit={sendCode} className="space-y-4">
           <div>
-            <label className="text-slate-400 text-xs mb-1 block">Email or phone number</label>
+            <label className="text-slate-600 text-xs mb-1 block">Email or phone number</label>
             <input
               type="text"
               value={identifier}
@@ -140,10 +142,10 @@ function LoginForm() {
               required
               autoFocus
               autoComplete="username"
-              placeholder="you@example.com  or  0771234567"
-              className="w-full px-4 py-2.5 bg-slate-800 border border-slate-700 rounded-xl text-white placeholder-slate-500 text-sm focus:outline-none focus:border-amber-500"
+              placeholder="you@example.com or +94 77 123 4567"
+              className="w-full px-4 py-2.5 bg-slate-100 border border-slate-200 rounded-xl text-slate-900 placeholder-slate-400 text-sm focus:outline-none focus:border-blue-500"
             />
-            <p className="text-slate-600 text-xs mt-1.5">
+            <p className="text-slate-400 text-xs mt-1.5">
               We&apos;ll send you a 6-digit code. No password required.
             </p>
           </div>
@@ -156,22 +158,24 @@ function LoginForm() {
         </form>
       )}
 
-      {/* Stage 2 — code entry */}
+      {/* Stage 2, code entry */}
       {stage === "code" && (
         <form onSubmit={verifyCode} className="space-y-4">
           <button
             type="button"
             onClick={() => { setStage("identifier"); setCode(""); setError(null); setInfo(null); }}
-            className="inline-flex items-center gap-1 text-slate-500 hover:text-white text-xs"
+            className="inline-flex items-center gap-1 text-slate-500 hover:text-slate-900 text-xs"
           >
             <ArrowLeft size={12} /> Change {channel === "email" ? "email" : "phone"}
           </button>
 
-          <div className="flex items-start gap-3 p-3 bg-slate-800/60 rounded-xl">
-            {channel === "email" ? <Mail size={18} className="text-amber-400 mt-0.5 shrink-0" /> : <Phone size={18} className="text-amber-400 mt-0.5 shrink-0" />}
+          <div className="flex items-start gap-3 p-3 bg-slate-100 rounded-xl">
+            {channel === "email" ? <Mail size={18} className="text-blue-600 mt-0.5 shrink-0" /> : <Phone size={18} className="text-blue-600 mt-0.5 shrink-0" />}
             <div className="text-xs">
-              <p className="text-slate-300">
-                Code sent to <span className="text-white font-mono">{maskIdentifier(identifier, channel)}</span>
+              <p className="text-slate-700">
+                Code sent to <span className="text-slate-900 font-mono">{maskIdentifier(identifier, channel)}</span>
+                {deliveredVia === "whatsapp" && <> on <span className="font-semibold text-emerald-600">WhatsApp</span>, check your WhatsApp messages</>}
+                {deliveredVia === "email" && channel !== "email" && <>, we sent it to your <span className="font-semibold">email</span> instead</>}
               </p>
               <p className="text-slate-500 mt-0.5">
                 Expires in 10 minutes.
@@ -180,7 +184,7 @@ function LoginForm() {
           </div>
 
           <div>
-            <label className="text-slate-400 text-xs mb-1 block">6-digit code</label>
+            <label className="text-slate-600 text-xs mb-1 block">6-digit code</label>
             <input
               ref={codeRef}
               type="text"
@@ -190,11 +194,11 @@ function LoginForm() {
               value={code}
               onChange={(e) => setCode(e.target.value.replace(/\D/g, ""))}
               required
-              className="w-full px-4 py-3 bg-slate-800 border border-slate-700 rounded-xl text-white text-center font-mono text-2xl tracking-[0.5em] focus:outline-none focus:border-amber-500"
+              className="w-full px-4 py-3 bg-slate-100 border border-slate-200 rounded-xl text-slate-900 text-center font-mono text-2xl tracking-[0.5em] focus:outline-none focus:border-blue-500"
             />
           </div>
 
-          {info  && <p className="text-amber-400 text-xs">{info}</p>}
+          {info  && <p className="text-blue-600 text-xs">{info}</p>}
           {error && <p className="text-red-400 text-sm">{error}</p>}
 
           <Button type="submit" loading={loading} disabled={code.length !== 6} className="w-full" size="lg">
@@ -205,22 +209,22 @@ function LoginForm() {
             type="button"
             onClick={() => sendCode()}
             disabled={loading || cooldown > 0}
-            className="text-xs text-slate-500 hover:text-amber-400 disabled:opacity-50 disabled:hover:text-slate-500 w-full text-center"
+            className="text-xs text-slate-500 hover:text-blue-600 disabled:opacity-50 disabled:hover:text-slate-500 w-full text-center"
           >
             {cooldown > 0 ? `Resend code in ${cooldown}s` : "Resend code"}
           </button>
         </form>
       )}
 
-      {/* Stage — email exists but unverified */}
+      {/* Stage, email exists but unverified */}
       {stage === "verify_link_sent" && (
         <div className="space-y-4">
-          <div className="flex items-start gap-3 p-3 bg-amber-500/10 border border-amber-500/20 rounded-xl">
-            <Mail size={18} className="text-amber-400 mt-0.5 shrink-0" />
+          <div className="flex items-start gap-3 p-3 bg-blue-500/10 border border-blue-500/20 rounded-xl">
+            <Mail size={18} className="text-blue-600 mt-0.5 shrink-0" />
             <div className="text-sm">
-              <p className="text-amber-300 font-medium">Verify your email first</p>
-              <p className="text-slate-400 text-xs mt-1">
-                Your email <span className="font-mono">{identifier}</span> isn&apos;t verified yet. We&apos;ve sent a verification link to your inbox — click it to confirm and you&apos;ll be logged in automatically.
+              <p className="text-blue-700 font-medium">Verify your email first</p>
+              <p className="text-slate-600 text-xs mt-1">
+                Your email <span className="font-mono">{identifier}</span> isn&apos;t verified yet. We&apos;ve sent a verification link to your inbox, click it to confirm and you&apos;ll be logged in automatically.
               </p>
             </div>
           </div>

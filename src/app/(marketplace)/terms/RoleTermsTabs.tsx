@@ -10,7 +10,7 @@ export function RoleTermsTabs() {
   return (
     <section>
       <div className="flex items-center justify-between gap-3 mb-3 flex-wrap">
-        <h2 className="text-xl font-semibold text-slate-200">
+        <h2 className="text-xl font-semibold text-slate-900">
           4. {tab === "renters" ? "Renter terms" : "Agency terms"}
         </h2>
         <div role="tablist" className="flex gap-1 p-1 glass-card rounded-full">
@@ -25,8 +25,8 @@ export function RoleTermsTabs() {
               onClick={() => setTab(t.key)}
               className={`spring-press px-4 py-1.5 rounded-full text-xs font-medium transition-all ${
                 tab === t.key
-                  ? "bg-amber-500 text-stone-900 shadow-sm"
-                  : "text-slate-400 hover:text-slate-200"
+                  ? "bg-blue-600 text-white shadow-sm"
+                  : "text-slate-600 hover:text-slate-900"
               }`}
             >
               {t.label}
@@ -38,13 +38,13 @@ export function RoleTermsTabs() {
       <div className="animate-fade-up" key={tab}>
         {tab === "renters" ? (
           <ul className="list-disc pl-5 space-y-1">
-            <li>Booking a vehicle creates a request — it is not a guarantee. The agency confirms
-                availability.</li>
-            <li>Upon agency confirmation, you have 12 hours to transfer the Rs. 500 lock-in fee
-                to the DriveLink account specified on your booking page. Failure to do so will
-                auto-cancel the booking and reduce your reliability score.</li>
-            <li>The rental cost itself is paid directly to the agency at pickup. DriveLink is not
-                a party to that transaction.</li>
+            <li>Sending a booking request is not a guarantee, the agency confirms availability
+                first. Once confirmed, the provider&apos;s contact details are shared so you can
+                arrange the handover.</li>
+            <li>During our launch period there is no booking fee or down payment to DriveLink.</li>
+            <li>The rental cost and any security deposit are paid directly to the agency, on the
+                terms you agree with them. DriveLink is not a party to that transaction and does
+                not hold your funds.</li>
             <li>You agree to comply with the agency&apos;s rental terms (deposits, fuel policy,
                 permitted use, etc.) which the agency communicates at pickup.</li>
             <li>You are responsible for traffic violations, damages, and insurance excesses
@@ -61,14 +61,13 @@ export function RoleTermsTabs() {
                 listings will be unlisted.</li>
             <li>Agencies must confirm or decline booking requests within a reasonable
                 timeframe. Bookings that sit pending for excessive periods will be auto-cancelled.</li>
-            <li>Once a booking is confirmed and the Renter has paid the lock-in fee, the agency
-                may not cancel without cause. Repeated cancellations harm your reliability score
-                and may result in penalties.</li>
+            <li>Once a booking is confirmed, the agency may not cancel without cause. Repeated
+                cancellations harm your reliability score and may result in penalties.</li>
             <li>Agencies are responsible for all aspects of the actual rental: delivering the
-                vehicle, collecting the rental balance, managing deposits, and handling any
-                damages or disputes.</li>
-            <li>Agencies agree to pay DriveLink the Rs. 200 per-booking platform fee for every
-                booking that reaches &quot;completed&quot; status. Invoices are issued monthly.</li>
+                vehicle, collecting the rental balance and deposit, and handling any damages or
+                disputes.</li>
+            <li>During our launch period DriveLink charges no commission or listing fee. Any
+                future paid features will be announced in advance.</li>
           </ul>
         )}
       </div>

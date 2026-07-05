@@ -1,21 +1,35 @@
 {
-  "name": "DriveLink SL",
+  "id": "/",
+  "name": "DriveLink SL: Verified Vehicle Rentals in Sri Lanka",
   "short_name": "DriveLink",
-  "description": "Car rentals across Sri Lanka",
-  "start_url": "/",
+  "description": "Rent verified cars, vans, SUVs, bikes and tuk-tuks across Sri Lanka. Self-drive, with a driver, or airport pickup.",
+  "start_url": "/?source=pwa",
+  "scope": "/",
   "display": "standalone",
-  "background_color": "#0f172a",
-  "theme_color": "#0f172a",
+  "orientation": "portrait",
+  "background_color": "#f8fafc",
+  "theme_color": "#ffffff",
+  "lang": "en",
+  "dir": "ltr",
+  "categories": ["travel", "business", "shopping"],
   "icons": [
     {
       "src": "/icon-192.png",
       "sizes": "192x192",
-      "type": "image/png"
+      "type": "image/png",
+      "purpose": "any"
     },
     {
       "src": "/icon-512.png",
       "sizes": "512x512",
-      "type": "image/png"
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/icon-maskable-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "maskable"
     }
   ]
 }

@@ -32,6 +32,7 @@ export async function POST(req: NextRequest) {
     full_name:           string;
     email:               string | null;
     role:                string;
+    provider_type:       string | null;
     agency_name:         string | null;
     agency_city:         string | null;
     agency_address:      string | null;
@@ -39,6 +40,7 @@ export async function POST(req: NextRequest) {
     otp_hash:            string;
     otp_expires_at:      string;
     otp_attempts:        number;
+    otp_channel:         string | null;
   } | null;
 
   if (!p)                                                return NextResponse.json({ error: "No pending signup. Start over." }, { status: 400 });
@@ -83,11 +85,12 @@ export async function POST(req: NextRequest) {
     .from("profiles")
     .update({
       email:          p.email,
-      phone_verified: true,
+      phone_verified: p.otp_channel !== "email",
     })
     .eq("id", userId);
 
   // Create the agency row. whatsapp_number = the verified phone.
+  const providerType = p.provider_type === "individual" ? "individual" : "agency";
   const { data: agency, error: agencyError } = await service
     .from("agencies")
     .insert({
@@ -97,13 +100,14 @@ export async function POST(req: NextRequest) {
       address:         p.agency_address,
       city:            p.agency_city,
       whatsapp_number: intl,
+      provider_type:   providerType,
     })
     .select("id")
     .single();
 
   if (agencyError) {
     console.error("[signup-agency verify] agency insert", agencyError);
-    // Roll back the auth user — otherwise they have a phone-verified profile
+    // Roll back the auth user, otherwise they have a phone-verified profile
     // but no agency, which the dashboard treats as "needs to sign up agency"
     await service.auth.admin.deleteUser(userId);
     return NextResponse.json({ error: "Couldn't create agency." }, { status: 500 });
@@ -119,12 +123,13 @@ export async function POST(req: NextRequest) {
       },
     });
     const link = linkData?.properties?.action_link;
+    const accountWord = providerType === "individual" ? "host" : "agency";
     if (link) {
       await sendEmail({
         to:      p.email,
-        subject: "Verify your email — DriveLink agency account",
-        text:    `Hi ${p.full_name},\n\nYour DriveLink agency account is live. Click the link below to verify your email — verified agencies show a trust badge to renters:\n\n${link}\n\nIt's optional. If you didn't create this account, ignore this email.`,
-        html:    `<p>Hi ${p.full_name},</p><p>Your DriveLink agency account is live. Click the button below to verify your email — verified agencies show a trust badge to renters:</p><p><a href="${link}" style="background:#f59e0b;color:#0f172a;padding:12px 18px;border-radius:8px;text-decoration:none;font-weight:600;display:inline-block">Verify my email</a></p><p style="color:#64748b;font-size:12px">It's optional. If you didn't create this account, ignore this email.</p>`,
+        subject: `Verify your email for your DriveLink ${accountWord} account`,
+        text:    `Hi ${p.full_name},\n\nYour DriveLink ${accountWord} account is live. Click the link below to verify your email, a verified email shows a trust badge to renters:\n\n${link}\n\nIt's optional. If you didn't create this account, ignore this email.`,
+        html:    `<p>Hi ${p.full_name},</p><p>Your DriveLink ${accountWord} account is live. Click the button below to verify your email, a verified email shows a trust badge to renters:</p><p><a href="${link}" style="background:#f59e0b;color:#0f172a;padding:12px 18px;border-radius:8px;text-decoration:none;font-weight:600;display:inline-block">Verify my email</a></p><p style="color:#64748b;font-size:12px">It's optional. If you didn't create this account, ignore this email.</p>`,
       });
     }
   }

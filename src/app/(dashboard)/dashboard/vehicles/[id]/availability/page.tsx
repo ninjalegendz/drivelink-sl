@@ -20,7 +20,7 @@ export default async function VehicleAvailabilityPage({ params }: Props) {
     .select("id")
     .eq("owner_id", user.id)
     .single();
-  if (!agencyData) redirect("/signup/agency");
+  if (!agencyData) redirect("/signup?intent=provider");
   const agency = agencyData as { id: string };
 
   // Confirm this vehicle is theirs
@@ -54,16 +54,16 @@ export default async function VehicleAvailabilityPage({ params }: Props) {
     <div className="max-w-2xl">
       <Link
         href="/dashboard/vehicles"
-        className="inline-flex items-center gap-1.5 text-slate-400 hover:text-white text-sm mb-4"
+        className="inline-flex items-center gap-1.5 text-slate-600 hover:text-slate-900 text-sm mb-4"
       >
         <ArrowLeft size={14} /> Back to fleet
       </Link>
 
-      <h1 className="text-2xl font-bold text-white mb-1">
-        Availability — {vehicle.year} {vehicle.make} {vehicle.model}
+      <h1 className="text-2xl font-bold text-slate-900 mb-1">
+        Availability, {vehicle.year} {vehicle.make} {vehicle.model}
       </h1>
-      <p className="text-slate-400 text-sm mb-8">
-        Block dates when the vehicle isn&apos;t available for rental — maintenance,
+      <p className="text-slate-600 text-sm mb-8">
+        Block dates when the vehicle isn&apos;t available for rental, maintenance,
         owner using it, agency holiday, anything. Renters won&apos;t see these
         dates as bookable.
       </p>

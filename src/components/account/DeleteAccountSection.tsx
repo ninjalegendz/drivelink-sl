@@ -70,10 +70,10 @@ export function DeleteAccountSection() {
       <h2 className="text-red-300 font-semibold flex items-center gap-2 mb-2">
         <AlertTriangle size={16} /> Danger zone
       </h2>
-      <p className="text-slate-400 text-sm mb-4">
+      <p className="text-slate-600 text-sm mb-4">
         Deleting your account scrubs your personal info from DriveLink and signs you out
         permanently. Booking history is preserved (anonymised) so other parties can still see
-        their records. <strong className="text-red-300">This can&apos;t be undone</strong> —
+        their records. <strong className="text-red-300">This can&apos;t be undone</strong> -
         though support can sometimes reverse it within 7 days at our discretion.
       </p>
       <Button variant="danger" size="sm" onClick={() => setOpen(true)}>
@@ -90,11 +90,11 @@ export function DeleteAccountSection() {
             onClick={(e) => e.stopPropagation()}
           >
             <div className="flex items-start justify-between mb-4">
-              <h3 className="text-white font-semibold">Delete account</h3>
+              <h3 className="text-slate-900 font-semibold">Delete account</h3>
               <button
                 type="button"
                 onClick={() => setOpen(false)}
-                className="text-slate-500 hover:text-white"
+                className="text-slate-500 hover:text-slate-900"
                 aria-label="Close"
               >
                 <X size={18} />
@@ -105,22 +105,22 @@ export function DeleteAccountSection() {
               <p className="text-slate-500 text-sm">Checking…</p>
             ) : hasBlockers ? (
               <>
-                <p className="text-slate-300 text-sm mb-3">
+                <p className="text-slate-700 text-sm mb-3">
                   You have unresolved items that block deletion:
                 </p>
                 <ul className="space-y-2 mb-4">
                   {blockers.map((b, i) => (
                     <li
                       key={i}
-                      className="flex items-start gap-2 p-3 bg-amber-500/5 border border-amber-500/20 rounded-lg text-xs text-amber-200"
+                      className="flex items-start gap-2 p-3 bg-blue-500/5 border border-blue-500/20 rounded-lg text-xs text-blue-200"
                     >
-                      <AlertTriangle size={14} className="text-amber-400 shrink-0 mt-0.5" />
+                      <AlertTriangle size={14} className="text-blue-600 shrink-0 mt-0.5" />
                       <div className="flex-1">
                         <p>{b.message}</p>
                         {b.fix_url && (
                           <Link
                             href={b.fix_url}
-                            className="text-amber-400 hover:text-amber-300 text-xs font-medium mt-1 inline-block"
+                            className="text-blue-600 hover:text-blue-500 text-xs font-medium mt-1 inline-block"
                           >
                             Take care of it →
                           </Link>
@@ -129,14 +129,14 @@ export function DeleteAccountSection() {
                     </li>
                   ))}
                 </ul>
-                <p className="text-slate-600 text-xs">
+                <p className="text-slate-400 text-xs">
                   Once these are resolved, come back and try again.
                 </p>
               </>
             ) : (
               <>
-                <div className="bg-slate-800/60 rounded-lg p-3 mb-4 text-xs space-y-1.5 text-slate-300">
-                  <p className="text-white font-medium mb-1">What happens on delete:</p>
+                <div className="bg-slate-100 rounded-lg p-3 mb-4 text-xs space-y-1.5 text-slate-700">
+                  <p className="text-slate-900 font-medium mb-1">What happens on delete:</p>
                   <ul className="list-disc pl-4 space-y-0.5">
                     <li>Name shown as &quot;Deleted user&quot; everywhere</li>
                     <li>Email, NIC photos, selfie, avatar all removed</li>
@@ -147,7 +147,7 @@ export function DeleteAccountSection() {
                 </div>
 
                 <label className="block">
-                  <span className="text-slate-300 text-xs mb-1.5 block font-medium">
+                  <span className="text-slate-700 text-xs mb-1.5 block font-medium">
                     Type <span className="font-mono text-red-400">DELETE</span> to confirm
                   </span>
                   <input
@@ -156,7 +156,7 @@ export function DeleteAccountSection() {
                     onChange={(e) => setConfirm(e.target.value)}
                     autoFocus
                     autoComplete="off"
-                    className="w-full px-3 py-2 bg-slate-800 border border-slate-700 rounded-lg text-white text-sm font-mono focus:outline-none focus:border-red-500"
+                    className="w-full px-3 py-2 bg-slate-100 border border-slate-200 rounded-lg text-slate-900 text-sm font-mono focus:outline-none focus:border-red-500"
                   />
                 </label>
 

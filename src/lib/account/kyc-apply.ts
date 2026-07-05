@@ -13,8 +13,8 @@ interface ApplyResult {
 
 /**
  * Centralises the "KYC just completed" side-effects. Updates kyc_status,
- * stores the verified NIC if provided, and — if the NIC has already been
- * blacklisted on some other (active) profile — propagates the block.
+ * stores the verified NIC if provided, and, if the NIC has already been
+ * blacklisted on some other (active) profile, propagates the block.
  * This is what makes the soft-delete + re-signup loophole impossible:
  * a previously banned renter who deletes and signs up again under a new
  * phone/email will be re-flagged the moment Didit returns their NIC.

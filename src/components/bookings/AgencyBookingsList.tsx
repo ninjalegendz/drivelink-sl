@@ -1,32 +1,16 @@
 "use client";
 
+import { useCallback, useState } from "react";
 import { Star, ShieldAlert } from "lucide-react";
 import { Badge } from "@/components/ui/Badge";
+import { ReviewForm } from "@/components/booking/ReviewForm";
 import { AgencyBookingActions } from "@/components/booking/AgencyBookingActions";
 import { BOOKING_STATUS_LABELS } from "@/lib/booking/state-machine";
 import { formatLKR, reliabilityColor, reliabilityLabel } from "@/lib/vehicles/format";
-import { useBookingsRealtime } from "@/lib/realtime/useBookingsRealtime";
+import { usePolledRows } from "@/lib/realtime/usePolledRows";
+import { createClient } from "@/lib/supabase/client";
 import type { BookingStatus } from "@/types/database";
-
-export interface AgencyBookingRow {
-  id:           string;
-  status:       BookingStatus;
-  start_date:   string;
-  end_date:     string;
-  total_days:   number;
-  subtotal_lkr: number;
-  created_at:   string;
-  vehicles: { make: string; model: string; year: number } | null;
-  profiles: {
-    full_name:               string;
-    rating_avg:              number | null;
-    rating_count:            number;
-    reliability_pct:         number | null;
-    kyc_status:              string;
-    is_blacklisted:          boolean;
-    blacklist_reason_public: string | null;
-  } | null;
-}
+import { AGENCY_BOOKINGS_SELECT, type AgencyBookingRow } from "./agency-bookings-query";
 
 const statusVariant: Record<BookingStatus, "slate" | "yellow" | "green" | "red" | "blue"> = {
   requested:            "slate",
@@ -40,24 +24,32 @@ const statusVariant: Record<BookingStatus, "slate" | "yellow" | "green" | "red" 
   disputed:             "red",
 };
 
-export const AGENCY_BOOKINGS_SELECT =
-  "id, status, start_date, end_date, total_days, subtotal_lkr, created_at, " +
-  "vehicles(make, model, year), " +
-  "profiles(full_name, rating_avg, rating_count, reliability_pct, kyc_status, is_blacklisted, blacklist_reason_public)";
-
 interface Props {
-  initial:      AgencyBookingRow[];
-  agencyId:     string;
-  filterStatus: BookingStatus | "";
+  initial:             AgencyBookingRow[];
+  agencyId:            string;
+  filterStatus:        BookingStatus | "";
+  /** Booking ids this agency has already reviewed the renter for. */
+  reviewedBookingIds?: string[];
 }
 
-export function AgencyBookingsList({ initial, agencyId, filterStatus }: Props) {
-  const bookings = useBookingsRealtime<AgencyBookingRow>(initial, {
-    channelName: `agency-bookings-${agencyId}-${filterStatus || "all"}`,
-    filter:      `agency_id=eq.${agencyId}`,
-    selectQuery: AGENCY_BOOKINGS_SELECT,
-    inScope:     filterStatus ? (row) => row.status === filterStatus : undefined,
-  });
+export function AgencyBookingsList({ initial, agencyId, filterStatus, reviewedBookingIds = [] }: Props) {
+  const poll = useCallback(async () => {
+    const supabase = createClient();
+    let query = supabase
+      .from("bookings")
+      .select(AGENCY_BOOKINGS_SELECT)
+      .eq("agency_id", agencyId)
+      .order("created_at", { ascending: false });
+    if (filterStatus) query = query.eq("status", filterStatus);
+    const { data } = await query.limit(50);
+    return (data ?? null) as AgencyBookingRow[] | null;
+  }, [agencyId, filterStatus]);
+
+  const bookings = usePolledRows<AgencyBookingRow>(initial, poll);
+
+  const [openReviewId, setOpenReviewId] = useState<string | null>(null);
+  const [justReviewed, setJustReviewed] = useState<Set<string>>(new Set());
+  const isReviewed = (id: string) => reviewedBookingIds.includes(id) || justReviewed.has(id);
 
   if (bookings.length === 0) {
     return (
@@ -81,13 +73,13 @@ export function AgencyBookingsList({ initial, agencyId, filterStatus }: Props) {
             className={`rounded-2xl p-4 border ${
               blocked
                 ? "bg-red-500/5 border-red-500/30"
-                : "bg-slate-900 border-slate-800"
+                : "bg-white border-slate-100"
             }`}
           >
             <div className="flex items-start justify-between gap-4">
               <div className="flex-1 min-w-0">
                 <div className="flex items-center gap-2 flex-wrap">
-                  <p className="font-semibold text-white">
+                  <p className="font-semibold text-slate-900">
                     {vehicle?.year} {vehicle?.make} {vehicle?.model}
                   </p>
                   <Badge variant={statusVariant[status]}>
@@ -95,13 +87,13 @@ export function AgencyBookingsList({ initial, agencyId, filterStatus }: Props) {
                   </Badge>
                 </div>
 
-                <p className="text-slate-400 text-sm mt-1">
-                  {booking.start_date} → {booking.end_date} ({booking.total_days} days)
+                <p className="text-slate-600 text-sm mt-1">
+                  {booking.start_date} {booking.start_time?.slice(0, 5)} → {booking.end_date} {booking.end_time?.slice(0, 5)} ({booking.total_days} days)
                 </p>
 
                 {renter && (
                   <div className="flex items-center gap-3 mt-2 flex-wrap">
-                    <p className={`text-sm ${blocked ? "text-red-300" : "text-slate-300"}`}>
+                    <p className={`text-sm ${blocked ? "text-red-300" : "text-slate-700"}`}>
                       {renter.full_name}
                     </p>
                     {blocked && <Badge variant="red">Flagged renter</Badge>}
@@ -109,7 +101,7 @@ export function AgencyBookingsList({ initial, agencyId, filterStatus }: Props) {
                       <Badge variant="green">ID Verified</Badge>
                     )}
                     {(renter.rating_count ?? 0) > 0 && (
-                      <span className="inline-flex items-center gap-1 text-slate-400 text-xs">
+                      <span className="inline-flex items-center gap-1 text-slate-600 text-xs">
                         <Star size={11} fill="currentColor" className="text-amber-400" />
                         {renter.rating_avg?.toFixed(1)}
                       </span>
@@ -142,9 +134,41 @@ export function AgencyBookingsList({ initial, agencyId, filterStatus }: Props) {
                 <p className="text-slate-500 text-xs mt-2">
                   Rental: {formatLKR(booking.subtotal_lkr)}
                 </p>
+
+                {/* Two-way reviews: rate the renter after a completed trip */}
+                {status === "completed" && renter && (
+                  <div className="mt-3 pt-3 border-t border-slate-100">
+                    {isReviewed(booking.id) ? (
+                      <p className="text-xs text-emerald-600 inline-flex items-center gap-1">
+                        <Star size={12} fill="currentColor" /> You rated this renter
+                      </p>
+                    ) : openReviewId === booking.id ? (
+                      <div>
+                        <p className="text-xs font-semibold text-slate-700 mb-2">Rate {renter.full_name}</p>
+                        <ReviewForm
+                          bookingId={booking.id}
+                          revieweeId={booking.renter_id}
+                          subjectName={renter.full_name}
+                          onSubmitted={() => {
+                            setJustReviewed((s) => new Set(s).add(booking.id));
+                            setOpenReviewId(null);
+                          }}
+                        />
+                      </div>
+                    ) : (
+                      <button
+                        type="button"
+                        onClick={() => setOpenReviewId(booking.id)}
+                        className="text-xs font-semibold text-blue-600 hover:text-blue-700"
+                      >
+                        Rate this renter →
+                      </button>
+                    )}
+                  </div>
+                )}
               </div>
 
-              <AgencyBookingActions bookingId={booking.id} status={status} />
+              <AgencyBookingActions bookingId={booking.id} status={status} renterReturnedAt={booking.renter_returned_at} />
             </div>
           </div>
         );

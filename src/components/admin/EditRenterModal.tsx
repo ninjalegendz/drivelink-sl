@@ -69,15 +69,15 @@ export function EditRenterModal({ userId, initial, onClose }: Props) {
     <div className="fixed inset-0 z-50 bg-black/70 flex items-center justify-center p-4" onClick={onClose}>
       <div className="animate-bounce-in glass-card rounded-3xl w-full max-w-md p-5" onClick={(e) => e.stopPropagation()}>
         <div className="flex items-start justify-between mb-4">
-          <h2 className="text-white font-semibold">Edit user</h2>
-          <button type="button" onClick={onClose} className="text-slate-500 hover:text-white" aria-label="Close">
+          <h2 className="text-slate-900 font-semibold">Edit user</h2>
+          <button type="button" onClick={onClose} className="text-slate-500 hover:text-slate-900" aria-label="Close">
             <X size={18} />
           </button>
         </div>
 
         <form onSubmit={submit} className="space-y-3">
           <div>
-            <label className="text-slate-300 text-xs mb-1 block">Full name</label>
+            <label className="text-slate-700 text-xs mb-1 block">Full name</label>
             <input
               type="text" value={fullName} onChange={(e) => setFullName(e.target.value)}
               required autoFocus
@@ -85,7 +85,7 @@ export function EditRenterModal({ userId, initial, onClose }: Props) {
             />
           </div>
           <div>
-            <label className="text-slate-300 text-xs mb-1 block">Mobile number</label>
+            <label className="text-slate-700 text-xs mb-1 block">Mobile number</label>
             <input
               type="tel" value={phone} onChange={(e) => setPhone(e.target.value)}
               required placeholder="0771234567"
@@ -93,8 +93,8 @@ export function EditRenterModal({ userId, initial, onClose }: Props) {
             />
           </div>
           <div>
-            <label className="text-slate-300 text-xs mb-1 block">
-              Email <span className="text-slate-600 font-normal">(blank = phone-only)</span>
+            <label className="text-slate-700 text-xs mb-1 block">
+              Email <span className="text-slate-400 font-normal">(blank = phone-only)</span>
             </label>
             <input
               type="email" value={email} onChange={(e) => setEmail(e.target.value)}
@@ -103,7 +103,7 @@ export function EditRenterModal({ userId, initial, onClose }: Props) {
             />
           </div>
           <div>
-            <label className="text-slate-300 text-xs mb-1 block">Role</label>
+            <label className="text-slate-700 text-xs mb-1 block">Role</label>
             <select
               value={role}
               onChange={(e) => setRole(e.target.value as Initial["role"])}
@@ -112,8 +112,8 @@ export function EditRenterModal({ userId, initial, onClose }: Props) {
               {ROLES.map((r) => <option key={r.value} value={r.value}>{r.label}</option>)}
             </select>
             {role !== initial.role && (
-              <p className="text-amber-400 text-xs mt-1">
-                Role change — this affects what they can do. Confirm before saving.
+              <p className="text-blue-600 text-xs mt-1">
+                Role change, this affects what they can do. Confirm before saving.
               </p>
             )}
           </div>
@@ -131,4 +131,4 @@ export function EditRenterModal({ userId, initial, onClose }: Props) {
 }
 
 const inputClass =
-  "w-full px-3 py-2 bg-slate-800 border border-slate-700 rounded-lg text-white placeholder-slate-500 text-sm focus:outline-none focus:border-amber-500";
+  "w-full px-3 py-2 bg-slate-100 border border-slate-200 rounded-lg text-slate-900 placeholder-slate-400 text-sm focus:outline-none focus:border-blue-500";

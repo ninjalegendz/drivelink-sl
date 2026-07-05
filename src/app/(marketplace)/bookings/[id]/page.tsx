@@ -1,10 +1,13 @@
 import { notFound, redirect } from "next/navigation";
 import Link from "next/link";
-import { Star, Sparkles, ShieldCheck } from "lucide-react";
-import { createClient } from "@/lib/supabase/server";
+import { Star, Sparkles, ShieldCheck, Check } from "lucide-react";
+import { createClient, createServiceClient } from "@/lib/supabase/server";
 import { Badge } from "@/components/ui/Badge";
 import { SlipUploadForm } from "@/components/booking/SlipUploadForm";
 import { ReviewForm } from "@/components/booking/ReviewForm";
+import { HandoverPhotos } from "@/components/booking/HandoverPhotos";
+import { ReturnButton } from "@/components/booking/ReturnButton";
+import { WhatsAppIcon } from "@/components/icons/WhatsAppIcon";
 import { CancelBookingButton } from "@/components/booking/CancelBookingButton";
 import { PaymentExpiryCountdown } from "@/components/booking/PaymentExpiryCountdown";
 import { BookingRefresher } from "@/components/realtime/BookingRefresher";
@@ -49,7 +52,7 @@ export default async function BookingDetailPage({ params, searchParams }: Props)
 
   const { data } = await supabase
     .from("bookings")
-    .select("*, vehicles(make, model, year, city, slug, photos), agencies(name, whatsapp_number, owner_id)")
+    .select("*, vehicles(make, model, year, city, slug, photos, plate_number), agencies(name, whatsapp_number, owner_id)")
     .eq("id", id)
     .eq("renter_id", user.id)
     .single();
@@ -83,6 +86,7 @@ export default async function BookingDetailPage({ params, searchParams }: Props)
   // countdown, but the daily cron hasn't run yet."
   if (
     booking.status === "confirmed" &&
+    booking.booking_fee_lkr > 0 &&   // free-launch bookings have no pay window
     booking.confirmed_at &&
     !booking.slip_url &&
     new Date(booking.confirmed_at).getTime() + 12 * 3600_000 < Date.now()
@@ -103,9 +107,52 @@ export default async function BookingDetailPage({ params, searchParams }: Props)
     };
   }
 
+  // Inline self-heal: auto-complete an 'active' booking whose return date passed
+  // (+24h grace). Backstop for an agency that forgot to "Mark complete", so a
+  // booking never sits "active" forever. Flips the status so the renter sees the
+  // review prompt right away; the nightly cron sends the completion messages for
+  // bookings nobody opens. Service client because renter RLS can't reach 'completed'.
+  if (
+    booking.status === "active" &&
+    booking.end_at &&
+    new Date(booking.end_at).getTime() + 24 * 3600_000 < Date.now()
+  ) {
+    const svc = await createServiceClient();
+    await svc
+      .from("bookings")
+      .update({ status: "completed", completed_at: new Date().toISOString() })
+      .eq("id", booking.id)
+      .eq("status", "active");
+    booking = {
+      ...booking,
+      status:       "completed",
+      completed_at: new Date().toISOString(),
+    };
+  }
+
   const vehicle = booking.vehicles!;
   const agency  = booking.agencies!;
   const status  = booking.status;
+  const isFree  = (booking.booking_fee_lkr ?? 0) === 0;  // free-launch: no pay step
+
+  // Pre-filled WhatsApp link to the agency, carrying the booking ref + vehicle +
+  // plate so the agency knows exactly which booking the renter is messaging about.
+  const bookingRef   = booking.id.slice(0, 8).toUpperCase();
+  const vehiclePlate = (vehicle as { plate_number?: string | null }).plate_number;
+  const agencyWaText =
+    `Hi ${agency.name}, this is about my DriveLink booking ${bookingRef}, ` +
+    `${vehicle.year} ${vehicle.make} ${vehicle.model}${vehiclePlate ? ` (${vehiclePlate})` : ""}, ` +
+    `pick-up ${booking.start_date}.`;
+  const agencyWaLink = `https://wa.me/${agency.whatsapp_number.replace(/\D/g, "")}?text=${encodeURIComponent(agencyWaText)}`;
+
+  // Progress tracker state (B3): give the renter one clear map of what's
+  // happened and what unlocks the provider's contact. Verifying ID can be
+  // done any time (even before the agency confirms), it speeds things up.
+  const agencyConfirmed = ["confirmed", "payment_pending", "active", "completed"].includes(status);
+  const verified        = kycStatus === "verified";
+  const bookingActive   = status === "active" || (status === "confirmed" && isFree);
+  const contactUnlocked = bookingActive && verified;
+  const showTracker     = !["declined", "cancelled", "completed"].includes(status);
 
   // Has the renter already reviewed this booking?
   const { data: existingReview } = await supabase
@@ -121,12 +168,12 @@ export default async function BookingDetailPage({ params, searchParams }: Props)
       {welcome === "1" && (
         <div className="mb-6 p-4 bg-emerald-500/10 border border-emerald-500/20 rounded-2xl">
           <div className="flex items-start gap-3">
-            <Sparkles size={18} className="text-emerald-400 mt-0.5 shrink-0" />
+            <Sparkles size={18} className="text-emerald-600 mt-0.5 shrink-0" />
             <div>
-              <p className="text-emerald-300 font-semibold text-sm">
-                You&apos;re in — booking request sent.
+              <p className="text-emerald-800 font-semibold text-sm">
+                You&apos;re in, booking request sent.
               </p>
-              <p className="text-emerald-200/80 text-xs mt-0.5">
+              <p className="text-emerald-700 text-xs mt-0.5">
                 The agency will confirm shortly. We&apos;ll text you when they do.
               </p>
             </div>
@@ -135,19 +182,19 @@ export default async function BookingDetailPage({ params, searchParams }: Props)
       )}
 
       {showDiditNudge && (
-        <div className="mb-6 p-4 bg-amber-500/10 border border-amber-500/20 rounded-2xl">
+        <div className="mb-6 p-4 bg-blue-500/10 border border-blue-500/20 rounded-2xl">
           <div className="flex items-start gap-3">
-            <ShieldCheck size={18} className="text-amber-400 mt-0.5 shrink-0" />
+            <ShieldCheck size={18} className="text-blue-600 mt-0.5 shrink-0" />
             <div className="flex-1">
-              <p className="text-amber-300 font-semibold text-sm">
+              <p className="text-blue-700 font-semibold text-sm">
                 Verify your ID to speed this up
               </p>
-              <p className="text-amber-200/80 text-xs mt-0.5">
-                Agencies confirm verified renters faster — usually within minutes. Takes ~2 minutes via Didit.
+              <p className="text-slate-600 text-xs mt-0.5">
+                Agencies confirm verified renters faster, usually within minutes. Takes ~2 minutes via Didit.
               </p>
               <Link
                 href="/account"
-                className="inline-block mt-2 text-xs font-medium text-amber-400 hover:text-amber-300"
+                className="inline-block mt-2 text-xs font-medium text-blue-600 hover:text-blue-500"
               >
                 Verify my ID →
               </Link>
@@ -158,54 +205,86 @@ export default async function BookingDetailPage({ params, searchParams }: Props)
 
       <div className="mb-6">
         <div className="flex items-center justify-between">
-          <h1 className="text-xl font-bold text-white">Booking Request</h1>
+          <h1 className="text-xl font-bold text-slate-900">Booking Request</h1>
           <Badge variant={statusVariant[status]}>{BOOKING_STATUS_LABELS[status]}</Badge>
         </div>
-        <p className="text-slate-400 text-sm mt-1">ID: {booking.id.slice(0, 8).toUpperCase()}</p>
+        <p className="text-slate-600 text-sm mt-1">ID: {booking.id.slice(0, 8).toUpperCase()}</p>
       </div>
 
       {/* Vehicle summary */}
-      <div className="bg-slate-900 rounded-2xl border border-slate-800 p-4 mb-4">
-        <p className="text-slate-400 text-xs uppercase tracking-widest font-semibold mb-2">Vehicle</p>
-        <p className="text-white font-semibold">{vehicle.year} {vehicle.make} {vehicle.model}</p>
-        <p className="text-slate-400 text-sm">{vehicle.city}</p>
+      <div className="bg-white rounded-2xl border border-slate-100 p-4 mb-4">
+        <p className="text-slate-600 text-xs uppercase tracking-widest font-semibold mb-2">Vehicle</p>
+        <p className="text-slate-900 font-semibold">{vehicle.year} {vehicle.make} {vehicle.model}</p>
+        <p className="text-slate-600 text-sm">{vehicle.city}</p>
         <div className="grid grid-cols-2 gap-3 mt-3 text-sm">
           <div>
-            <p className="text-slate-500 text-xs">Pick-up date</p>
-            <p className="text-white">{booking.start_date}</p>
+            <p className="text-slate-500 text-xs">Pick-up</p>
+            <p className="text-slate-900">{booking.start_date} · {booking.start_time?.slice(0, 5)}</p>
           </div>
           <div>
-            <p className="text-slate-500 text-xs">Return date</p>
-            <p className="text-white">{booking.end_date}</p>
+            <p className="text-slate-500 text-xs">Return</p>
+            <p className="text-slate-900">{booking.end_date} · {booking.end_time?.slice(0, 5)}</p>
           </div>
           <div>
             <p className="text-slate-500 text-xs">Duration</p>
-            <p className="text-white">{booking.total_days} day{booking.total_days !== 1 ? "s" : ""}</p>
+            <p className="text-slate-900">{booking.total_days} day{booking.total_days !== 1 ? "s" : ""}</p>
           </div>
           <div>
             <p className="text-slate-500 text-xs">Rental total</p>
-            <p className="text-white">{formatLKR(booking.subtotal_lkr)}</p>
+            <p className="text-slate-900">{formatLKR(booking.subtotal_lkr)}</p>
           </div>
         </div>
       </div>
 
+      {/* Progress tracker, why the contact is locked + what to do next */}
+      {showTracker && (
+        <div className="bg-white rounded-2xl border border-slate-100 p-4 mb-4">
+          <p className="text-slate-600 text-xs uppercase tracking-widest font-semibold mb-3">Your booking progress</p>
+          <ol className="space-y-3">
+            {[
+              { label: "Request sent",                done: true,             current: false,                      hint: null as string | null,                                                                  href: null as string | null },
+              { label: "Agency confirms your dates",  done: agencyConfirmed,  current: !agencyConfirmed,           hint: agencyConfirmed ? null : "We've alerted the agency, they usually reply fast.",                href: null },
+              { label: "Verify your ID",              done: verified,         current: !verified,                  hint: verified ? null : "Takes ~2 min. Needed before the provider's contact unlocks.",                href: verified ? null : "/account" },
+              { label: "Provider contact unlocks",    done: contactUnlocked,  current: false,                      hint: contactUnlocked ? "It's below, call or WhatsApp to arrange pickup." : "Unlocks once your dates are confirmed and your ID is verified.", href: null },
+            ].map((s, i) => (
+              <li key={i} className="flex items-start gap-3">
+                <span className={`mt-0.5 w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold shrink-0 ${
+                  s.done ? "bg-emerald-500 text-white" : s.current ? "bg-blue-600 text-white" : "bg-slate-100 text-slate-400"
+                }`}>
+                  {s.done ? <Check size={13} /> : i + 1}
+                </span>
+                <span className="flex-1">
+                  <span className={`block text-sm font-medium ${s.done || s.current ? "text-slate-900" : "text-slate-400"}`}>{s.label}</span>
+                  {s.hint && (s.current || s.done) && <span className="block text-slate-500 text-xs mt-0.5">{s.hint}</span>}
+                  {s.href && s.current && (
+                    <Link href={s.href} className="inline-block text-blue-600 text-xs font-semibold mt-1 hover:text-blue-500">
+                      Verify my ID →
+                    </Link>
+                  )}
+                </span>
+              </li>
+            ))}
+          </ol>
+        </div>
+      )}
+
       {/* Status panels */}
       {(status === "requested" || status === "pending_confirmation") && (
-        <div className="bg-amber-500/10 border border-amber-500/20 rounded-2xl p-4 mb-4">
-          <p className="text-amber-400 font-semibold text-sm">Waiting for agency confirmation</p>
-          <p className="text-slate-400 text-sm mt-1 mb-3">
+        <div className="bg-blue-500/10 border border-blue-500/20 rounded-2xl p-4 mb-4">
+          <p className="text-blue-600 font-semibold text-sm">Waiting for agency confirmation</p>
+          <p className="text-slate-600 text-sm mt-1 mb-3">
             We&apos;ve texted {agency.name} about your request. You&apos;ll get an SMS once they confirm.
           </p>
           <CancelBookingButton bookingId={booking.id} />
         </div>
       )}
 
-      {status === "confirmed" && (
-        <div className="bg-slate-900 rounded-2xl border border-amber-500/30 p-4 mb-4 space-y-4">
+      {status === "confirmed" && !isFree && (
+        <div className="bg-white rounded-2xl border border-blue-500/30 p-4 mb-4 space-y-4">
           <div>
-            <p className="text-amber-400 font-semibold">Agency confirmed — lock in your booking</p>
-            <p className="text-slate-400 text-sm mt-1">
-              Transfer <strong className="text-white">Rs. 500</strong> to lock in the vehicle.
+            <p className="text-blue-600 font-semibold">Agency confirmed, lock in your booking</p>
+            <p className="text-slate-600 text-sm mt-1">
+              Transfer <strong className="text-slate-900">{formatLKR(booking.booking_fee_lkr)}</strong> to lock in the vehicle.
               Once verified, you will receive the agency&apos;s contact details.
             </p>
           </div>
@@ -214,21 +293,21 @@ export default async function BookingDetailPage({ params, searchParams }: Props)
             <PaymentExpiryCountdown confirmedAt={booking.confirmed_at} windowHours={12} />
           )}
 
-          <div className="bg-slate-800 rounded-xl p-3 text-sm space-y-1">
-            <p className="text-slate-400 text-xs uppercase tracking-widest font-semibold mb-2">Bank transfer details</p>
-            <p className="text-white">Account: <span className="font-mono">{bank.bank_account_name}</span></p>
-            <p className="text-white">Bank: <span className="font-mono">{bank.bank_name}</span></p>
-            <p className="text-white">Account No: <span className="font-mono">{bank.bank_account_number}</span></p>
+          <div className="bg-slate-100 rounded-xl p-3 text-sm space-y-1">
+            <p className="text-slate-600 text-xs uppercase tracking-widest font-semibold mb-2">Bank transfer details</p>
+            <p className="text-slate-900">Account: <span className="font-mono">{bank.bank_account_name}</span></p>
+            <p className="text-slate-900">Bank: <span className="font-mono">{bank.bank_name}</span></p>
+            <p className="text-slate-900">Account No: <span className="font-mono">{bank.bank_account_number}</span></p>
             {bank.bank_branch && (
-              <p className="text-white">Branch: <span className="font-mono">{bank.bank_branch}</span></p>
+              <p className="text-slate-900">Branch: <span className="font-mono">{bank.bank_branch}</span></p>
             )}
-            <p className="text-white">Amount: <span className="font-mono text-amber-400">Rs. 500.00</span></p>
-            <p className="text-white">Reference: <span className="font-mono">{booking.id.slice(0, 8).toUpperCase()}</span></p>
+            <p className="text-slate-900">Amount: <span className="font-mono text-blue-600">{formatLKR(booking.booking_fee_lkr)}</span></p>
+            <p className="text-slate-900">Reference: <span className="font-mono">{booking.id.slice(0, 8).toUpperCase()}</span></p>
           </div>
 
           <SlipUploadForm bookingId={booking.id} />
 
-          <div className="pt-2 border-t border-slate-800">
+          <div className="pt-2 border-t border-slate-100">
             <CancelBookingButton bookingId={booking.id} />
           </div>
         </div>
@@ -236,41 +315,53 @@ export default async function BookingDetailPage({ params, searchParams }: Props)
 
       {status === "payment_pending" && (
         <div className="bg-blue-500/10 border border-blue-500/20 rounded-2xl p-4 mb-4">
-          <p className="text-blue-400 font-semibold text-sm">Slip received — verifying payment</p>
-          <p className="text-slate-400 text-sm mt-1">
+          <p className="text-blue-400 font-semibold text-sm">Slip received, verifying payment</p>
+          <p className="text-slate-600 text-sm mt-1">
             We are verifying your bank transfer. This usually takes under 30 minutes during business hours.
           </p>
         </div>
       )}
 
-      {status === "active" && (
-        <div className="bg-emerald-500/10 border border-emerald-500/20 rounded-2xl p-4 mb-4">
-          <p className="text-emerald-400 font-semibold text-sm">Booking confirmed</p>
-          <p className="text-slate-400 text-sm mt-1 mb-3">
-            Your booking is locked in. Contact the agency to arrange pick-up.
+      {(status === "active" || (status === "confirmed" && isFree)) && kycStatus !== "verified" && (
+        <div className="bg-blue-50 border border-blue-200 rounded-2xl p-4 mb-4">
+          <p className="text-blue-700 font-semibold text-sm">Booking confirmed 🎉, one quick step</p>
+          <p className="text-slate-600 text-sm mt-1 mb-3">
+            Verify your ID to unlock the provider&apos;s contact details. It takes about 2 minutes.
           </p>
-          <div className="bg-slate-800 rounded-xl p-3">
-            <p className="text-slate-400 text-xs uppercase tracking-widest font-semibold mb-1">Agency contact</p>
-            <p className="text-white font-semibold">{agency.name}</p>
-            <p className="text-slate-300 text-sm font-mono mt-0.5">{agency.whatsapp_number}</p>
+          <Link href="/account" className="inline-flex items-center gap-1.5 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white text-sm font-semibold rounded-xl transition-colors">
+            <ShieldCheck size={15} /> Verify my ID
+          </Link>
+        </div>
+      )}
+
+      {(status === "active" || (status === "confirmed" && isFree)) && kycStatus === "verified" && (
+        <div className="bg-emerald-500/10 border border-emerald-500/20 rounded-2xl p-4 mb-4">
+          <p className="text-emerald-600 font-semibold text-sm">Booking confirmed 🎉</p>
+          <p className="text-slate-600 text-sm mt-1 mb-3">
+            You&apos;re booked. Contact the provider below to arrange your pick-up, you pay them directly on handover.
+          </p>
+          <div className="bg-slate-100 rounded-xl p-3">
+            <p className="text-slate-600 text-xs uppercase tracking-widest font-semibold mb-1">Agency contact</p>
+            <p className="text-slate-900 font-semibold">{agency.name}</p>
+            <p className="text-slate-700 text-sm font-mono mt-0.5">{agency.whatsapp_number}</p>
             <div className="mt-3 flex flex-wrap gap-2">
               <a
                 href={`tel:${agency.whatsapp_number.replace(/\s+/g, "")}`}
-                className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-amber-500 hover:bg-amber-400 text-stone-900 text-xs font-semibold rounded-lg transition-colors"
+                className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-blue-600 hover:bg-blue-500 text-white text-xs font-semibold rounded-lg transition-colors"
               >
                 Call
               </a>
               <a
-                href={`https://wa.me/${agency.whatsapp_number.replace(/\D/g, "")}`}
+                href={agencyWaLink}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-green-600 hover:bg-green-500 text-white text-xs font-semibold rounded-lg transition-colors"
+                className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-green-600 hover:bg-green-500 text-slate-900 text-xs font-semibold rounded-lg transition-colors"
               >
-                WhatsApp
+                <WhatsAppIcon size={14} /> WhatsApp
               </a>
               <a
                 href={`sms:${agency.whatsapp_number.replace(/\s+/g, "")}`}
-                className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-slate-700 hover:bg-slate-600 text-white text-xs font-semibold rounded-lg transition-colors"
+                className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-slate-200 hover:bg-slate-300 text-slate-900 text-xs font-semibold rounded-lg transition-colors"
               >
                 SMS
               </a>
@@ -279,34 +370,69 @@ export default async function BookingDetailPage({ params, searchParams }: Props)
         </div>
       )}
 
+      {(status === "active" || status === "completed") && (
+        <HandoverPhotos
+          bookingId={booking.id}
+          initialPickup={booking.pickup_photo_urls ?? []}
+          initialReturn={booking.return_photo_urls ?? []}
+        />
+      )}
+
+      {/* Return handshake, renter reports the car back, agency confirms + completes */}
+      {status === "active" && (
+        <div className="bg-white rounded-2xl border border-slate-100 p-4 mb-4">
+          {booking.renter_returned_at ? (
+            <div className="flex items-start gap-2">
+              <Check size={16} className="text-emerald-600 mt-0.5 shrink-0" />
+              <div>
+                <p className="text-slate-900 font-semibold text-sm">Return reported</p>
+                <p className="text-slate-600 text-xs mt-0.5">
+                  You marked this car returned on {new Date(booking.renter_returned_at).toLocaleString("en-LK", { dateStyle: "medium", timeStyle: "short" })}.
+                  Waiting for {agency.name} to confirm receipt and close out your booking.
+                </p>
+              </div>
+            </div>
+          ) : (
+            <>
+              <p className="text-slate-900 font-semibold text-sm mb-1">Returning the car?</p>
+              <p className="text-slate-600 text-xs mb-3">
+                When you hand it back, add your return photos above, then mark it returned.
+                {" "}{agency.name} will confirm receipt and complete your booking.
+              </p>
+              <ReturnButton bookingId={booking.id} />
+            </>
+          )}
+        </div>
+      )}
+
       {status === "declined" && (
         <div className="bg-red-500/10 border border-red-500/20 rounded-2xl p-4 mb-4">
           <p className="text-red-400 font-semibold text-sm">Booking declined</p>
-          <p className="text-slate-400 text-sm mt-1">
+          <p className="text-slate-600 text-sm mt-1">
             {agency.name} was unable to fulfil this request. No payment was taken.
           </p>
         </div>
       )}
 
       {status === "completed" && (
-        <div className="bg-slate-900 rounded-2xl border border-slate-800 p-4 mb-4">
+        <div className="bg-white rounded-2xl border border-slate-100 p-4 mb-4">
           {existingReview ? (
             <div className="flex items-center gap-2">
               <Star size={16} fill="currentColor" className="text-amber-400" />
-              <p className="text-white font-semibold text-sm">
+              <p className="text-slate-900 font-semibold text-sm">
                 You rated this rental {(existingReview as { rating: number }).rating}/5. Thanks!
               </p>
             </div>
           ) : (
             <>
-              <p className="text-white font-semibold text-sm mb-1">Rental complete — leave a review</p>
-              <p className="text-slate-400 text-sm mb-4">
+              <p className="text-slate-900 font-semibold text-sm mb-1">Rental complete, leave a review</p>
+              <p className="text-slate-600 text-sm mb-4">
                 Honest feedback helps other renters and rewards reliable agencies.
               </p>
               <ReviewForm
                 bookingId={booking.id}
                 revieweeId={agency.owner_id}
-                agencyName={agency.name}
+                subjectName={agency.name}
               />
             </>
           )}

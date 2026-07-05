@@ -5,7 +5,7 @@ import { MobileNav, type MobileNavItem } from "@/components/layout/MobileNav";
 
 export default async function MarketplaceLayout({ children }: { children: React.ReactNode }) {
   // Tailor bottom-nav primary slots to who's looking. Home / Pricing / FAQ /
-  // Sign in / Account all live in the top-header burger menu now — the
+  // Sign in / Account all live in the top-header burger menu now, the
   // bottom bar keeps just the two highest-frequency actions and only shows
   // inside the Capacitor-wrapped app (see MobileNav `requireApp`).
   const supabase = await createClient();
