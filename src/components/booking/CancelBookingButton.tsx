@@ -27,6 +27,7 @@ export function CancelBookingButton({ bookingId }: Props) {
         status:              "cancelled",
         cancelled_at:        new Date().toISOString(),
         cancellation_reason: "Cancelled by renter",
+        cancelled_by:        "renter",
       })
       .eq("id", bookingId);
 

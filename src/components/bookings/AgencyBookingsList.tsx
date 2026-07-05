@@ -8,6 +8,7 @@ import { Badge } from "@/components/ui/Badge";
 import { ReviewForm } from "@/components/booking/ReviewForm";
 import { AgencyBookingActions } from "@/components/booking/AgencyBookingActions";
 import { ReportProblemButton } from "@/components/booking/ReportProblemButton";
+import { ReportRenterButton } from "@/components/booking/ReportRenterButton";
 import { InspectionFlow } from "@/components/booking/InspectionFlow";
 import { BOOKING_STATUS_LABELS } from "@/lib/booking/state-machine";
 import { formatLKR, reliabilityColor, reliabilityLabel } from "@/lib/vehicles/format";
@@ -196,6 +197,7 @@ export function AgencyBookingsList({ initial, agencyId, filterStatus, reviewedBo
                   status={status}
                   renterReturnedAt={booking.renter_returned_at}
                   returnInspectionAcked={!!returnInsp?.renter_ack_at}
+                  startAt={booking.start_at}
                 />
                 {status === "disputed" && <Badge variant="red">Under review</Badge>}
                 {agreement && (
@@ -232,6 +234,10 @@ export function AgencyBookingsList({ initial, agencyId, filterStatus, reviewedBo
                   bookingStatus={status}
                   completedAt={booking.completed_at}
                   side="page"
+                />
+                <ReportRenterButton
+                  bookingId={booking.id}
+                  reportable={status === "completed" || status === "disputed" || !!booking.overdue_critical_at}
                 />
               </div>
             </div>

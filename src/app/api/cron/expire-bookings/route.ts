@@ -79,6 +79,7 @@ export async function GET(req: NextRequest) {
         status:              "cancelled",
         cancelled_at:        new Date().toISOString(),
         cancellation_reason: "Payment slip not uploaded within 12 hours of confirmation",
+        cancelled_by:        "system",
       })
       .eq("id", b.id)
       .eq("status", "confirmed"); // optimistic, skip if renter just paid this second

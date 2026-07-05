@@ -25,11 +25,15 @@ export interface AgencyBookingRow {
   total_days:   number;
   subtotal_lkr: number;
   created_at:   string;
+  /** Generated timestamp (start_date + start_time), migration 041. Used to gate page-side cancellation to "before pickup". */
+  start_at:     string;
   renter_returned_at: string | null;
   completed_at: string | null;
   deposit_lkr:  number | null;
   /** Set once the renter has granted document-sharing consent (migration 051). */
   doc_share_consent_at: string | null;
+  /** Set by the overdue cron ladder once a return is 24h+ overdue (migration 051/052); gates page-side renter reporting. */
+  overdue_critical_at: string | null;
   vehicles: { make: string; model: string; year: number; plate_number: string | null; deposit_lkr: number } | null;
   profiles: {
     full_name:               string;
@@ -51,7 +55,7 @@ export interface AgencyBookingRow {
 }
 
 export const AGENCY_BOOKINGS_SELECT =
-  "id, renter_id, status, start_date, end_date, start_time, end_time, total_days, subtotal_lkr, created_at, renter_returned_at, completed_at, deposit_lkr, doc_share_consent_at, " +
+  "id, renter_id, status, start_date, end_date, start_time, end_time, start_at, total_days, subtotal_lkr, created_at, renter_returned_at, completed_at, deposit_lkr, doc_share_consent_at, overdue_critical_at, " +
   "vehicles(make, model, year, plate_number, deposit_lkr), " +
   "profiles(full_name, rating_avg, rating_count, reliability_pct, kyc_status, is_blacklisted, blacklist_reason_public), " +
   `booking_inspections(${INSPECTIONS_SELECT}), ` +

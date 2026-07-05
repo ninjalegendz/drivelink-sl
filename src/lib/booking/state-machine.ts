@@ -6,7 +6,9 @@ export const BOOKING_TRANSITIONS: Record<BookingStatus, BookingStatus[]> = {
   pending_confirmation: ["confirmed", "declined", "cancelled"],
   confirmed:            ["payment_pending", "cancelled"],
   payment_pending:      ["active", "cancelled"],
-  active:               ["completed", "disputed"],
+  // "cancelled" here also covers the page cancelling before pickup
+  // (/api/bookings/transition, strike logic), not just renter cancellation.
+  active:               ["completed", "disputed", "cancelled"],
   // Post-return damage claims: either party may dispute within 72h of
   // completion (the window is enforced by the dispute API route).
   completed:            ["disputed"],
@@ -34,7 +36,7 @@ export const TRANSITION_ACTORS: Partial<Record<BookingStatus, Partial<Record<Boo
   },
   confirmed: {
     payment_pending: ["renter"],        // renter uploads slip
-    cancelled:       ["renter"],
+    cancelled:       ["renter", "agency"], // agency: before pickup, strike logic applies
   },
   payment_pending: {
     active:    ["system"],              // system verifies slip
@@ -43,6 +45,7 @@ export const TRANSITION_ACTORS: Partial<Record<BookingStatus, Partial<Record<Boo
   active: {
     completed: ["agency"],
     disputed:  ["renter", "agency"],    // either side can raise a problem mid-rental
+    cancelled: ["agency"],              // before pickup only (start_at in the future)
   },
   completed: {
     disputed:  ["renter", "agency"],    // 72h post-return claim window (route-enforced)
