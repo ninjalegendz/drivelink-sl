@@ -166,6 +166,15 @@ export interface BookingRow {
   return_photo_urls: string[] | null;
   renter_returned_at: string | null;   // renter reported the car returned
   return_confirmed_at: string | null;  // agency confirmed receipt on completion
+  // ── deposit trail (migration 051) ──
+  deposit_lkr: number | null;
+  deposit_method: "cash" | "bank_transfer" | "other" | null;
+  deposit_received_at: string | null;
+  deposit_received_ack_at: string | null;
+  deposit_returned_at: string | null;
+  deposit_return_amount_lkr: number | null;
+  deposit_return_reason: string | null;
+  deposit_return_ack_at: string | null;
   created_at: string;
   updated_at: string;
 }

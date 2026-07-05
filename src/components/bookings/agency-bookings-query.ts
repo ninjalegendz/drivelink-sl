@@ -6,6 +6,7 @@
 // receive a client-reference proxy instead of the actual string, which then
 // blows up as `.split is not a function` when handed to supabase.select().
 import type { BookingStatus } from "@/types/database";
+import { INSPECTIONS_SELECT, type InspectionRow } from "@/lib/booking/inspection-types";
 
 export interface AgencyBookingRow {
   id:           string;
@@ -20,7 +21,8 @@ export interface AgencyBookingRow {
   created_at:   string;
   renter_returned_at: string | null;
   completed_at: string | null;
-  vehicles: { make: string; model: string; year: number } | null;
+  deposit_lkr:  number | null;
+  vehicles: { make: string; model: string; year: number; plate_number: string | null; deposit_lkr: number } | null;
   profiles: {
     full_name:               string;
     rating_avg:              number | null;
@@ -30,9 +32,12 @@ export interface AgencyBookingRow {
     is_blacklisted:          boolean;
     blacklist_reason_public: string | null;
   } | null;
+  /** Pickup/return condition reports (migration 051), at most one per phase. */
+  booking_inspections: InspectionRow[] | null;
 }
 
 export const AGENCY_BOOKINGS_SELECT =
-  "id, renter_id, status, start_date, end_date, start_time, end_time, total_days, subtotal_lkr, created_at, renter_returned_at, completed_at, " +
-  "vehicles(make, model, year), " +
-  "profiles(full_name, rating_avg, rating_count, reliability_pct, kyc_status, is_blacklisted, blacklist_reason_public)";
+  "id, renter_id, status, start_date, end_date, start_time, end_time, total_days, subtotal_lkr, created_at, renter_returned_at, completed_at, deposit_lkr, " +
+  "vehicles(make, model, year, plate_number, deposit_lkr), " +
+  "profiles(full_name, rating_avg, rating_count, reliability_pct, kyc_status, is_blacklisted, blacklist_reason_public), " +
+  `booking_inspections(${INSPECTIONS_SELECT})`;

@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { createClient, createServiceClient } from "@/lib/supabase/server";
 import { notifyCascade } from "@/lib/notify";
 import { runAfterResponse } from "@/lib/after-response";
+import { raiseDispute } from "@/lib/booking/raise-dispute";
 
 // POST /api/bookings/[id]/dispute
 // body: { reason: string, type?: incident_type, amount_lkr?: number, photo_urls?: string[] }
@@ -92,27 +93,18 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
     );
   }
 
-  const { error: incidentError } = await service.from("incidents").insert({
-    booking_id:    b.id,
-    filed_by:      user.id,
-    filed_by_side: isRenter ? "renter" : "page",
+  const result = await raiseDispute({
+    service,
+    bookingId:   b.id,
+    filedBy:     user.id,
+    filedBySide: isRenter ? "renter" : "page",
     type,
-    description:   reason,
-    amount_lkr:    amount,
-    photo_urls:    photos,
+    reason,
+    amountLkr:   amount,
+    photoUrls:   photos,
   });
-  if (incidentError) {
-    console.error("[dispute] incident insert", incidentError);
-    return NextResponse.json({ error: "Couldn't file the report. Try again." }, { status: 500 });
-  }
-
-  const { error: updateError } = await service
-    .from("bookings")
-    .update({ status: "disputed", dispute_reason: reason })
-    .eq("id", b.id);
-  if (updateError) {
-    console.error("[dispute] status update", updateError);
-    return NextResponse.json({ error: "Couldn't open the dispute. Try again." }, { status: 500 });
+  if (!result.ok) {
+    return NextResponse.json({ error: result.error ?? "Couldn't open the dispute." }, { status: 500 });
   }
 
   // Tell the other side (and leave admin to the realtime inbox). Fire after

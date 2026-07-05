@@ -5,7 +5,7 @@ import { createClient, createServiceClient } from "@/lib/supabase/server";
 import { Badge } from "@/components/ui/Badge";
 import { SlipUploadForm } from "@/components/booking/SlipUploadForm";
 import { ReviewForm } from "@/components/booking/ReviewForm";
-import { HandoverPhotos } from "@/components/booking/HandoverPhotos";
+import { InspectionFlow } from "@/components/booking/InspectionFlow";
 import { ReturnButton } from "@/components/booking/ReturnButton";
 import { WhatsAppIcon } from "@/components/icons/WhatsAppIcon";
 import { CancelBookingButton } from "@/components/booking/CancelBookingButton";
@@ -15,6 +15,7 @@ import { BookingRefresher } from "@/components/realtime/BookingRefresher";
 import { BOOKING_STATUS_LABELS } from "@/lib/booking/state-machine";
 import { formatLKR } from "@/lib/vehicles/format";
 import { whatsappLink, siteConfig } from "@/lib/site-config";
+import { INSPECTIONS_SELECT, type InspectionRow } from "@/lib/booking/inspection-types";
 import type { BookingWithRelations } from "@/types/queries";
 import type { BookingStatus } from "@/types/database";
 
@@ -54,12 +55,22 @@ export default async function BookingDetailPage({ params, searchParams }: Props)
 
   const { data } = await supabase
     .from("bookings")
-    .select("*, vehicles(make, model, year, city, slug, photos, plate_number), agencies(name, whatsapp_number, owner_id)")
+    .select("*, vehicles(make, model, year, city, slug, photos, plate_number, deposit_lkr), agencies(name, whatsapp_number, owner_id)")
     .eq("id", id)
     .eq("renter_id", user.id)
     .single();
 
   if (!data) notFound();
+
+  // Pickup/return inspection rows (migration 051), read directly under the
+  // "Booking parties read inspections" RLS policy (the renter is a party).
+  const { data: inspectionRows } = await supabase
+    .from("booking_inspections")
+    .select(INSPECTIONS_SELECT)
+    .eq("booking_id", id);
+  const inspections       = (inspectionRows ?? []) as unknown as InspectionRow[];
+  const pickupInspection  = inspections.find((i) => i.phase === "pickup") ?? null;
+  const returnInspection  = inspections.find((i) => i.phase === "return") ?? null;
 
   // Bank-transfer details for the pay-to-lock-in panel
   const { data: settingsRow } = await supabase
@@ -141,6 +152,7 @@ export default async function BookingDetailPage({ params, searchParams }: Props)
   // plate so the agency knows exactly which booking the renter is messaging about.
   const bookingRef   = booking.id.slice(0, 8).toUpperCase();
   const vehiclePlate = (vehicle as { plate_number?: string | null }).plate_number;
+  const depositLkr   = booking.deposit_lkr ?? (vehicle as { deposit_lkr?: number | null }).deposit_lkr ?? 0;
   const agencyWaText =
     `Hi ${agency.name}, this is about my DriveLink booking ${bookingRef}, ` +
     `${vehicle.year} ${vehicle.make} ${vehicle.model}${vehiclePlate ? ` (${vehiclePlate})` : ""}, ` +
@@ -372,12 +384,36 @@ export default async function BookingDetailPage({ params, searchParams }: Props)
         </div>
       )}
 
-      {(status === "active" || status === "completed") && (
-        <HandoverPhotos
-          bookingId={booking.id}
-          initialPickup={booking.pickup_photo_urls ?? []}
-          initialReturn={booking.return_photo_urls ?? []}
-        />
+      {(status === "active" || status === "completed") && pickupInspection && (
+        <div className="bg-white rounded-2xl border border-slate-100 p-4 mb-4">
+          {!pickupInspection.renter_ack_at && (
+            <p className="text-slate-900 font-semibold text-sm mb-3">Review the pickup inspection</p>
+          )}
+          <InspectionFlow
+            mode="review"
+            bookingId={booking.id}
+            phase="pickup"
+            inspection={pickupInspection}
+            depositLkr={depositLkr}
+          />
+        </div>
+      )}
+
+      {(status === "active" || status === "completed") && returnInspection && (
+        <div className="bg-white rounded-2xl border border-slate-100 p-4 mb-4">
+          {!returnInspection.renter_ack_at && (
+            <p className="text-slate-900 font-semibold text-sm mb-3">Review the return inspection</p>
+          )}
+          <InspectionFlow
+            mode="review"
+            bookingId={booking.id}
+            phase="return"
+            inspection={returnInspection}
+            depositLkr={depositLkr}
+            depositReturnAmountLkr={booking.deposit_return_amount_lkr}
+            pickupInspection={pickupInspection}
+          />
+        </div>
       )}
 
       {/* Return handshake, renter reports the car back, agency confirms + completes */}

@@ -1,16 +1,19 @@
 "use client";
 
-import { useCallback, useState } from "react";
-import { Star, ShieldAlert } from "lucide-react";
+import { useCallback, useEffect, useState } from "react";
+import { useRouter } from "next/navigation";
+import { Star, ShieldAlert, Check, X } from "lucide-react";
 import { Badge } from "@/components/ui/Badge";
 import { ReviewForm } from "@/components/booking/ReviewForm";
 import { AgencyBookingActions } from "@/components/booking/AgencyBookingActions";
 import { ReportProblemButton } from "@/components/booking/ReportProblemButton";
+import { InspectionFlow } from "@/components/booking/InspectionFlow";
 import { BOOKING_STATUS_LABELS } from "@/lib/booking/state-machine";
 import { formatLKR, reliabilityColor, reliabilityLabel } from "@/lib/vehicles/format";
 import { usePolledRows } from "@/lib/realtime/usePolledRows";
 import { createClient } from "@/lib/supabase/client";
 import type { BookingStatus } from "@/types/database";
+import type { InspectionPhase, InspectionRow } from "@/lib/booking/inspection-types";
 import { AGENCY_BOOKINGS_SELECT, type AgencyBookingRow } from "./agency-bookings-query";
 
 const statusVariant: Record<BookingStatus, "slate" | "yellow" | "green" | "red" | "blue"> = {
@@ -47,10 +50,14 @@ export function AgencyBookingsList({ initial, agencyId, filterStatus, reviewedBo
   }, [agencyId, filterStatus]);
 
   const bookings = usePolledRows<AgencyBookingRow>(initial, poll);
+  const router   = useRouter();
 
   const [openReviewId, setOpenReviewId] = useState<string | null>(null);
   const [justReviewed, setJustReviewed] = useState<Set<string>>(new Set());
   const isReviewed = (id: string) => reviewedBookingIds.includes(id) || justReviewed.has(id);
+
+  // Pickup/return inspection modal (migration 051).
+  const [openInspection, setOpenInspection] = useState<{ booking: AgencyBookingRow; phase: InspectionPhase } | null>(null);
 
   if (bookings.length === 0) {
     return (
@@ -67,6 +74,8 @@ export function AgencyBookingsList({ initial, agencyId, filterStatus, reviewedBo
         const renter  = booking.profiles;
         const status  = booking.status;
         const blocked = renter?.is_blacklisted ?? false;
+        const pickupInsp = booking.booking_inspections?.find((i) => i.phase === "pickup") ?? null;
+        const returnInsp = booking.booking_inspections?.find((i) => i.phase === "return") ?? null;
 
         return (
           <div
@@ -170,8 +179,27 @@ export function AgencyBookingsList({ initial, agencyId, filterStatus, reviewedBo
               </div>
 
               <div className="flex flex-col items-end gap-2 shrink-0">
-                <AgencyBookingActions bookingId={booking.id} status={status} renterReturnedAt={booking.renter_returned_at} />
+                <AgencyBookingActions
+                  bookingId={booking.id}
+                  status={status}
+                  renterReturnedAt={booking.renter_returned_at}
+                  returnInspectionAcked={!!returnInsp?.renter_ack_at}
+                />
                 {status === "disputed" && <Badge variant="red">Under review</Badge>}
+                {status === "active" && (
+                  <div className="flex flex-col items-end gap-1.5">
+                    <InspectionButton
+                      label="Pickup inspection"
+                      inspection={pickupInsp}
+                      onClick={() => setOpenInspection({ booking, phase: "pickup" })}
+                    />
+                    <InspectionButton
+                      label="Return inspection"
+                      inspection={returnInsp}
+                      onClick={() => setOpenInspection({ booking, phase: "return" })}
+                    />
+                  </div>
+                )}
                 <ReportProblemButton
                   bookingId={booking.id}
                   bookingStatus={status}
@@ -183,6 +211,91 @@ export function AgencyBookingsList({ initial, agencyId, filterStatus, reviewedBo
           </div>
         );
       })}
+
+      {openInspection && (
+        <InspectionModal
+          booking={openInspection.booking}
+          phase={openInspection.phase}
+          onClose={() => setOpenInspection(null)}
+          onSubmitted={() => {
+            setOpenInspection(null);
+            router.refresh();
+          }}
+        />
+      )}
+    </div>
+  );
+}
+
+function InspectionButton({
+  label, inspection, onClick,
+}: {
+  label:      string;
+  inspection: InspectionRow | null;
+  onClick:    () => void;
+}) {
+  const acked   = !!inspection?.renter_ack_at;
+  const pending = !!inspection && !acked;
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold border transition-colors ${
+        acked
+          ? "bg-emerald-50 text-emerald-700 border-emerald-200 hover:bg-emerald-100"
+          : pending
+          ? "bg-amber-50 text-amber-700 border-amber-200 hover:bg-amber-100"
+          : "bg-slate-100 text-slate-700 border-slate-200 hover:bg-slate-200"
+      }`}
+    >
+      {acked && <Check size={12} />}
+      {label}
+      {pending && <span className="text-[10px] font-normal">(awaiting renter)</span>}
+    </button>
+  );
+}
+
+function InspectionModal({
+  booking, phase, onClose, onSubmitted,
+}: {
+  booking:      AgencyBookingRow;
+  phase:        InspectionPhase;
+  onClose:      () => void;
+  onSubmitted:  () => void;
+}) {
+  useEffect(() => {
+    const prev = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    function onKey(e: KeyboardEvent) { if (e.key === "Escape") onClose(); }
+    window.addEventListener("keydown", onKey);
+    return () => { document.body.style.overflow = prev; window.removeEventListener("keydown", onKey); };
+  }, [onClose]);
+
+  const existing   = booking.booking_inspections?.find((i) => i.phase === phase) ?? null;
+  const depositLkr = booking.deposit_lkr ?? booking.vehicles?.deposit_lkr ?? 0;
+
+  return (
+    <div className="fixed inset-0 z-50 bg-black/70 flex items-center justify-center p-4" onClick={onClose}>
+      <div className="glass-card rounded-3xl w-full max-w-lg p-5 max-h-[90vh] overflow-y-auto" onClick={(e) => e.stopPropagation()}>
+        <div className="flex items-start justify-between mb-4">
+          <div>
+            <h2 className="text-slate-900 font-semibold">{phase === "pickup" ? "Pickup inspection" : "Return inspection"}</h2>
+            <p className="text-slate-500 text-xs mt-0.5">Booking {booking.id.slice(0, 8).toUpperCase()}</p>
+          </div>
+          <button type="button" onClick={onClose} className="text-slate-500 hover:text-slate-900" aria-label="Close">
+            <X size={18} />
+          </button>
+        </div>
+        <InspectionFlow
+          mode="submit"
+          bookingId={booking.id}
+          phase={phase}
+          vehiclePlate={booking.vehicles?.plate_number ?? null}
+          depositLkr={depositLkr}
+          existing={existing}
+          onSubmitted={onSubmitted}
+        />
+      </div>
     </div>
   );
 }

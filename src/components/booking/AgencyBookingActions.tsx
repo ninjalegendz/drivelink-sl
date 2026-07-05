@@ -11,11 +11,13 @@ interface Props {
   status: BookingStatus;
   /** Set when the renter has reported the car returned (return handshake). */
   renterReturnedAt?: string | null;
+  /** Whether the renter has acked a return inspection (migration 051 soft gate on completion). */
+  returnInspectionAcked?: boolean;
 }
 
 type AgencyTransition = "confirmed" | "declined" | "completed";
 
-export function AgencyBookingActions({ bookingId, status, renterReturnedAt }: Props) {
+export function AgencyBookingActions({ bookingId, status, renterReturnedAt, returnInspectionAcked }: Props) {
   const router = useRouter();
   const [loading, setLoading] = useState<"confirm" | "decline" | "complete" | null>(null);
   const [error, setError]     = useState<string | null>(null);
@@ -95,6 +97,16 @@ export function AgencyBookingActions({ bookingId, status, renterReturnedAt }: Pr
           variant="secondary"
           loading={loading === "complete"}
           onClick={async () => {
+            // Soft gate (migration 051): nudge toward recording a return
+            // inspection before closing the booking out, since it's the
+            // only evidence trail for a later damage claim, but never
+            // block completion on it.
+            if (!returnInspectionAcked) {
+              const proceed = window.confirm(
+                "No return inspection on record — complete anyway? Without it you can't file damage claims later.",
+              );
+              if (!proceed) return;
+            }
             setLoading("complete");
             await transition("completed");
             setLoading(null);
