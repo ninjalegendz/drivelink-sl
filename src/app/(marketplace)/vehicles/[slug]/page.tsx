@@ -1,5 +1,10 @@
 import { notFound } from "next/navigation";
-import { AlertTriangle, Car, User, Plane, ShieldCheck, Star, Info } from "lucide-react";
+import {
+  AlertTriangle, Car, User, Plane, ShieldCheck, Star, Info,
+  Gauge, Route, Truck, Droplets, Fuel, Clock, Cigarette, CigaretteOff, PawPrint,
+  CarTaxiFront, Users, Ban, IdCard, Satellite, Ticket, Banknote, Moon,
+  type LucideIcon,
+} from "lucide-react";
 import { createClient } from "@/lib/supabase/server";
 import { Badge, VerificationBadge } from "@/components/ui/Badge";
 import { HelpHint } from "@/components/ui/HelpHint";
@@ -7,7 +12,7 @@ import { BookingRequestForm } from "@/components/booking/BookingRequestForm";
 import { VehicleGallery } from "@/components/vehicles/VehicleGallery";
 import { formatLKR, insuranceLabel, fuelPolicyLabel, reliabilityColor, reliabilityLabel, responseTimeLabel, RELIABILITY_HELP, RATING_HELP, REVIEW_COUNT_HELP } from "@/lib/vehicles/format";
 import { vehicleTypeLabel, usdFromLkr, BADGE_DESCRIPTIONS } from "@/data/vehicles";
-import { presetIcon } from "@/data/vehicle-presets";
+import { presetIcon, restrictedUseLabel } from "@/data/vehicle-presets";
 import { siteConfig } from "@/lib/site-config";
 import { providerNoun, providerNounCap } from "@/lib/providers/label";
 import type { VehicleWithAgency } from "@/types/queries";
@@ -94,6 +99,74 @@ export default async function VehicleDetailPage({ params }: Props) {
     vehicle.with_driver && { label: "With Driver", Icon: User },
     vehicle.airport_pickup && { label: "Airport Pickup", Icon: Plane },
   ].filter(Boolean) as { label: string; Icon: typeof Car }[];
+
+  // ── Rental terms panel (Terms Engine). Rows with nothing to say are
+  // omitted entirely, no placeholders. Legacy listings that only have the
+  // free-text mileage_limit still get a mileage line. ──
+  const kmText = vehicle.unlimited_km
+    ? "Unlimited kilometres"
+    : vehicle.included_km_per_day != null
+      ? `${vehicle.included_km_per_day} km/day included`
+      : vehicle.mileage_limit
+        ? (/unlimited/i.test(vehicle.mileage_limit) ? "Unlimited kilometres" : `${vehicle.mileage_limit} included`)
+        : null;
+
+  const includedRows: TermItem[] = [
+    ...(kmText ? [{ Icon: Gauge, text: kmText }] : []),
+    ...(!vehicle.unlimited_km && vehicle.extra_mileage_lkr
+      ? [{ Icon: Route, text: `${formatLKR(vehicle.extra_mileage_lkr)}/extra km beyond the allowance` }] : []),
+    ...(vehicle.delivery_available
+      ? [{ Icon: Truck, text: vehicle.delivery_fee_lkr ? `Delivery available — ${formatLKR(vehicle.delivery_fee_lkr)}` : "Delivery available" }] : []),
+    ...(vehicle.airport_pickup ? [{ Icon: Plane, text: "Airport pickup available" }] : []),
+  ];
+
+  // Deposit is deliberately not repeated here, it already shows under the price.
+  const feeRows: TermItem[] = [
+    ...(vehicle.cleaning_fee_lkr > 0
+      ? [{ Icon: Droplets, text: `${formatLKR(vehicle.cleaning_fee_lkr)} cleaning fee, only if returned excessively dirty` }] : []),
+    ...(vehicle.refuel_fee_lkr > 0
+      ? [{ Icon: Fuel, text: `${formatLKR(vehicle.refuel_fee_lkr)} refuel service fee if returned with less fuel` }] : []),
+    {
+      Icon: Clock,
+      text: vehicle.late_fee_per_hour_lkr
+        ? `Late return: ${formatLKR(vehicle.late_fee_per_hour_lkr)}/hour after a 2-hour grace period`
+        : "Late return: daily rate ÷ 8 per hour after a 2-hour grace period",
+    },
+  ];
+
+  const ruleChips: TermItem[] = [
+    vehicle.smoking_allowed ? { Icon: Cigarette, text: "Smoking OK" } : { Icon: CigaretteOff, text: "No smoking" },
+    { Icon: PawPrint, text: vehicle.pets_allowed ? "Pets OK" : "No pets" },
+    { Icon: CarTaxiFront, text: vehicle.ride_hail_allowed ? "Ride-hail use OK" : "No ride-hail use" },
+    { Icon: Users, text: vehicle.second_driver_allowed ? "Second driver allowed" : "One named driver only" },
+  ];
+
+  const restrictedText = (vehicle.restricted_use ?? []).length > 0
+    ? `Not allowed: ${vehicle.restricted_use.map(restrictedUseLabel).join(", ")}`
+    : null;
+
+  // Age / licence requirements only matter when the renter drives.
+  const requirementText = vehicle.self_drive
+    ? `Driver ${vehicle.min_renter_age}+${vehicle.min_license_years > 0 ? `, licence held ${vehicle.min_license_years}+ years` : ""}`
+    : null;
+
+  const disclosureRows: TermItem[] = [
+    ...(vehicle.has_gps_tracker ? [{ Icon: Satellite, text: "GPS tracker fitted (disclosed in your rental agreement)" }] : []),
+    ...(vehicle.has_etc_tag ? [{ Icon: Ticket, text: "Expressway ETC tag fitted — toll charges during your rental are yours" }] : []),
+  ];
+
+  const withDriverRows: TermItem[] = vehicle.with_driver
+    ? [
+        ...(vehicle.per_km_rate_lkr ? [{ Icon: Route, text: `${formatLKR(vehicle.per_km_rate_lkr)}/km with driver` }] : []),
+        ...(vehicle.tolls_included === true
+          ? [{ Icon: Banknote, text: "Tolls included in the price" }]
+          : vehicle.tolls_included === false
+            ? [{ Icon: Banknote, text: "Tolls paid by you at the booth" }]
+            : []),
+        ...(vehicle.driver_bata_lkr
+          ? [{ Icon: Moon, text: `Driver overnight allowance ${formatLKR(vehicle.driver_bata_lkr)}/night on multi-day trips` }] : []),
+      ]
+    : [];
 
   // Fetch already-blocked date ranges so the booking form can warn renters
   // upfront. Two sources: in-flight bookings + agency-managed vehicle_blocks.
@@ -236,33 +309,6 @@ export default async function VehicleDetailPage({ params }: Props) {
             ))}
           </div>
 
-          {/* Rental rules & limits */}
-          {(vehicle.mileage_limit || vehicle.extra_mileage_lkr || vehicle.deposit_lkr > 0) && (
-            <div className="space-y-2">
-              <h3 className="font-bold text-slate-800 text-sm">Rental handover rules & limits</h3>
-              <div className="text-xs">
-                {vehicle.deposit_lkr > 0 && (
-                  <div className="flex justify-between py-1.5 border-b border-slate-100">
-                    <span className="text-slate-400 font-medium">Refundable deposit</span>
-                    <span className="font-bold text-slate-700">{formatLKR(vehicle.deposit_lkr)}</span>
-                  </div>
-                )}
-                {vehicle.mileage_limit && (
-                  <div className="flex justify-between py-1.5 border-b border-slate-100">
-                    <span className="text-slate-400 font-medium">Mileage allowance</span>
-                    <span className="font-bold text-slate-700">{vehicle.mileage_limit}</span>
-                  </div>
-                )}
-                {vehicle.extra_mileage_lkr ? (
-                  <div className="flex justify-between py-1.5 border-b border-slate-100">
-                    <span className="text-slate-400 font-medium">Extra mileage fee</span>
-                    <span className="font-bold text-slate-700">{formatLKR(vehicle.extra_mileage_lkr)}/km</span>
-                  </div>
-                ) : null}
-              </div>
-            </div>
-          )}
-
           {/* Description */}
           {vehicle.description && (
             <div>
@@ -314,6 +360,68 @@ export default async function VehicleDetailPage({ params }: Props) {
               </div>
             </div>
           )}
+
+          {/* Rental terms — trust panel (Terms Engine) */}
+          <div className="rounded-2xl border border-slate-100 bg-white p-4 shadow-sm space-y-4">
+            <div>
+              <h3 className="font-bold text-slate-800 text-sm flex items-center gap-1.5">
+                <ShieldCheck size={15} className="text-blue-600" /> Rental terms
+              </h3>
+              <p className="text-slate-500 text-xs mt-0.5">
+                No surprise charges — these terms are locked into your booking agreement.
+              </p>
+            </div>
+
+            <div className="grid sm:grid-cols-2 gap-x-6 gap-y-4">
+              {includedRows.length > 0 && (
+                <div>
+                  <p className="text-slate-500 text-[10px] font-bold uppercase tracking-wider mb-1.5">What&apos;s included</p>
+                  <TermRows rows={includedRows} />
+                </div>
+              )}
+              {feeRows.length > 0 && (
+                <div>
+                  <p className="text-slate-500 text-[10px] font-bold uppercase tracking-wider mb-1.5">Fees you should know</p>
+                  <TermRows rows={feeRows} />
+                </div>
+              )}
+            </div>
+
+            <div>
+              <p className="text-slate-500 text-[10px] font-bold uppercase tracking-wider mb-1.5">House rules</p>
+              <div className="flex flex-wrap gap-1.5">
+                {ruleChips.map(({ Icon, text }) => (
+                  <span key={text} className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-slate-50 border border-slate-200 text-slate-600 text-[11px] font-medium">
+                    <Icon className="w-3 h-3 text-blue-500" /> {text}
+                  </span>
+                ))}
+              </div>
+              {(restrictedText || requirementText) && (
+                <div className="mt-2">
+                  <TermRows
+                    rows={[
+                      ...(restrictedText ? [{ Icon: Ban, text: restrictedText }] : []),
+                      ...(requirementText ? [{ Icon: IdCard, text: requirementText }] : []),
+                    ]}
+                  />
+                </div>
+              )}
+            </div>
+
+            {disclosureRows.length > 0 && (
+              <div>
+                <p className="text-slate-500 text-[10px] font-bold uppercase tracking-wider mb-1.5">Disclosures</p>
+                <TermRows rows={disclosureRows} />
+              </div>
+            )}
+
+            {withDriverRows.length > 0 && (
+              <div>
+                <p className="text-slate-500 text-[10px] font-bold uppercase tracking-wider mb-1.5">With driver</p>
+                <TermRows rows={withDriverRows} />
+              </div>
+            )}
+          </div>
 
           {/* Guest reviews */}
           <div className="space-y-3">
@@ -410,5 +518,21 @@ export default async function VehicleDetailPage({ params }: Props) {
         </div>
       </div>
     </div>
+  );
+}
+
+// ─── Rental terms panel bits ─────────────────────────────────
+
+type TermItem = { Icon: LucideIcon; text: string };
+
+function TermRows({ rows }: { rows: TermItem[] }) {
+  return (
+    <ul className="space-y-1.5">
+      {rows.map(({ Icon, text }) => (
+        <li key={text} className="flex gap-2 text-xs text-slate-600 leading-relaxed">
+          <Icon className="w-3.5 h-3.5 text-blue-500 shrink-0 mt-0.5" /><span>{text}</span>
+        </li>
+      ))}
+    </ul>
   );
 }

@@ -11,7 +11,7 @@ import {
 } from "@/lib/sms/messages";
 
 // POST /api/admin/bookings/transition
-// body: { bookingId: string, to: "confirmed" | "declined" | "completed" | "cancelled", note?: string }
+// body: { bookingId: string, to: "confirmed" | "declined" | "completed" | "cancelled", note?: string, resolution_note?: string }
 //
 // Admin-only. Lets an admin move a booking on behalf of the agency,
 // typically used when the admin spoke to the agency by phone and the
@@ -22,6 +22,12 @@ import {
 // Status side-effects (confirmed_at / declined_at / etc.) mirror the
 // agency-side flow in AgencyBookingActions so downstream code that
 // reads those columns (cron expiry, reliability triggers) keeps working.
+//
+// Dispute resolution: when the booking being moved to 'completed' is
+// currently 'disputed', resolution_note is required. It's logged on the
+// activity_events row (same as `note`) and also written to every open
+// incident filed against this booking, closing them out alongside the
+// booking transition.
 
 const ALLOWED_TRANSITIONS = new Set(["confirmed", "declined", "completed", "cancelled"] as const);
 type AllowedStatus = typeof ALLOWED_TRANSITIONS extends Set<infer T> ? T : never;
@@ -41,9 +47,10 @@ export async function POST(req: NextRequest) {
   }
 
   const body = (await req.json().catch(() => ({}))) as Partial<{
-    bookingId: string;
-    to:        string;
-    note:      string;
+    bookingId:       string;
+    to:              string;
+    note:            string;
+    resolution_note: string;
   }>;
 
   if (!body.bookingId) return NextResponse.json({ error: "bookingId required" }, { status: 400 });
@@ -72,6 +79,20 @@ export async function POST(req: NextRequest) {
   } | null;
   if (!prev) return NextResponse.json({ error: "Booking not found" }, { status: 404 });
 
+  // Resolving a dispute (disputed -> completed) requires a resolution note;
+  // it's what closes out the incident report(s) below.
+  const resolvingDispute = prev.status === "disputed" && to === "completed";
+  let resolutionNote: string | null = null;
+  if (resolvingDispute) {
+    resolutionNote = body.resolution_note?.trim() ?? "";
+    if (resolutionNote.length < 5) {
+      return NextResponse.json(
+        { error: "A resolution note (5+ characters) is required to resolve a dispute." },
+        { status: 400 },
+      );
+    }
+  }
+
   const now = new Date().toISOString();
   const update: Record<string, unknown> = { status: to };
   if (to === "confirmed") update.confirmed_at = now;
@@ -89,6 +110,23 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: updateError.message }, { status: 500 });
   }
 
+  // Close out the incident report(s) alongside the booking transition.
+  if (resolvingDispute) {
+    const { error: incidentsError } = await service
+      .from("incidents")
+      .update({
+        status:          "resolved",
+        resolved_by:     user.id,
+        resolved_at:     now,
+        resolution_note: resolutionNote,
+      })
+      .eq("booking_id", body.bookingId)
+      .eq("status", "open");
+    if (incidentsError) {
+      console.error("[admin booking transition] incidents resolve", incidentsError);
+    }
+  }
+
   // Audit log, admin acted on behalf of the agency.
   await service.from("activity_events").insert({
     actor_id:           user.id,
@@ -102,6 +140,7 @@ export async function POST(req: NextRequest) {
     metadata: {
       previous_status: prev.status,
       note:            body.note ?? null,
+      ...(resolvingDispute ? { resolution_note: resolutionNote } : {}),
     },
   });
 

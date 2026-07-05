@@ -155,6 +155,34 @@ export async function softDeleteAgency(agencyId: string): Promise<void> {
 }
 
 /**
+ * Restores the user's soft-deleted Rental Pages after an account
+ * undelete. The identifying fields were scrubbed at deletion and can't
+ * be recovered, so pages come back un-blocked with placeholder details
+ * for the owner to re-fill from Page settings. Vehicles stay unlisted,
+ * re-listing a restored page is a deliberate owner action.
+ */
+export async function restoreOwnedPages(userId: string): Promise<void> {
+  const service = await createServiceClient();
+
+  const { data: pages } = await service
+    .from("agencies")
+    .select("id")
+    .eq("owner_id", userId)
+    .not("deleted_at", "is", null);
+
+  for (const p of (pages ?? []) as { id: string }[]) {
+    await service
+      .from("agencies")
+      .update({
+        name:       "(Restored page, please update its details)",
+        is_blocked: false,
+        deleted_at: null,
+      })
+      .eq("id", p.id);
+  }
+}
+
+/**
  * Soft-deletes the user: PII scrubbed, KYC/avatar storage files
  * removed, auth.users email + password scrambled so passwordless OTP
  * lookup fails. The auth.users row itself is kept (deleting it would

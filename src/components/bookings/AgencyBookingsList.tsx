@@ -5,6 +5,7 @@ import { Star, ShieldAlert } from "lucide-react";
 import { Badge } from "@/components/ui/Badge";
 import { ReviewForm } from "@/components/booking/ReviewForm";
 import { AgencyBookingActions } from "@/components/booking/AgencyBookingActions";
+import { ReportProblemButton } from "@/components/booking/ReportProblemButton";
 import { BOOKING_STATUS_LABELS } from "@/lib/booking/state-machine";
 import { formatLKR, reliabilityColor, reliabilityLabel } from "@/lib/vehicles/format";
 import { usePolledRows } from "@/lib/realtime/usePolledRows";
@@ -168,7 +169,16 @@ export function AgencyBookingsList({ initial, agencyId, filterStatus, reviewedBo
                 )}
               </div>
 
-              <AgencyBookingActions bookingId={booking.id} status={status} renterReturnedAt={booking.renter_returned_at} />
+              <div className="flex flex-col items-end gap-2 shrink-0">
+                <AgencyBookingActions bookingId={booking.id} status={status} renterReturnedAt={booking.renter_returned_at} />
+                {status === "disputed" && <Badge variant="red">Under review</Badge>}
+                <ReportProblemButton
+                  bookingId={booking.id}
+                  bookingStatus={status}
+                  completedAt={booking.completed_at}
+                  side="page"
+                />
+              </div>
             </div>
           </div>
         );

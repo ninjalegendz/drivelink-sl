@@ -1,6 +1,6 @@
 import { notFound, redirect } from "next/navigation";
 import Link from "next/link";
-import { Star, Sparkles, ShieldCheck, Check } from "lucide-react";
+import { Star, Sparkles, ShieldCheck, Check, ShieldAlert } from "lucide-react";
 import { createClient, createServiceClient } from "@/lib/supabase/server";
 import { Badge } from "@/components/ui/Badge";
 import { SlipUploadForm } from "@/components/booking/SlipUploadForm";
@@ -10,9 +10,11 @@ import { ReturnButton } from "@/components/booking/ReturnButton";
 import { WhatsAppIcon } from "@/components/icons/WhatsAppIcon";
 import { CancelBookingButton } from "@/components/booking/CancelBookingButton";
 import { PaymentExpiryCountdown } from "@/components/booking/PaymentExpiryCountdown";
+import { ReportProblemButton } from "@/components/booking/ReportProblemButton";
 import { BookingRefresher } from "@/components/realtime/BookingRefresher";
 import { BOOKING_STATUS_LABELS } from "@/lib/booking/state-machine";
 import { formatLKR } from "@/lib/vehicles/format";
+import { whatsappLink, siteConfig } from "@/lib/site-config";
 import type { BookingWithRelations } from "@/types/queries";
 import type { BookingStatus } from "@/types/database";
 
@@ -152,7 +154,7 @@ export default async function BookingDetailPage({ params, searchParams }: Props)
   const verified        = kycStatus === "verified";
   const bookingActive   = status === "active" || (status === "confirmed" && isFree);
   const contactUnlocked = bookingActive && verified;
-  const showTracker     = !["declined", "cancelled", "completed"].includes(status);
+  const showTracker     = !["declined", "cancelled", "completed", "disputed"].includes(status);
 
   // Has the renter already reviewed this booking?
   const { data: existingReview } = await supabase
@@ -414,6 +416,29 @@ export default async function BookingDetailPage({ params, searchParams }: Props)
         </div>
       )}
 
+      {status === "disputed" && (
+        <div className="bg-red-500/10 border border-red-500/20 rounded-2xl p-4 mb-4">
+          <div className="flex items-start gap-3">
+            <ShieldAlert size={18} className="text-red-500 mt-0.5 shrink-0" />
+            <div className="flex-1">
+              <p className="text-red-500 font-semibold text-sm">Under review, our team is on it</p>
+              <p className="text-slate-600 text-sm mt-1 mb-3">
+                A problem was reported on this booking. It&apos;s paused while DriveLink looks into it,
+                you&apos;ll hear from us with an update.
+              </p>
+              <a
+                href={whatsappLink(`Hi DriveLink, I have a question about my booking ${bookingRef}.`)}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-blue-600 hover:bg-blue-700 text-white text-xs font-semibold rounded-lg transition-colors"
+              >
+                <WhatsAppIcon size={14} /> WhatsApp {siteConfig.whatsappDisplay}
+              </a>
+            </div>
+          </div>
+        </div>
+      )}
+
       {status === "completed" && (
         <div className="bg-white rounded-2xl border border-slate-100 p-4 mb-4">
           {existingReview ? (
@@ -438,6 +463,15 @@ export default async function BookingDetailPage({ params, searchParams }: Props)
           )}
         </div>
       )}
+
+      <div className="mt-2">
+        <ReportProblemButton
+          bookingId={booking.id}
+          bookingStatus={booking.status}
+          completedAt={booking.completed_at}
+          side="renter"
+        />
+      </div>
     </div>
   );
 }

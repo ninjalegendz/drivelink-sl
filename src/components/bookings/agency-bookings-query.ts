@@ -19,6 +19,7 @@ export interface AgencyBookingRow {
   subtotal_lkr: number;
   created_at:   string;
   renter_returned_at: string | null;
+  completed_at: string | null;
   vehicles: { make: string; model: string; year: number } | null;
   profiles: {
     full_name:               string;
@@ -32,6 +33,6 @@ export interface AgencyBookingRow {
 }
 
 export const AGENCY_BOOKINGS_SELECT =
-  "id, renter_id, status, start_date, end_date, start_time, end_time, total_days, subtotal_lkr, created_at, renter_returned_at, " +
+  "id, renter_id, status, start_date, end_date, start_time, end_time, total_days, subtotal_lkr, created_at, renter_returned_at, completed_at, " +
   "vehicles(make, model, year), " +
   "profiles(full_name, rating_avg, rating_count, reliability_pct, kyc_status, is_blacklisted, blacklist_reason_public)";

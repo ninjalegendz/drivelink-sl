@@ -29,10 +29,20 @@ export interface AdminBookingRow {
     reliability_pct:  number | null;
   } | null;
   agencies: { name: string; city: string } | null;
+  incidents: {
+    id:            string;
+    type:          string;
+    filed_by_side: string;
+    status:        string;
+    description:   string;
+    amount_lkr:    number | null;
+    created_at:    string;
+  }[] | null;
 }
 
 export const ADMIN_BOOKINGS_SELECT =
   "id, status, start_date, end_date, start_time, end_time, total_days, subtotal_lkr, booking_fee_lkr, created_at, " +
   "vehicles(make, model, year, city), " +
   "profiles(full_name, phone, kyc_status, is_blacklisted, blacklist_reason, rating_avg, rating_count, reliability_pct), " +
-  "agencies(name, city)";
+  "agencies(name, city), " +
+  "incidents(id, type, filed_by_side, status, description, amount_lkr, created_at)";

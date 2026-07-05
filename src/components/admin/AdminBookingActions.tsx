@@ -30,8 +30,21 @@ export function AdminBookingActions({ bookingId, status }: Props) {
   const [loading, setLoading] = useState<Target | null>(null);
   const [error,   setError]   = useState<string | null>(null);
 
+  const resolvingDispute = (to: Target) => status === "disputed" && to === "completed";
+
   async function transition(to: Target) {
-    if (!confirm(
+    let resolutionNote: string | undefined;
+
+    if (resolvingDispute(to)) {
+      const note = window.prompt(
+        "Resolution note (required). This resolves the incident report(s), marks the booking completed, " +
+        "and is logged in the audit trail. What was decided?"
+      );
+      if (note === null) return; // cancelled
+      const trimmed = note.trim();
+      if (trimmed.length < 5) { setError("Resolution note must be at least 5 characters."); return; }
+      resolutionNote = trimmed;
+    } else if (!confirm(
       `${LABEL[to]} this booking on behalf of the agency?\n\n` +
       "This is for when you've spoken to the agency and they've decided. " +
       "The action is logged as an admin override in the audit trail."
@@ -41,7 +54,11 @@ export function AdminBookingActions({ bookingId, status }: Props) {
     const res = await fetch("/api/admin/bookings/transition", {
       method:  "POST",
       headers: { "Content-Type": "application/json" },
-      body:    JSON.stringify({ bookingId, to }),
+      body:    JSON.stringify({
+        bookingId,
+        to,
+        ...(resolutionNote ? { resolution_note: resolutionNote } : {}),
+      }),
     });
     const payload = await res.json().catch(() => ({}));
     setLoading(null);
@@ -61,6 +78,7 @@ export function AdminBookingActions({ bookingId, status }: Props) {
       case "confirmed":
       case "payment_pending":      return ["cancelled"];
       case "active":               return ["completed", "cancelled"];
+      case "disputed":             return ["completed"];
       default:                     return [];
     }
   })();
@@ -89,7 +107,7 @@ export function AdminBookingActions({ bookingId, status }: Props) {
                                    "bg-red-500/15 text-red-400 border-red-500/30 hover:bg-red-500/25"
             }`}
           >
-            {iconFor[t]} {loading === t ? "…" : LABEL[t]}
+            {iconFor[t]} {loading === t ? "…" : resolvingDispute(t) ? "Resolve dispute" : LABEL[t]}
           </button>
         ))}
       </div>

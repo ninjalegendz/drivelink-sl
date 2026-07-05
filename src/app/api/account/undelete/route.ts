@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createServiceClient } from "@/lib/supabase/server";
+import { restoreOwnedPages } from "@/lib/account/deletion";
 import { verifyUndeleteToken } from "@/lib/account/undelete-token";
 
 // GET /api/account/undelete?u=<userId>&t=<token>
@@ -52,6 +53,11 @@ export async function GET(req: NextRequest) {
       full_name:  "(Restored, please update your name)",
     })
     .eq("id", userId);
+
+  // Their Rental Pages were soft-deleted alongside the account, bring
+  // them back too (un-blocked, placeholder details, vehicles stay
+  // unlisted until the owner re-lists deliberately).
+  await restoreOwnedPages(userId);
 
   return NextResponse.redirect(`${origin}/?undeleted=1`);
 }

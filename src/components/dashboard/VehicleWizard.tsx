@@ -9,7 +9,7 @@ import { uploadToR2 } from "@/lib/storage/upload";
 import { Select } from "@/components/ui/Select";
 import { PresetPicker } from "@/components/dashboard/PresetPicker";
 import { SL_CITIES } from "@/data/cities";
-import { RULE_PRESETS, FEATURE_PRESETS, SL_MAKES } from "@/data/vehicle-presets";
+import { RULE_PRESETS, FEATURE_PRESETS, SL_MAKES, BODY_TYPES, RESTRICTED_USE_OPTIONS } from "@/data/vehicle-presets";
 import { buildVehicleSlug } from "@/lib/vehicles/slug";
 import type { VehicleType } from "@/types/database";
 
@@ -25,18 +25,7 @@ const CITY_OPTIONS = SL_CITIES.map((c) => ({ value: c, label: c }));
 const CURRENT_YEAR = new Date().getFullYear();
 const DRAFT_KEY = "drivelink_vehicle_wizard_draft";
 
-const BODY_TYPE_OPTIONS = [
-  "Sedan", "Hatchback", "SUV", "Crossover", "Wagon", "Coupe", "Pickup", "Mini", "Van", "Other",
-].map((v) => ({ value: v, label: v }));
-
-// restricted_use fixed vocabulary (DB text[] column) → human labels shown as "Not allowed" chips.
-const RESTRICTED_USE_OPTIONS: { value: string; label: string }[] = [
-  { value: "unpaved_roads",         label: "Unpaved roads" },
-  { value: "beach_sand",            label: "Beach / sand driving" },
-  { value: "hill_country",          label: "Steep hill-country routes" },
-  { value: "flood_water",           label: "Driving through flood water" },
-  { value: "long_haul_north_east",  label: "Long-haul North/East trips" },
-];
+const BODY_TYPE_OPTIONS = BODY_TYPES.map((v) => ({ value: v, label: v }));
 
 function clamp(n: number, min: number, max: number) {
   return Math.min(Math.max(n, min), max);
