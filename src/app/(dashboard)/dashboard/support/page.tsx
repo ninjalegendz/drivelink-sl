@@ -1,6 +1,7 @@
 import { redirect } from "next/navigation";
 import { Headphones } from "lucide-react";
 import { createClient } from "@/lib/supabase/server";
+import { getActivePage } from "@/lib/pages/active-page";
 import { getOrCreateThreadForAgency } from "@/lib/support/thread";
 import { SupportChat, type SupportMessage } from "@/components/support/SupportChat";
 
@@ -9,15 +10,10 @@ export default async function AgencySupportPage() {
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) redirect("/login?next=/dashboard/support");
 
-  const { data: agencyRow } = await supabase
-    .from("agencies")
-    .select("id, name")
-    .eq("owner_id", user.id)
-    .single();
-  const agency = agencyRow as { id: string; name: string } | null;
-  if (!agency) redirect("/signup?intent=provider");
+  const { page } = await getActivePage(supabase, user.id);
+  if (!page) redirect("/account/pages/new");
 
-  const thread = await getOrCreateThreadForAgency(supabase, agency.id);
+  const thread = await getOrCreateThreadForAgency(supabase, page.id);
   if (!thread) {
     return (
       <div className="text-slate-500 text-sm">Couldn&apos;t open a support thread. Try again later.</div>

@@ -2,6 +2,7 @@ import { redirect } from "next/navigation";
 import Link from "next/link";
 import { BarChart3, TrendingUp, Wallet, Receipt, AlertTriangle } from "lucide-react";
 import { createClient } from "@/lib/supabase/server";
+import { getActivePage } from "@/lib/pages/active-page";
 import { Sparkline } from "@/components/analytics/Sparkline";
 import { formatLKR } from "@/lib/vehicles/format";
 import {
@@ -32,13 +33,9 @@ export default async function AgencyAnalyticsPage({ searchParams }: Props) {
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) redirect("/login?next=/dashboard/analytics");
 
-  const { data: agencyRow } = await supabase
-    .from("agencies")
-    .select("id, name, city")
-    .eq("owner_id", user.id)
-    .single();
-  if (!agencyRow) redirect("/signup?intent=provider");
-  const agency = agencyRow as { id: string; name: string; city: string };
+  const { page } = await getActivePage(supabase, user.id);
+  if (!page) redirect("/account/pages/new");
+  const agency = page;
 
   const [byStatus, trend, money, funnel] = await Promise.all([
     bookingCountsByStatus(supabase, range, agency.id),

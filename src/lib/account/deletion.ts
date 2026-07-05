@@ -1,5 +1,6 @@
 import { createClient as createPlainClient } from "@supabase/supabase-js";
 import { createServiceClient } from "@/lib/supabase/server";
+import { getOwnedPages } from "@/lib/pages/active-page";
 import { sendEmail } from "@/lib/email/send";
 import { generateUndeleteToken } from "@/lib/account/undelete-token";
 import { deleteObject, extractKeyFromUrl } from "@/lib/storage/r2";
@@ -72,27 +73,22 @@ export async function getDeletionBlockers(userId: string): Promise<DeletionBlock
     });
   }
 
-  // Agency-owner checks
+  // Rental Page owner checks — an account can own up to 5 pages, so every
+  // owned (non-deleted) page is checked, not just one.
   if (profile.role === "agency_owner") {
-    const { data: agencyRow } = await service
-      .from("agencies")
-      .select("id")
-      .eq("owner_id", userId)
-      .is("deleted_at", null)
-      .maybeSingle();
-    const agencyId = (agencyRow as { id: string } | null)?.id;
+    const ownedPages = await getOwnedPages(service, userId);
 
-    if (agencyId) {
+    for (const p of ownedPages) {
       const { data: agencyBookings } = await service
         .from("bookings")
         .select("id, status")
-        .eq("agency_id", agencyId)
+        .eq("agency_id", p.id)
         .in("status", ACTIVE_BOOKING_STATUSES as unknown as string[]);
 
       for (const b of (agencyBookings ?? []) as { id: string; status: string }[]) {
         blockers.push({
           type:    "active_booking",
-          message: `Your agency has an in-progress booking (#${b.id.slice(0, 8).toUpperCase()}, ${b.status.replace(/_/g, " ")}). Complete or decline it first.`,
+          message: `Your Rental Page "${p.name}" has an in-progress booking (#${b.id.slice(0, 8).toUpperCase()}, ${b.status.replace(/_/g, " ")}). Complete or decline it first.`,
           fix_url: "/dashboard/bookings",
         });
       }
@@ -100,7 +96,7 @@ export async function getDeletionBlockers(userId: string): Promise<DeletionBlock
       const { data: feeRows } = await service
         .from("bookings")
         .select("agency_fee_lkr")
-        .eq("agency_id", agencyId)
+        .eq("agency_id", p.id)
         .eq("status", "completed")
         .is("agency_fee_collected_at", null);
 
@@ -110,7 +106,7 @@ export async function getDeletionBlockers(userId: string): Promise<DeletionBlock
       if (totalOwed > 0) {
         blockers.push({
           type:    "unpaid_fees",
-          message: `Outstanding platform fees: Rs. ${totalOwed.toLocaleString("en-LK")}. Settle with DriveLink before closing the account.`,
+          message: `Outstanding platform fees on "${p.name}": Rs. ${totalOwed.toLocaleString("en-LK")}. Settle with DriveLink before closing the account.`,
           fix_url: "/dashboard",
         });
       }
@@ -162,8 +158,8 @@ export async function softDeleteAgency(agencyId: string): Promise<void> {
  * Soft-deletes the user: PII scrubbed, KYC/avatar storage files
  * removed, auth.users email + password scrambled so passwordless OTP
  * lookup fails. The auth.users row itself is kept (deleting it would
- * cascade-delete the profile via FK). If the user owns an agency,
- * that gets soft-deleted too.
+ * cascade-delete the profile via FK). If the user owns any Rental
+ * Pages (up to 5 per account), those all get soft-deleted too.
  */
 export async function softDeleteUser(userId: string): Promise<void> {
   const service = await createServiceClient();
@@ -238,16 +234,11 @@ export async function softDeleteUser(userId: string): Promise<void> {
     })
     .eq("id", userId);
 
-  // If they're an agency owner, soft-delete their agency too
+  // If they're a Rental Page owner, soft-delete every page they own
+  // (an account can own up to 5).
   if (profile.role === "agency_owner") {
-    const { data: agencyRow } = await service
-      .from("agencies")
-      .select("id")
-      .eq("owner_id", userId)
-      .is("deleted_at", null)
-      .maybeSingle();
-    const agencyId = (agencyRow as { id: string } | null)?.id;
-    if (agencyId) await softDeleteAgency(agencyId);
+    const ownedPages = await getOwnedPages(service, userId);
+    for (const p of ownedPages) await softDeleteAgency(p.id);
   }
 
   // Scramble auth.users.email + password so login lookup fails entirely

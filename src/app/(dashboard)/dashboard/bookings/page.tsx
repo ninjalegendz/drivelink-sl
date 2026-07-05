@@ -1,5 +1,6 @@
 import { createClient } from "@/lib/supabase/server";
 import { redirect } from "next/navigation";
+import { getActivePage } from "@/lib/pages/active-page";
 import { AgencyBookingsList } from "@/components/bookings/AgencyBookingsList";
 import { AGENCY_BOOKINGS_SELECT, type AgencyBookingRow } from "@/components/bookings/agency-bookings-query";
 import type { BookingStatus } from "@/types/database";
@@ -23,15 +24,9 @@ export default async function AgencyBookingsPage({ searchParams }: Props) {
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) redirect("/login");
 
-  const { data: agencyData } = await supabase
-    .from("agencies")
-    .select("id")
-    .eq("owner_id", user.id)
-    .single();
-
-  if (!agencyData) redirect("/signup?role=agency");
-
-  const agency = agencyData as { id: string };
+  const { page } = await getActivePage(supabase, user.id);
+  if (!page) redirect("/account/pages/new");
+  const agency = page;
 
   let query = supabase
     .from("bookings")

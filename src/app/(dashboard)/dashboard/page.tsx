@@ -5,7 +5,7 @@ import Image from "next/image";
 import { AlertTriangle, Plus, Car, Bell, Zap, CheckCircle2, ArrowRight, Clock } from "lucide-react";
 import { AgencyBookingActions } from "@/components/booking/AgencyBookingActions";
 import { formatLKR, responseTimeLabel } from "@/lib/vehicles/format";
-import type { AgencyRow } from "@/types/queries";
+import { getActivePage } from "@/lib/pages/active-page";
 import type { BookingStatus } from "@/types/database";
 
 type BookingLite = {
@@ -32,24 +32,26 @@ export default async function DashboardPage() {
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) redirect("/login?next=/dashboard");
 
-  const { data } = await supabase.from("agencies").select("*").eq("owner_id", user.id).single();
-  if (!data) redirect("/signup?intent=provider");
-  const agency = data as AgencyRow & { avg_response_minutes?: number | null };
+  const { page } = await getActivePage(supabase, user.id);
+  if (!page) redirect("/account/pages/new");
+  const agency = page;
 
   const bookingSelect = "id, status, start_date, end_date, start_time, end_time, total_days, subtotal_lkr, vehicles(make, model, year), profiles!renter_id(full_name, kyc_status)";
 
-  const [{ data: pendingData }, { data: activeData }, { data: fleetData }, { count: monthCount }] = await Promise.all([
+  const [{ data: pendingData }, { data: activeData }, { data: fleetData }, { count: monthCount }, { data: statsRow }] = await Promise.all([
     supabase.from("bookings").select(bookingSelect).eq("agency_id", agency.id).eq("status", "pending_confirmation").order("created_at", { ascending: true }).limit(20),
     supabase.from("bookings").select(bookingSelect).eq("agency_id", agency.id).eq("status", "active").order("start_date", { ascending: true }).limit(20),
     supabase.from("vehicles").select("id, make, model, year, status, slug, daily_rate_lkr, photos, is_featured").eq("agency_id", agency.id).order("created_at", { ascending: false }).limit(24),
     supabase.from("bookings").select("*", { count: "exact", head: true }).eq("agency_id", agency.id).gte("created_at", new Date(Date.now() - 30 * 86400000).toISOString()),
+    supabase.from("agencies").select("avg_response_minutes").eq("id", agency.id).single(),
   ]);
 
   const pending = (pendingData ?? []) as unknown as BookingLite[];
   const active  = (activeData ?? []) as unknown as BookingLite[];
   const fleet   = (fleetData ?? []) as unknown as FleetLite[];
   const liveCount = fleet.filter((v) => v.status === "available").length;
-  const responseLabel = responseTimeLabel(agency.avg_response_minutes);
+  const avgResponseMinutes = (statsRow as { avg_response_minutes: number | null } | null)?.avg_response_minutes ?? null;
+  const responseLabel = responseTimeLabel(avgResponseMinutes);
 
   return (
     <div className="max-w-3xl space-y-8">

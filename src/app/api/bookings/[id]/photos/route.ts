@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient, createServiceClient } from "@/lib/supabase/server";
+import { getOwnedPages } from "@/lib/pages/active-page";
 import { extractKeyFromUrl } from "@/lib/storage/r2";
 
 // POST /api/bookings/[id]/photos
@@ -40,15 +41,13 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
   const b = booking as { id: string; renter_id: string; agency_id: string; status: string } | null;
   if (!b) return NextResponse.json({ error: "Booking not found" }, { status: 404 });
 
-  // Authorise: renter on the booking, or owner of its agency.
+  // Authorise: renter on the booking, or owner of one of this account's own
+  // Rental Pages (an account can own up to 5, so check the whole owned set,
+  // not just a single agency).
   let allowed = b.renter_id === user.id;
   if (!allowed) {
-    const { data: agency } = await service
-      .from("agencies")
-      .select("owner_id")
-      .eq("id", b.agency_id)
-      .single();
-    allowed = (agency as { owner_id?: string } | null)?.owner_id === user.id;
+    const ownedPages = await getOwnedPages(service, user.id);
+    allowed = ownedPages.some((p) => p.id === b.agency_id);
   }
   if (!allowed) return NextResponse.json({ error: "Not your booking" }, { status: 403 });
 
