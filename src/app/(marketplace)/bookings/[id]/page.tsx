@@ -11,6 +11,7 @@ import { WhatsAppIcon } from "@/components/icons/WhatsAppIcon";
 import { CancelBookingButton } from "@/components/booking/CancelBookingButton";
 import { PaymentExpiryCountdown } from "@/components/booking/PaymentExpiryCountdown";
 import { ReportProblemButton } from "@/components/booking/ReportProblemButton";
+import { DocumentShareCard } from "@/components/booking/DocumentShareCard";
 import { BookingRefresher } from "@/components/realtime/BookingRefresher";
 import { BOOKING_STATUS_LABELS } from "@/lib/booking/state-machine";
 import { formatLKR } from "@/lib/vehicles/format";
@@ -443,6 +444,19 @@ export default async function BookingDetailPage({ params, searchParams }: Props)
             )}
           </div>
         </div>
+      )}
+
+      {/* Consent-based document sharing (migration 051): only relevant once the
+          agency needs to review the renter before/around handover. Access to
+          the viewer ends at return regardless of this stamp, so the card
+          disappears the moment the booking leaves this status set. */}
+      {["confirmed", "payment_pending", "active"].includes(status) && (
+        <DocumentShareCard
+          bookingId={booking.id}
+          pageName={agency.name}
+          consentGranted={!!booking.doc_share_consent_at}
+          canRevoke={status === "active"}
+        />
       )}
 
       {(status === "active" || status === "completed") && pickupInspection && (

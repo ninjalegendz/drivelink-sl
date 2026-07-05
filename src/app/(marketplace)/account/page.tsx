@@ -8,6 +8,7 @@ import { DiditVerifyButton } from "@/components/account/DiditVerifyButton";
 import { PhoneVerifyForm } from "@/components/account/PhoneVerifyForm";
 import { SignOutButton } from "@/components/account/SignOutButton";
 import { RentalPageList } from "@/components/account/RentalPageList";
+import { LicenseUploadForm } from "@/components/account/LicenseUploadForm";
 
 interface Props {
   searchParams: Promise<{ didit?: string; welcome?: string }>;
@@ -48,7 +49,7 @@ export default async function AccountPage({ searchParams }: Props) {
   const [{ data: profile }, pages] = await Promise.all([
     supabase
       .from("profiles")
-      .select("full_name, phone, phone_verified, email, email_verified_at, role, kyc_status, rating_avg, rating_count, created_at")
+      .select("full_name, phone, phone_verified, email, email_verified_at, role, kyc_status, rating_avg, rating_count, created_at, license_front_url, license_back_url")
       .eq("id", user.id)
       .single(),
     getOwnedPages(supabase, user.id),
@@ -156,6 +157,20 @@ export default async function AccountPage({ searchParams }: Props) {
         </Link>
       )}
 
+      {/* Document sharing history (renters) */}
+      {profile.role === "renter" && (
+        <Link
+          href="/account/documents"
+          className="flex items-center justify-between spring-hover bg-white border border-slate-200 shadow-sm hover:border-blue-300 rounded-2xl p-4 transition-colors"
+        >
+          <div>
+            <p className="text-slate-900 font-medium">Document sharing history</p>
+            <p className="text-slate-500 text-xs mt-0.5">See which bookings you&apos;ve shared documents on, and who viewed them</p>
+          </div>
+          <ChevronRight size={20} className="text-slate-600" />
+        </Link>
+      )}
+
       {/* Identity verification */}
       <div className="bg-white border border-slate-200 rounded-2xl shadow-sm p-5">
         <div className="flex items-center justify-between mb-5">
@@ -249,6 +264,24 @@ export default async function AccountPage({ searchParams }: Props) {
             Didit
           </a>.
         </p>
+      </div>
+
+      {/* Driving licence */}
+      <div className="bg-white border border-slate-200 rounded-2xl shadow-sm p-5">
+        <div className="flex items-center justify-between mb-4">
+          <h2 className="text-slate-900 font-semibold">Driving licence</h2>
+          <Badge variant={profile.license_front_url && profile.license_back_url ? "green" : "slate"}>
+            {profile.license_front_url && profile.license_back_url ? "On file" : "Not uploaded"}
+          </Badge>
+        </div>
+        <p className="text-slate-600 text-xs mb-4">
+          Needed for self-drive rentals. Shared with the Rental Page only after you consent, per booking.
+        </p>
+        <LicenseUploadForm
+          userId={user.id}
+          existingFrontUrl={profile.license_front_url}
+          existingBackUrl={profile.license_back_url}
+        />
       </div>
 
       {/* Account details */}

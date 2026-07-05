@@ -175,6 +175,8 @@ export interface BookingRow {
   deposit_return_amount_lkr: number | null;
   deposit_return_reason: string | null;
   deposit_return_ack_at: string | null;
+  // consent-based document sharing (migration 051)
+  doc_share_consent_at: string | null;
   created_at: string;
   updated_at: string;
 }

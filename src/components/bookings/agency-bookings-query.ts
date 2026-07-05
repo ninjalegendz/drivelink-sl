@@ -28,6 +28,8 @@ export interface AgencyBookingRow {
   renter_returned_at: string | null;
   completed_at: string | null;
   deposit_lkr:  number | null;
+  /** Set once the renter has granted document-sharing consent (migration 051). */
+  doc_share_consent_at: string | null;
   vehicles: { make: string; model: string; year: number; plate_number: string | null; deposit_lkr: number } | null;
   profiles: {
     full_name:               string;
@@ -49,7 +51,7 @@ export interface AgencyBookingRow {
 }
 
 export const AGENCY_BOOKINGS_SELECT =
-  "id, renter_id, status, start_date, end_date, start_time, end_time, total_days, subtotal_lkr, created_at, renter_returned_at, completed_at, deposit_lkr, " +
+  "id, renter_id, status, start_date, end_date, start_time, end_time, total_days, subtotal_lkr, created_at, renter_returned_at, completed_at, deposit_lkr, doc_share_consent_at, " +
   "vehicles(make, model, year, plate_number, deposit_lkr), " +
   "profiles(full_name, rating_avg, rating_count, reliability_pct, kyc_status, is_blacklisted, blacklist_reason_public), " +
   `booking_inspections(${INSPECTIONS_SELECT}), ` +

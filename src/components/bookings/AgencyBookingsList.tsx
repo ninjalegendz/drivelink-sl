@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
-import { Star, ShieldAlert, Check, X, FileText } from "lucide-react";
+import { Star, ShieldAlert, Check, X, FileText, Eye } from "lucide-react";
 import { Badge } from "@/components/ui/Badge";
 import { ReviewForm } from "@/components/booking/ReviewForm";
 import { AgencyBookingActions } from "@/components/booking/AgencyBookingActions";
@@ -123,6 +123,14 @@ export function AgencyBookingsList({ initial, agencyId, filterStatus, reviewedBo
                     <span className={`text-xs font-medium ${reliabilityColor(renter.reliability_pct)}`}>
                       {reliabilityLabel(renter.reliability_pct)} reliable
                     </span>
+                    {booking.doc_share_consent_at && (
+                      <Link
+                        href={`/dashboard/bookings/${booking.id}/documents`}
+                        className="inline-flex items-center gap-1 text-xs font-semibold text-blue-600 hover:text-blue-700"
+                      >
+                        <Eye size={12} /> View documents
+                      </Link>
+                    )}
                   </div>
                 )}
 
