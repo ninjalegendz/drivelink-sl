@@ -55,7 +55,7 @@ export async function POST(req: NextRequest) {
   // derived from the vehicle row so a request can't be mis-attributed.
   const [{ data: vehicle }, { data: renter }] = await Promise.all([
     service.from("vehicles").select("agency_id, status, make, model, year, plate_number, daily_rate_lkr, monthly_rate_lkr").eq("id", vehicle_id).single(),
-    service.from("profiles").select("full_name, is_blacklisted").eq("id", user.id).single(),
+    service.from("profiles").select("full_name, is_blacklisted, booking_frozen").eq("id", user.id).single(),
   ]);
 
   if (!vehicle) {
@@ -82,6 +82,15 @@ export async function POST(req: NextRequest) {
   // Blacklisted renters can't create bookings.
   if ((renter as { is_blacklisted?: boolean } | null)?.is_blacklisted) {
     return NextResponse.json({ error: "Your account can't make bookings. Contact support." }, { status: 403 });
+  }
+
+  // Frozen while a rental is 24h+ overdue (late-return ladder). Lifted
+  // automatically by trg_clear_booking_freeze when that booking completes.
+  if ((renter as { booking_frozen?: boolean } | null)?.booking_frozen) {
+    return NextResponse.json(
+      { error: "Your account is frozen because a rental is seriously overdue. Resolve it to book again." },
+      { status: 403 },
+    );
   }
 
   // Authoritative agency id, from the vehicle, not the request body.

@@ -1,6 +1,6 @@
 import { notFound, redirect } from "next/navigation";
 import Link from "next/link";
-import { Star, Sparkles, ShieldCheck, Check, ShieldAlert } from "lucide-react";
+import { Star, Sparkles, ShieldCheck, Check, ShieldAlert, FileText, Clock } from "lucide-react";
 import { createClient, createServiceClient } from "@/lib/supabase/server";
 import { Badge } from "@/components/ui/Badge";
 import { SlipUploadForm } from "@/components/booking/SlipUploadForm";
@@ -71,6 +71,19 @@ export default async function BookingDetailPage({ params, searchParams }: Props)
   const inspections       = (inspectionRows ?? []) as unknown as InspectionRow[];
   const pickupInspection  = inspections.find((i) => i.phase === "pickup") ?? null;
   const returnInspection  = inspections.find((i) => i.phase === "return") ?? null;
+
+  // Digital rental agreement acceptance state (migration 051), read under the
+  // "Booking parties read agreement" RLS policy. Snapshot is created at
+  // confirmation, so it exists for anything at/past confirmed.
+  const { data: agreementRow } = await supabase
+    .from("booking_agreements")
+    .select("renter_accepted_at, owner_accepted_at")
+    .eq("booking_id", id)
+    .maybeSingle();
+  const agreement = agreementRow as {
+    renter_accepted_at: string | null;
+    owner_accepted_at:  string | null;
+  } | null;
 
   // Bank-transfer details for the pay-to-lock-in panel
   const { data: settingsRow } = await supabase
@@ -380,6 +393,54 @@ export default async function BookingDetailPage({ params, searchParams }: Props)
                 SMS
               </a>
             </div>
+          </div>
+        </div>
+      )}
+
+      {/* Digital rental agreement, created when the owner confirms. */}
+      {(agreement || ["active", "completed", "disputed"].includes(status)) && (
+        <div className="bg-white rounded-2xl border border-slate-100 p-4 mb-4">
+          <div className="flex items-start justify-between gap-3">
+            <div className="flex-1 min-w-0">
+              <p className="text-slate-900 font-semibold text-sm inline-flex items-center gap-1.5">
+                <FileText size={14} className="text-blue-600" /> Rental agreement
+              </p>
+              {agreement ? (
+                <div className="mt-2 space-y-1">
+                  <p className="text-xs inline-flex items-center gap-1.5 mr-4">
+                    {agreement.renter_accepted_at ? (
+                      <><Check size={12} className="text-emerald-600" /><span className="text-emerald-700">You: signed</span></>
+                    ) : (
+                      <><Clock size={12} className="text-amber-600" /><span className="text-amber-700">You: not signed</span></>
+                    )}
+                  </p>
+                  <p className="text-xs inline-flex items-center gap-1.5">
+                    {agreement.owner_accepted_at ? (
+                      <><Check size={12} className="text-emerald-600" /><span className="text-emerald-700">{agency.name}: signed</span></>
+                    ) : (
+                      <><Clock size={12} className="text-amber-600" /><span className="text-amber-700">{agency.name}: not signed</span></>
+                    )}
+                  </p>
+                  {!agreement.renter_accepted_at && (
+                    <p className="text-amber-700 text-xs font-medium pt-1">
+                      Accept the agreement before pickup.
+                    </p>
+                  )}
+                </div>
+              ) : (
+                <p className="text-slate-600 text-xs mt-1">
+                  Your agreement is being generated, check back in a moment.
+                </p>
+              )}
+            </div>
+            {agreement && (
+              <Link
+                href={`/bookings/${booking.id}/agreement`}
+                className="shrink-0 inline-flex items-center gap-1.5 px-3 py-1.5 bg-blue-600 hover:bg-blue-500 text-white text-xs font-semibold rounded-lg transition-colors"
+              >
+                {agreement.renter_accepted_at ? "View agreement" : "Read & accept"}
+              </Link>
+            )}
           </div>
         </div>
       )}

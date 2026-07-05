@@ -8,6 +8,12 @@
 import type { BookingStatus } from "@/types/database";
 import { INSPECTIONS_SELECT, type InspectionRow } from "@/lib/booking/inspection-types";
 
+/** Acceptance stamps from the digital rental agreement (migration 051). */
+export interface AgreementAcceptance {
+  renter_accepted_at: string | null;
+  owner_accepted_at:  string | null;
+}
+
 export interface AgencyBookingRow {
   id:           string;
   renter_id:    string;
@@ -34,10 +40,17 @@ export interface AgencyBookingRow {
   } | null;
   /** Pickup/return condition reports (migration 051), at most one per phase. */
   booking_inspections: InspectionRow[] | null;
+  /**
+   * The digital rental agreement's acceptance stamps. booking_id is UNIQUE so
+   * PostgREST usually embeds it one-to-one (an object), but keep the array
+   * shape in the type too and normalize at the call site to stay version-proof.
+   */
+  booking_agreements: AgreementAcceptance | AgreementAcceptance[] | null;
 }
 
 export const AGENCY_BOOKINGS_SELECT =
   "id, renter_id, status, start_date, end_date, start_time, end_time, total_days, subtotal_lkr, created_at, renter_returned_at, completed_at, deposit_lkr, " +
   "vehicles(make, model, year, plate_number, deposit_lkr), " +
   "profiles(full_name, rating_avg, rating_count, reliability_pct, kyc_status, is_blacklisted, blacklist_reason_public), " +
-  `booking_inspections(${INSPECTIONS_SELECT})`;
+  `booking_inspections(${INSPECTIONS_SELECT}), ` +
+  "booking_agreements(renter_accepted_at, owner_accepted_at)";

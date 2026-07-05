@@ -7,6 +7,14 @@ import {
 } from "@/lib/sms/messages";
 import { notifyCascade } from "@/lib/notify";
 import { runAfterResponse } from "@/lib/after-response";
+import {
+  buildAgreementTerms,
+  AGREEMENT_TEMPLATE_VERSION,
+  type AgreementBookingInput,
+  type AgreementVehicleInput,
+  type AgreementPageInput,
+  type AgreementRenterInput,
+} from "@/lib/booking/agreement";
 
 // POST /api/bookings/transition
 // body: { bookingId: string, to: "confirmed" | "declined" | "completed" }
@@ -79,6 +87,70 @@ export async function POST(req: NextRequest) {
       { error: updateError.message, code: updateError.code },
       { status: updateError.code === "23P01" ? 409 : 400 },
     );
+  }
+
+  // Freeze the digital rental agreement at confirmation. `to === "confirmed"`
+  // covers BOTH monetised paths (fee>0 stays in 'confirmed' awaiting payment)
+  // and the free-launch path (effective status jumps straight to 'active'),
+  // the terms snapshot is identical either way. Runs after the response so
+  // the owner's confirm click isn't slowed; booking_agreements.booking_id is
+  // UNIQUE, so a duplicate insert (double-click, retry) is ignored, making
+  // this idempotent. Admin transitions (/api/admin/bookings/transition) are
+  // deliberately not covered here.
+  if (to === "confirmed") {
+    const bookingId = body.bookingId; // non-optional local for the closure
+    runAfterResponse((async () => {
+      const service = await createServiceClient();
+      const { data: agRow } = await service
+        .from("bookings")
+        .select(
+          "id, renter_id, start_date, end_date, start_time, end_time, start_at, end_at, " +
+          "total_days, daily_rate_lkr, subtotal_lkr, deposit_lkr, " +
+          "vehicles(make, model, year, plate_number, fuel_type, insurance_type, fuel_policy, deposit_lkr, " +
+          "monthly_rate_lkr, weekly_rate_lkr, included_km_per_day, unlimited_km, mileage_limit, extra_mileage_lkr, " +
+          "refuel_fee_lkr, cleaning_fee_lkr, late_fee_per_hour_lkr, self_drive, with_driver, per_km_rate_lkr, " +
+          "tolls_included, driver_bata_lkr, smoking_allowed, pets_allowed, ride_hail_allowed, second_driver_allowed, " +
+          "restricted_use, has_gps_tracker, has_etc_tag, min_renter_age, min_license_years), " +
+          "agencies(name, page_type, whatsapp_number)",
+        )
+        .eq("id", bookingId)
+        .single();
+
+      const ag = agRow as unknown as
+        | (AgreementBookingInput & {
+            renter_id: string;
+            vehicles:  AgreementVehicleInput | null;
+            agencies:  AgreementPageInput | null;
+          })
+        | null;
+      if (!ag?.vehicles || !ag.agencies) return;
+
+      const { data: renterRow } = await service
+        .from("profiles")
+        .select("full_name, nic_number")
+        .eq("id", ag.renter_id)
+        .single();
+      const renterProfile = renterRow as AgreementRenterInput | null;
+      if (!renterProfile) return;
+
+      const terms = buildAgreementTerms({
+        booking:       ag,
+        vehicle:       ag.vehicles,
+        page:          ag.agencies,
+        renterProfile,
+      });
+
+      const { error: agreementError } = await service.from("booking_agreements").insert({
+        booking_id:       bookingId,
+        template_version: AGREEMENT_TEMPLATE_VERSION,
+        terms,
+      });
+      // 23505 = unique violation on booking_id: the snapshot already exists
+      // (retry / double confirm), which is exactly what we want, keep it.
+      if (agreementError && agreementError.code !== "23505") {
+        console.error("[booking transition] agreement snapshot failed", bookingId, agreementError);
+      }
+    })());
   }
 
   // Fire renter SMS for confirm/decline/complete after the response, the agency

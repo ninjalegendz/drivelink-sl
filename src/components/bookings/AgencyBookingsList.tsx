@@ -2,7 +2,8 @@
 
 import { useCallback, useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import { Star, ShieldAlert, Check, X } from "lucide-react";
+import Link from "next/link";
+import { Star, ShieldAlert, Check, X, FileText } from "lucide-react";
 import { Badge } from "@/components/ui/Badge";
 import { ReviewForm } from "@/components/booking/ReviewForm";
 import { AgencyBookingActions } from "@/components/booking/AgencyBookingActions";
@@ -76,6 +77,9 @@ export function AgencyBookingsList({ initial, agencyId, filterStatus, reviewedBo
         const blocked = renter?.is_blacklisted ?? false;
         const pickupInsp = booking.booking_inspections?.find((i) => i.phase === "pickup") ?? null;
         const returnInsp = booking.booking_inspections?.find((i) => i.phase === "return") ?? null;
+        // One-to-one embed usually arrives as an object; normalize either way.
+        const agRaw     = booking.booking_agreements;
+        const agreement = Array.isArray(agRaw) ? (agRaw[0] ?? null) : agRaw ?? null;
 
         return (
           <div
@@ -186,6 +190,21 @@ export function AgencyBookingsList({ initial, agencyId, filterStatus, reviewedBo
                   returnInspectionAcked={!!returnInsp?.renter_ack_at}
                 />
                 {status === "disputed" && <Badge variant="red">Under review</Badge>}
+                {agreement && (
+                  <Link
+                    href={`/bookings/${booking.id}/agreement`}
+                    className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold border bg-slate-100 text-slate-700 border-slate-200 hover:bg-slate-200 transition-colors"
+                  >
+                    <FileText size={12} /> Agreement
+                    {!agreement.owner_accepted_at && (
+                      <span
+                        className="w-1.5 h-1.5 rounded-full bg-amber-500"
+                        title="You haven't signed this agreement yet"
+                        aria-label="Unsigned"
+                      />
+                    )}
+                  </Link>
+                )}
                 {status === "active" && (
                   <div className="flex flex-col items-end gap-1.5">
                     <InspectionButton
