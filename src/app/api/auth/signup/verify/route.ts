@@ -38,6 +38,9 @@ export async function POST(req: NextRequest) {
     phone:          string;
     full_name:      string;
     email:          string | null;
+    // Reused column, holds the residential address collected at /start (see
+    // that route's comment). Written to profiles.address below.
+    agency_address: string | null;
     otp_hash:       string;
     otp_expires_at: string;
     otp_attempts:   number;
@@ -88,6 +91,7 @@ export async function POST(req: NextRequest) {
     .update({
       email:          p.email,
       phone_verified: p.otp_channel !== "email",
+      address:        p.agency_address,
     })
     .eq("id", userId);
 

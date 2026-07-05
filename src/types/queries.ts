@@ -86,7 +86,18 @@ export interface AgencyRow {
   reliability_pct: number | null;
   created_at: string;
   updated_at: string;
+  // Rental Pages (048): one account owns many pages.
+  page_type: "personal" | "business";
+  logo_url: string | null;
+  cover_url: string | null;
+  email: string | null;
+  business_hours: string | null;
+  business_reg_no: string | null;
+  business_reg_url: string | null;
 }
+
+// Product name for the agencies table under the Rental Pages model.
+export type RentalPageRow = AgencyRow;
 
 // ─── Bookings ────────────────────────────────────────────────
 
