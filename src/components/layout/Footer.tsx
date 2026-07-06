@@ -4,53 +4,76 @@ import { Mail } from "lucide-react";
 import { WhatsAppIcon } from "@/components/icons/WhatsAppIcon";
 import { siteConfig, whatsappLink } from "@/lib/site-config";
 
+// Column heading with a short blue accent bar, so each group of links reads
+// as its own block instead of a wall of same-coloured text.
+function FooterHeading({ children }: { children: React.ReactNode }) {
+  return (
+    <h4 className="text-white text-[11px] font-bold uppercase tracking-widest mb-3.5 flex items-center gap-2">
+      <span className="w-4 h-0.5 bg-blue-500 rounded-full shrink-0" />
+      {children}
+    </h4>
+  );
+}
+
+function FooterColumn({ title, links }: { title: string; links: { href: string; label: string }[] }) {
+  return (
+    <div>
+      <FooterHeading>{title}</FooterHeading>
+      <ul className="space-y-2.5">
+        {links.map((l) => (
+          <li key={l.href}>
+            <Link
+              href={l.href}
+              className="group inline-flex items-center gap-1.5 text-[13px] text-slate-300 hover:text-white transition-colors"
+            >
+              <span className="w-0 group-hover:w-2 overflow-hidden text-blue-400 transition-all duration-200">›</span>
+              {l.label}
+            </Link>
+          </li>
+        ))}
+      </ul>
+    </div>
+  );
+}
+
 export function Footer() {
   return (
     <footer className="bg-slate-950 text-white border-t border-slate-900 py-12 px-4 md:px-8 mt-16">
-      <div className="max-w-7xl mx-auto grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-8 text-xs text-slate-400">
+      <div className="max-w-7xl mx-auto grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-x-8 gap-y-10 text-sm text-slate-400">
         <div className="space-y-3">
           <div className="flex items-center gap-2">
             <Image src="/logo-mark-light.png" alt="DriveLink logo" width={516} height={1003} unoptimized className="h-9 w-auto shrink-0" />
             <span className="font-display font-extrabold text-base text-white tracking-tight">DriveLink</span>
           </div>
-          <p className="leading-relaxed">
+          <p className="text-xs leading-relaxed text-slate-400/90">
             Sri Lanka&apos;s verified vehicle rental network, cars, bikes, vans, SUVs and tuk-tuks,
             self-drive or with a driver, plus airport pick-ups.{siteConfig.freeLaunch ? " Zero platform fee during launch." : ""}
           </p>
         </div>
 
-        <div className="space-y-2">
-          <h4 className="font-bold text-white uppercase tracking-wider">Explore Rentals</h4>
-          <ul className="space-y-1.5 font-medium">
-            <li><Link href="/sri-lanka/self-drive-car-rental-sri-lanka" className="hover:text-white transition-colors">Self-Drive Car Rental</Link></li>
-            <li><Link href="/sri-lanka/car-rental-with-driver-sri-lanka" className="hover:text-white transition-colors">Car Rental With Driver</Link></li>
-            <li><Link href="/sri-lanka/airport-car-rental-sri-lanka" className="hover:text-white transition-colors">Airport Pickup &amp; Rental</Link></li>
-            <li><Link href="/sri-lanka/bike-rental-sri-lanka" className="hover:text-white transition-colors">Bike &amp; Scooter Rental</Link></li>
-          </ul>
-        </div>
+        <FooterColumn title="Explore Rentals" links={[
+          { href: "/sri-lanka/self-drive-car-rental-sri-lanka", label: "Self-Drive Car Rental" },
+          { href: "/sri-lanka/car-rental-with-driver-sri-lanka", label: "Car Rental With Driver" },
+          { href: "/sri-lanka/airport-car-rental-sri-lanka", label: "Airport Pickup & Rental" },
+          { href: "/sri-lanka/bike-rental-sri-lanka", label: "Bike & Scooter Rental" },
+        ]} />
 
-        <div className="space-y-2">
-          <h4 className="font-bold text-white uppercase tracking-wider">Guides &amp; Policies</h4>
-          <ul className="space-y-1.5 font-medium">
-            <li><Link href="/guides/wear-vs-damage" className="hover:text-white transition-colors">Wear vs. Damage</Link></li>
-            <li><Link href="/guides/accident-protocol" className="hover:text-white transition-colors">Accident Protocol</Link></li>
-            <li><Link href="/terms" className="hover:text-white transition-colors">Terms of Service</Link></li>
-            <li><Link href="/privacy" className="hover:text-white transition-colors">Privacy Policy</Link></li>
-          </ul>
-        </div>
+        <FooterColumn title="Guides & Policies" links={[
+          { href: "/guides/wear-vs-damage", label: "Wear vs. Damage" },
+          { href: "/guides/accident-protocol", label: "Accident Protocol" },
+          { href: "/terms", label: "Terms of Service" },
+          { href: "/privacy", label: "Privacy Policy" },
+        ]} />
 
-        <div className="space-y-2">
-          <h4 className="font-bold text-white uppercase tracking-wider">List Your Vehicle</h4>
-          <ul className="space-y-1.5 font-medium">
-            <li><Link href="/signup?intent=provider" className="hover:text-white transition-colors">Create a Rental Page{siteConfig.freeLaunch ? " (Free)" : ""}</Link></li>
-            <li><Link href="/pricing" className="hover:text-white transition-colors">How Pricing Works</Link></li>
-            <li><Link href="/faq" className="hover:text-white transition-colors">FAQ</Link></li>
-          </ul>
-        </div>
+        <FooterColumn title="List Your Vehicle" links={[
+          { href: "/account/pages/new", label: `Create a Rental Page${siteConfig.freeLaunch ? " (Free)" : ""}` },
+          { href: "/pricing", label: "How Pricing Works" },
+          { href: "/faq", label: "FAQ" },
+        ]} />
 
-        <div className="space-y-3">
-          <h4 className="font-bold text-white uppercase tracking-wider">DriveLink Support</h4>
-          <p className="leading-relaxed">
+        <div>
+          <FooterHeading>DriveLink Support</FooterHeading>
+          <p className="text-xs leading-relaxed text-slate-400/90 mb-3">
             Questions about licenses, pick-ups or a booking? Reach us on WhatsApp or email.
           </p>
           <a
@@ -63,7 +86,7 @@ export function Footer() {
           </a>
           <a
             href={`mailto:${siteConfig.supportEmail}`}
-            className="font-medium text-slate-400 hover:text-white flex w-fit items-center gap-1.5 transition-colors"
+            className="mt-2 font-medium text-slate-300 hover:text-white flex w-fit items-center gap-1.5 transition-colors"
           >
             <Mail className="w-4 h-4 shrink-0" /> {siteConfig.supportEmail}
           </a>
