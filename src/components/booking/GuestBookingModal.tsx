@@ -4,6 +4,7 @@ import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { ArrowLeft, Phone, X, Mail, Sparkles, Check } from "lucide-react";
 import { Button } from "@/components/ui/Button";
+import { PhoneInput } from "@/components/ui/PhoneInput";
 import { isValidSLPhone, toLocalSL } from "@/lib/auth/phone-format";
 import { formatLKR } from "@/lib/vehicles/format";
 
@@ -109,7 +110,7 @@ export function GuestBookingModal({ draft, onClose }: Props) {
   // ─── Stage 1: send OTP ──────────────────────────────────────────────
   async function startSignup() {
     if (fullName.trim().length < 2)            { setError("Enter your full name."); return; }
-    if (!isValidSLPhone(identifier))           { setError("Enter a valid mobile number. For a non-Sri-Lankan number, include the country code (e.g. +44 7911 123456)."); return; }
+    if (!isValidSLPhone(identifier))           { setError("Enter a valid mobile number."); return; }
     if (email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) { setError("That email doesn't look right."); return; }
 
     setLoading(true); setError(null); setInfo(null);
@@ -346,15 +347,7 @@ export function GuestBookingModal({ draft, onClose }: Props) {
                     </div>
                     <div>
                       <label className="text-slate-600 text-xs mb-1 block">Mobile number</label>
-                      <input
-                        type="tel"
-                        value={identifier}
-                        onChange={(e) => setIdentifier(e.target.value)}
-                        required
-                        autoComplete="tel"
-                        placeholder="0771234567"
-                        className="w-full px-3 py-2 bg-slate-100 border border-slate-200 rounded-lg text-slate-900 placeholder-slate-400 text-sm focus:outline-none focus:border-blue-500"
-                      />
+                      <PhoneInput value={identifier} onChange={setIdentifier} required />
                     </div>
                     <div>
                       <label className="text-slate-600 text-xs mb-1 block">

@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { X } from "lucide-react";
 import { Button } from "@/components/ui/Button";
 import { Select } from "@/components/ui/Select";
+import { PhoneInput } from "@/components/ui/PhoneInput";
 import { SL_CITIES } from "@/data/cities";
 import { toLocalSL } from "@/lib/auth/phone-format";
 
@@ -104,11 +105,7 @@ export function EditAgencyModal({ agencyId, initial, onClose }: Props) {
 
           <div>
             <label className="text-slate-700 text-xs mb-1 block">Mobile number</label>
-            <input
-              type="tel" value={phone} onChange={(e) => setPhone(e.target.value)}
-              required placeholder="0771234567"
-              className={inputClass}
-            />
+            <PhoneInput value={phone} onChange={setPhone} required />
           </div>
 
           <div>

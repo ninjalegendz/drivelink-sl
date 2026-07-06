@@ -4,6 +4,7 @@ import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import { Button } from "@/components/ui/Button";
+import { PhoneInput } from "@/components/ui/PhoneInput";
 
 interface Props {
   userId:           string;
@@ -88,10 +89,10 @@ export function ProfileDetailsForm({ userId, initialFullName, initialPhone, emai
 
       <div>
         <label className="text-slate-600 text-xs mb-1 block">Mobile number</label>
-        <input
-          type="tel" value={phone} onChange={(e) => { setPhone(e.target.value); setSuccess(false); }}
+        <PhoneInput
+          value={phone}
+          onChange={(v) => { setPhone(v); setSuccess(false); }}
           required
-          className="w-full px-4 py-2.5 bg-slate-100 border border-slate-200 rounded-xl text-slate-900 text-sm focus:outline-none focus:border-blue-500"
         />
       </div>
 

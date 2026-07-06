@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { ArrowLeft, Phone, Mail, Sparkles } from "lucide-react";
 import { Button } from "@/components/ui/Button";
+import { PhoneInput } from "@/components/ui/PhoneInput";
 import { isValidSLPhone, toLocalSL } from "@/lib/auth/phone-format";
 
 type Stage = "details" | "code";
@@ -49,7 +50,7 @@ function SignupForm() {
 
     if (fullName.trim().length < 2)        { setError("Enter your full name."); return; }
     if (address.trim().length < 5)         { setError("Enter your residential address."); return; }
-    if (!isValidSLPhone(phone))            { setError("Enter a valid mobile number. For a non-Sri-Lankan number, include the country code (e.g. +44 7911 123456)."); return; }
+    if (!isValidSLPhone(phone))            { setError("Enter a valid mobile number."); return; }
     if (email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) { setError("That email doesn't look right."); return; }
 
     setLoading(true); setError(null); setInfo(null);
@@ -137,16 +138,8 @@ function SignupForm() {
 
           <div>
             <label className="text-slate-600 text-xs mb-1 block">Mobile number</label>
-            <input
-              type="tel"
-              value={phone}
-              onChange={(e) => setPhone(e.target.value)}
-              required
-              autoComplete="tel"
-              placeholder="0771234567 or +44 7911 123456"
-              className="w-full px-4 py-2.5 bg-slate-100 border border-slate-200 rounded-xl text-slate-900 placeholder-slate-400 text-sm focus:outline-none focus:border-blue-500"
-            />
-            <p className="text-slate-400 text-xs mt-1">We&apos;ll send a 6-digit code to this number by SMS or WhatsApp.</p>
+            <PhoneInput value={phone} onChange={setPhone} required />
+            <p className="text-slate-400 text-xs mt-1">We&apos;ll send a 6-digit code to this number.</p>
           </div>
 
           <div>

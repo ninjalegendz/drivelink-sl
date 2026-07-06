@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import { Button } from "@/components/ui/Button";
 import { Select } from "@/components/ui/Select";
+import { PhoneInput } from "@/components/ui/PhoneInput";
 import { SL_CITIES } from "@/data/cities";
 import type { RentalPageRow } from "@/types/queries";
 
@@ -118,10 +119,10 @@ export function PageDetailsForm({ page }: Props) {
 
       <div>
         <label className="text-slate-600 text-xs mb-1 block">Mobile number for booking alerts</label>
-        <input
-          type="tel" value={whatsapp} onChange={(e) => { setWhatsapp(e.target.value); setSuccess(false); }}
+        <PhoneInput
+          value={whatsapp}
+          onChange={(v) => { setWhatsapp(v); setSuccess(false); }}
           required
-          className="w-full px-4 py-2.5 bg-slate-100 border border-slate-200 rounded-xl text-slate-900 text-sm focus:outline-none focus:border-blue-500"
         />
         <p className="text-slate-500 text-xs mt-1">Booking alerts arrive here as an SMS, tap the link to confirm in your dashboard.</p>
       </div>

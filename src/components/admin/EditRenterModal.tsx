@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { X } from "lucide-react";
 import { Button } from "@/components/ui/Button";
+import { PhoneInput } from "@/components/ui/PhoneInput";
 import { toLocalSL } from "@/lib/auth/phone-format";
 
 interface Initial {
@@ -86,11 +87,7 @@ export function EditRenterModal({ userId, initial, onClose }: Props) {
           </div>
           <div>
             <label className="text-slate-700 text-xs mb-1 block">Mobile number</label>
-            <input
-              type="tel" value={phone} onChange={(e) => setPhone(e.target.value)}
-              required placeholder="0771234567"
-              className={inputClass}
-            />
+            <PhoneInput value={phone} onChange={setPhone} required />
           </div>
           <div>
             <label className="text-slate-700 text-xs mb-1 block">

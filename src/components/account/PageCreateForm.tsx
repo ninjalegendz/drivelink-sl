@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { Building2, User, Sparkles } from "lucide-react";
 import { Button } from "@/components/ui/Button";
 import { Select } from "@/components/ui/Select";
+import { PhoneInput } from "@/components/ui/PhoneInput";
 import { SL_CITIES } from "@/data/cities";
 
 const CITY_OPTIONS = SL_CITIES.map((c) => ({ value: c, label: c }));
@@ -127,15 +128,7 @@ export function PageCreateForm() {
 
       <div>
         <label className="text-slate-600 text-xs mb-1 block">WhatsApp number</label>
-        <input
-          type="tel"
-          value={whatsapp}
-          onChange={(e) => setWhatsapp(e.target.value)}
-          required
-          autoComplete="tel"
-          placeholder="0771234567"
-          className={inputClass}
-        />
+        <PhoneInput value={whatsapp} onChange={setWhatsapp} required />
         <p className="text-slate-400 text-xs mt-1">Booking alerts arrive here as an SMS.</p>
       </div>
 
