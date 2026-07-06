@@ -12,19 +12,35 @@ import { Button } from "@/components/ui/Button";
 
 // ─── Accept ──────────────────────────────────────────────────────────────
 
-export function AcceptAgreementButton({ bookingId }: { bookingId: string }) {
+export function AcceptAgreementButton({
+  bookingId,
+  needsEmail = false,
+}: {
+  bookingId: string;
+  /** True when the signer has no real email on file — we ask for one so
+      their signed copy has somewhere to go. Skippable (copy stays in-app). */
+  needsEmail?: boolean;
+}) {
   const router = useRouter();
-  const [loading, setLoading] = useState(false);
-  const [error, setError]     = useState<string | null>(null);
-  const [, startTransition]   = useTransition();
+  const [email, setEmail]       = useState("");
+  const [skipEmail, setSkipEmail] = useState(false);
+  const [loading, setLoading]   = useState(false);
+  const [error, setError]       = useState<string | null>(null);
+  const [, startTransition]     = useTransition();
+
+  const askEmail = needsEmail && !skipEmail;
 
   async function accept() {
+    if (askEmail && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim())) {
+      setError("Enter an email for your signed copy, or choose to keep it in your account only.");
+      return;
+    }
     setLoading(true);
     setError(null);
     const res = await fetch(`/api/bookings/${bookingId}/agreement/accept`, {
       method:  "POST",
       headers: { "Content-Type": "application/json" },
-      body:    JSON.stringify({}),
+      body:    JSON.stringify(askEmail ? { email: email.trim() } : {}),
     });
     const payload = await res.json().catch(() => ({}));
     setLoading(false);
@@ -37,11 +53,34 @@ export function AcceptAgreementButton({ bookingId }: { bookingId: string }) {
 
   return (
     <div className="print:hidden">
+      {askEmail && (
+        <div className="mb-2">
+          <label className="text-slate-600 text-xs mb-1 block">
+            Email for your signed copy
+          </label>
+          <input
+            type="email"
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
+            placeholder="you@example.com"
+            autoComplete="email"
+            className="w-full px-3 py-2 bg-slate-100 border border-slate-200 rounded-lg text-slate-900 placeholder-slate-400 text-sm focus:outline-none focus:border-blue-500"
+          />
+          <button
+            type="button"
+            onClick={() => { setSkipEmail(true); setError(null); }}
+            className="text-slate-400 hover:text-slate-600 text-[11px] mt-1 underline"
+          >
+            I don&apos;t use email — keep my copy in my account
+          </button>
+        </div>
+      )}
       <Button size="sm" loading={loading} onClick={accept}>
         <Check size={14} /> Accept agreement
       </Button>
       <p className="text-slate-500 text-[11px] mt-1.5">
         Accepting records the time and your device as your signature.
+        {needsEmail && skipEmail && " Your copy stays under Booking Documents."}
       </p>
       {error && <p className="text-red-500 text-xs mt-1">{error}</p>}
     </div>

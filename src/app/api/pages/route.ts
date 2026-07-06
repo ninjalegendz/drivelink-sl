@@ -72,7 +72,13 @@ export async function POST(req: NextRequest) {
   if (!isValidSLPhone(whatsappIn)) {
     return NextResponse.json({ error: "Enter a valid WhatsApp number." }, { status: 400 });
   }
-  if (emailIn && !isEmailLike(emailIn)) {
+  // Email is REQUIRED for Rental Pages: commission statements, penalty
+  // notices and booking records are delivered there. (Renter accounts stay
+  // phone-first; this only gates hosting.)
+  if (!emailIn) {
+    return NextResponse.json({ error: "Enter an email for your page — statements and booking records go there." }, { status: 400 });
+  }
+  if (!isEmailLike(emailIn)) {
     return NextResponse.json({ error: "That email doesn't look right." }, { status: 400 });
   }
 

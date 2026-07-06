@@ -101,6 +101,19 @@ export default async function AgreementPage({ params }: Props) {
     .single();
   const renterVerified = (renterProf as { kyc_status?: string } | null)?.kyc_status === "verified";
 
+  // Does the signer have a real email on file? If not, the accept button
+  // asks for one so their signed copy can be emailed (skippable).
+  let viewerNeedsEmail = false;
+  if (viewerSide) {
+    const { data: viewerProf } = await service
+      .from("profiles")
+      .select("email")
+      .eq("id", user.id)
+      .single();
+    const viewerEmail = (viewerProf as { email: string | null } | null)?.email;
+    viewerNeedsEmail = !viewerEmail || viewerEmail.endsWith("@phone.drivelink.invalid");
+  }
+
   const vehicleName = `${t.vehicle.year} ${t.vehicle.make} ${t.vehicle.model}`;
   const periodLabel = `${fmtDateTime(t.period.start_at)} → ${fmtDateTime(t.period.end_at)}`;
 
@@ -298,6 +311,7 @@ export default async function AgreementPage({ params }: Props) {
               showButton={viewerSide === "renter" && !renterAccepted}
               nudge={viewerSide === "renter" && !renterAccepted ? "Accept the agreement before pickup." : null}
               bookingId={b.id}
+              needsEmail={viewerNeedsEmail}
             />
             <AcceptanceBox
               partyLabel="Owner"
@@ -306,6 +320,7 @@ export default async function AgreementPage({ params }: Props) {
               showButton={viewerSide === "owner" && !ownerAccepted}
               nudge={null}
               bookingId={b.id}
+              needsEmail={viewerNeedsEmail}
             />
           </div>
           <p className="text-slate-400 text-[11px] mt-4">
@@ -355,7 +370,7 @@ function Clause({ text, label }: { text: string; label?: string }) {
 }
 
 function AcceptanceBox({
-  partyLabel, partyName, acceptedAt, showButton, nudge, bookingId,
+  partyLabel, partyName, acceptedAt, showButton, nudge, bookingId, needsEmail,
 }: {
   partyLabel: string;
   partyName:  string;
@@ -363,6 +378,7 @@ function AcceptanceBox({
   showButton: boolean;
   nudge:      string | null;
   bookingId:  string;
+  needsEmail: boolean;
 }) {
   return (
     <div className={`rounded-xl border p-4 ${acceptedAt ? "border-emerald-200 bg-emerald-50/50" : "border-slate-200 bg-slate-50"} print:bg-white print:border-slate-300`}>
@@ -380,7 +396,7 @@ function AcceptanceBox({
           {nudge && <p className="text-amber-700 text-xs mt-1 font-medium print:hidden">{nudge}</p>}
           {showButton && (
             <div className="mt-3">
-              <AcceptAgreementButton bookingId={bookingId} />
+              <AcceptAgreementButton bookingId={bookingId} needsEmail={needsEmail} />
             </div>
           )}
         </>

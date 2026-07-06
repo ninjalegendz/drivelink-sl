@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient, createServiceClient } from "@/lib/supabase/server";
 import { notifyCascade } from "@/lib/notify";
+import { sendEmail } from "@/lib/email/send";
 import { runAfterResponse } from "@/lib/after-response";
 import type { AcceptMeta } from "@/lib/booking/agreement";
 
@@ -29,7 +30,7 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
 
   const { data: bookingRow } = await service
     .from("bookings")
-    .select("id, renter_id, agency_id, agencies(owner_id, name), profiles:renter_id(full_name, phone, email)")
+    .select("id, renter_id, agency_id, agencies(owner_id, name, email), profiles:renter_id(full_name, phone, email)")
     .eq("id", bookingId)
     .single();
 
@@ -37,7 +38,7 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
     id:        string;
     renter_id: string;
     agency_id: string;
-    agencies:  { owner_id: string; name: string } | null;
+    agencies:  { owner_id: string; name: string; email: string | null } | null;
     profiles:  { full_name: string; phone: string | null; email: string | null } | null;
   };
   const b = bookingRow as unknown as Joined | null;
@@ -72,6 +73,23 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
     return NextResponse.json({ error: "You've already accepted this agreement." }, { status: 409 });
   }
 
+  // Optional email capture at signing: the renter (or owner) can hand us an
+  // email here so their signed copy has somewhere to go. Only fills a blank —
+  // never overwrites an existing real address.
+  const body = (await req.json().catch(() => ({}))) as Partial<{ email: string }>;
+  const emailIn = typeof body.email === "string" ? body.email.trim().toLowerCase() : "";
+  if (emailIn) {
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(emailIn)) {
+      return NextResponse.json({ error: "That email doesn't look right." }, { status: 400 });
+    }
+    const { data: me } = await service.from("profiles").select("email").eq("id", user.id).single();
+    const current = (me as { email: string | null } | null)?.email;
+    const hasReal = current && !current.endsWith("@phone.drivelink.invalid");
+    if (!hasReal) {
+      await service.from("profiles").update({ email: emailIn }).eq("id", user.id);
+    }
+  }
+
   const now = new Date().toISOString();
   const meta: AcceptMeta = { ua: req.headers.get("user-agent") ?? "", ts: now };
   const update = isRenter
@@ -101,20 +119,44 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
     runAfterResponse((async () => {
       const appUrl = process.env.NEXT_PUBLIC_APP_URL!;
       const ref    = b.id.slice(0, 8).toUpperCase();
+      const link   = `${appUrl}/bookings/${b.id}/agreement`;
       const text   =
         `DriveLink: rental agreement for booking ${ref} signed by both parties — view it any time from the booking.`;
 
-      // Renter side.
-      const renter          = b.profiles;
-      const renterRealEmail = renter?.email && !renter.email.endsWith("@phone.drivelink.invalid") ? renter.email : null;
-      await notifyCascade({
-        phone:        renter?.phone ?? undefined,
-        smsKey:       "booking_status_renter",
-        text:         `${text} ${appUrl}/bookings/${b.id}/agreement`,
-        email:        renterRealEmail,
-        emailSubject: `Rental agreement signed — booking ${ref}`,
-        emailText:    `${text}\n\n${appUrl}/bookings/${b.id}/agreement`,
-      });
+      // Documents get the email ALWAYS (when an address exists), not as an
+      // SMS-fallback: the emailed copy is the durable record both parties
+      // keep. The SMS ping is a separate, phone-only nudge.
+      async function notifyParty(
+        phone: string | null | undefined,
+        email: string | null,
+        smsKey: "booking_status_renter" | "new_booking_agency",
+      ) {
+        const realEmail = email && !email.endsWith("@phone.drivelink.invalid") ? email : null;
+        if (realEmail) {
+          try {
+            await sendEmail({
+              to:      realEmail,
+              subject: `Rental agreement signed — booking ${ref}`,
+              text:    `${text}\n\nView and print your copy:\n${link}`,
+              html:    `<p>${text}</p><p><a href="${link}" style="color:#2563eb">View and print your copy</a></p>`,
+            });
+          } catch (err) {
+            console.error("[agreement accept] email", ref, err);
+          }
+        }
+        if (phone) {
+          await notifyCascade({ phone, smsKey, text: `${text} ${link}` });
+        }
+      }
+
+      // Renter side — prefer an email captured in THIS request over the
+      // stale pre-capture profile row.
+      const renter = b.profiles;
+      await notifyParty(
+        renter?.phone,
+        isRenter && emailIn ? emailIn : renter?.email ?? null,
+        "booking_status_renter",
+      );
 
       // Page-owner side.
       const { data: ownerRow } = await service
@@ -122,16 +164,14 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
         .select("phone, email")
         .eq("id", b.agencies!.owner_id)
         .single();
-      const owner          = ownerRow as { phone: string | null; email: string | null } | null;
-      const ownerRealEmail = owner?.email && !owner.email.endsWith("@phone.drivelink.invalid") ? owner.email : null;
-      await notifyCascade({
-        phone:        owner?.phone ?? undefined,
-        smsKey:       "new_booking_agency",
-        text:         `${text} ${appUrl}/bookings/${b.id}/agreement`,
-        email:        ownerRealEmail,
-        emailSubject: `Rental agreement signed — booking ${ref}`,
-        emailText:    `${text}\n\n${appUrl}/bookings/${b.id}/agreement`,
-      });
+      const owner = ownerRow as { phone: string | null; email: string | null } | null;
+      // Owner delivery order: email captured in this request → personal
+      // email → the Rental Page's email (always present for new pages).
+      await notifyParty(
+        owner?.phone,
+        (!isRenter && emailIn ? emailIn : null) ?? owner?.email ?? b.agencies?.email ?? null,
+        "new_booking_agency",
+      );
     })());
   }
 

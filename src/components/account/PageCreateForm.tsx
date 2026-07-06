@@ -21,6 +21,7 @@ export function PageCreateForm() {
   const [name,          setName]          = useState("");
   const [city,          setCity]          = useState("");
   const [whatsapp,      setWhatsapp]      = useState("");
+  const [email,         setEmail]         = useState("");
   const [description,   setDescription]   = useState("");
   const [businessRegNo, setBusinessRegNo] = useState("");
   const [loading, setLoading] = useState(false);
@@ -33,6 +34,9 @@ export function PageCreateForm() {
     if (name.trim().length < 3) { setError("Name must be at least 3 characters."); return; }
     if (!city)                  { setError("Pick a city."); return; }
     if (!whatsapp.trim())       { setError("Enter a WhatsApp number for booking alerts."); return; }
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim())) {
+      setError("Enter a valid email — statements and booking records go there."); return;
+    }
 
     setLoading(true);
 
@@ -44,6 +48,7 @@ export function PageCreateForm() {
         page_type:        pageType,
         city,
         whatsapp_number:  whatsapp.trim(),
+        email:            email.trim(),
         description:      description.trim() || undefined,
         business_reg_no:  pageType === "business" ? (businessRegNo.trim() || undefined) : undefined,
       }),
@@ -130,6 +135,22 @@ export function PageCreateForm() {
         <label className="text-slate-600 text-xs mb-1 block">WhatsApp number</label>
         <PhoneInput value={whatsapp} onChange={setWhatsapp} required />
         <p className="text-slate-400 text-xs mt-1">Booking alerts arrive here as an SMS.</p>
+      </div>
+
+      <div>
+        <label className="text-slate-600 text-xs mb-1 block">Email</label>
+        <input
+          type="email"
+          value={email}
+          onChange={(e) => setEmail(e.target.value)}
+          required
+          autoComplete="email"
+          placeholder="you@example.com"
+          className={inputClass}
+        />
+        <p className="text-slate-400 text-xs mt-1">
+          Monthly statements, booking records and signed agreements are sent here.
+        </p>
       </div>
 
       <div>
