@@ -65,13 +65,13 @@ export default function PricingPage() {
           </div>
           <div className="flex items-center gap-2 mb-2">
             <Building2 size={20} className="text-blue-600" />
-            <h2 className="text-lg font-semibold text-slate-900">For owners &amp; agencies</h2>
+            <h2 className="text-lg font-semibold text-slate-900">For Rental Page owners</h2>
           </div>
           <p className="text-3xl font-extrabold text-slate-900 mt-2">
             List for free
           </p>
           <p className="text-slate-600 text-sm mt-1">
-            No listing fee, no monthly fee, and no commission during the launch period.
+            Listing is free forever. No monthly fee and no commission during launch.
           </p>
 
           <ul className="space-y-2 mt-5">
@@ -100,13 +100,15 @@ export default function PricingPage() {
 
       {/* Why free */}
       <section className="mt-12 bg-slate-900 text-white rounded-2xl p-6 md:p-8">
-        <h2 className="font-display text-xl font-extrabold mb-3">Why is it free right now?</h2>
+        <h2 className="font-display text-xl font-extrabold mb-3">What about fees in the future?</h2>
         <p className="text-slate-300 text-sm leading-relaxed max-w-2xl">
-          We&apos;re building Sri Lanka&apos;s verified rental network the right way, by bringing on the best owners
-          and vehicles and earning travellers&apos; trust first. During this launch phase our focus is quality and
-          coverage, not fees. When we introduce paid options later, such as featured placement or a small booking
-          commission, our early verified partners will get preferential rates, and we&apos;ll always announce any
-          change well in advance.
+          Listing vehicles is free forever. During our launch phase, bookings are also commission-free.
+          When we introduce a per-Rental-Page success fee in future, it will only apply to completed bookings
+          after a free trial period. Early verified partners will get preferential rates, and we will announce
+          any change well in advance on our{" "}
+          <Link href="/pricing" className="text-blue-400 hover:text-blue-300 font-medium">
+            pricing page
+          </Link>.
         </p>
       </section>
 

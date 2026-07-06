@@ -2,6 +2,7 @@ import { createClient } from "@/lib/supabase/server";
 import { notFound, redirect } from "next/navigation";
 import Link from "next/link";
 import { ArrowLeft } from "lucide-react";
+import { getActivePage } from "@/lib/pages/active-page";
 import { AvailabilityManager } from "@/components/dashboard/AvailabilityManager";
 
 interface Props {
@@ -15,23 +16,24 @@ export default async function VehicleAvailabilityPage({ params }: Props) {
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) redirect(`/login?next=/dashboard/vehicles/${id}/availability`);
 
-  const { data: agencyData } = await supabase
-    .from("agencies")
-    .select("id")
-    .eq("owner_id", user.id)
-    .single();
-  if (!agencyData) redirect("/signup?intent=provider");
-  const agency = agencyData as { id: string };
+  const { page, pages } = await getActivePage(supabase, user.id);
+  if (!page) redirect("/account/pages/new");
+  const agency = page;
 
-  // Confirm this vehicle is theirs
+  // Confirm this vehicle belongs to one of this account's own Rental Pages.
   const { data: vehicleData } = await supabase
     .from("vehicles")
-    .select("id, make, model, year")
+    .select("id, make, model, year, agency_id")
     .eq("id", id)
-    .eq("agency_id", agency.id)
     .single();
   if (!vehicleData) notFound();
-  const vehicle = vehicleData as { id: string; make: string; model: string; year: number };
+  const vehicle = vehicleData as { id: string; make: string; model: string; year: number; agency_id: string };
+
+  // If it's on a different owned page than the active one, send them back to
+  // the fleet list rather than error, it's not missing, just out of scope here.
+  const ownedPageIds = new Set(pages.map((p) => p.id));
+  if (!ownedPageIds.has(vehicle.agency_id)) notFound();
+  if (vehicle.agency_id !== agency.id) redirect("/dashboard/vehicles");
 
   // Existing future blocks
   const todayIso = new Date().toISOString().split("T")[0];

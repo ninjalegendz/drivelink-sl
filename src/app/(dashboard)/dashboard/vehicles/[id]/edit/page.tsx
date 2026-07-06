@@ -2,6 +2,7 @@ import { createClient } from "@/lib/supabase/server";
 import { notFound, redirect } from "next/navigation";
 import Link from "next/link";
 import { ArrowLeft } from "lucide-react";
+import { getActivePage } from "@/lib/pages/active-page";
 import { VehicleForm } from "@/components/dashboard/VehicleForm";
 import { AgencyVerificationGate } from "@/components/dashboard/AgencyVerificationGate";
 import type { Database } from "@/types/database";
@@ -19,13 +20,13 @@ export default async function EditVehiclePage({ params }: Props) {
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) redirect(`/login?next=/dashboard/vehicles/${id}/edit`);
 
-  const [{ data: agencyData }, { data: profileData }] = await Promise.all([
-    supabase.from("agencies").select("id, city, is_verified").eq("owner_id", user.id).single(),
+  const [{ page, pages }, { data: profileData }] = await Promise.all([
+    getActivePage(supabase, user.id),
     supabase.from("profiles").select("kyc_status").eq("id", user.id).single(),
   ]);
 
-  if (!agencyData) redirect("/signup?intent=provider");
-  const agency  = agencyData  as { id: string; city: string; is_verified: boolean };
+  if (!page) redirect("/account/pages/new");
+  const agency  = page;
   const profile = profileData as { kyc_status: string } | null;
 
   const ownerKycVerified = profile?.kyc_status === "verified";
@@ -36,11 +37,17 @@ export default async function EditVehiclePage({ params }: Props) {
     .from("vehicles")
     .select("*")
     .eq("id", id)
-    .eq("agency_id", agency.id)
     .single();
 
   if (!vehicleData) notFound();
   const vehicle = vehicleData as VehicleRow;
+
+  // The vehicle must belong to one of this account's own Rental Pages. If
+  // it's on a different owned page than the active one, send them back to
+  // the fleet list rather than error, it's not missing, just out of scope here.
+  const ownedPageIds = new Set(pages.map((p) => p.id));
+  if (!ownedPageIds.has(vehicle.agency_id)) notFound();
+  if (vehicle.agency_id !== agency.id) redirect("/dashboard/vehicles");
 
   const { data: docData } = await supabase
     .from("vehicle_documents")

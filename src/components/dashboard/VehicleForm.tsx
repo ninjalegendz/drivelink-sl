@@ -12,7 +12,7 @@ import { Select } from "@/components/ui/Select";
 import { PresetPicker } from "@/components/dashboard/PresetPicker";
 import { SL_CITIES } from "@/data/cities";
 import { VEHICLE_TYPES } from "@/data/vehicles";
-import { RULE_PRESETS, FEATURE_PRESETS, MILEAGE_PRESETS, SL_MAKES } from "@/data/vehicle-presets";
+import { RULE_PRESETS, FEATURE_PRESETS, SL_MAKES, BODY_TYPES, RESTRICTED_USE_OPTIONS } from "@/data/vehicle-presets";
 import { buildVehicleSlug } from "@/lib/vehicles/slug";
 import type { Database, InsuranceType, FuelPolicy, VehicleType } from "@/types/database";
 
@@ -43,6 +43,12 @@ const TRANSMISSION_OPTIONS = [
 
 const CITY_OPTIONS = SL_CITIES.map((c) => ({ value: c, label: c }));
 
+const BODY_TYPE_OPTIONS = BODY_TYPES.map((v) => ({ value: v, label: v }));
+
+function clamp(n: number, min: number, max: number) {
+  return Math.min(Math.max(n, min), max);
+}
+
 type VehicleRow = Database["public"]["Tables"]["vehicles"]["Row"];
 
 interface Props {
@@ -68,6 +74,20 @@ const MONTHLY_RATE_HELP =
 
 // Starter selection for brand-new listings (edit keeps whatever was saved).
 const FEATURES_STARTER = ["AC", "Bluetooth audio", "Reverse camera", "USB charging"];
+
+// Seed the structured km fields. Older rows only have the free-text
+// mileage_limit ("Unlimited" / "150 km/day"), so parse that before falling
+// back to the wizard's default (100 km/day) — otherwise a plain re-save
+// would silently rewrite a legacy allowance.
+function seedKmFields(v?: VehicleRow): { unlimited: boolean; included: string } {
+  if (!v) return { unlimited: false, included: "100" };
+  if (v.unlimited_km) return { unlimited: true, included: "" };
+  if (v.included_km_per_day != null) return { unlimited: false, included: String(v.included_km_per_day) };
+  const legacy = v.mileage_limit ?? "";
+  if (/unlimited/i.test(legacy)) return { unlimited: true, included: "" };
+  const m = legacy.match(/(\d+)/);
+  return { unlimited: false, included: m ? m[1] : "100" };
+}
 
 export function VehicleForm({ agencyId, agencyCity, vehicle, documents }: Props) {
   const router  = useRouter();
@@ -96,9 +116,45 @@ export function VehicleForm({ agencyId, agencyCity, vehicle, documents }: Props)
   const [withDriver, setWithDriver]       = useState(vehicle?.with_driver ?? false);
   const [airportPickup, setAirportPickup] = useState(vehicle?.airport_pickup ?? false);
   const [dailyRateUsd, setDailyRateUsd]   = useState(vehicle?.daily_rate_usd?.toString() ?? "");
-  const [mileageLimit, setMileageLimit]   = useState(vehicle?.mileage_limit ?? "");
   const [extraMileage, setExtraMileage]   = useState(vehicle?.extra_mileage_lkr?.toString() ?? "");
   const [rules, setRules]                 = useState<string[]>(vehicle?.rules ?? []);
+
+  // ── vehicle identity extras (Terms Engine, optional) ──
+  const [bodyType, setBodyType]     = useState(vehicle?.body_type ?? "");
+  const [variant, setVariant]       = useState(vehicle?.variant ?? "");
+  const [doors, setDoors]           = useState(vehicle?.doors?.toString() ?? "");
+  const [engineCc, setEngineCc]     = useState(vehicle?.engine_cc?.toString() ?? "");
+  const [odometerKm, setOdometerKm] = useState(vehicle?.odometer_km?.toString() ?? "");
+
+  // ── rental terms (Terms Engine) — same SL defaults as the wizard ──
+  const kmSeed = seedKmFields(vehicle);
+  const [weeklyRate, setWeeklyRate]               = useState(vehicle?.weekly_rate_lkr?.toString() ?? "");
+  const [includedKmPerDay, setIncludedKmPerDay]   = useState(kmSeed.included);
+  const [unlimitedKm, setUnlimitedKm]             = useState(kmSeed.unlimited);
+  const [deliveryAvailable, setDeliveryAvailable] = useState(vehicle?.delivery_available ?? false);
+  const [deliveryFee, setDeliveryFee]             = useState(vehicle?.delivery_fee_lkr?.toString() ?? "");
+  const [minRentalDays, setMinRentalDays]         = useState(vehicle?.min_rental_days?.toString() ?? "1");
+  const [maxRentalDays, setMaxRentalDays]         = useState(vehicle?.max_rental_days?.toString() ?? "");
+
+  const [cleaningFee, setCleaningFee]         = useState(vehicle?.cleaning_fee_lkr?.toString() ?? "5000");
+  const [refuelFee, setRefuelFee]             = useState(vehicle?.refuel_fee_lkr?.toString() ?? "1000");
+  const [lateFeePerHour, setLateFeePerHour]   = useState(vehicle?.late_fee_per_hour_lkr?.toString() ?? "");
+
+  const [smokingAllowed, setSmokingAllowed]           = useState(vehicle?.smoking_allowed ?? false);
+  const [petsAllowed, setPetsAllowed]                 = useState(vehicle?.pets_allowed ?? false);
+  const [rideHailAllowed, setRideHailAllowed]         = useState(vehicle?.ride_hail_allowed ?? false);
+  const [secondDriverAllowed, setSecondDriverAllowed] = useState(vehicle?.second_driver_allowed ?? true);
+  const [restrictedUse, setRestrictedUse]             = useState<string[]>(vehicle?.restricted_use ?? []);
+
+  const [minRenterAge, setMinRenterAge]         = useState(vehicle?.min_renter_age?.toString() ?? "23");
+  const [minLicenseYears, setMinLicenseYears]   = useState(vehicle?.min_license_years?.toString() ?? "2");
+
+  const [hasGpsTracker, setHasGpsTracker] = useState(vehicle?.has_gps_tracker ?? false);
+  const [hasEtcTag, setHasEtcTag]         = useState(vehicle?.has_etc_tag ?? false);
+
+  const [perKmRate, setPerKmRate]         = useState(vehicle?.per_km_rate_lkr?.toString() ?? "");
+  const [tollsIncluded, setTollsIncluded] = useState<boolean | null>(vehicle?.tolls_included ?? null);
+  const [driverBata, setDriverBata]       = useState(vehicle?.driver_bata_lkr?.toString() ?? "");
 
   // ── document proof (CR + insurance), private, admin-reviewed ──
   const [crUrl, setCrUrl]               = useState<string | null>(documents?.cr_url ?? null);
@@ -175,6 +231,13 @@ export function VehicleForm({ agencyId, agencyCity, vehicle, documents }: Props)
 
       const allPhotos = [...existingPhotos, ...uploadedUrls];
 
+      // Derived for backward compatibility: existing listing pages still read
+      // the legacy free-text mileage_limit column, so we keep it in sync with
+      // the structured fields (same derivation as the wizard).
+      const mileageLimitDerived = unlimitedKm
+        ? "Unlimited"
+        : (includedKmPerDay ? `${Number(includedKmPerDay)} km/day` : null);
+
       const payload = {
         make:           make.trim(),
         model:          model.trim(),
@@ -196,12 +259,46 @@ export function VehicleForm({ agencyId, agencyCity, vehicle, documents }: Props)
         self_drive:     selfDrive,
         with_driver:    withDriver,
         airport_pickup: airportPickup,
-        mileage_limit:  mileageLimit.trim() || null,
+        mileage_limit:  mileageLimitDerived,
         extra_mileage_lkr: extraMileage ? Number(extraMileage) : null,
         rules:          cleanRules,
         features:       cleanFeatures.length ? cleanFeatures : null,
         description:    description.trim() || null,
         photos:         allPhotos.length ? allPhotos : null,
+        // ── vehicle identity extras ──
+        body_type:   bodyType || null,
+        variant:     variant.trim() || null,
+        doors:       doors ? Number(doors) : null,
+        engine_cc:   engineCc ? Number(engineCc) : null,
+        odometer_km: odometerKm ? Number(odometerKm) : null,
+        // ── rental terms ──
+        weekly_rate_lkr: weeklyRate ? Number(weeklyRate) : null,
+        included_km_per_day: unlimitedKm ? null : (includedKmPerDay ? Number(includedKmPerDay) : null),
+        unlimited_km: unlimitedKm,
+        delivery_available: deliveryAvailable,
+        delivery_fee_lkr: deliveryAvailable && deliveryFee ? Number(deliveryFee) : null,
+        min_rental_days: Math.max(minRentalDays ? Number(minRentalDays) : 1, 1),
+        max_rental_days: maxRentalDays ? Number(maxRentalDays) : null,
+        // ── deposit & fees ──
+        cleaning_fee_lkr: clamp(cleaningFee ? Number(cleaningFee) : 5000, 0, 10000),
+        refuel_fee_lkr: refuelFee ? Number(refuelFee) : 1000,
+        late_fee_per_hour_lkr: lateFeePerHour ? Number(lateFeePerHour) : null,
+        // ── house rules ──
+        smoking_allowed: smokingAllowed,
+        pets_allowed: petsAllowed,
+        ride_hail_allowed: rideHailAllowed,
+        second_driver_allowed: secondDriverAllowed,
+        restricted_use: restrictedUse,
+        // ── renter requirements ──
+        min_renter_age: clamp(minRenterAge ? Number(minRenterAge) : 23, 18, 40),
+        min_license_years: minLicenseYears ? Number(minLicenseYears) : 2,
+        // ── disclosures ──
+        has_gps_tracker: hasGpsTracker,
+        has_etc_tag: hasEtcTag,
+        // ── with-driver terms ──
+        per_km_rate_lkr: withDriver && perKmRate ? Number(perKmRate) : null,
+        tolls_included: withDriver ? tollsIncluded : null,
+        driver_bata_lkr: withDriver && driverBata ? Number(driverBata) : null,
       };
 
       // Upload any new document proof (CR / insurance) to private storage.
@@ -289,6 +386,27 @@ export function VehicleForm({ agencyId, agencyCity, vehicle, documents }: Props)
         </Field>
       </div>
 
+      <div className="grid grid-cols-2 gap-4">
+        <Field label="Body type" hint="Optional">
+          <Select value={bodyType} onChange={setBodyType} options={BODY_TYPE_OPTIONS} placeholder="Select…" />
+        </Field>
+        <Field label="Variant" hint="Optional trim, e.g. GLi, Hybrid">
+          <input type="text" value={variant} onChange={(e) => setVariant(e.target.value)} placeholder="GLi, Hybrid, etc." className={inputClass} />
+        </Field>
+      </div>
+
+      <div className="grid grid-cols-3 gap-4">
+        <Field label="Doors" hint="Optional">
+          <input type="number" value={doors} onChange={(e) => setDoors(e.target.value)} min={1} max={6} placeholder="4" className={inputClass} />
+        </Field>
+        <Field label="Engine (cc)" hint="Optional">
+          <input type="number" value={engineCc} onChange={(e) => setEngineCc(e.target.value)} min={0} placeholder="1500" className={inputClass} />
+        </Field>
+        <Field label="Odometer (km)" hint="Optional">
+          <input type="number" value={odometerKm} onChange={(e) => setOdometerKm(e.target.value)} min={0} placeholder="65000" className={inputClass} />
+        </Field>
+      </div>
+
       <div className="grid grid-cols-3 gap-4">
         <Field label="Vehicle type" required hint="Search category.">
           <Select value={vehicleType} onChange={(v) => setVehicleType(v as VehicleType)} options={VEHICLE_TYPE_OPTIONS} />
@@ -357,23 +475,6 @@ export function VehicleForm({ agencyId, agencyCity, vehicle, documents }: Props)
         </Field>
       </div>
 
-      <div className="grid grid-cols-2 gap-4">
-        <Field label="Mileage allowance" hint="Pick one or type your own">
-          <div className="flex flex-wrap gap-1 mb-1.5">
-            {MILEAGE_PRESETS.map((m) => (
-              <button key={m} type="button" onClick={() => setMileageLimit(mileageLimit === m ? "" : m)}
-                className={`px-2 py-1 rounded-full border text-[11px] font-medium transition-all ${mileageLimit === m ? "bg-blue-50 border-blue-500 text-blue-700" : "bg-white border-slate-200 text-slate-500 hover:bg-slate-50"}`}>
-                {m}
-              </button>
-            ))}
-          </div>
-          <input type="text" value={mileageLimit} onChange={(e) => setMileageLimit(e.target.value)} placeholder="100 km/day" className={inputClass} />
-        </Field>
-        <Field label="Extra mileage (LKR/km)" hint="Charge beyond the allowance">
-          <input type="number" value={extraMileage} onChange={(e) => setExtraMileage(e.target.value)} min={0} step={5} placeholder="60" className={inputClass} />
-        </Field>
-      </div>
-
       <div className="grid grid-cols-3 gap-4">
         <Field label="Seats">
           <input type="number" value={seats} onChange={(e) => setSeats(Number(e.target.value))} min={2} max={15} className={inputClass} />
@@ -405,6 +506,132 @@ export function VehicleForm({ agencyId, agencyCity, vehicle, documents }: Props)
         <Field label="Plate number" hint="Visible only to confirmed renters">
           <input type="text" value={plateNumber} onChange={(e) => setPlateNumber(e.target.value)} placeholder="WP CAB-1234" className={inputClass} />
         </Field>
+      </div>
+
+      {/* ── Rental terms (Terms Engine), mirrors the listing wizard's step ── */}
+      <div className="pt-4 border-t border-slate-200 space-y-5">
+        <div>
+          <h3 className="text-slate-900 text-sm font-bold">Rental terms</h3>
+          <p className="text-slate-500 text-xs mt-0.5">
+            These become part of every booking&apos;s rental agreement. Standard Sri Lankan defaults are pre-filled — change only what&apos;s different for this vehicle.
+          </p>
+        </div>
+
+        {/* Pricing extras */}
+        <div className="space-y-3">
+          <TermsHeading>Pricing extras</TermsHeading>
+          <Field label="Weekly rate (LKR)" hint="Optional package price for 7+ day bookings">
+            <input type="number" value={weeklyRate} onChange={(e) => setWeeklyRate(e.target.value)} min={0} step={500} placeholder="40000" className={inputClass} />
+          </Field>
+          <div className="grid grid-cols-2 gap-4">
+            <Field label="Included km/day" hint={unlimitedKm ? "Unlimited km is on" : "Extra km beyond this is charged"}>
+              <input type="number" value={unlimitedKm ? "" : includedKmPerDay} onChange={(e) => setIncludedKmPerDay(e.target.value)}
+                disabled={unlimitedKm} min={0} placeholder={unlimitedKm ? "Unlimited" : "100"} className={inputClass} />
+            </Field>
+            <Field label="Extra km charge (LKR/km)" hint="Charge beyond the allowance">
+              <input type="number" value={extraMileage} onChange={(e) => setExtraMileage(e.target.value)} min={0} step={5} placeholder="30" className={inputClass} />
+            </Field>
+          </div>
+          <ToggleRow label="Unlimited km" on={unlimitedKm} onChange={setUnlimitedKm} />
+          <ToggleRow label="Delivery available" hint="Deliver the vehicle to the renter for a fee" on={deliveryAvailable} onChange={setDeliveryAvailable} />
+          {deliveryAvailable && (
+            <Field label="Delivery fee (LKR)">
+              <input type="number" value={deliveryFee} onChange={(e) => setDeliveryFee(e.target.value)} min={0} placeholder="1500" className={inputClass} />
+            </Field>
+          )}
+          <div className="grid grid-cols-2 gap-4">
+            <Field label="Min rental days">
+              <input type="number" value={minRentalDays} onChange={(e) => setMinRentalDays(e.target.value)} min={1} className={inputClass} />
+            </Field>
+            <Field label="Max rental days" hint="Optional, blank = no limit">
+              <input type="number" value={maxRentalDays} onChange={(e) => setMaxRentalDays(e.target.value)} min={1} placeholder="No limit" className={inputClass} />
+            </Field>
+          </div>
+        </div>
+
+        {/* Fees (deposit lives above, next to the daily rate) */}
+        <div className="space-y-3">
+          <TermsHeading>Fees</TermsHeading>
+          <div className="grid grid-cols-2 gap-4">
+            <Field label="Cleaning fee (LKR)" hint="If returned excessively dirty, up to Rs. 10,000">
+              <input type="number" value={cleaningFee} onChange={(e) => setCleaningFee(e.target.value)} min={0} max={10000} step={500} className={inputClass} />
+            </Field>
+            <Field label="Refuel service fee (LKR)">
+              <input type="number" value={refuelFee} onChange={(e) => setRefuelFee(e.target.value)} min={0} step={100} className={inputClass} />
+            </Field>
+          </div>
+          <Field label="Late fee per hour (LKR)" hint="Optional, blank = daily rate ÷ 8 per hour">
+            <input type="number" value={lateFeePerHour} onChange={(e) => setLateFeePerHour(e.target.value)} min={0} placeholder="auto: daily rate ÷ 8" className={inputClass} />
+          </Field>
+        </div>
+
+        {/* House rules */}
+        <div className="space-y-2">
+          <TermsHeading>House rules</TermsHeading>
+          <ToggleRow label="Smoking allowed" on={smokingAllowed} onChange={setSmokingAllowed} />
+          <ToggleRow label="Pets allowed" on={petsAllowed} onChange={setPetsAllowed} />
+          <ToggleRow label="Ride-hail / commercial use allowed" on={rideHailAllowed} onChange={setRideHailAllowed} />
+          <ToggleRow label="Second driver allowed" on={secondDriverAllowed} onChange={setSecondDriverAllowed} />
+          <div className="pt-1">
+            <span className="text-slate-600 text-xs mb-1.5 block">Not allowed:</span>
+            <div className="flex flex-wrap gap-1.5">
+              {RESTRICTED_USE_OPTIONS.map(({ value, label }) => {
+                const on = restrictedUse.includes(value);
+                return (
+                  <button key={value} type="button"
+                    onClick={() => setRestrictedUse((r) => on ? r.filter((v) => v !== value) : [...r, value])}
+                    className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-full border text-[11px] font-medium transition-all ${on ? "bg-blue-50 border-blue-500 text-blue-700" : "bg-white border-slate-200 text-slate-500 hover:bg-slate-50"}`}>
+                    {on && <Check size={11} />} {label}
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+        </div>
+
+        {/* Renter requirements */}
+        <div className="space-y-3">
+          <TermsHeading>Renter requirements</TermsHeading>
+          <div className="grid grid-cols-2 gap-4">
+            <Field label="Min age">
+              <input type="number" value={minRenterAge} onChange={(e) => setMinRenterAge(e.target.value)} min={18} max={40} className={inputClass} />
+            </Field>
+            <Field label="Min years holding licence">
+              <input type="number" value={minLicenseYears} onChange={(e) => setMinLicenseYears(e.target.value)} min={0} className={inputClass} />
+            </Field>
+          </div>
+        </div>
+
+        {/* Disclosures */}
+        <div className="space-y-2">
+          <TermsHeading>Disclosures</TermsHeading>
+          <ToggleRow label="GPS tracker fitted" hint="Disclosed to renters in the rental agreement, as required" on={hasGpsTracker} onChange={setHasGpsTracker} />
+          <ToggleRow label="ETC expressway tag fitted" hint="Tag charges during a rental are billed to the renter" on={hasEtcTag} onChange={setHasEtcTag} />
+        </div>
+
+        {/* With-driver terms */}
+        {withDriver && (
+          <div className="space-y-3">
+            <TermsHeading>With-driver terms</TermsHeading>
+            <div className="grid grid-cols-2 gap-4">
+              <Field label="Per-km rate (LKR)" hint="Optional">
+                <input type="number" value={perKmRate} onChange={(e) => setPerKmRate(e.target.value)} min={0} placeholder="60" className={inputClass} />
+              </Field>
+              <Field label="Driver overnight allowance (Rs/night)">
+                <input type="number" value={driverBata} onChange={(e) => setDriverBata(e.target.value)} min={0} placeholder="2000" className={inputClass} />
+              </Field>
+            </div>
+            <div>
+              <span className="text-slate-600 text-xs mb-1.5 block">Tolls included in price?</span>
+              <div className="grid grid-cols-2 gap-2">
+                {([[true, "Yes"], [false, "No"]] as const).map(([v, l]) => (
+                  <button key={l} type="button" onClick={() => setTollsIncluded(v)}
+                    className={`py-2.5 rounded-xl border font-semibold text-xs transition-all ${tollsIncluded === v ? "bg-blue-50 border-blue-500 text-blue-700" : "bg-white border-slate-200 text-slate-500 hover:bg-slate-50"}`}>{l}</button>
+                ))}
+              </div>
+            </div>
+          </div>
+        )}
       </div>
 
       <div>
@@ -509,9 +736,9 @@ export function VehicleForm({ agencyId, agencyCity, vehicle, documents }: Props)
       {/* Document proof, private, for admin verification only */}
       <div className="bg-slate-100/60 border border-slate-200 rounded-xl p-4 space-y-3">
         <div>
-          <span className="text-slate-700 text-sm font-semibold block">Document proof <span className="text-slate-400 font-normal">(private)</span></span>
+          <span className="text-slate-700 text-sm font-semibold block">Document proof <span className="text-slate-400 font-normal">(optional, private)</span></span>
           <span className="text-slate-500 text-xs">
-            Upload the vehicle registration (CR) and insurance certificate. Only DriveLink admins see these, they unlock the <strong>Documents Checked</strong> badge.
+            Optional now — upload the vehicle registration (CR) and insurance certificate to earn the <strong>Verified Vehicle</strong> badge (better ranking, more bookings). We&apos;ll also ask before your first confirmed booking. Only DriveLink admins see these.
           </span>
         </div>
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
@@ -546,6 +773,27 @@ export function VehicleForm({ agencyId, agencyCity, vehicle, documents }: Props)
 
 const inputClass =
   "w-full px-4 py-2.5 bg-slate-100 border border-slate-200 rounded-xl text-slate-900 placeholder-slate-400 text-sm focus:outline-none focus:border-blue-500";
+
+function TermsHeading({ children }: { children: React.ReactNode }) {
+  return <p className="text-slate-700 text-xs font-bold uppercase tracking-wide">{children}</p>;
+}
+
+// Compact switch row, same interaction as the wizard's ToggleField, scaled to
+// this form's denser layout.
+function ToggleRow({ label, hint, on, onChange }: { label: string; hint?: string; on: boolean; onChange: (v: boolean) => void }) {
+  return (
+    <button type="button" onClick={() => onChange(!on)} aria-pressed={on}
+      className={`w-full flex items-center justify-between gap-3 px-3.5 py-2.5 rounded-xl border text-left transition-all ${on ? "bg-blue-50 border-blue-500" : "bg-white border-slate-200 hover:bg-slate-50"}`}>
+      <span>
+        <span className={`block text-xs font-semibold ${on ? "text-blue-700" : "text-slate-700"}`}>{label}</span>
+        {hint && <span className="block text-slate-400 text-[11px] mt-0.5">{hint}</span>}
+      </span>
+      <span className={`shrink-0 w-9 h-5 rounded-full relative transition-colors ${on ? "bg-blue-600" : "bg-slate-300"}`}>
+        <span className={`absolute top-0.5 left-0.5 w-4 h-4 rounded-full bg-white shadow transition-transform ${on ? "translate-x-4" : ""}`} />
+      </span>
+    </button>
+  );
+}
 
 function DocUpload({
   label, url, file, onPick, onClear,

@@ -44,6 +44,40 @@ export interface VehicleRow {
   is_featured: boolean;
   fuel_type: string | null;
   luggage: number | null;
+  // ── Terms Engine + staged verification ──
+  body_type: string | null;
+  variant: string | null;
+  doors: number | null;
+  engine_cc: number | null;
+  vin: string | null;
+  engine_number: string | null;
+  odometer_km: number | null;
+  weekly_rate_lkr: number | null;
+  included_km_per_day: number | null;
+  unlimited_km: boolean;
+  refuel_fee_lkr: number;
+  cleaning_fee_lkr: number;
+  late_fee_per_hour_lkr: number | null;
+  delivery_available: boolean;
+  delivery_fee_lkr: number | null;
+  min_rental_days: number;
+  max_rental_days: number | null;
+  smoking_allowed: boolean;
+  pets_allowed: boolean;
+  ride_hail_allowed: boolean;
+  second_driver_allowed: boolean;
+  min_renter_age: number;
+  min_license_years: number;
+  restricted_use: string[];
+  has_gps_tracker: boolean;
+  has_etc_tag: boolean;
+  per_km_rate_lkr: number | null;
+  tolls_included: boolean | null;
+  driver_bata_lkr: number | null;
+  verified_vehicle: boolean;
+  revenue_license_expiry: string | null;
+  insurance_expiry: string | null;
+  emission_expiry: string | null;
   created_at: string;
   updated_at: string;
 }
@@ -86,7 +120,21 @@ export interface AgencyRow {
   reliability_pct: number | null;
   created_at: string;
   updated_at: string;
+  // Rental Pages (048): one account owns many pages.
+  page_type: "personal" | "business";
+  logo_url: string | null;
+  cover_url: string | null;
+  email: string | null;
+  business_hours: string | null;
+  business_reg_no: string | null;
+  business_reg_url: string | null;
+  // Per-page notification channel preferences (037), read at booking-notify time.
+  sms_notifications_enabled: boolean;
+  whatsapp_notifications_enabled: boolean;
 }
+
+// Product name for the agencies table under the Rental Pages model.
+export type RentalPageRow = AgencyRow;
 
 // ─── Bookings ────────────────────────────────────────────────
 
@@ -118,6 +166,17 @@ export interface BookingRow {
   return_photo_urls: string[] | null;
   renter_returned_at: string | null;   // renter reported the car returned
   return_confirmed_at: string | null;  // agency confirmed receipt on completion
+  // ── deposit trail (migration 051) ──
+  deposit_lkr: number | null;
+  deposit_method: "cash" | "bank_transfer" | "other" | null;
+  deposit_received_at: string | null;
+  deposit_received_ack_at: string | null;
+  deposit_returned_at: string | null;
+  deposit_return_amount_lkr: number | null;
+  deposit_return_reason: string | null;
+  deposit_return_ack_at: string | null;
+  // consent-based document sharing (migration 051)
+  doc_share_consent_at: string | null;
   created_at: string;
   updated_at: string;
 }

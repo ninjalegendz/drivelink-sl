@@ -3,6 +3,7 @@ import { redirect } from "next/navigation";
 import Link from "next/link";
 import Image from "next/image";
 import { Car, Plus, ExternalLink } from "lucide-react";
+import { getActivePage } from "@/lib/pages/active-page";
 import { Badge } from "@/components/ui/Badge";
 import { VehicleStatusToggle } from "@/components/dashboard/VehicleStatusToggle";
 import { formatLKR, insuranceLabel } from "@/lib/vehicles/format";
@@ -31,14 +32,9 @@ export default async function FleetPage() {
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) redirect("/login?next=/dashboard/vehicles");
 
-  const { data: agencyData } = await supabase
-    .from("agencies")
-    .select("id")
-    .eq("owner_id", user.id)
-    .single();
-
-  if (!agencyData) redirect("/signup?intent=provider");
-  const agency = agencyData as { id: string };
+  const { page } = await getActivePage(supabase, user.id);
+  if (!page) redirect("/account/pages/new");
+  const agency = page;
 
   const { data } = await supabase
     .from("vehicles")

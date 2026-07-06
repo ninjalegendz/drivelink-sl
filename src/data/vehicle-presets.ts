@@ -63,6 +63,28 @@ export function presetIcon(label: string): LucideIcon {
 
 export const MILEAGE_PRESETS = ["Unlimited", "100 km/day", "150 km/day", "200 km/day"];
 
+// ─── Terms Engine shared vocabulary ──────────────────────────
+// Used by the listing wizard, the edit form and the public listing page so
+// all three surfaces stay consistent.
+
+export const BODY_TYPES = [
+  "Sedan", "Hatchback", "SUV", "Crossover", "Wagon", "Coupe", "Pickup", "Mini", "Van", "Other",
+];
+
+// restricted_use fixed vocabulary (DB text[] column) → human labels shown as
+// "Not allowed" chips on provider forms and the public listing.
+export const RESTRICTED_USE_OPTIONS: { value: string; label: string }[] = [
+  { value: "unpaved_roads",         label: "Unpaved roads" },
+  { value: "beach_sand",            label: "Beach / sand driving" },
+  { value: "hill_country",          label: "Steep hill-country routes" },
+  { value: "flood_water",           label: "Driving through flood water" },
+  { value: "long_haul_north_east",  label: "Long-haul North/East trips" },
+];
+
+export function restrictedUseLabel(value: string): string {
+  return RESTRICTED_USE_OPTIONS.find((o) => o.value === value)?.label ?? value.replace(/_/g, " ");
+}
+
 // ─── Common makes in Sri Lanka (datalist suggestions) ────────
 
 export const SL_MAKES = [

@@ -2,6 +2,7 @@ import { createClient } from "@/lib/supabase/server";
 import { redirect } from "next/navigation";
 import Link from "next/link";
 import { ArrowLeft, Copy } from "lucide-react";
+import { getActivePage } from "@/lib/pages/active-page";
 import { VehicleWizard, type WizardPrefill } from "@/components/dashboard/VehicleWizard";
 import { AgencyVerificationGate } from "@/components/dashboard/AgencyVerificationGate";
 
@@ -15,13 +16,13 @@ export default async function NewVehiclePage({ searchParams }: Props) {
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) redirect("/login?next=/dashboard/vehicles/new");
 
-  const [{ data: agencyData }, { data: profileData }] = await Promise.all([
-    supabase.from("agencies").select("id, city, is_verified").eq("owner_id", user.id).single(),
+  const [{ page }, { data: profileData }] = await Promise.all([
+    getActivePage(supabase, user.id),
     supabase.from("profiles").select("kyc_status").eq("id", user.id).single(),
   ]);
 
-  if (!agencyData) redirect("/signup?intent=provider");
-  const agency  = agencyData  as { id: string; city: string; is_verified: boolean };
+  if (!page) redirect("/account/pages/new");
+  const agency  = page;
   const profile = profileData as { kyc_status: string } | null;
 
   const ownerKycVerified = profile?.kyc_status === "verified";

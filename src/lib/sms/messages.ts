@@ -105,6 +105,22 @@ export function buildRenterCancelledMessage({
   );
 }
 
+// Sent to the renter when the page (agency/host) cancels a booking they'd
+// already confirmed — the renter-trust-costing case, distinct from
+// buildRenterCancelledMessage's system/admin cancellations. Points at the
+// marketplace instead of the (now dead-end) booking page.
+export function buildRenterPageCancelledMessage({
+  bookingId, vehicleName, vehiclePlate, appUrl,
+}: RenterTransitionArgs): string {
+  const ref = bookingId.slice(0, 8).toUpperCase();
+  return composeVehicleSms(
+    (veh) =>
+      `DriveLink: booking ${ref} for the ${veh} was cancelled by the Rental Page, we're sorry. ` +
+      `Browse alternatives: ${appUrl}/vehicles`,
+    vehicleName, vehiclePlate,
+  );
+}
+
 // Sent to the renter once a rental is completed, thanks them and pulls them
 // back to leave a review (the single biggest lever on review volume).
 export function buildRenterCompletedMessage({

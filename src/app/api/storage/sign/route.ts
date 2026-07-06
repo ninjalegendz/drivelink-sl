@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
-import { buildKey, getPresignedPutUrl, getPublicUrl, type StoragePrefix } from "@/lib/storage/r2";
+import { getActivePage } from "@/lib/pages/active-page";
+import { buildKey, getPresignedPutUrl, getDocUrl, type StoragePrefix } from "@/lib/storage/r2";
 
 // POST /api/storage/sign
 // body: { prefix: StoragePrefix, filename: string, contentType: string }
@@ -11,11 +12,13 @@ import { buildKey, getPresignedPutUrl, getPublicUrl, type StoragePrefix } from "
 //   avatars       - any signed-in user (their own avatar)
 //   kyc           - any signed-in user (their own ID docs)
 //   booking-slips - any signed-in user (their booking payment proof)
-//   vehicle-photos - agency owners only (one of their fleet vehicles)
+//   vehicle-photos - Rental Page owners only (one of their fleet vehicles)
 //
 // Owner id baked into the key is always the caller's user id for the
-// first three. For vehicle-photos, the caller must own an agency and
-// the key is rooted at the agency id.
+// first three. For vehicle-photos/vehicle-docs, the request doesn't carry
+// an explicit page id (see lib/storage/upload.ts), so we root the key at
+// the caller's ACTIVE Rental Page, this matches the page id that
+// VehicleForm/VehicleWizard will actually write onto vehicles.agency_id.
 
 const ALLOWED_PREFIXES: Set<StoragePrefix> = new Set([
   "avatars", "kyc", "booking-slips", "booking-photos", "vehicle-photos", "vehicle-docs",
@@ -51,16 +54,12 @@ export async function POST(req: NextRequest) {
   let ownerId  = user.id;
 
   if (prefix === "vehicle-photos" || prefix === "vehicle-docs") {
-    // Must own an agency. Key gets rooted at the agency id, not the user id,
-    // so the existing folder convention (and the orphan sweeper) keeps working.
-    const { data: agency } = await supabase
-      .from("agencies")
-      .select("id")
-      .eq("owner_id", user.id)
-      .maybeSingle();
-    const aid = (agency as { id?: string } | null)?.id;
-    if (!aid) return NextResponse.json({ error: "No agency on this account" }, { status: 403 });
-    ownerId = aid;
+    // Must own a Rental Page. Key gets rooted at the active page's id, not
+    // the user id, so the existing folder convention (and the orphan
+    // sweeper) keeps working.
+    const { page } = await getActivePage(supabase, user.id);
+    if (!page) return NextResponse.json({ error: "No Rental Page on this account" }, { status: 403 });
+    ownerId = page.id;
   }
 
   const key    = buildKey(prefix, ownerId, body.filename);
@@ -69,7 +68,9 @@ export async function POST(req: NextRequest) {
   return NextResponse.json({
     key,
     putUrl,
-    publicUrl: getPublicUrl(key),
+    // Proxy URL for private prefixes (kyc, vehicle-docs) — the stored URL
+    // is only fetchable through /api/docs with a session; CDN URL otherwise.
+    publicUrl: getDocUrl(key),
     maxBytesHint: MAX_BYTES_HINT,
   });
 }

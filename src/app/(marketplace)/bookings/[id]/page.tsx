@@ -1,18 +1,23 @@
 import { notFound, redirect } from "next/navigation";
 import Link from "next/link";
-import { Star, Sparkles, ShieldCheck, Check } from "lucide-react";
+import { Star, Sparkles, ShieldCheck, Check, ShieldAlert, FileText, Clock } from "lucide-react";
 import { createClient, createServiceClient } from "@/lib/supabase/server";
 import { Badge } from "@/components/ui/Badge";
 import { SlipUploadForm } from "@/components/booking/SlipUploadForm";
 import { ReviewForm } from "@/components/booking/ReviewForm";
-import { HandoverPhotos } from "@/components/booking/HandoverPhotos";
+import { InspectionFlow } from "@/components/booking/InspectionFlow";
 import { ReturnButton } from "@/components/booking/ReturnButton";
 import { WhatsAppIcon } from "@/components/icons/WhatsAppIcon";
 import { CancelBookingButton } from "@/components/booking/CancelBookingButton";
 import { PaymentExpiryCountdown } from "@/components/booking/PaymentExpiryCountdown";
+import { ReportProblemButton } from "@/components/booking/ReportProblemButton";
+import { BookingMessagesCard, type BookingMessage } from "@/components/booking/BookingChat";
+import { DocumentShareCard } from "@/components/booking/DocumentShareCard";
 import { BookingRefresher } from "@/components/realtime/BookingRefresher";
 import { BOOKING_STATUS_LABELS } from "@/lib/booking/state-machine";
 import { formatLKR } from "@/lib/vehicles/format";
+import { whatsappLink, siteConfig } from "@/lib/site-config";
+import { INSPECTIONS_SELECT, type InspectionRow } from "@/lib/booking/inspection-types";
 import type { BookingWithRelations } from "@/types/queries";
 import type { BookingStatus } from "@/types/database";
 
@@ -52,12 +57,35 @@ export default async function BookingDetailPage({ params, searchParams }: Props)
 
   const { data } = await supabase
     .from("bookings")
-    .select("*, vehicles(make, model, year, city, slug, photos, plate_number), agencies(name, whatsapp_number, owner_id)")
+    .select("*, vehicles(make, model, year, city, slug, photos, plate_number, deposit_lkr), agencies(name, whatsapp_number, owner_id)")
     .eq("id", id)
     .eq("renter_id", user.id)
     .single();
 
   if (!data) notFound();
+
+  // Pickup/return inspection rows (migration 051), read directly under the
+  // "Booking parties read inspections" RLS policy (the renter is a party).
+  const { data: inspectionRows } = await supabase
+    .from("booking_inspections")
+    .select(INSPECTIONS_SELECT)
+    .eq("booking_id", id);
+  const inspections       = (inspectionRows ?? []) as unknown as InspectionRow[];
+  const pickupInspection  = inspections.find((i) => i.phase === "pickup") ?? null;
+  const returnInspection  = inspections.find((i) => i.phase === "return") ?? null;
+
+  // Digital rental agreement acceptance state (migration 051), read under the
+  // "Booking parties read agreement" RLS policy. Snapshot is created at
+  // confirmation, so it exists for anything at/past confirmed.
+  const { data: agreementRow } = await supabase
+    .from("booking_agreements")
+    .select("renter_accepted_at, owner_accepted_at")
+    .eq("booking_id", id)
+    .maybeSingle();
+  const agreement = agreementRow as {
+    renter_accepted_at: string | null;
+    owner_accepted_at:  string | null;
+  } | null;
 
   // Bank-transfer details for the pay-to-lock-in panel
   const { data: settingsRow } = await supabase
@@ -139,6 +167,7 @@ export default async function BookingDetailPage({ params, searchParams }: Props)
   // plate so the agency knows exactly which booking the renter is messaging about.
   const bookingRef   = booking.id.slice(0, 8).toUpperCase();
   const vehiclePlate = (vehicle as { plate_number?: string | null }).plate_number;
+  const depositLkr   = booking.deposit_lkr ?? (vehicle as { deposit_lkr?: number | null }).deposit_lkr ?? 0;
   const agencyWaText =
     `Hi ${agency.name}, this is about my DriveLink booking ${bookingRef}, ` +
     `${vehicle.year} ${vehicle.make} ${vehicle.model}${vehiclePlate ? ` (${vehiclePlate})` : ""}, ` +
@@ -152,7 +181,29 @@ export default async function BookingDetailPage({ params, searchParams }: Props)
   const verified        = kycStatus === "verified";
   const bookingActive   = status === "active" || (status === "confirmed" && isFree);
   const contactUnlocked = bookingActive && verified;
-  const showTracker     = !["declined", "cancelled", "completed"].includes(status);
+  const showTracker     = !["declined", "cancelled", "completed", "disputed"].includes(status);
+
+  // Booking-scoped chat with the Rental Page (migration 054). Read directly
+  // under the party RLS policy. Unread = messages from the other party newer
+  // than this renter's read cursor (renter_msgs_read_at, stamped by the
+  // messages GET/POST route — rendering this page does NOT mark them read,
+  // only opening the chat does).
+  const { data: messageRows } = await supabase
+    .from("booking_messages")
+    .select("id, booking_id, sender_id, body, created_at")
+    .eq("booking_id", booking.id)
+    .order("created_at", { ascending: true })
+    .limit(500);
+  const messages = (messageRows ?? []) as BookingMessage[];
+  const renterMsgsReadAt = (booking as { renter_msgs_read_at?: string | null }).renter_msgs_read_at ?? null;
+  const msgsReadMs       = renterMsgsReadAt ? Date.parse(renterMsgsReadAt) : 0;
+  const unreadMessages   = messages.filter(
+    (m) => m.sender_id !== user.id && Date.parse(m.created_at) > msgsReadMs,
+  ).length;
+  // Read-only once the booking is finished; hide entirely on a dead booking
+  // with no history to show.
+  const chatReadOnly = ["completed", "declined", "cancelled"].includes(status);
+  const showMessages = !chatReadOnly || messages.length > 0;
 
   // Has the renter already reviewed this booking?
   const { data: existingReview } = await supabase
@@ -370,12 +421,114 @@ export default async function BookingDetailPage({ params, searchParams }: Props)
         </div>
       )}
 
-      {(status === "active" || status === "completed") && (
-        <HandoverPhotos
+      {/* Booking-scoped messages with the Rental Page. Complements the
+          call/WhatsApp contact above (once unlocked) — this thread stays on
+          the record for dispute resolution. */}
+      {showMessages && (
+        <BookingMessagesCard
           bookingId={booking.id}
-          initialPickup={booking.pickup_photo_urls ?? []}
-          initialReturn={booking.return_photo_urls ?? []}
+          currentUserId={user.id}
+          counterpartyName={agency.name}
+          initialMessages={messages}
+          unreadCount={unreadMessages}
+          readOnly={chatReadOnly}
+          closedNote={status === "completed"
+            ? "This conversation is closed — the booking is complete."
+            : "This conversation is closed."}
         />
+      )}
+
+      {/* Digital rental agreement, created when the owner confirms. */}
+      {(agreement || ["active", "completed", "disputed"].includes(status)) && (
+        <div className="bg-white rounded-2xl border border-slate-100 p-4 mb-4">
+          <div className="flex items-start justify-between gap-3">
+            <div className="flex-1 min-w-0">
+              <p className="text-slate-900 font-semibold text-sm inline-flex items-center gap-1.5">
+                <FileText size={14} className="text-blue-600" /> Rental agreement
+              </p>
+              {agreement ? (
+                <div className="mt-2 space-y-1">
+                  <p className="text-xs inline-flex items-center gap-1.5 mr-4">
+                    {agreement.renter_accepted_at ? (
+                      <><Check size={12} className="text-emerald-600" /><span className="text-emerald-700">You: signed</span></>
+                    ) : (
+                      <><Clock size={12} className="text-amber-600" /><span className="text-amber-700">You: not signed</span></>
+                    )}
+                  </p>
+                  <p className="text-xs inline-flex items-center gap-1.5">
+                    {agreement.owner_accepted_at ? (
+                      <><Check size={12} className="text-emerald-600" /><span className="text-emerald-700">{agency.name}: signed</span></>
+                    ) : (
+                      <><Clock size={12} className="text-amber-600" /><span className="text-amber-700">{agency.name}: not signed</span></>
+                    )}
+                  </p>
+                  {!agreement.renter_accepted_at && (
+                    <p className="text-amber-700 text-xs font-medium pt-1">
+                      Accept the agreement before pickup.
+                    </p>
+                  )}
+                </div>
+              ) : (
+                <p className="text-slate-600 text-xs mt-1">
+                  Your agreement is being generated, check back in a moment.
+                </p>
+              )}
+            </div>
+            {agreement && (
+              <Link
+                href={`/bookings/${booking.id}/agreement`}
+                className="shrink-0 inline-flex items-center gap-1.5 px-3 py-1.5 bg-blue-600 hover:bg-blue-500 text-white text-xs font-semibold rounded-lg transition-colors"
+              >
+                {agreement.renter_accepted_at ? "View agreement" : "Read & accept"}
+              </Link>
+            )}
+          </div>
+        </div>
+      )}
+
+      {/* Consent-based document sharing (migration 051): only relevant once the
+          agency needs to review the renter before/around handover. Access to
+          the viewer ends at return regardless of this stamp, so the card
+          disappears the moment the booking leaves this status set. */}
+      {["confirmed", "payment_pending", "active"].includes(status) && (
+        <DocumentShareCard
+          bookingId={booking.id}
+          pageName={agency.name}
+          consentGranted={!!booking.doc_share_consent_at}
+          canRevoke={status === "active"}
+        />
+      )}
+
+      {(status === "active" || status === "completed") && pickupInspection && (
+        <div className="bg-white rounded-2xl border border-slate-100 p-4 mb-4">
+          {!pickupInspection.renter_ack_at && (
+            <p className="text-slate-900 font-semibold text-sm mb-3">Review the pickup inspection</p>
+          )}
+          <InspectionFlow
+            mode="review"
+            bookingId={booking.id}
+            phase="pickup"
+            inspection={pickupInspection}
+            depositLkr={depositLkr}
+          />
+        </div>
+      )}
+
+      {(status === "active" || status === "completed") && returnInspection && (
+        <div className="bg-white rounded-2xl border border-slate-100 p-4 mb-4">
+          {!returnInspection.renter_ack_at && (
+            <p className="text-slate-900 font-semibold text-sm mb-3">Review the return inspection</p>
+          )}
+          <InspectionFlow
+            mode="review"
+            bookingId={booking.id}
+            phase="return"
+            inspection={returnInspection}
+            depositLkr={depositLkr}
+            depositReturnAmountLkr={booking.deposit_return_amount_lkr}
+            pickupInspection={pickupInspection}
+          />
+        </div>
       )}
 
       {/* Return handshake, renter reports the car back, agency confirms + completes */}
@@ -414,6 +567,29 @@ export default async function BookingDetailPage({ params, searchParams }: Props)
         </div>
       )}
 
+      {status === "disputed" && (
+        <div className="bg-red-500/10 border border-red-500/20 rounded-2xl p-4 mb-4">
+          <div className="flex items-start gap-3">
+            <ShieldAlert size={18} className="text-red-500 mt-0.5 shrink-0" />
+            <div className="flex-1">
+              <p className="text-red-500 font-semibold text-sm">Under review, our team is on it</p>
+              <p className="text-slate-600 text-sm mt-1 mb-3">
+                A problem was reported on this booking. It&apos;s paused while DriveLink looks into it,
+                you&apos;ll hear from us with an update.
+              </p>
+              <a
+                href={whatsappLink(`Hi DriveLink, I have a question about my booking ${bookingRef}.`)}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-blue-600 hover:bg-blue-700 text-white text-xs font-semibold rounded-lg transition-colors"
+              >
+                <WhatsAppIcon size={14} /> WhatsApp {siteConfig.whatsappDisplay}
+              </a>
+            </div>
+          </div>
+        </div>
+      )}
+
       {status === "completed" && (
         <div className="bg-white rounded-2xl border border-slate-100 p-4 mb-4">
           {existingReview ? (
@@ -438,6 +614,15 @@ export default async function BookingDetailPage({ params, searchParams }: Props)
           )}
         </div>
       )}
+
+      <div className="mt-2">
+        <ReportProblemButton
+          bookingId={booking.id}
+          bookingStatus={booking.status}
+          completedAt={booking.completed_at}
+          side="renter"
+        />
+      </div>
     </div>
   );
 }
