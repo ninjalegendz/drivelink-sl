@@ -1,7 +1,7 @@
 "use client";
 
 import { Suspense, useEffect, useRef, useState } from "react";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { ArrowLeft, Phone, Mail, Sparkles } from "lucide-react";
 import { Button } from "@/components/ui/Button";
@@ -22,12 +22,14 @@ function maskPhone(value: string): string {
 // choice at signup anymore.
 function SignupForm() {
   const router = useRouter();
+  const params = useSearchParams();
 
   const [stage,    setStage]    = useState<Stage>("details");
   const [fullName, setFullName] = useState("");
   const [address,  setAddress]  = useState("");
-  const [phone,    setPhone]    = useState("");
-  const [email,    setEmail]    = useState("");
+  // Prefill from a login → signup handoff ("no account, create one").
+  const [phone,    setPhone]    = useState(() => params.get("phone") ?? "");
+  const [email,    setEmail]    = useState(() => params.get("email") ?? "");
   const [code,     setCode]     = useState("");
   const [loading,  setLoading]  = useState(false);
   const [error,    setError]    = useState<string | null>(null);

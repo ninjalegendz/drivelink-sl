@@ -14,9 +14,13 @@ import { sendEmail } from "@/lib/email/send";
 // POST /api/auth/login/send-code  body: { identifier: string }
 //
 // Resolves the identifier (email or phone), generates a 6-digit OTP, stores
-// its hash on the profile, and ships it through the matching channel. The
-// response is intentionally vague about whether an account exists, flooding
-// stops at rate limiting, not enumeration error messages.
+// its hash on the profile, and ships it through the matching channel.
+//
+// When no account matches we say so plainly (accountNotFound), rather than
+// faking a "code sent" screen the user would wait at forever. The signup
+// flow already reveals whether a number/email is registered, so hiding it
+// here only confused legitimate users, it never actually prevented
+// enumeration. Flooding is still bounded by the resend cooldown below.
 export async function POST(req: NextRequest) {
   const { identifier } = (await req.json().catch(() => ({}))) as { identifier?: string };
   if (!identifier || identifier.trim().length < 3) {
@@ -27,9 +31,17 @@ export async function POST(req: NextRequest) {
   const service = await createServiceClient();
   const identity = await resolveIdentifier(service, identifier);
 
-  // Account doesn't exist, pretend we sent something. Same UX, no leak.
+  // No account → tell them, and let the UI offer to create one.
   if (!identity) {
-    return NextResponse.json({ ok: true, channel: channelHint });
+    return NextResponse.json(
+      {
+        accountNotFound: true,
+        error: channelHint === "email"
+          ? "No DriveLink account uses that email. Create an account to continue."
+          : "No DriveLink account uses that number. Create an account to continue.",
+      },
+      { status: 404 },
+    );
   }
 
   // Email entered but the email address isn't verified yet → mail them a

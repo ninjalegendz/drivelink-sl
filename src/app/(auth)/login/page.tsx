@@ -46,9 +46,18 @@ function LoginForm() {
   const identifier = method === "phone" ? phone : email.trim();
   const [loading,    setLoading]    = useState(false);
   const [error,      setError]      = useState<string | null>(null);
+  const [accountMissing, setAccountMissing] = useState(false);
   const [info,       setInfo]       = useState<string | null>(null);
   const [cooldown,   setCooldown]   = useState(0); // seconds until resend allowed
   const codeRef = useRef<HTMLInputElement>(null);
+
+  // Carry the typed identifier over to signup so they don't retype it.
+  const signupHref =
+    method === "email" && email.trim()
+      ? `/signup?email=${encodeURIComponent(email.trim())}`
+      : method === "phone" && phone
+        ? `/signup?phone=${encodeURIComponent(phone)}`
+        : "/signup";
 
   // Tick the resend cooldown down by 1s
   useEffect(() => {
@@ -81,7 +90,7 @@ function LoginForm() {
       return;
     }
 
-    setLoading(true); setError(null); setInfo(null);
+    setLoading(true); setError(null); setInfo(null); setAccountMissing(false);
     setChannel(method);
 
     const res = await fetch("/api/auth/login/send-code", {
@@ -91,6 +100,13 @@ function LoginForm() {
     });
     const payload = await res.json().catch(() => ({}));
     setLoading(false);
+
+    // No account with this number/email → prompt to create one instead of
+    // parking them at a code screen that never fills.
+    if (payload.accountNotFound) {
+      setAccountMissing(true);
+      return;
+    }
 
     if (!res.ok) {
       setError(payload.error ?? "Couldn't send the code.");
@@ -147,7 +163,7 @@ function LoginForm() {
               <button
                 key={m}
                 type="button"
-                onClick={() => { setMethod(m); setError(null); }}
+                onClick={() => { setMethod(m); setError(null); setAccountMissing(false); }}
                 className={`spring-press flex items-center justify-center gap-1.5 py-2 rounded-lg text-sm font-medium transition-colors ${
                   method === m ? "bg-white text-slate-900 shadow-sm" : "text-slate-500 hover:text-slate-700"
                 }`}
@@ -162,7 +178,7 @@ function LoginForm() {
             {method === "phone" ? (
               <>
                 <label className="text-slate-600 text-xs mb-1 block">Phone number</label>
-                <PhoneInput value={phone} onChange={setPhone} autoFocus required />
+                <PhoneInput value={phone} onChange={(v) => { setPhone(v); setAccountMissing(false); }} autoFocus required />
               </>
             ) : (
               <>
@@ -170,7 +186,7 @@ function LoginForm() {
                 <input
                   type="email"
                   value={email}
-                  onChange={(e) => setEmail(e.target.value)}
+                  onChange={(e) => { setEmail(e.target.value); setAccountMissing(false); }}
                   required
                   autoFocus
                   autoComplete="email"
@@ -186,9 +202,28 @@ function LoginForm() {
 
           {error && <p className="text-red-400 text-sm">{error}</p>}
 
-          <Button type="submit" loading={loading} className="w-full" size="lg">
-            Send code
-          </Button>
+          {accountMissing ? (
+            <div className="p-4 bg-blue-50 border border-blue-200 rounded-xl space-y-3">
+              <p className="text-slate-700 text-sm">
+                No DriveLink account uses that {method === "email" ? "email" : "number"}. Create one to continue —
+                it takes about a minute.
+              </p>
+              <Link href={signupHref} className="block">
+                <Button type="button" className="w-full" size="lg">Create an account</Button>
+              </Link>
+              <button
+                type="button"
+                onClick={() => setAccountMissing(false)}
+                className="text-slate-500 hover:text-slate-700 text-xs w-full text-center"
+              >
+                Try a different {method === "email" ? "email" : "number"}
+              </button>
+            </div>
+          ) : (
+            <Button type="submit" loading={loading} className="w-full" size="lg">
+              Send code
+            </Button>
+          )}
         </form>
       )}
 

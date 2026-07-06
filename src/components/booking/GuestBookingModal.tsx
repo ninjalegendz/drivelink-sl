@@ -171,6 +171,19 @@ export function GuestBookingModal({ draft, onClose }: Props) {
     const payload = await res.json().catch(() => ({}));
     setLoading(false);
 
+    // No account with this number/email → flip this modal to its signup tab,
+    // carrying over what they already typed, instead of a dead code screen.
+    if (payload.accountNotFound) {
+      if (loginMethod === "email") {
+        setEmail(identifier.trim());
+        setIdentifier("");
+      } // phone stays in `identifier`, which signup mode reads as the phone
+      setMode("signup");
+      setError(null);
+      setInfo(`No account with that ${loginMethod === "email" ? "email" : "number"} — create one below to continue.`);
+      return;
+    }
+
     if (!res.ok) {
       setError(payload.error ?? "Couldn't send the code.");
       if (payload.waitSec) setCooldown(payload.waitSec);
@@ -429,6 +442,7 @@ export function GuestBookingModal({ draft, onClose }: Props) {
                   </div>
                 )}
 
+                {info  && <p className="text-blue-600 text-xs">{info}</p>}
                 {error && <p className="text-red-400 text-sm">{error}</p>}
 
                 <Button type="submit" loading={loading} className="w-full">
