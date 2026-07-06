@@ -5,7 +5,9 @@ import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { ArrowLeft, Mail, Phone } from "lucide-react";
 import { Button } from "@/components/ui/Button";
+import { PhoneInput } from "@/components/ui/PhoneInput";
 import { isValidSLPhone, toLocalSL } from "@/lib/auth/phone-format";
+import { isEmailLike } from "@/lib/auth/identifier";
 
 type Stage   = "identifier" | "code" | "verify_link_sent";
 type Channel = "email" | "phone";
@@ -24,20 +26,23 @@ function maskIdentifier(value: string, channel: Channel): string {
   return `${local.slice(0, 3)} *** *${local.slice(-3)}`;
 }
 
-function detectChannel(value: string): Channel {
-  return value.includes("@") ? "email" : "phone";
-}
-
 function LoginForm() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const next = searchParams.get("next");
 
   const [stage,      setStage]      = useState<Stage>("identifier");
-  const [identifier, setIdentifier] = useState("");
+  // The renter picks which credential to use; phone gets the country-code
+  // picker, email gets a plain field. Whichever is active becomes the
+  // `identifier` the backend resolves (it accepts either).
+  const [method,     setMethod]     = useState<Channel>("phone");
+  const [phone,      setPhone]      = useState("");
+  const [email,      setEmail]      = useState("");
   const [code,       setCode]       = useState("");
   const [channel,    setChannel]    = useState<Channel>("phone");
   const [deliveredVia, setDeliveredVia] = useState<string | null>(null);
+
+  const identifier = method === "phone" ? phone : email.trim();
   const [loading,    setLoading]    = useState(false);
   const [error,      setError]      = useState<string | null>(null);
   const [info,       setInfo]       = useState<string | null>(null);
@@ -65,16 +70,18 @@ function LoginForm() {
   async function sendCode(e?: React.FormEvent) {
     e?.preventDefault();
 
-    // Local-format validation for phone path. Email path defers to backend.
     const trimmed = identifier.trim();
-    const ch = detectChannel(trimmed);
-    if (ch === "phone" && !isValidSLPhone(trimmed)) {
-      setError("Enter a valid mobile number. For a non-Sri-Lankan number, include the country code (e.g. +44 7911 123456).");
+    if (method === "phone" && !isValidSLPhone(trimmed)) {
+      setError("Enter a valid mobile number.");
+      return;
+    }
+    if (method === "email" && !isEmailLike(trimmed)) {
+      setError("Enter a valid email address.");
       return;
     }
 
     setLoading(true); setError(null); setInfo(null);
-    setChannel(ch);
+    setChannel(method);
 
     const res = await fetch("/api/auth/login/send-code", {
       method:  "POST",
@@ -133,18 +140,44 @@ function LoginForm() {
       {/* Stage 1, identifier */}
       {stage === "identifier" && (
         <form onSubmit={sendCode} className="space-y-4">
+          {/* Phone vs email chooser, phone first (the primary SL channel). */}
+          <div className="grid grid-cols-2 gap-1 p-1 bg-slate-100 rounded-xl">
+            {(["phone", "email"] as const).map((m) => (
+              <button
+                key={m}
+                type="button"
+                onClick={() => { setMethod(m); setError(null); }}
+                className={`spring-press flex items-center justify-center gap-1.5 py-2 rounded-lg text-sm font-medium transition-colors ${
+                  method === m ? "bg-white text-slate-900 shadow-sm" : "text-slate-500 hover:text-slate-700"
+                }`}
+              >
+                {m === "phone" ? <Phone size={14} /> : <Mail size={14} />}
+                {m === "phone" ? "Phone" : "Email"}
+              </button>
+            ))}
+          </div>
+
           <div>
-            <label className="text-slate-600 text-xs mb-1 block">Email or phone number</label>
-            <input
-              type="text"
-              value={identifier}
-              onChange={(e) => setIdentifier(e.target.value)}
-              required
-              autoFocus
-              autoComplete="username"
-              placeholder="you@example.com or +94 77 123 4567"
-              className="w-full px-4 py-2.5 bg-slate-100 border border-slate-200 rounded-xl text-slate-900 placeholder-slate-400 text-sm focus:outline-none focus:border-blue-500"
-            />
+            {method === "phone" ? (
+              <>
+                <label className="text-slate-600 text-xs mb-1 block">Phone number</label>
+                <PhoneInput value={phone} onChange={setPhone} autoFocus required />
+              </>
+            ) : (
+              <>
+                <label className="text-slate-600 text-xs mb-1 block">Email address</label>
+                <input
+                  type="email"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  required
+                  autoFocus
+                  autoComplete="email"
+                  placeholder="you@example.com"
+                  className="w-full px-4 py-2.5 bg-slate-100 border border-slate-200 rounded-xl text-slate-900 placeholder-slate-400 text-sm focus:outline-none focus:border-blue-500"
+                />
+              </>
+            )}
             <p className="text-slate-400 text-xs mt-1.5">
               We&apos;ll send you a 6-digit code. No password required.
             </p>
@@ -237,7 +270,7 @@ function LoginForm() {
             type="button"
             variant="secondary"
             className="w-full"
-            onClick={() => { setStage("identifier"); setIdentifier(""); setError(null); }}
+            onClick={() => { setMethod("phone"); setStage("identifier"); setEmail(""); setError(null); }}
           >
             <Phone size={14} /> Use phone number
           </Button>

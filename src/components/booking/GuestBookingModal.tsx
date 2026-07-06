@@ -6,6 +6,7 @@ import { ArrowLeft, Phone, X, Mail, Sparkles, Check } from "lucide-react";
 import { Button } from "@/components/ui/Button";
 import { PhoneInput } from "@/components/ui/PhoneInput";
 import { isValidSLPhone, toLocalSL } from "@/lib/auth/phone-format";
+import { isEmailLike } from "@/lib/auth/identifier";
 import { formatLKR } from "@/lib/vehicles/format";
 
 type Mode  = "signup" | "login";
@@ -45,6 +46,7 @@ function maskEmail(value: string): string {
 export function GuestBookingModal({ draft, onClose }: Props) {
   const router = useRouter();
   const [mode,   setMode]   = useState<Mode>("signup");
+  const [loginMethod, setLoginMethod] = useState<"phone" | "email">("phone");
   const [stage,  setStage]  = useState<Stage>("identity");
 
   // Shared form state
@@ -142,11 +144,11 @@ export function GuestBookingModal({ draft, onClose }: Props) {
   }
 
   async function startLogin() {
-    if (!identifier.trim()) { setError("Enter your email or phone number."); return; }
-    const isEmail = identifier.includes("@");
-    if (!isEmail && !isValidSLPhone(identifier)) {
-      setError("Enter a valid mobile number. For a non-Sri-Lankan number, include the country code (e.g. +44 7911 123456).");
-      return;
+    if (loginMethod === "phone" && !isValidSLPhone(identifier)) {
+      setError("Enter a valid mobile number."); return;
+    }
+    if (loginMethod === "email" && !isEmailLike(identifier.trim())) {
+      setError("Enter a valid email address."); return;
     }
 
     setLoading(true); setError(null); setInfo(null);
@@ -170,7 +172,7 @@ export function GuestBookingModal({ draft, onClose }: Props) {
       return;
     }
 
-    if (isEmail) {
+    if (loginMethod === "email") {
       setEmailForOtp(identifier.trim());
       setOtpChannel("email");
     } else {
@@ -369,18 +371,36 @@ export function GuestBookingModal({ draft, onClose }: Props) {
                 )}
 
                 {mode === "login" && (
-                  <div>
-                    <label className="text-slate-600 text-xs mb-1 block">Email or phone number</label>
-                    <input
-                      type="text"
-                      value={identifier}
-                      onChange={(e) => setIdentifier(e.target.value)}
-                      required
-                      autoFocus
-                      autoComplete="username"
-                      placeholder="you@example.com  or  0771234567"
-                      className="w-full px-3 py-2 bg-slate-100 border border-slate-200 rounded-lg text-slate-900 placeholder-slate-400 text-sm focus:outline-none focus:border-blue-500"
-                    />
+                  <div className="space-y-2">
+                    <div className="grid grid-cols-2 gap-1 p-1 bg-slate-100 rounded-lg">
+                      {(["phone", "email"] as const).map((m) => (
+                        <button
+                          key={m}
+                          type="button"
+                          onClick={() => { setLoginMethod(m); setIdentifier(""); setError(null); }}
+                          className={`spring-press flex items-center justify-center gap-1.5 py-1.5 rounded-md text-xs font-medium transition-colors ${
+                            loginMethod === m ? "bg-white text-slate-900 shadow-sm" : "text-slate-500 hover:text-slate-700"
+                          }`}
+                        >
+                          {m === "phone" ? <Phone size={13} /> : <Mail size={13} />}
+                          {m === "phone" ? "Phone" : "Email"}
+                        </button>
+                      ))}
+                    </div>
+                    {loginMethod === "phone" ? (
+                      <PhoneInput value={identifier} onChange={setIdentifier} autoFocus required />
+                    ) : (
+                      <input
+                        type="email"
+                        value={identifier}
+                        onChange={(e) => setIdentifier(e.target.value)}
+                        required
+                        autoFocus
+                        autoComplete="email"
+                        placeholder="you@example.com"
+                        className="w-full px-3 py-2 bg-slate-100 border border-slate-200 rounded-lg text-slate-900 placeholder-slate-400 text-sm focus:outline-none focus:border-blue-500"
+                      />
+                    )}
                   </div>
                 )}
 
