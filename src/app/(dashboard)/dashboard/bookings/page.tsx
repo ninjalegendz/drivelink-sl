@@ -69,6 +69,7 @@ export default async function AgencyBookingsPage({ searchParams }: Props) {
       <AgencyBookingsList
         initial={bookings}
         agencyId={agency.id}
+        currentUserId={user.id}
         filterStatus={(filterStatus ?? "") as BookingStatus | ""}
         reviewedBookingIds={reviewedBookingIds}
       />

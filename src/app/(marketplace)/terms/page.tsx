@@ -5,7 +5,7 @@ import { siteConfig, whatsappLink } from "@/lib/site-config";
 
 export const metadata: Metadata = {
   title: "Terms of Service",
-  description: "Terms of service for renters and vehicle-rental agencies using DriveLink SL.",
+  description: "Terms of service for renters and Rental Page owners using DriveLink SL.",
 };
 
 export default function TermsPage() {
@@ -33,12 +33,12 @@ export default function TermsPage() {
         <section>
           <h2 className="text-xl font-semibold text-slate-900 mb-2">2. What DriveLink is</h2>
           <p>
-            DriveLink is a marketplace connecting individuals who wish to rent vehicles
-            (&quot;Renters&quot;) with independent vehicle-rental businesses (&quot;Agencies&quot;).
-            DriveLink does not own vehicles, employ drivers, or provide rental services
-            directly. We facilitate discovery, booking requests and identity verification -
-            the actual rental contract, payment and deposit are agreed directly between the
-            Renter and the Agency.
+            DriveLink is a marketplace connecting individuals and businesses who wish to rent vehicles
+            (&quot;Renters&quot;) with vehicle owners and businesses who create Rental Pages to offer their
+            vehicles (&quot;Owners&quot;). DriveLink does not own vehicles, employ drivers, or provide rental
+            services directly. We are a venue and record-keeper only. The actual rental contract, payment,
+            deposit, and every dispute is between the Renter and the Owner. DriveLink is never a party to
+            the rental.
           </p>
         </section>
 
@@ -50,8 +50,9 @@ export default function TermsPage() {
                 information is grounds for permanent account termination.</li>
             <li>You are responsible for keeping your account credentials secure.</li>
             <li>Renters must complete ID verification (via Didit, our third-party verifier)
-                before placing certain bookings.</li>
-            <li>Agencies must complete admin verification before vehicles are listed publicly.</li>
+                before booking.</li>
+            <li>Owners must complete admin verification and provide vehicle documents (registration,
+                insurance) before vehicles are listed publicly.</li>
           </ul>
         </section>
 
@@ -66,13 +67,13 @@ export default function TermsPage() {
             In summary:
           </p>
           <ul className="list-disc pl-5 space-y-1 mt-2">
+            <li><strong>Listing vehicles is free forever.</strong> No listing fee, no monthly fee.</li>
             <li><strong>During our launch period, DriveLink charges no platform fees:</strong>
-                no booking fee for Renters and no commission or listing fee for Agencies.</li>
-            <li>The rental price, security deposit and any extras are set by the Agency and paid
-                by the Renter directly to the Agency. DriveLink does not collect or hold these funds.</li>
-            <li>We may introduce optional paid features (such as featured listings or a booking
-                commission) in future. Any such change will be announced in advance and reflected
-                on the <Link href="/pricing" className="text-blue-700 hover:text-blue-700 font-medium">pricing page</Link>.</li>
+                no booking fee for Renters and no commission for Owners.</li>
+            <li>The rental price and security deposit are set by the Owner and paid by the Renter
+                directly to the Owner. DriveLink does not collect or hold rental funds or deposits.</li>
+            <li>In future, we will introduce a per-Rental-Page success fee (after a free launch period),
+                charged only on completed bookings. This change will be announced in advance.</li>
             <li>All amounts are in Sri Lankan Rupees (LKR).</li>
           </ul>
         </section>
@@ -80,19 +81,22 @@ export default function TermsPage() {
         <section>
           <h2 className="text-xl font-semibold text-slate-900 mb-2">6. Liability and disputes</h2>
           <p>
-            DriveLink is a technology platform, not the renting party. We do not warrant that any
-            specific Agency will perform a rental satisfactorily, nor do we accept liability for:
+            DriveLink provides the platform, booking records, and digital rental agreements
+            &quot;as is&quot;. We are not a party to any rental and do not accept liability for:
           </p>
           <ul className="list-disc pl-5 space-y-1 mt-2">
             <li>Vehicle defects, breakdowns, or accidents during the rental period.</li>
-            <li>Disputes over deposits, damages, fuel, or excess charges between Renter and Agency.</li>
+            <li>Disputes over deposits, damages, fuel, or excess charges between Renter and Owner.</li>
             <li>Loss or damage to personal property left in vehicles.</li>
             <li>Traffic infractions, penalties, or legal proceedings arising from Renter conduct.</li>
+            <li>Insurance claims or legal liability of the Owner.</li>
           </ul>
           <p className="mt-3">
-            We assist with disputes between Renters and Agencies on a best-effort basis through
-            the platform&apos;s support function but do not adjudicate them. We may temporarily
-            withhold payouts or suspend accounts during a good-faith dispute investigation.
+            <strong>Mediation-first disputes:</strong> If a problem arises, report it through
+            the platform. DriveLink will gather evidence (messages, inspection photos, documents)
+            and offer a written resolution. We do not make money judgments or award damages.
+            Actions include: written resolution guidance, reliability score adjustments, or
+            account suspension / blacklisting if fraud or abuse is found.
           </p>
         </section>
 

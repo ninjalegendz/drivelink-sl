@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { createClient, createServiceClient } from "@/lib/supabase/server";
 import { notifyCascade } from "@/lib/notify";
 import { runAfterResponse } from "@/lib/after-response";
+import { createAgreementSnapshot } from "@/lib/booking/agreement-snapshot";
 import {
   buildRenterConfirmedMessage,
   buildRenterDeclinedMessage,
@@ -98,7 +99,9 @@ export async function POST(req: NextRequest) {
   if (to === "confirmed") update.confirmed_at = now;
   if (to === "declined")  update.declined_at  = now;
   if (to === "completed") { update.completed_at = now; update.return_confirmed_at = now; }
-  if (to === "cancelled") update.cancelled_at = now;
+  // 'system' so an admin/ops cancellation never ticks the page's
+  // cancellation_count (the 053 trigger only counts cancelled_by='page').
+  if (to === "cancelled") { update.cancelled_at = now; update.cancelled_by = "system"; }
 
   const { error: updateError } = await service
     .from("bookings")
@@ -108,6 +111,12 @@ export async function POST(req: NextRequest) {
   if (updateError) {
     console.error("[admin booking transition]", updateError);
     return NextResponse.json({ error: updateError.message }, { status: 500 });
+  }
+
+  // Same agreement snapshot as the owner-confirm path, admin confirms on
+  // the page's behalf and the renter still needs a signed agreement.
+  if (to === "confirmed") {
+    runAfterResponse(createAgreementSnapshot(body.bookingId));
   }
 
   // Close out the incident report(s) alongside the booking transition.

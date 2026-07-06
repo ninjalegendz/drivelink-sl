@@ -34,6 +34,8 @@ export interface AgencyBookingRow {
   doc_share_consent_at: string | null;
   /** Set by the overdue cron ladder once a return is 24h+ overdue (migration 051/052); gates page-side renter reporting. */
   overdue_critical_at: string | null;
+  /** Page-side read cursor for the booking chat (migration 054). */
+  page_msgs_read_at: string | null;
   vehicles: { make: string; model: string; year: number; plate_number: string | null; deposit_lkr: number } | null;
   profiles: {
     full_name:               string;
@@ -52,11 +54,19 @@ export interface AgencyBookingRow {
    * shape in the type too and normalize at the call site to stay version-proof.
    */
   booking_agreements: AgreementAcceptance | AgreementAcceptance[] | null;
+  /**
+   * Chat metadata for the unread dot (migration 054): sender + timestamp only,
+   * no bodies. PostgREST can't LIMIT an embed from inside the select string,
+   * so this rides the parent query's own limit and stays cheap because it's
+   * two small columns; full messages load lazily when the chat modal opens.
+   */
+  booking_messages: { sender_id: string; created_at: string }[] | null;
 }
 
 export const AGENCY_BOOKINGS_SELECT =
-  "id, renter_id, status, start_date, end_date, start_time, end_time, start_at, total_days, subtotal_lkr, created_at, renter_returned_at, completed_at, deposit_lkr, doc_share_consent_at, overdue_critical_at, " +
+  "id, renter_id, status, start_date, end_date, start_time, end_time, start_at, total_days, subtotal_lkr, created_at, renter_returned_at, completed_at, deposit_lkr, doc_share_consent_at, overdue_critical_at, page_msgs_read_at, " +
   "vehicles(make, model, year, plate_number, deposit_lkr), " +
   "profiles(full_name, rating_avg, rating_count, reliability_pct, kyc_status, is_blacklisted, blacklist_reason_public), " +
   `booking_inspections(${INSPECTIONS_SELECT}), ` +
-  "booking_agreements(renter_accepted_at, owner_accepted_at)";
+  "booking_agreements(renter_accepted_at, owner_accepted_at), " +
+  "booking_messages(sender_id, created_at)";

@@ -11,6 +11,7 @@ import { WhatsAppIcon } from "@/components/icons/WhatsAppIcon";
 import { CancelBookingButton } from "@/components/booking/CancelBookingButton";
 import { PaymentExpiryCountdown } from "@/components/booking/PaymentExpiryCountdown";
 import { ReportProblemButton } from "@/components/booking/ReportProblemButton";
+import { BookingMessagesCard, type BookingMessage } from "@/components/booking/BookingChat";
 import { DocumentShareCard } from "@/components/booking/DocumentShareCard";
 import { BookingRefresher } from "@/components/realtime/BookingRefresher";
 import { BOOKING_STATUS_LABELS } from "@/lib/booking/state-machine";
@@ -181,6 +182,28 @@ export default async function BookingDetailPage({ params, searchParams }: Props)
   const bookingActive   = status === "active" || (status === "confirmed" && isFree);
   const contactUnlocked = bookingActive && verified;
   const showTracker     = !["declined", "cancelled", "completed", "disputed"].includes(status);
+
+  // Booking-scoped chat with the Rental Page (migration 054). Read directly
+  // under the party RLS policy. Unread = messages from the other party newer
+  // than this renter's read cursor (renter_msgs_read_at, stamped by the
+  // messages GET/POST route — rendering this page does NOT mark them read,
+  // only opening the chat does).
+  const { data: messageRows } = await supabase
+    .from("booking_messages")
+    .select("id, booking_id, sender_id, body, created_at")
+    .eq("booking_id", booking.id)
+    .order("created_at", { ascending: true })
+    .limit(500);
+  const messages = (messageRows ?? []) as BookingMessage[];
+  const renterMsgsReadAt = (booking as { renter_msgs_read_at?: string | null }).renter_msgs_read_at ?? null;
+  const msgsReadMs       = renterMsgsReadAt ? Date.parse(renterMsgsReadAt) : 0;
+  const unreadMessages   = messages.filter(
+    (m) => m.sender_id !== user.id && Date.parse(m.created_at) > msgsReadMs,
+  ).length;
+  // Read-only once the booking is finished; hide entirely on a dead booking
+  // with no history to show.
+  const chatReadOnly = ["completed", "declined", "cancelled"].includes(status);
+  const showMessages = !chatReadOnly || messages.length > 0;
 
   // Has the renter already reviewed this booking?
   const { data: existingReview } = await supabase
@@ -396,6 +419,23 @@ export default async function BookingDetailPage({ params, searchParams }: Props)
             </div>
           </div>
         </div>
+      )}
+
+      {/* Booking-scoped messages with the Rental Page. Complements the
+          call/WhatsApp contact above (once unlocked) — this thread stays on
+          the record for dispute resolution. */}
+      {showMessages && (
+        <BookingMessagesCard
+          bookingId={booking.id}
+          currentUserId={user.id}
+          counterpartyName={agency.name}
+          initialMessages={messages}
+          unreadCount={unreadMessages}
+          readOnly={chatReadOnly}
+          closedNote={status === "completed"
+            ? "This conversation is closed — the booking is complete."
+            : "This conversation is closed."}
+        />
       )}
 
       {/* Digital rental agreement, created when the owner confirms. */}

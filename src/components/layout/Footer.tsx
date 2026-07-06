@@ -7,7 +7,7 @@ import { siteConfig, whatsappLink } from "@/lib/site-config";
 export function Footer() {
   return (
     <footer className="bg-slate-950 text-white border-t border-slate-900 py-12 px-4 md:px-8 mt-16">
-      <div className="max-w-7xl mx-auto grid grid-cols-1 md:grid-cols-4 gap-8 text-xs text-slate-400">
+      <div className="max-w-7xl mx-auto grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-8 text-xs text-slate-400">
         <div className="space-y-3">
           <div className="flex items-center gap-2">
             <Image src="/logo-mark-light.png" alt="DriveLink logo" width={516} height={1003} unoptimized className="h-9 w-auto shrink-0" />
@@ -30,12 +30,21 @@ export function Footer() {
         </div>
 
         <div className="space-y-2">
-          <h4 className="font-bold text-white uppercase tracking-wider">List &amp; Verify</h4>
+          <h4 className="font-bold text-white uppercase tracking-wider">Guides &amp; Policies</h4>
           <ul className="space-y-1.5 font-medium">
-            <li><Link href="/signup?intent=provider" className="hover:text-white transition-colors">List Your Vehicle{siteConfig.freeLaunch ? " (0% Fee)" : ""}</Link></li>
+            <li><Link href="/guides/wear-vs-damage" className="hover:text-white transition-colors">Wear vs. Damage</Link></li>
+            <li><Link href="/guides/accident-protocol" className="hover:text-white transition-colors">Accident Protocol</Link></li>
+            <li><Link href="/terms" className="hover:text-white transition-colors">Terms of Service</Link></li>
+            <li><Link href="/privacy" className="hover:text-white transition-colors">Privacy Policy</Link></li>
+          </ul>
+        </div>
+
+        <div className="space-y-2">
+          <h4 className="font-bold text-white uppercase tracking-wider">List Your Vehicle</h4>
+          <ul className="space-y-1.5 font-medium">
+            <li><Link href="/signup?intent=provider" className="hover:text-white transition-colors">Create a Rental Page{siteConfig.freeLaunch ? " (Free)" : ""}</Link></li>
             <li><Link href="/pricing" className="hover:text-white transition-colors">How Pricing Works</Link></li>
-            <li><Link href="/faq" className="hover:text-white transition-colors">Verification &amp; Badges</Link></li>
-            <li><Link href="/terms" className="hover:text-white transition-colors">Provider Terms</Link></li>
+            <li><Link href="/faq" className="hover:text-white transition-colors">FAQ</Link></li>
           </ul>
         </div>
 

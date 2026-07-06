@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 import { getActivePage } from "@/lib/pages/active-page";
-import { buildKey, getPresignedPutUrl, getPublicUrl, type StoragePrefix } from "@/lib/storage/r2";
+import { buildKey, getPresignedPutUrl, getDocUrl, type StoragePrefix } from "@/lib/storage/r2";
 
 // POST /api/storage/sign
 // body: { prefix: StoragePrefix, filename: string, contentType: string }
@@ -68,7 +68,9 @@ export async function POST(req: NextRequest) {
   return NextResponse.json({
     key,
     putUrl,
-    publicUrl: getPublicUrl(key),
+    // Proxy URL for private prefixes (kyc, vehicle-docs) — the stored URL
+    // is only fetchable through /api/docs with a session; CDN URL otherwise.
+    publicUrl: getDocUrl(key),
     maxBytesHint: MAX_BYTES_HINT,
   });
 }

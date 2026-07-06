@@ -9,6 +9,7 @@ import { ReviewForm } from "@/components/booking/ReviewForm";
 import { AgencyBookingActions } from "@/components/booking/AgencyBookingActions";
 import { ReportProblemButton } from "@/components/booking/ReportProblemButton";
 import { ReportRenterButton } from "@/components/booking/ReportRenterButton";
+import { MessageRenterButton } from "@/components/booking/BookingChat";
 import { InspectionFlow } from "@/components/booking/InspectionFlow";
 import { BOOKING_STATUS_LABELS } from "@/lib/booking/state-machine";
 import { formatLKR, reliabilityColor, reliabilityLabel } from "@/lib/vehicles/format";
@@ -33,12 +34,14 @@ const statusVariant: Record<BookingStatus, "slate" | "yellow" | "green" | "red" 
 interface Props {
   initial:             AgencyBookingRow[];
   agencyId:            string;
+  /** The page owner's user id, for the booking chat (who "mine" is). */
+  currentUserId:       string;
   filterStatus:        BookingStatus | "";
   /** Booking ids this agency has already reviewed the renter for. */
   reviewedBookingIds?: string[];
 }
 
-export function AgencyBookingsList({ initial, agencyId, filterStatus, reviewedBookingIds = [] }: Props) {
+export function AgencyBookingsList({ initial, agencyId, currentUserId, filterStatus, reviewedBookingIds = [] }: Props) {
   const poll = useCallback(async () => {
     const supabase = createClient();
     let query = supabase
@@ -81,6 +84,15 @@ export function AgencyBookingsList({ initial, agencyId, filterStatus, reviewedBo
         // One-to-one embed usually arrives as an object; normalize either way.
         const agRaw     = booking.booking_agreements;
         const agreement = Array.isArray(agRaw) ? (agRaw[0] ?? null) : agRaw ?? null;
+        // Booking chat (migration 054): unread dot = any renter message newer
+        // than this page's read cursor. Computed from the lightweight
+        // (sender_id, created_at) embed; bodies load when the modal opens.
+        const msgsMeta      = booking.booking_messages ?? [];
+        const msgsReadMs    = booking.page_msgs_read_at ? Date.parse(booking.page_msgs_read_at) : 0;
+        const hasUnreadMsgs = msgsMeta.some(
+          (m) => m.sender_id === booking.renter_id && Date.parse(m.created_at) > msgsReadMs,
+        );
+        const chatClosed = ["completed", "declined", "cancelled"].includes(status);
 
         return (
           <div
@@ -228,6 +240,18 @@ export function AgencyBookingsList({ initial, agencyId, filterStatus, reviewedBo
                       onClick={() => setOpenInspection({ booking, phase: "return" })}
                     />
                   </div>
+                )}
+                {(!chatClosed || msgsMeta.length > 0) && (
+                  <MessageRenterButton
+                    bookingId={booking.id}
+                    currentUserId={currentUserId}
+                    renterName={renter?.full_name ?? "Renter"}
+                    hasUnread={hasUnreadMsgs}
+                    readOnly={chatClosed}
+                    closedNote={status === "completed"
+                      ? "This conversation is closed — the booking is complete."
+                      : "This conversation is closed."}
+                  />
                 )}
                 <ReportProblemButton
                   bookingId={booking.id}

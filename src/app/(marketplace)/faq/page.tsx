@@ -126,9 +126,9 @@ const AGENCY_FAQS: QA[] = [
     q: "What does it cost to list?",
     a: (
       <>
-        Nothing during our launch period. Listing vehicles, receiving requests, and using the
-        dashboard is free, with <strong>zero commission</strong> on bookings, no monthly
-        subscription and no per-listing fee. Just list and start receiving requests.
+        Nothing, listing is free forever. Listing vehicles, receiving requests, and using the
+        dashboard cost nothing. During launch there is also <strong>zero commission</strong> on
+        bookings. No monthly fee, no per-listing fee, no surprises.
       </>
     ),
   },
@@ -136,9 +136,10 @@ const AGENCY_FAQS: QA[] = [
     q: "How do I get paid?",
     a: (
       <>
-        Renters pay you <strong>directly</strong>. DriveLink doesn&apos;t hold or process the
-        money during launch. You agree the rental amount, deposit, and method (cash or bank
-        transfer) with the renter once the booking is confirmed and their contact is unlocked.
+        Renters pay you <strong>directly</strong>. DriveLink does not hold or process the money.
+        You agree the rental amount, deposit, and method (cash or bank transfer) with the renter
+        once the booking is confirmed and their contact is unlocked. Set your own payment terms
+        on the listing.
       </>
     ),
   },
@@ -146,9 +147,9 @@ const AGENCY_FAQS: QA[] = [
     q: "How do I know a renter is real?",
     a: (
       <>
-        Every renter goes through ID verification. Their verification status and reliability
-        score show on each request, so renters who&apos;ve cancelled late or ghosted in the past
-        are easy to spot, and you can decline with no penalty.
+        Every renter completes ID verification (Didit). Their verification status and reliability
+        score show on each request, so you can spot renters who have cancelled late or ghosted in
+        the past. You can decline any request with no penalty.
       </>
     ),
   },
@@ -157,9 +158,9 @@ const AGENCY_FAQS: QA[] = [
     a: (
       <>
         Badges like <strong>Verified Owner</strong>, <strong>Documents Checked</strong>, and{" "}
-        <strong>Tourist Friendly</strong> are assigned by our team after we review your details
-        and vehicle documents. Verified, fast-responding listings rank higher and convert more
-        bookings. Submit clear photos and accurate info to qualify.
+        <strong>Tourist Friendly</strong> are assigned by our admin team after we review your ID
+        and vehicle documents. Verified, fast-responding Rental Pages rank higher and get more
+        bookings. Submit clear photos, accurate info, and a valid insurance certificate to qualify.
       </>
     ),
   },
@@ -167,9 +168,10 @@ const AGENCY_FAQS: QA[] = [
     q: "What documents do I need to list a vehicle?",
     a: (
       <>
-        Have your vehicle <strong>registration (CR)</strong> and a valid <strong>insurance</strong>{" "}
-        certificate ready, plus clear photos and your real contact details. Listing a hire-insured
-        vehicle gets you a stronger trust badge and better placement.
+        Have your vehicle <strong>registration (CR)</strong> and a valid <strong>insurance
+        certificate</strong> ready. Take clear photos of the vehicle&apos;s exterior, interior,
+        odometer, and any distinguishing features. Hire-insured vehicles get stronger trust badges
+        and better visibility. We also verify your ID via Didit.
       </>
     ),
   },
@@ -177,9 +179,9 @@ const AGENCY_FAQS: QA[] = [
     q: "How do I get booking requests?",
     a: (
       <>
-        We alert you the moment a request comes in, on the number you registered with, with the
-        vehicle, dates, and a link to your dashboard to confirm or decline. Everything works from
-        the dashboard URL; no separate app needed.
+        The moment a renter sends a request, we alert you via SMS on the number you registered
+        with. The SMS includes the vehicle, dates, renter name, and a link to your dashboard.
+        Confirm or decline from there. Everything works from your dashboard; no separate app needed.
       </>
     ),
   },
@@ -187,10 +189,10 @@ const AGENCY_FAQS: QA[] = [
     q: "Should I offer self-drive, with-driver, or both?",
     a: (
       <>
-        Offering both widens your reach. Tourists who can&apos;t arrange a local permit will book{" "}
-        <strong>with-driver</strong>; confident drivers and longer trips prefer{" "}
-        <strong>self-drive</strong>. Adding <strong>airport pickup</strong> captures arriving
-        travellers. You set which options each vehicle supports when you list it.
+        Offering both widens your reach and bookings. Tourists who can&apos;t arrange an
+        International Driving Permit will book <strong>with-driver</strong>; confident drivers and
+        longer trips prefer <strong>self-drive</strong>. Adding <strong>airport pickup</strong>{" "}
+        captures arriving travellers. You choose which options each vehicle supports when you list it.
       </>
     ),
   },
@@ -198,9 +200,9 @@ const AGENCY_FAQS: QA[] = [
     q: "What if my listing isn't approved?",
     a: (
       <>
-        New listings go through a quick admin review. The most common reasons for rejection are
-        unclear photos, missing information, or unrealistic pricing. We&apos;ll tell you what to
-        fix so you can resubmit.
+        New listings go through a quick admin review. Common reasons for rejection: unclear photos,
+        missing information, or unrealistic pricing. We email you the specific feedback so you can
+        fix it and resubmit. Most approvals take 1-2 days.
       </>
     ),
   },
@@ -208,9 +210,9 @@ const AGENCY_FAQS: QA[] = [
     q: "Can I cancel after confirming?",
     a: (
       <>
-        You can, but it counts against your reliability score and ranking, especially close to the
-        renter&apos;s pickup date. Keep your availability accurate to avoid it. Repeated late
-        cancellations get accounts flagged.
+        You can, but it counts against your reliability score and ranking. Cancellations close to
+        the renter&apos;s pickup date harm your score most. Keep your availability accurate to
+        avoid cancellations. Repeated cancellations may result in penalties or ranking reductions.
       </>
     ),
   },
@@ -266,7 +268,7 @@ export default function FAQPage() {
       <div role="tablist" className="flex gap-1 justify-center mb-8 p-1 bg-white border border-slate-200 rounded-full w-fit mx-auto shadow-sm">
         {([
           { key: "renters",  label: "For renters" },
-          { key: "agencies", label: "For owners" },
+          { key: "agencies", label: "For Rental Page owners" },
         ] as const).map((t) => (
           <button
             key={t.key}

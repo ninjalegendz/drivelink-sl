@@ -100,7 +100,7 @@ export default async function AccountPage({ searchParams }: Props) {
         <div className="p-4 bg-blue-500/10 border border-blue-500/20 rounded-2xl text-sm">
           <p className="text-blue-700 font-semibold mb-1">Welcome to DriveLink!</p>
           <p className="text-slate-600 text-xs leading-relaxed">
-            Your account is live. Verify your ID below to unlock booking, agencies confirm verified
+            Your account is live. Verify your ID below to unlock booking, Rental Page owners confirm verified
             renters faster, and the whole thing takes about 2 minutes.
           </p>
         </div>
@@ -114,7 +114,7 @@ export default async function AccountPage({ searchParams }: Props) {
             <p className="text-slate-700 font-medium">Verify your email for a trust badge</p>
             <p className="text-slate-500 mt-0.5">
               We&apos;ve sent a link to <span className="font-mono">{profile.email}</span>. Clicking it
-              adds a verified badge to your profile that helps agencies confirm bookings faster. Optional.
+              adds a verified badge to your profile that helps Rental Page owners confirm bookings faster. Optional.
             </p>
           </div>
         </div>
