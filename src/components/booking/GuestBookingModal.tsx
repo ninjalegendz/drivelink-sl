@@ -8,6 +8,7 @@ import { PhoneInput } from "@/components/ui/PhoneInput";
 import { toLocalSL } from "@/lib/auth/phone-format";
 import { isValidInternationalPhone } from "@/data/country-codes";
 import { isEmailLike } from "@/lib/auth/identifier";
+import { startVerificationForBooking } from "@/lib/booking/pending-booking";
 import { formatLKR } from "@/lib/vehicles/format";
 
 type Mode  = "signup" | "login";
@@ -251,17 +252,26 @@ export function GuestBookingModal({ draft, onClose }: Props) {
     setLoading(false);
 
     if (!bookingRes.ok) {
-      const code = (bookingPayload as { code?: string }).code;
-      if (code === "kyc_required") {
-        // Brand-new account never went through Didit, punt them to /account
-        // where the verify CTA is. They re-book from the vehicle page after
-        // verification clears.
-        setLoading(false);
-        router.push("/account");
+      const p = bookingPayload as { needsVerification?: boolean; verificationPending?: boolean; error?: string };
+      // A brand-new account is always unverified — DriveLink only sends
+      // verified requests to owners, so hand off to Didit and bring them
+      // back to this vehicle with their dates preserved.
+      if (p.needsVerification) {
+        await startVerificationForBooking(
+          {
+            vehicleId: draft.vehicleId, agencyId: draft.agencyId,
+            startDate: draft.startDate, endDate: draft.endDate,
+            startTime: draft.startTime ?? "10:00", endTime: draft.endTime ?? "10:00",
+          },
+          window.location.pathname,
+        );
+        return; // redirecting to Didit
+      }
+      if (p.verificationPending) {
+        setError("Your identity check is still being reviewed — please give it a minute, then send your request from the vehicle page.");
         return;
       }
-      // Account exists, just the booking failed. Send them to /bookings to retry.
-      setError(`Account ready, but the booking didn't go through: ${bookingPayload.error ?? "unknown error"}. You can try from the vehicle page.`);
+      setError(`Account ready, but the booking didn't go through: ${p.error ?? "unknown error"}. You can try from the vehicle page.`);
       return;
     }
 

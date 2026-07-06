@@ -55,7 +55,7 @@ export async function POST(req: NextRequest) {
   // derived from the vehicle row so a request can't be mis-attributed.
   const [{ data: vehicle }, { data: renter }] = await Promise.all([
     service.from("vehicles").select("agency_id, status, make, model, year, plate_number, daily_rate_lkr, monthly_rate_lkr, self_drive, with_driver").eq("id", vehicle_id).single(),
-    service.from("profiles").select("full_name, is_blacklisted, booking_frozen, license_front_url, license_back_url").eq("id", user.id).single(),
+    service.from("profiles").select("full_name, kyc_status, is_blacklisted, booking_frozen, license_front_url, license_back_url").eq("id", user.id).single(),
   ]);
 
   if (!vehicle) {
@@ -79,6 +79,25 @@ export async function POST(req: NextRequest) {
   // book unlisted / under-maintenance / pending-review vehicles.
   if (v.status !== "available") {
     return NextResponse.json({ error: "This vehicle isn't available for booking." }, { status: 409 });
+  }
+
+  // Verified renters only. Quality over quantity: an owner should never
+  // receive a request from someone whose identity we haven't confirmed —
+  // it's the platform's core promise. 'pending' is called out separately so
+  // a returning renter whose Didit webhook is still in flight sees "give it
+  // a moment" instead of being pushed to re-verify.
+  const kyc = (renter as { kyc_status?: string } | null)?.kyc_status;
+  if (kyc === "pending") {
+    return NextResponse.json(
+      { error: "Your identity check is still being reviewed — this usually takes a minute. Please try again shortly.", verificationPending: true },
+      { status: 403 },
+    );
+  }
+  if (kyc !== "verified") {
+    return NextResponse.json(
+      { error: "Verify your identity to send this request.", needsVerification: true },
+      { status: 403 },
+    );
   }
 
   // Blacklisted renters can't create bookings.

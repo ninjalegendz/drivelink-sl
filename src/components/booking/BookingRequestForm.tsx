@@ -1,7 +1,8 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
+import { ShieldCheck } from "lucide-react";
 import { WhatsAppIcon } from "@/components/icons/WhatsAppIcon";
 import { createClient } from "@/lib/supabase/client";
 import { Button } from "@/components/ui/Button";
@@ -10,6 +11,7 @@ import { usdFromLkr } from "@/data/vehicles";
 import { siteConfig, whatsappLink } from "@/lib/site-config";
 import { calcBookingPriceByDays, billableDaysBetween, toDateTime } from "@/lib/bookings/pricing";
 import { GuestBookingModal } from "@/components/booking/GuestBookingModal";
+import { readPendingBooking, clearPendingBooking, startVerificationForBooking } from "@/lib/booking/pending-booking";
 
 export interface DateRange {
   start: string;  // ISO datetime "YYYY-MM-DDTHH:mm[:ss]"
@@ -84,6 +86,25 @@ export function BookingRequestForm({ vehicleId, agencyId, vehicleName, dailyRate
   const [loading, setLoading]     = useState(false);
   const [error, setError]         = useState<string | null>(null);
   const [guestModal, setGuestModal] = useState(false);
+  // Shown when an unverified renter tries to send — a "verify to continue"
+  // step rather than a dead error. `pending` = Didit still processing.
+  const [needsVerify, setNeedsVerify] = useState(false);
+  const [verifyPending, setVerifyPending] = useState(false);
+  const [resumed, setResumed] = useState(false);
+
+  // Returning from Didit: restore the dates they'd picked so nothing is lost.
+  useEffect(() => {
+    const draft = readPendingBooking();
+    if (draft && draft.vehicleId === vehicleId) {
+      setStartDate(draft.startDate);
+      setEndDate(draft.endDate);
+      setStartTime(draft.startTime);
+      setEndTime(draft.endTime);
+      setResumed(true);
+      clearPendingBooking();
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   const dtClass = "w-full min-w-0 px-3 py-2 bg-slate-100 border border-slate-200 rounded-lg text-slate-900 text-sm focus:outline-none focus:border-blue-500";
 
@@ -175,18 +196,32 @@ export function BookingRequestForm({ vehicleId, agencyId, vehicleName, dailyRate
     const payload = await res.json().catch(() => ({}));
 
     if (!res.ok) {
-      const errorCode = (payload as { code?: string }).code;
-      if (errorCode === "kyc_required") {
-        // Punt to account page so the renter can start verification.
-        // The /account?next=... param lets us bring them back here later.
-        router.push(`/account?next=${encodeURIComponent(window.location.pathname)}`);
+      const p = payload as { needsVerification?: boolean; verificationPending?: boolean; error?: string };
+      if (p.verificationPending) {
+        // Didt webhook still in flight — don't push them to re-verify.
+        setVerifyPending(true);
+        setNeedsVerify(false);
         return;
       }
-      setError(payload.error ?? "Failed to send request. Please try again.");
+      if (p.needsVerification) {
+        setNeedsVerify(true);
+        setVerifyPending(false);
+        return;
+      }
+      setError(p.error ?? "Failed to send request. Please try again.");
       return;
     }
 
     router.push(`/bookings/${payload.bookingId}`);
+  }
+
+  async function verifyThenBook() {
+    setError(null);
+    const res = await startVerificationForBooking(
+      { vehicleId, agencyId, startDate, endDate, startTime, endTime },
+      window.location.pathname,
+    );
+    if (!res.ok) setError(res.error ?? "Couldn't start verification.");
   }
 
   return (
@@ -319,15 +354,49 @@ export function BookingRequestForm({ vehicleId, agencyId, vehicleName, dailyRate
         <p className="text-red-400 text-sm">{error}</p>
       )}
 
-      <Button
-        type="submit"
-        loading={loading}
-        disabled={!!conflict || within24h}
-        className="w-full"
-        size="lg"
-      >
-        Send booking request{siteConfig.freeLaunch ? ", free" : ""}
-      </Button>
+      {resumed && !needsVerify && !verifyPending && (
+        <div className="flex items-start gap-2 p-2.5 bg-emerald-50 border border-emerald-200 rounded-lg">
+          <ShieldCheck size={14} className="text-emerald-600 mt-0.5 shrink-0" />
+          <p className="text-emerald-800 text-[11px] leading-relaxed">
+            Welcome back — your dates are saved. Send your request below.
+          </p>
+        </div>
+      )}
+
+      {needsVerify ? (
+        <div className="p-3.5 bg-blue-50 border border-blue-200 rounded-xl space-y-2.5">
+          <div className="flex items-start gap-2">
+            <ShieldCheck size={16} className="text-blue-600 mt-0.5 shrink-0" />
+            <p className="text-slate-700 text-xs leading-relaxed">
+              One quick step first — verify your identity to send this request. DriveLink only passes
+              <span className="font-semibold"> verified renters</span> to owners. It takes about two minutes and you only do it once.
+            </p>
+          </div>
+          <Button type="button" onClick={verifyThenBook} className="w-full" size="lg">
+            <ShieldCheck size={15} /> Verify my identity
+          </Button>
+        </div>
+      ) : (
+        <>
+          {verifyPending && (
+            <div className="flex items-start gap-2 p-2.5 bg-amber-50 border border-amber-200 rounded-lg">
+              <ShieldCheck size={14} className="text-amber-600 mt-0.5 shrink-0" />
+              <p className="text-amber-800 text-[11px] leading-relaxed">
+                Your identity check is still being reviewed — this usually takes a minute. Try sending again shortly.
+              </p>
+            </div>
+          )}
+          <Button
+            type="submit"
+            loading={loading}
+            disabled={!!conflict || within24h}
+            className="w-full"
+            size="lg"
+          >
+            Send booking request{siteConfig.freeLaunch ? ", free" : ""}
+          </Button>
+        </>
+      )}
 
       <p className="text-slate-500 text-xs text-center">
         No payment to DriveLink. The provider confirms availability first.
