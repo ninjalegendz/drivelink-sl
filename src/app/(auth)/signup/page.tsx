@@ -6,7 +6,8 @@ import Link from "next/link";
 import { ArrowLeft, Phone, Mail, Sparkles } from "lucide-react";
 import { Button } from "@/components/ui/Button";
 import { PhoneInput } from "@/components/ui/PhoneInput";
-import { isValidSLPhone, toLocalSL } from "@/lib/auth/phone-format";
+import { toLocalSL } from "@/lib/auth/phone-format";
+import { isValidInternationalPhone } from "@/data/country-codes";
 
 type Stage = "details" | "code";
 
@@ -50,7 +51,7 @@ function SignupForm() {
 
     if (fullName.trim().length < 2)        { setError("Enter your full name."); return; }
     if (address.trim().length < 5)         { setError("Enter your residential address."); return; }
-    if (!isValidSLPhone(phone))            { setError("Enter a valid mobile number."); return; }
+    if (!isValidInternationalPhone(phone)) { setError("Enter a valid mobile number for the selected country."); return; }
     if (email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) { setError("That email doesn't look right."); return; }
 
     setLoading(true); setError(null); setInfo(null);

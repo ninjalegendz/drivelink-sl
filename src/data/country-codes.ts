@@ -219,3 +219,84 @@ export function matchDialCode(e164: string): CountryCode | null {
   }
   return best;
 }
+
+// ── Per-country number rules (example + validation) ───────────────────
+//
+// `example` is the NATIONAL number (no dial code) shown as the field's
+// placeholder. `min`/`max` bound the national significant digit count.
+// `startsWith` (optional) lists the allowed leading digit(s) — used for
+// Sri Lanka, whose mobiles are all 07X locally (national 7XXXXXXXX).
+//
+// We keep ACCURATE rules for the home market + the countries DriveLink
+// users actually come from, and fall back to a permissive E.164 range
+// (6–14 national digits) everywhere else, so a real number from a country
+// we haven't tabulated is never wrongly rejected.
+export interface PhoneRule {
+  example:     string;
+  min:         number;
+  max:         number;
+  startsWith?: string[];
+}
+
+const GENERIC_RULE: PhoneRule = { example: "", min: 6, max: 14 };
+
+const PHONE_RULES: Record<string, PhoneRule> = {
+  LK: { example: "771234567",  min: 9,  max: 9,  startsWith: ["7"] }, // all SL mobiles are 07X
+  IN: { example: "9812345678", min: 10, max: 10, startsWith: ["6", "7", "8", "9"] },
+  GB: { example: "7911123456", min: 10, max: 10, startsWith: ["7"] },
+  AU: { example: "412345678",  min: 9,  max: 9,  startsWith: ["4"] },
+  US: { example: "2015550123", min: 10, max: 10 },
+  CA: { example: "4165550123", min: 10, max: 10 },
+  DE: { example: "15123456789", min: 10, max: 11 },
+  FR: { example: "612345678",  min: 9,  max: 9 },
+  NL: { example: "612345678",  min: 9,  max: 9 },
+  IT: { example: "3123456789", min: 9,  max: 10 },
+  ES: { example: "612345678",  min: 9,  max: 9 },
+  CH: { example: "781234567",  min: 9,  max: 9 },
+  RU: { example: "9123456789", min: 10, max: 10 },
+  CN: { example: "13123456789", min: 11, max: 11, startsWith: ["1"] },
+  JP: { example: "9012345678", min: 10, max: 10 },
+  KR: { example: "1023456789", min: 9,  max: 10 },
+  SG: { example: "81234567",   min: 8,  max: 8,  startsWith: ["8", "9"] },
+  MY: { example: "123456789",  min: 9,  max: 10 },
+  TH: { example: "812345678",  min: 9,  max: 9 },
+  AE: { example: "501234567",  min: 9,  max: 9,  startsWith: ["5"] },
+  SA: { example: "512345678",  min: 9,  max: 9,  startsWith: ["5"] },
+  QA: { example: "33123456",   min: 8,  max: 8 },
+  KW: { example: "50123456",   min: 8,  max: 8 },
+  OM: { example: "92123456",   min: 8,  max: 8 },
+  BH: { example: "36001234",   min: 8,  max: 8 },
+  IL: { example: "502345678",  min: 9,  max: 9 },
+  NZ: { example: "211234567",  min: 8,  max: 10 },
+  MV: { example: "7712345",    min: 7,  max: 7 },
+  BD: { example: "1812345678", min: 10, max: 10, startsWith: ["1"] },
+  PK: { example: "3012345678", min: 10, max: 10, startsWith: ["3"] },
+  NP: { example: "9812345678", min: 10, max: 10 },
+};
+
+/** The number rule for a country ISO, with a permissive generic fallback. */
+export function phoneRuleFor(iso: string): PhoneRule {
+  return PHONE_RULES[iso] ?? GENERIC_RULE;
+}
+
+/** True when a national number fits the country's format. Empty → false. */
+export function isValidNationalNumber(iso: string, national: string): boolean {
+  const digits = (national ?? "").replace(/\D/g, "");
+  if (!digits) return false;
+  const rule = phoneRuleFor(iso);
+  if (digits.length < rule.min || digits.length > rule.max) return false;
+  if (rule.startsWith && !rule.startsWith.some((p) => digits.startsWith(p))) return false;
+  return true;
+}
+
+/**
+ * Validate a full E.164 number against its country's format. Used by the
+ * PhoneInput and form submit gates to reject wrong-format numbers before
+ * an OTP is ever sent.
+ */
+export function isValidInternationalPhone(e164: string): boolean {
+  const country = matchDialCode(e164);
+  if (!country) return false;
+  const national = (e164 ?? "").replace(/\D/g, "").slice(country.dial.length);
+  return isValidNationalNumber(country.iso, national);
+}

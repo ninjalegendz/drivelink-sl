@@ -6,7 +6,8 @@ import Link from "next/link";
 import { ArrowLeft, Mail, Phone } from "lucide-react";
 import { Button } from "@/components/ui/Button";
 import { PhoneInput } from "@/components/ui/PhoneInput";
-import { isValidSLPhone, toLocalSL } from "@/lib/auth/phone-format";
+import { toLocalSL } from "@/lib/auth/phone-format";
+import { isValidInternationalPhone } from "@/data/country-codes";
 import { isEmailLike } from "@/lib/auth/identifier";
 
 type Stage   = "identifier" | "code" | "verify_link_sent";
@@ -71,8 +72,8 @@ function LoginForm() {
     e?.preventDefault();
 
     const trimmed = identifier.trim();
-    if (method === "phone" && !isValidSLPhone(trimmed)) {
-      setError("Enter a valid mobile number.");
+    if (method === "phone" && !isValidInternationalPhone(trimmed)) {
+      setError("Enter a valid mobile number for the selected country.");
       return;
     }
     if (method === "email" && !isEmailLike(trimmed)) {

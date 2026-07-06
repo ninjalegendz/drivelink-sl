@@ -5,7 +5,8 @@ import { useRouter } from "next/navigation";
 import { ArrowLeft, Phone, X, Mail, Sparkles, Check } from "lucide-react";
 import { Button } from "@/components/ui/Button";
 import { PhoneInput } from "@/components/ui/PhoneInput";
-import { isValidSLPhone, toLocalSL } from "@/lib/auth/phone-format";
+import { toLocalSL } from "@/lib/auth/phone-format";
+import { isValidInternationalPhone } from "@/data/country-codes";
 import { isEmailLike } from "@/lib/auth/identifier";
 import { formatLKR } from "@/lib/vehicles/format";
 
@@ -112,7 +113,7 @@ export function GuestBookingModal({ draft, onClose }: Props) {
   // ─── Stage 1: send OTP ──────────────────────────────────────────────
   async function startSignup() {
     if (fullName.trim().length < 2)            { setError("Enter your full name."); return; }
-    if (!isValidSLPhone(identifier))           { setError("Enter a valid mobile number."); return; }
+    if (!isValidInternationalPhone(identifier)) { setError("Enter a valid mobile number for the selected country."); return; }
     if (email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) { setError("That email doesn't look right."); return; }
 
     setLoading(true); setError(null); setInfo(null);
@@ -144,8 +145,8 @@ export function GuestBookingModal({ draft, onClose }: Props) {
   }
 
   async function startLogin() {
-    if (loginMethod === "phone" && !isValidSLPhone(identifier)) {
-      setError("Enter a valid mobile number."); return;
+    if (loginMethod === "phone" && !isValidInternationalPhone(identifier)) {
+      setError("Enter a valid mobile number for the selected country."); return;
     }
     if (loginMethod === "email" && !isEmailLike(identifier.trim())) {
       setError("Enter a valid email address."); return;

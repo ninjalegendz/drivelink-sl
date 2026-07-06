@@ -1,5 +1,19 @@
 @import "tailwindcss";
 
+/* Country-flag emoji font (Twemoji flags, CC-BY 4.0, self-hosted). Windows
+   Chrome/Edge don't render regional-indicator flag emoji — they fall back to
+   the two ISO letters ("LK", "SZ"). This font supplies the flag glyphs so the
+   picker shows real flags on every platform. Applied via the .flag class. */
+@font-face {
+  font-family: "Twemoji Country Flags";
+  src: url("/fonts/TwemojiCountryFlags.woff2") format("woff2");
+  font-display: swap;
+  unicode-range: U+1F1E6-1F1FF;
+}
+.flag {
+  font-family: "Twemoji Country Flags", var(--font-sans);
+}
+
 /* ─── DriveLink theme — cool slate + blue, standard Tailwind scale ───
    The marketplace theme uses the STANDARD slate scale (slate-50 page,
    white cards, slate-900 dark surfaces) with a blue-600 primary accent
