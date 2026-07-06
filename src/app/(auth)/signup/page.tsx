@@ -46,12 +46,17 @@ function SignupForm() {
     if (stage === "code") setTimeout(() => codeRef.current?.focus(), 50);
   }, [stage]);
 
+  // SMS delivery (text.lk) is Sri Lanka-only, so for a foreign number the
+  // email is the reliable channel for codes and documents — required.
+  const isForeignPhone = phone !== "" && !phone.startsWith("+94");
+
   async function startSignup(e?: React.FormEvent) {
     e?.preventDefault();
 
     if (fullName.trim().length < 2)        { setError("Enter your full name."); return; }
     if (address.trim().length < 5)         { setError("Enter your residential address."); return; }
     if (!isValidInternationalPhone(phone)) { setError("Enter a valid mobile number for the selected country."); return; }
+    if (isForeignPhone && !email.trim())   { setError("Add an email — SMS doesn't reach non-Sri Lankan numbers, so your verification code and booking documents go there."); return; }
     if (email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) { setError("That email doesn't look right."); return; }
 
     setLoading(true); setError(null); setInfo(null);
@@ -119,20 +124,20 @@ function SignupForm() {
               required
               autoFocus
               autoComplete="name"
-              placeholder="As on your NIC"
+              placeholder="As on your NIC or passport"
               className="w-full px-4 py-2.5 bg-slate-100 border border-slate-200 rounded-xl text-slate-900 placeholder-slate-400 text-sm focus:outline-none focus:border-blue-500"
             />
           </div>
 
           <div>
-            <label className="text-slate-600 text-xs mb-1 block">Residential address</label>
+            <label className="text-slate-600 text-xs mb-1 block">Home address</label>
             <input
               type="text"
               value={address}
               onChange={(e) => setAddress(e.target.value)}
               required
               autoComplete="street-address"
-              placeholder="No. 12, Main Street, Colombo 3"
+              placeholder="House number, street, city"
               className="w-full px-4 py-2.5 bg-slate-100 border border-slate-200 rounded-xl text-slate-900 placeholder-slate-400 text-sm focus:outline-none focus:border-blue-500"
             />
           </div>
@@ -145,18 +150,21 @@ function SignupForm() {
 
           <div>
             <label className="text-slate-600 text-xs mb-1 block">
-              Email <span className="text-slate-400 font-normal">(optional)</span>
+              Email {!isForeignPhone && <span className="text-slate-400 font-normal">(optional)</span>}
             </label>
             <input
               type="email"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
+              required={isForeignPhone}
               autoComplete="email"
               placeholder="you@example.com"
               className="w-full px-4 py-2.5 bg-slate-100 border border-slate-200 rounded-xl text-slate-900 placeholder-slate-400 text-sm focus:outline-none focus:border-blue-500"
             />
             <p className="text-slate-400 text-xs mt-1">
-              Skip it now or add it later, verified email adds a trust badge that helps hosts confirm your bookings faster.
+              {isForeignPhone
+                ? "Required for non-Sri Lankan numbers — your verification code and booking documents arrive by email."
+                : "Skip it now or add it later, verified email adds a trust badge that helps hosts confirm your bookings faster."}
             </p>
           </div>
 

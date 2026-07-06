@@ -53,6 +53,7 @@ export function GuestBookingModal({ draft, onClose }: Props) {
   // Shared form state
   const [identifier, setIdentifier] = useState("");  // login: email or phone; signup: phone
   const [fullName,   setFullName]   = useState("");
+  const [address,    setAddress]    = useState("");
   const [email,      setEmail]      = useState("");
   const [code,       setCode]       = useState("");
   const [loading,    setLoading]    = useState(false);
@@ -107,13 +108,20 @@ export function GuestBookingModal({ draft, onClose }: Props) {
     setInfo(null);
     setIdentifier("");
     setFullName("");
+    setAddress("");
     setEmail("");
   }
+
+  // SMS delivery (text.lk) is Sri Lanka-only; foreign numbers need an email
+  // for the code + documents. Signup mode only (identifier = the phone).
+  const isForeignPhone = mode === "signup" && identifier !== "" && !identifier.startsWith("+94");
 
   // ─── Stage 1: send OTP ──────────────────────────────────────────────
   async function startSignup() {
     if (fullName.trim().length < 2)            { setError("Enter your full name."); return; }
+    if (address.trim().length < 5)             { setError("Enter your home address."); return; }
     if (!isValidInternationalPhone(identifier)) { setError("Enter a valid mobile number for the selected country."); return; }
+    if (isForeignPhone && !email.trim())       { setError("Add an email — SMS doesn't reach non-Sri Lankan numbers."); return; }
     if (email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) { setError("That email doesn't look right."); return; }
 
     setLoading(true); setError(null); setInfo(null);
@@ -123,6 +131,7 @@ export function GuestBookingModal({ draft, onClose }: Props) {
       headers: { "Content-Type": "application/json" },
       body:    JSON.stringify({
         full_name: fullName.trim(),
+        address:   address.trim(),
         phone:     identifier.trim(),
         email:     email.trim() || undefined,
       }),
@@ -344,7 +353,19 @@ export function GuestBookingModal({ draft, onClose }: Props) {
                         required
                         autoFocus
                         autoComplete="name"
-                        placeholder="As on your NIC"
+                        placeholder="As on your NIC or passport"
+                        className="w-full px-3 py-2 bg-slate-100 border border-slate-200 rounded-lg text-slate-900 placeholder-slate-400 text-sm focus:outline-none focus:border-blue-500"
+                      />
+                    </div>
+                    <div>
+                      <label className="text-slate-600 text-xs mb-1 block">Home address</label>
+                      <input
+                        type="text"
+                        value={address}
+                        onChange={(e) => setAddress(e.target.value)}
+                        required
+                        autoComplete="street-address"
+                        placeholder="House number, street, city"
                         className="w-full px-3 py-2 bg-slate-100 border border-slate-200 rounded-lg text-slate-900 placeholder-slate-400 text-sm focus:outline-none focus:border-blue-500"
                       />
                     </div>
@@ -354,18 +375,21 @@ export function GuestBookingModal({ draft, onClose }: Props) {
                     </div>
                     <div>
                       <label className="text-slate-600 text-xs mb-1 block">
-                        Email <span className="text-slate-400 font-normal">(optional)</span>
+                        Email {!isForeignPhone && <span className="text-slate-400 font-normal">(optional)</span>}
                       </label>
                       <input
                         type="email"
                         value={email}
                         onChange={(e) => setEmail(e.target.value)}
+                        required={isForeignPhone}
                         autoComplete="email"
                         placeholder="you@example.com"
                         className="w-full px-3 py-2 bg-slate-100 border border-slate-200 rounded-lg text-slate-900 placeholder-slate-400 text-sm focus:outline-none focus:border-blue-500"
                       />
                       <p className="text-slate-400 text-[11px] mt-1">
-                        Verified email adds a trust badge, agencies confirm faster.
+                        {isForeignPhone
+                          ? "Required for non-Sri Lankan numbers — your code and booking documents arrive by email."
+                          : "Verified email adds a trust badge, hosts confirm faster."}
                       </p>
                     </div>
                   </>
