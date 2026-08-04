@@ -1,4 +1,4 @@
-// TRUST-007 — a tamper-evident fingerprint of an agreement's terms.
+// TRUST-007 - a tamper-evident fingerprint of an agreement's terms.
 //
 // SHA-256 over a canonical (recursively key-sorted) JSON of the terms, so the
 // same content always hashes identically regardless of key order coming back

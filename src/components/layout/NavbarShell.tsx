@@ -52,7 +52,7 @@ export function NavbarShell({ isAdmin, ownsPages, signedIn }: Props) {
         {/* Brand */}
         <Link href="/" className="flex items-center gap-2.5 min-w-0">
           <span className="leading-none min-w-0">
-            {/* Full wordmark (light-background variant) — the artwork already
+            {/* Full wordmark (light-background variant). The artwork already
                 reads "DriveLink", so there's no separate text label. */}
             <span className="flex items-center gap-1.5">
               <Image

@@ -125,7 +125,7 @@ export function GuestBookingModal({ draft, onClose }: Props) {
     if (fullName.trim().length < 2)            { setError("Enter your full name."); return; }
     if (address.trim().length < 5)             { setError("Enter your home address."); return; }
     if (!isValidInternationalPhone(identifier)) { setError("Enter a valid mobile number for the selected country."); return; }
-    if (isForeignPhone && !email.trim())       { setError("Add an email — SMS doesn't reach non-Sri Lankan numbers."); return; }
+    if (isForeignPhone && !email.trim())       { setError("Add an email. SMS doesn't reach non-Sri Lankan numbers."); return; }
     if (email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) { setError("That email doesn't look right."); return; }
 
     setLoading(true); setError(null); setInfo(null);
@@ -184,7 +184,7 @@ export function GuestBookingModal({ draft, onClose }: Props) {
       } // phone stays in `identifier`, which signup mode reads as the phone
       setMode("signup");
       setError(null);
-      setInfo(`No account with that ${loginMethod === "email" ? "email" : "number"} — create one below to continue.`);
+      setInfo(`No account with that ${loginMethod === "email" ? "email" : "number"}: create one below to continue.`);
       return;
     }
 
@@ -259,7 +259,7 @@ export function GuestBookingModal({ draft, onClose }: Props) {
 
     if (!bookingRes.ok) {
       const p = bookingPayload as { needsVerification?: boolean; verificationPending?: boolean; error?: string };
-      // A brand-new account is always unverified — DriveLink only sends
+      // A brand-new account is always unverified - DriveLink only sends
       // verified requests to owners, so hand off to Didit and bring them
       // back to this vehicle with their dates preserved.
       if (p.needsVerification) {
@@ -274,7 +274,7 @@ export function GuestBookingModal({ draft, onClose }: Props) {
         return; // redirecting to Didit
       }
       if (p.verificationPending) {
-        setError("Your identity check is still being reviewed — please give it a minute, then send your request from the vehicle page.");
+        setError("Your identity check is still being reviewed. Please give it a minute, then send your request from the vehicle page.");
         return;
       }
       setError(`Account ready, but the booking didn't go through: ${p.error ?? "unknown error"}. You can try from the vehicle page.`);
@@ -417,7 +417,7 @@ export function GuestBookingModal({ draft, onClose }: Props) {
                       />
                       <p className="text-slate-400 text-[11px] mt-1">
                         {isForeignPhone
-                          ? "Required for non-Sri Lankan numbers — your code and booking documents arrive by email."
+                          ? "Required for non-Sri Lankan numbers. Your code and booking documents arrive by email."
                           : "Verified email adds a trust badge, hosts confirm faster."}
                       </p>
                     </div>

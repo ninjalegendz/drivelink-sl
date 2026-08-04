@@ -38,11 +38,11 @@ export async function POST(req: NextRequest) {
   const intl = toInternationalSL(phoneIn)!;
 
   // SMS (text.lk) only delivers inside Sri Lanka and WhatsApp is best-effort,
-  // so for a foreign number the email IS the reliable channel — require it
+  // so for a foreign number the email IS the reliable channel - require it
   // up front instead of letting the OTP cascade fail first.
   if (!intl.startsWith("+94") && !emailIn) {
     return NextResponse.json(
-      { error: "Add an email — SMS doesn't reach non-Sri Lankan numbers, so your verification code and booking documents go there." },
+      { error: "Add an email: SMS doesn't reach non-Sri Lankan numbers, so your verification code and booking documents go there." },
       { status: 400 },
     );
   }

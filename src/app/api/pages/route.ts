@@ -76,7 +76,7 @@ export async function POST(req: NextRequest) {
   // notices and booking records are delivered there. (Renter accounts stay
   // phone-first; this only gates hosting.)
   if (!emailIn) {
-    return NextResponse.json({ error: "Enter an email for your page — statements and booking records go there." }, { status: 400 });
+    return NextResponse.json({ error: "Enter an email for your page. Statements and booking records go there." }, { status: 400 });
   }
   if (!isEmailLike(emailIn)) {
     return NextResponse.json({ error: "That email doesn't look right." }, { status: 400 });

@@ -13,7 +13,7 @@ import { formatLKR } from "@/lib/vehicles/format";
 import { canActOnAgency } from "@/lib/pages/access";
 
 // The digital rental agreement, rendered from the STORED terms snapshot
-// (booking_agreements.terms), never live vehicle/booking data — what both
+// (booking_agreements.terms), never live vehicle/booking data - what both
 // parties accepted is what this page shows, even if the listing changes
 // later. Printable: print-to-PDF is the PDF (Tailwind print: variants +
 // a small print stylesheet that hides the site chrome).
@@ -95,7 +95,7 @@ export default async function AgreementPage({ params }: Props) {
   const t = agreement.terms as AgreementTerms;
 
   // Live (not snapshotted) renter KYC state, only used for the police card's
-  // "identity verified" line — verification can happen after confirmation.
+  // "identity verified" line - verification can happen after confirmation.
   const { data: renterProf } = await service
     .from("profiles")
     .select("kyc_status")
@@ -124,7 +124,7 @@ export default async function AgreementPage({ params }: Props) {
 
   return (
     <div className="max-w-2xl mx-auto px-4 py-8 print:max-w-none print:px-0 print:py-0">
-      {/* Hide the site chrome when printing — the document below is the PDF. */}
+      {/* Hide the site chrome when printing. The document below is the PDF. */}
       <style>{`@media print { header, footer, nav { display: none !important; } main { padding: 0 !important; } }`}</style>
 
       {/* Checkpoint card, collapsed by default. */}
@@ -168,7 +168,7 @@ export default async function AgreementPage({ params }: Props) {
           {/* Parties */}
           <Section title="1. Parties">
             <Row label="Renter" value={`${t.parties.renter.name}${t.parties.renter.nic_masked ? ` (NIC ${t.parties.renter.nic_masked})` : ""}`} />
-            <Row label="Owner (Rental Page)" value={`${t.parties.page.name} — ${t.parties.page.page_type_label} page`} />
+            <Row label="Owner (Rental Page)" value={`${t.parties.page.name}. ${t.parties.page.page_type_label} page`} />
             <Clause text={t.parties.platform_disclaimer} />
           </Section>
 
@@ -235,7 +235,7 @@ export default async function AgreementPage({ params }: Props) {
           {/* Fees */}
           <Section title="8. Fees">
             {t.fees.cleaning_fee_lkr > 0 && (
-              <Row label="Cleaning fee" value={`${formatLKR(t.fees.cleaning_fee_lkr)} — ${t.fees.cleaning_fee_note.toLowerCase()}`} />
+              <Row label="Cleaning fee" value={`${formatLKR(t.fees.cleaning_fee_lkr)}: ${t.fees.cleaning_fee_note.toLowerCase()}`} />
             )}
             <Row label="Late return fee" value={`${t.fees.late_fee_label} after a ${t.fees.grace} grace period`} />
           </Section>
@@ -243,7 +243,7 @@ export default async function AgreementPage({ params }: Props) {
           {/* Usage */}
           <Section title="9. Permitted use">
             <Clause text="Only drivers named on this agreement may drive the vehicle." />
-            <Row label="Second driver" value={t.usage.second_driver_allowed ? "Allowed, if named and licensed" : "Not allowed — one named driver only"} />
+            <Row label="Second driver" value={t.usage.second_driver_allowed ? "Allowed, if named and licensed" : "Not allowed: one named driver only"} />
             <Row label="Ride-hail / taxi use" value={t.usage.ride_hail_allowed ? "Allowed" : "Not allowed"} />
             <Row label="Smoking" value={t.usage.smoking_allowed ? "Allowed" : "Not allowed"} />
             <Row label="Pets" value={t.usage.pets_allowed ? "Allowed" : "Not allowed"} />
@@ -342,7 +342,7 @@ export default async function AgreementPage({ params }: Props) {
               <p className="font-mono text-[11px] text-slate-800 break-all mt-0.5">{shortHash(agreement.terms_hash)}…</p>
               <p className="text-slate-400 text-[10px] mt-1">
                 A tamper-evident hash of the exact terms both parties accepted. If the document is
-                altered, this fingerprint changes — proving what was signed.
+                altered, this fingerprint changes: proving what was signed.
               </p>
             </div>
           )}

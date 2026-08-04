@@ -5,7 +5,7 @@ import { useEffect } from "react";
 /**
  * Registers the PWA service worker (/sw.js) once, after the window loads, so it
  * never competes with first paint. Rendered once from the root layout. The SW
- * itself is conservative (see public/sw.js) — it won't cache authed HTML.
+ * itself is conservative (see public/sw.js) - it won't cache authed HTML.
  */
 export function ServiceWorkerRegister() {
   useEffect(() => {

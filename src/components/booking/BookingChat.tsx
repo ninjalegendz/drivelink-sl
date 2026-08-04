@@ -13,7 +13,7 @@ export interface BookingMessage {
   created_at: string;
 }
 
-const DEFAULT_CLOSED_NOTE = "This conversation is closed — the booking is complete.";
+const DEFAULT_CLOSED_NOTE = "This conversation is closed. The booking is complete.";
 
 interface ChatProps {
   bookingId:        string;
@@ -21,7 +21,7 @@ interface ChatProps {
   side:             "renter" | "page";
   counterpartyName: string;
   initialMessages:  BookingMessage[];
-  /** Booking completed/cancelled — the thread stays readable but sends are off. */
+  /** Booking completed/cancelled - the thread stays readable but sends are off. */
   readOnly:         boolean;
   closedNote?:      string;
   /** Height/layout for the host container (card vs modal). */
@@ -91,7 +91,7 @@ export function BookingChat({
   }, [bookingId, theirCount]);
 
   // Realtime: append INSERTs on this booking's thread. realtimeReady() is the
-  // project-critical step — subscribe before the token is seeded and RLS
+  // project-critical step - subscribe before the token is seeded and RLS
   // drops every event without an error.
   useEffect(() => {
     const supabase = createClient();

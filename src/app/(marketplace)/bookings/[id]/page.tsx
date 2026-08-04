@@ -141,7 +141,7 @@ export default async function BookingDetailPage({ params, searchParams }: Props)
   // BOOK-003 + BUILD 1: a read page must NOT mutate booking lifecycle, and
   // completion now requires a return inspection (mandatory evidence). Auto-
   // completion is handled solely by the cron backstop, which only closes a
-  // booking once a return inspection exists — so the renter simply opening
+  // booking once a return inspection exists - so the renter simply opening
   // this page can no longer complete a rental (which previously destroyed the
   // non-return / misappropriation trail for a car that was never brought back).
 
@@ -173,7 +173,7 @@ export default async function BookingDetailPage({ params, searchParams }: Props)
   // Booking-scoped chat with the Rental Page (migration 054). Read directly
   // under the party RLS policy. Unread = messages from the other party newer
   // than this renter's read cursor (renter_msgs_read_at, stamped by the
-  // messages GET/POST route — rendering this page does NOT mark them read,
+  // messages GET/POST route - rendering this page does NOT mark them read,
   // only opening the chat does).
   const { data: messageRows } = await supabase
     .from("booking_messages")
@@ -274,7 +274,7 @@ export default async function BookingDetailPage({ params, searchParams }: Props)
         </div>
       </div>
 
-      {/* BUILD 3: return settlement ledger — appears once the rental is under way. */}
+      {/* BUILD 3: return settlement ledger: appears once the rental is under way. */}
       {(status === "active" || status === "completed" || status === "disputed") && (() => {
         const sb = booking as unknown as { deposit_received_at: string | null; settlement_ack_at: string | null };
         return (
@@ -361,7 +361,7 @@ export default async function BookingDetailPage({ params, searchParams }: Props)
             </div>
           ) : (
             <div className="bg-amber-50 border border-amber-200 rounded-xl p-3 text-sm text-amber-800">
-              Payment is temporarily unavailable. Please try again shortly or contact support — do not transfer to any account until these details load.
+              Payment is temporarily unavailable. Please try again shortly or contact support. Do not transfer to any account until these details load.
             </div>
           )}
 
@@ -431,7 +431,7 @@ export default async function BookingDetailPage({ params, searchParams }: Props)
       )}
 
       {/* Booking-scoped messages with the Rental Page. Complements the
-          call/WhatsApp contact above (once unlocked) — this thread stays on
+          call/WhatsApp contact above (once unlocked). This thread stays on
           the record for dispute resolution. */}
       {showMessages && (
         <BookingMessagesCard
@@ -442,7 +442,7 @@ export default async function BookingDetailPage({ params, searchParams }: Props)
           unreadCount={unreadMessages}
           readOnly={chatReadOnly}
           closedNote={status === "completed"
-            ? "This conversation is closed — the booking is complete."
+            ? "This conversation is closed: the booking is complete."
             : "This conversation is closed."}
         />
       )}

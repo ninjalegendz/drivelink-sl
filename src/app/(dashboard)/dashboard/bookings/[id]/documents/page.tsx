@@ -31,7 +31,7 @@ export default async function BookingDocumentsPage({ params }: Props) {
   if (!user) redirect(`/login?next=/dashboard/bookings/${bookingId}/documents`);
 
   // Page-team guard: the caller must operate the Rental Page this booking
-  // belongs to — any page they own or staff, not just the currently "active"
+  // belongs to - any page they own or staff, not just the currently "active"
   // one the dashboard cookie happens to be scoped to.
   const actingPages = await getActingPages(supabase, user.id);
   const actingIds   = new Set(actingPages.map((p) => p.id));

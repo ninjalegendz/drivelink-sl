@@ -89,13 +89,13 @@ export function BookingRequestForm({ vehicleId, agencyId, vehicleName, dailyRate
   const [loading, setLoading]     = useState(false);
   const [error, setError]         = useState<string | null>(null);
   const [guestModal, setGuestModal] = useState(false);
-  // BOOK-011 / TRUST-022 — drive mode + foreign-visitor permit declaration.
+  // BOOK-011 / TRUST-022 - drive mode + foreign-visitor permit declaration.
   const [mode, setMode]           = useState<"self_drive" | "with_driver">(selfDrive ? "self_drive" : "with_driver");
   const [isForeign, setIsForeign] = useState(false);
   const [permitAck, setPermitAck] = useState(false);
   const effectiveMode = bothModes ? mode : (selfDrive ? "self_drive" : "with_driver");
   const isSelfDrive   = effectiveMode === "self_drive";
-  // Shown when an unverified renter tries to send — a "verify to continue"
+  // Shown when an unverified renter tries to send - a "verify to continue"
   // step rather than a dead error. `pending` = Didit still processing.
   const [needsVerify, setNeedsVerify] = useState(false);
   const [verifyPending, setVerifyPending] = useState(false);
@@ -214,7 +214,7 @@ export function BookingRequestForm({ vehicleId, agencyId, vehicleName, dailyRate
     if (!res.ok) {
       const p = payload as { needsVerification?: boolean; verificationPending?: boolean; error?: string };
       if (p.verificationPending) {
-        // Didt webhook still in flight — don't push them to re-verify.
+        // Didt webhook still in flight - don't push them to re-verify.
         setVerifyPending(true);
         setNeedsVerify(false);
         return;
@@ -385,7 +385,7 @@ export function BookingRequestForm({ vehicleId, agencyId, vehicleName, dailyRate
           {savings > 0 && (
             <div className="flex justify-between text-emerald-400 text-xs">
               <span>Monthly-rate discount</span>
-              <span>−{formatLKR(savings)}</span>
+              <span>: {formatLKR(savings)}</span>
             </div>
           )}
           <div className="flex justify-between text-slate-900 font-semibold border-t border-slate-200 pt-1 mt-1">
@@ -411,7 +411,7 @@ export function BookingRequestForm({ vehicleId, agencyId, vehicleName, dailyRate
         <div className="flex items-start gap-2 p-2.5 bg-emerald-50 border border-emerald-200 rounded-lg">
           <ShieldCheck size={14} className="text-emerald-600 mt-0.5 shrink-0" />
           <p className="text-emerald-800 text-[11px] leading-relaxed">
-            Welcome back — your dates are saved. Send your request below.
+            Welcome back: your dates are saved. Send your request below.
           </p>
         </div>
       )}
@@ -421,7 +421,7 @@ export function BookingRequestForm({ vehicleId, agencyId, vehicleName, dailyRate
           <div className="flex items-start gap-2">
             <ShieldCheck size={16} className="text-blue-600 mt-0.5 shrink-0" />
             <p className="text-slate-700 text-xs leading-relaxed">
-              One quick step first — verify your identity to send this request. DriveLink only passes
+              One quick step first: verify your identity to send this request. DriveLink only passes
               <span className="font-semibold"> verified renters</span> to owners. It takes about two minutes and you only do it once.
             </p>
           </div>
@@ -435,7 +435,7 @@ export function BookingRequestForm({ vehicleId, agencyId, vehicleName, dailyRate
             <div className="flex items-start gap-2 p-2.5 bg-amber-50 border border-amber-200 rounded-lg">
               <ShieldCheck size={14} className="text-amber-600 mt-0.5 shrink-0" />
               <p className="text-amber-800 text-[11px] leading-relaxed">
-                Your identity check is still being reviewed — this usually takes a minute. Try sending again shortly.
+                Your identity check is still being reviewed. This usually takes a minute. Try sending again shortly.
               </p>
             </div>
           )}

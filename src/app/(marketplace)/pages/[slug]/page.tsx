@@ -9,7 +9,7 @@ import { providerNounCap } from "@/lib/providers/label";
 
 interface Props { params: Promise<{ slug: string }> }
 
-// Public columns only — this is a service-client read of a signed-out
+// Public columns only - this is a service-client read of a signed-out
 // storefront, so it must never select contact/registration/internal fields.
 const PAGE_SELECT =
   "id, name, slug, city, description, logo_url, cover_url, business_hours, " +
@@ -42,7 +42,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const page = await loadPage(slug);
   if (!page) return { title: "Rental Page" };
   return {
-    title: `${page.name as string} — DriveLink`,
+    title: `${page.name as string} | DriveLink`,
     description: (page.description as string) || `Rent vehicles from ${page.name} on DriveLink.`,
   };
 }

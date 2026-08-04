@@ -24,7 +24,7 @@ function FilePreview({ file, label }: { file: File | null; label: string }) {
 }
 
 // Front/back driving-licence capture. Pattern-matched on KycUploadForm:
-// same "kyc" storage prefix (owner-id-keyed, unguessable UUID paths — no
+// same "kyc" storage prefix (owner-id-keyed, unguessable UUID paths - no
 // compression, legibility matters more than bytes) and the same direct
 // client-side write onto `profiles` (no API route in between).
 export function LicenseUploadForm({ userId, existingFrontUrl, existingBackUrl }: Props) {

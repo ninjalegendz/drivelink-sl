@@ -33,7 +33,7 @@ export async function GET(req: NextRequest) {
 
   // Two cadences share this route (OPS-001): ?task=frequent runs every 15
   // minutes and covers the time-sensitive booking lifecycle (payment expiry,
-  // auto-complete, overdue alerts — a "2h overdue" alert arriving a day late
+  // auto-complete, overdue alerts - a "2h overdue" alert arriving a day late
   // is useless). ?task=daily (or no param, for backward compatibility) also
   // walks R2 for orphaned storage, which is too heavy for every 15 minutes.
   const task = req.nextUrl.searchParams.get("task") ?? "daily";
@@ -157,7 +157,7 @@ export async function GET(req: NextRequest) {
   //
   // ONLY when there's a return signal (renter marked returned, or an acked
   // return inspection). Without one, "24h past end" may mean the car was
-  // never returned — auto-completing would destroy the misappropriation
+  // never returned - auto-completing would destroy the misappropriation
   // trail, so those fall through to the overdue ladder below instead.
   const completeCutoff = new Date(Date.now() - 24 * 60 * 60_000).toISOString();
   const { data: finished } = await service
@@ -181,7 +181,7 @@ export async function GET(req: NextRequest) {
     agencies: { name: string; whatsapp_number: string | null } | null;
     booking_inspections: { phase: string; renter_ack_at: string | null }[] | null;
   }[]).filter(
-    // BUILD 1: completion requires a RETURN INSPECTION — the same gate the
+    // BUILD 1: completion requires a RETURN INSPECTION - the same gate the
     // manual owner-complete path enforces. A renter's "I returned it" signal
     // alone is no longer enough to auto-close (the owner still owes the return
     // evidence); without an inspection the booking falls through to the overdue
@@ -250,7 +250,7 @@ export async function GET(req: NextRequest) {
   //   Stage 1 (2h past end): stamp overdue_notified_at, tell both sides the
   //     late clock is running (grace over, hourly late fee per the agreement).
   //   Stage 2 (24h past end): stamp overdue_critical_at, freeze the renter's
-  //     account platform-wide, and hand the owner the evidence trail — this
+  //     account platform-wide, and hand the owner the evidence trail - this
   //     is the owner's worst-case scenario turned into a documented procedure.
   const appUrl = process.env.NEXT_PUBLIC_APP_URL ?? "https://drivelink.lk";
 
@@ -355,7 +355,7 @@ export async function GET(req: NextRequest) {
         await notifyCascade({
           phone:  b.agencies.whatsapp_number,
           smsKey: "new_booking_agency",
-          text:   `DriveLink URGENT: booking ${ref} (${name}${plate}) is 24h+ overdue with no return recorded. The renter's DriveLink account is frozen. If they're unreachable you can treat this as misappropriation: your signed agreement, the renter's verified identity and the pickup record are at ${appUrl}/bookings/${b.id}/agreement — print it for a police report. DriveLink support will assist.`,
+          text:   `DriveLink URGENT: booking ${ref} (${name}${plate}) is 24h+ overdue with no return recorded. The renter's DriveLink account is frozen. If they're unreachable you can treat this as misappropriation: your signed agreement, the renter's verified identity and the pickup record are at ${appUrl}/bookings/${b.id}/agreement. Print it for a police report. DriveLink support will assist.`,
         });
       }
       await notifyCascade({
@@ -372,7 +372,7 @@ export async function GET(req: NextRequest) {
   }
 
   // ── MSG-004: nudge a party about an unread booking message ──
-  // A message the other side sent 30min–24h ago, newer than the recipient's
+  // A message the other side sent 30min-24h ago, newer than the recipient's
   // read cursor and newer than the last nudge we sent. One nudge per booking
   // per side; the marker stops repeats.
   let msgNudged = 0;
@@ -388,7 +388,7 @@ export async function GET(req: NextRequest) {
       .limit(500);
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const rows = (msgs ?? []) as any[];
-    const handled = new Set<string>(); // `${booking_id}:${side}` — nudge once
+    const handled = new Set<string>(); // `${booking_id}:${side}`: nudge once
     for (const m of rows) {
       const b = m.bookings;
       if (!b || !["confirmed", "payment_pending", "active", "disputed"].includes(b.status)) continue;
@@ -410,7 +410,7 @@ export async function GET(req: NextRequest) {
       const phone = fromRenter ? b.agencies?.whatsapp_number : b.profiles?.phone;
       const email = fromRenter ? null : (b.profiles?.email && !b.profiles.email.endsWith("@phone.drivelink.invalid") ? b.profiles.email : null);
       try {
-        await notifyCascade({ phone: phone ?? undefined, smsKey: fromRenter ? "new_booking_agency" : "booking_status_renter", text, email, emailSubject: `Unread message — booking ${ref}`, emailText: text });
+        await notifyCascade({ phone: phone ?? undefined, smsKey: fromRenter ? "new_booking_agency" : "booking_status_renter", text, email, emailSubject: `Unread message: booking ${ref}`, emailText: text });
         await service.from("bookings").update(fromRenter ? { page_msg_nudge_at: new Date().toISOString() } : { renter_msg_nudge_at: new Date().toISOString() }).eq("id", b.id);
         msgNudged += 1;
       } catch (err) { console.error("[cron msg-nudge]", b.id, err); }
@@ -420,7 +420,7 @@ export async function GET(req: NextRequest) {
   // Daily-only: sweep orphaned storage objects. These accumulate when a user
   // starts an upload but bails before the profile row gets updated, or from
   // rare edge cases in the soft-delete path. Skipped on the 15-minute
-  // lifecycle runs — walking the whole R2 prefix 96×/day is pointless load.
+  // lifecycle runs - walking the whole R2 prefix 96×/day is pointless load.
   let avatarsRemoved = 0;
   let kycRemoved     = 0;
   if (task !== "frequent") {

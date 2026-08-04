@@ -6,7 +6,7 @@ interface RouteContext { params: Promise<{ id: string }> }
 
 const MAX_STAFF = 25; // soft cap per page
 
-// POST /api/pages/{id}/members  — the page OWNER grants a teammate staff
+// POST /api/pages/{id}/members - the page OWNER grants a teammate staff
 // access by their DriveLink account email (PAGE-005). Staff then get the full
 // operational surface on this page (bookings, messages, vehicles, inspections)
 // but never structural control (add/remove staff, delete/transfer, verify).

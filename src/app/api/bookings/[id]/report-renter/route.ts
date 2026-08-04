@@ -9,7 +9,7 @@ import { canActOnAgency } from "@/lib/pages/access";
 // Page-owner flags a renter to DriveLink admin for a serious issue
 // (non-return, fraud, damage with refusal to settle). Creates a
 // blacklist_reports row for the existing admin review UI
-// (src/app/(admin)/admin/blacklist + BlacklistActions) — this route is
+// (src/app/(admin)/admin/blacklist + BlacklistActions) - this route is
 // only the insert path, admin approval is what actually flips
 // profiles.is_blacklisted, never touched here.
 //
@@ -37,7 +37,7 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
   if (reason.length < MIN_REASON || reason.length > MAX_REASON) {
     return NextResponse.json(
       {
-        error: `This is a serious accusation — describe what happened in at least ${MIN_REASON} characters (max ${MAX_REASON}).`,
+        error: `This is a serious accusation. Describe what happened in at least ${MIN_REASON} characters (max ${MAX_REASON}).`,
       },
       { status: 400 },
     );
@@ -85,7 +85,7 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
   }
 
   // The renter's NIC comes from Didit KYC (profiles.nic_number). If it's
-  // somehow missing, still file the report so the page isn't stuck — admin
+  // somehow missing, still file the report so the page isn't stuck - admin
   // can resolve identity manually from the booking record.
   const reportedNic = b.profiles?.nic_number || `UNKNOWN-${b.renter_id.slice(0, 8).toUpperCase()}`;
 
@@ -112,7 +112,7 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
     metadata:         { reported_nic: reportedNic },
   });
 
-  // Deliberately no notification to the renter here — see file header.
+  // Deliberately no notification to the renter here - see file header.
 
   return NextResponse.json({ ok: true }, { status: 201 });
 }

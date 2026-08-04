@@ -6,8 +6,8 @@ import { canActOnAgency, getActingAgencyIds } from "@/lib/pages/access";
 
 // GET /api/docs/<prefix>/<ownerId>/<uuid>.<ext>
 //
-// The ONLY read path for sensitive documents (private R2 bucket: "kyc" —
-// NIC/selfie/licence images — and "vehicle-docs" — CR/insurance). The
+// The ONLY read path for sensitive documents (private R2 bucket: "kyc" - 
+// NIC/selfie/licence images - and "vehicle-docs" - CR/insurance). The
 // browser sends its session cookie; authorization happens here, per
 // prefix semantics, before the object is streamed. This is the storage-
 // layer enforcement behind the consent/watermark/access-log system:
@@ -84,7 +84,7 @@ export async function GET(_req: NextRequest, { params }: { params: Promise<{ key
   const obj = await getObject(key);
   if (!obj) return NextResponse.json({ error: "Not found" }, { status: 404 });
 
-  // SEC-010: pin to a safe type, forbid MIME sniffing, serve inline — so an
+  // SEC-010: pin to a safe type, forbid MIME sniffing, serve inline - so an
   // uploaded .html/.svg can never execute in the app origin.
   const safeType = SAFE_SERVE_TYPES.has(obj.contentType) ? obj.contentType : "application/octet-stream";
   const baseHeaders = {
@@ -103,7 +103,7 @@ export async function GET(_req: NextRequest, { params }: { params: Promise<{ key
     if (svg) {
       return new NextResponse(svg, { headers: { ...baseHeaders, "Content-Type": "image/svg+xml" } });
     }
-    // Couldn't watermark (format/dimensions) — serve the raw bytes we buffered.
+    // Couldn't watermark (format/dimensions) - serve the raw bytes we buffered.
     return new NextResponse(bytes, { headers: { ...baseHeaders, "Content-Type": safeType } });
   }
 

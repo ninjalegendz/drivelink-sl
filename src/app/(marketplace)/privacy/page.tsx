@@ -25,7 +25,7 @@ export default function PrivacyPage() {
             collects when you use our platform, why we collect it, how it&apos;s shared and protected,
             how long we keep it, and the rights you have under Sri Lanka&apos;s Personal Data Protection
             Act (PDPA). It applies to everyone who uses{" "}
-            <Link href="/" className="text-blue-600 hover:text-blue-500">{siteConfig.domain}</Link> —
+            <Link href="/" className="text-blue-600 hover:text-blue-500">{siteConfig.domain}</Link>:
             renters, Rental Page owners, and visitors.
           </p>
         </section>

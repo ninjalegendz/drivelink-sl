@@ -2,23 +2,23 @@ import { NextRequest, NextResponse } from "next/server";
 import { createClient, createServiceClient } from "@/lib/supabase/server";
 import { canActOnAgency } from "@/lib/pages/access";
 
-// /api/bookings/[id]/messages — booking-scoped chat (migration 054).
+// /api/bookings/[id]/messages - booking-scoped chat (migration 054).
 //
-// POST { body: string } — send a message as the caller (renter or the
+// POST { body: string } - send a message as the caller (renter or the
 // owner of the Rental Page the booking belongs to). The insert goes
 // through the caller's cookie-bound client so RLS enforces both the
 // party membership and sender_id = auth.uid(); the status gate below is
 // the server-side rule RLS deliberately doesn't encode (messaging is
 // open from request through completion, read-only after that).
 //
-// GET — list the thread (caller's client, RLS scopes it) and advance the
+// GET - list the thread (caller's client, RLS scopes it) and advance the
 // CALLER's read cursor, so unread badges clear the moment the chat opens.
 //
-// No SMS/email per message on purpose — that would spam both sides on
+// No SMS/email per message on purpose - that would spam both sides on
 // every reply. Realtime + unread badges carry v1; a batched "you have
 // unread messages" nudge job is a future follow-up.
 
-const CLOSED_COMPLETE = "This conversation is closed — the booking is complete.";
+const CLOSED_COMPLETE = "This conversation is closed. The booking is complete.";
 const CLOSED_GENERIC  = "This conversation is closed.";
 
 interface BookingPartyRow {
@@ -97,7 +97,7 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
     return NextResponse.json({ error: CLOSED_GENERIC }, { status: 400 });
   }
 
-  // Insert as the caller — RLS re-checks party membership + sender_id.
+  // Insert as the caller - RLS re-checks party membership + sender_id.
   const { data: inserted, error: insertError } = await supabase
     .from("booking_messages")
     .insert({ booking_id: booking.id, sender_id: user.id, body: text })
@@ -130,7 +130,7 @@ export async function GET(_req: NextRequest, { params }: { params: Promise<{ id:
 
   // MSG-002: fetch the NEWEST 500 (descending), then reverse to ascending for
   // display. Ordering ascending + limit dropped the latest messages once a
-  // thread passed 500 — exactly the messages that matter in a live dispute.
+  // thread passed 500 - exactly the messages that matter in a live dispute.
   const { data: rows, error } = await supabase
     .from("booking_messages")
     .select("id, booking_id, sender_id, body, created_at")

@@ -4,7 +4,7 @@ import { listPrefix, deleteObjects, extractKeyFromUrl } from "./r2";
 /**
  * Walks an R2 prefix and deletes blobs that no profile references. For the
  * `kyc` prefix that means avatar_url / nic_url / selfie_url AND the two
- * driving-licence columns (license_front_url / license_back_url) — licences
+ * driving-licence columns (license_front_url / license_back_url) - licences
  * are stored under the same `kyc` prefix (see LicenseUploadForm), so leaving
  * them out of the referenced set would mark every valid licence image as an
  * orphan and delete it on the next run. Cheap to run daily, even a thousand

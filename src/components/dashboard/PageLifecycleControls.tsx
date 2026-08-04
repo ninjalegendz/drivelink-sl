@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 import { Pause, Play, ArrowRightLeft } from "lucide-react";
 import { Button } from "@/components/ui/Button";
 
-// PAGE-005: owner-only page lifecycle — pause/resume + transfer ownership.
+// PAGE-005: owner-only page lifecycle - pause/resume + transfer ownership.
 export function PageLifecycleControls({ agencyId, deactivated }: { agencyId: string; deactivated: boolean }) {
   const router = useRouter();
   const [busy, setBusy]     = useState(false);
@@ -64,8 +64,8 @@ export function PageLifecycleControls({ agencyId, deactivated }: { agencyId: str
             <p className="text-slate-900 font-semibold text-sm">Page status</p>
             <p className="text-slate-500 text-xs mt-0.5">
               {deactivated
-                ? "Paused — hidden from search and not accepting new bookings."
-                : "Active — visible in search and accepting bookings."}
+                ? "Paused: hidden from search and not accepting new bookings."
+                : "Active: visible in search and accepting bookings."}
             </p>
           </div>
           <Button size="sm" variant={deactivated ? "primary" : "secondary"} loading={busy} onClick={toggleActive}>

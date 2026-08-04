@@ -17,7 +17,7 @@ export function AcceptAgreementButton({
   needsEmail = false,
 }: {
   bookingId: string;
-  /** True when the signer has no real email on file — we ask for one so
+  /** True when the signer has no real email on file - we ask for one so
       their signed copy has somewhere to go. Skippable (copy stays in-app). */
   needsEmail?: boolean;
 }) {
@@ -71,7 +71,7 @@ export function AcceptAgreementButton({
             onClick={() => { setSkipEmail(true); setError(null); }}
             className="text-slate-400 hover:text-slate-600 text-[11px] mt-1 underline"
           >
-            I don&apos;t use email — keep my copy in my account
+            I don&apos;t use email: keep my copy in my account
           </button>
         </div>
       )}

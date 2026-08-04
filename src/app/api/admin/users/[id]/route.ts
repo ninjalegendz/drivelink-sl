@@ -70,7 +70,7 @@ export async function PATCH(req: NextRequest, ctx: RouteContext) {
     profileUpdate.role = body.role;
   }
 
-  // Moderation fields — protected columns the browser can no longer write
+  // Moderation fields - protected columns the browser can no longer write
   // directly (KYC approve/reject, blacklist/unblock now come through here).
   if (body.kyc_status) {
     if (!["unverified", "pending", "verified", "rejected"].includes(body.kyc_status)) {

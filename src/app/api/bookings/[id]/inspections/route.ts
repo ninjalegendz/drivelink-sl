@@ -145,7 +145,7 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
   const b = bookingRow as unknown as Joined | null;
   if (!b) return NextResponse.json({ error: "Booking not found" }, { status: 404 });
 
-  // Party check: page team (owner or staff) only — this route is page-side submission.
+  // Party check: page team (owner or staff) only - this route is page-side submission.
   if (!(await canActOnAgency(service, user.id, b.agency_id))) {
     return NextResponse.json({ error: "Not your booking" }, { status: 403 });
   }

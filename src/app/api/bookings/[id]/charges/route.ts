@@ -5,7 +5,7 @@ import { canActOnAgency } from "@/lib/pages/access";
 
 interface RouteContext { params: Promise<{ id: string }> }
 
-// GET /api/bookings/{id}/charges — either party lists the ledger.
+// GET /api/bookings/{id}/charges - either party lists the ledger.
 export async function GET(_req: NextRequest, ctx: RouteContext) {
   const { id } = await ctx.params;
   const supabase = await createClient();
@@ -22,7 +22,7 @@ export async function GET(_req: NextRequest, ctx: RouteContext) {
   return NextResponse.json({ ok: true, charges: data ?? [] });
 }
 
-// POST /api/bookings/{id}/charges — the OWNER adds a settlement line item.
+// POST /api/bookings/{id}/charges - the OWNER adds a settlement line item.
 // body: { kind, label?, amount_lkr }
 export async function POST(req: NextRequest, ctx: RouteContext) {
   const { id } = await ctx.params;
@@ -52,7 +52,7 @@ export async function POST(req: NextRequest, ctx: RouteContext) {
     return NextResponse.json({ error: "Charges can only be added around return." }, { status: 409 });
   }
   if (bk.settlement_ack_at) {
-    return NextResponse.json({ error: "The renter has already accepted this settlement — it's locked." }, { status: 409 });
+    return NextResponse.json({ error: "The renter has already accepted this settlement. It's locked." }, { status: 409 });
   }
 
   const { data: inserted, error } = await service

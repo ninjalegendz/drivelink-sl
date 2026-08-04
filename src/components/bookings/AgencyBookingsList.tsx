@@ -132,7 +132,7 @@ export function AgencyBookingsList({ initial, agencyId, currentUserId, filterSta
                       <Badge variant="slate">{booking.rental_mode === "self_drive" ? "Self-drive" : "With driver"}</Badge>
                     )}
                     {booking.is_foreign_renter && (
-                      <Badge variant="yellow">Foreign visitor — check permit at handover</Badge>
+                      <Badge variant="yellow">Foreign visitor: check permit at handover</Badge>
                     )}
                     {(renter.rating_count ?? 0) > 0 && (
                       <span className="inline-flex items-center gap-1 text-slate-600 text-xs">
@@ -270,7 +270,7 @@ export function AgencyBookingsList({ initial, agencyId, currentUserId, filterSta
                     hasUnread={hasUnreadMsgs}
                     readOnly={chatClosed}
                     closedNote={status === "completed"
-                      ? "This conversation is closed — the booking is complete."
+                      ? "This conversation is closed: the booking is complete."
                       : "This conversation is closed."}
                   />
                 )}

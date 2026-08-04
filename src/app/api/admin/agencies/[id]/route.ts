@@ -38,7 +38,7 @@ export async function PATCH(req: NextRequest, ctx: RouteContext) {
 
   const update: Record<string, unknown> = {};
 
-  // Moderation fields — protected columns no browser session may write.
+  // Moderation fields - protected columns no browser session may write.
   if (typeof body.is_verified === "boolean") update.is_verified = body.is_verified;
   if (typeof body.is_blocked  === "boolean") update.is_blocked  = body.is_blocked;
 

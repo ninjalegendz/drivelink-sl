@@ -51,7 +51,7 @@ export function ReportListingButton({ vehicleId }: { vehicleId: string }) {
               <button onClick={() => setOpen(false)} className="text-slate-400 hover:text-slate-700" aria-label="Close"><X size={18} /></button>
             </div>
             {done ? (
-              <div className="text-sm text-emerald-700 py-4 text-center">Thanks — our team will review this listing.</div>
+              <div className="text-sm text-emerald-700 py-4 text-center">Thanks: our team will review this listing.</div>
             ) : (
               <div className="space-y-3">
                 <div className="space-y-1.5">

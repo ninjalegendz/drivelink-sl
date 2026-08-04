@@ -49,7 +49,7 @@ function SignupForm() {
   }, [stage]);
 
   // SMS delivery (text.lk) is Sri Lanka-only, so for a foreign number the
-  // email is the reliable channel for codes and documents — required.
+  // email is the reliable channel for codes and documents - required.
   const isForeignPhone = phone !== "" && !phone.startsWith("+94");
 
   async function startSignup(e?: React.FormEvent) {
@@ -58,7 +58,7 @@ function SignupForm() {
     if (fullName.trim().length < 2)        { setError("Enter your full name."); return; }
     if (address.trim().length < 5)         { setError("Enter your residential address."); return; }
     if (!isValidInternationalPhone(phone)) { setError("Enter a valid mobile number for the selected country."); return; }
-    if (isForeignPhone && !email.trim())   { setError("Add an email — SMS doesn't reach non-Sri Lankan numbers, so your verification code and booking documents go there."); return; }
+    if (isForeignPhone && !email.trim())   { setError("Add an email. SMS doesn't reach non-Sri Lankan numbers, so your verification code and booking documents go there."); return; }
     if (email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) { setError("That email doesn't look right."); return; }
 
     setLoading(true); setError(null); setInfo(null);
@@ -165,7 +165,7 @@ function SignupForm() {
             />
             <p className="text-slate-400 text-xs mt-1">
               {isForeignPhone
-                ? "Required for non-Sri Lankan numbers — your verification code and booking documents arrive by email."
+                ? "Required for non-Sri Lankan numbers. Your verification code and booking documents arrive by email."
                 : "Skip it now or add it later, verified email adds a trust badge that helps hosts confirm your bookings faster."}
             </p>
           </div>

@@ -7,7 +7,7 @@ import { SupportChat, type SupportMessage } from "@/components/support/SupportCh
 
 export const metadata = { title: "Support" };
 
-// MSG-005 — renter's direct line to the DriveLink admin team.
+// MSG-005 - renter's direct line to the DriveLink admin team.
 export default async function RenterSupportPage() {
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
@@ -35,7 +35,7 @@ export default async function RenterSupportPage() {
         <h1 className="text-2xl font-bold text-slate-900">Support</h1>
       </div>
       <p className="text-slate-600 text-sm mb-5">
-        Direct line to the DriveLink team — help with verification, a booking, a payment, or a dispute.
+        Direct line to the DriveLink team. Help with verification, a booking, a payment, or a dispute.
       </p>
 
       <SupportChat

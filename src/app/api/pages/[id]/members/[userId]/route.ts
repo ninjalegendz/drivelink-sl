@@ -4,7 +4,7 @@ import { isAgencyOwner } from "@/lib/pages/access";
 
 interface RouteContext { params: Promise<{ id: string; userId: string }> }
 
-// DELETE /api/pages/{id}/members/{userId} — remove staff (PAGE-005).
+// DELETE /api/pages/{id}/members/{userId} - remove staff (PAGE-005).
 // Allowed for the page owner (removing anyone) or the staff member themselves
 // (leaving). Removal is a hard delete: the row gone = access gone immediately.
 export async function DELETE(_req: NextRequest, ctx: RouteContext) {

@@ -6,7 +6,7 @@ import { DiditVerifyButton } from "@/components/account/DiditVerifyButton";
 import { PageCreateForm } from "@/components/account/PageCreateForm";
 
 export const metadata = {
-  title: "Create Rental Page — DriveLink",
+  title: "Create Rental Page | DriveLink",
 };
 
 export default async function NewRentalPagePage() {
@@ -48,7 +48,7 @@ export default async function NewRentalPagePage() {
         <>
           <h1 className="text-2xl font-bold text-slate-900 mb-1">Create your Rental Page</h1>
           <p className="text-slate-600 text-sm mb-6">
-            Your page is what renters see — you can create up to 5.
+            Your page is what renters see. You can create up to 5.
           </p>
           <div className="bg-white border border-slate-200 rounded-2xl shadow-sm p-5">
             <PageCreateForm />

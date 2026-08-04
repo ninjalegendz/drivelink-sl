@@ -56,7 +56,7 @@ function compose(dial: string, national: string): string {
  * via onChange, letting users pick a country instead of typing "+44 ...".
  *
  * The country picker is a fully styled searchable dropdown (same pattern as
- * ui/Select — a native <select>'s open panel is OS-rendered and unstylable,
+ * ui/Select - a native <select>'s open panel is OS-rendered and unstylable,
  * and it wouldn't apply the self-hosted flag font either).
  */
 export function PhoneInput({

@@ -17,7 +17,7 @@ export default async function DashboardSettingsPage() {
   if (!page) redirect("/account/pages/new");
 
   // Staff (members) share the operational surface but not identity/team/
-  // verification controls — those stay with the page owner.
+  // verification controls - those stay with the page owner.
   const isOwner = page.owner_id === user.id;
 
   return (
@@ -39,7 +39,7 @@ export default async function DashboardSettingsPage() {
         <div className="mt-4 bg-white border border-slate-200 rounded-2xl shadow-sm p-5">
           <p className="text-slate-900 font-semibold text-sm">Page phone verification</p>
           <p className="text-slate-500 text-xs mt-0.5 mb-3">
-            Confirm you control {page.whatsapp_number} — it's where booking alerts go and what renters use to reach you.
+            Confirm you control {page.whatsapp_number}: it's where booking alerts go and what renters use to reach you.
           </p>
           <PageWhatsappVerify agencyId={page.id} verified={!!(page as { whatsapp_verified_at?: string | null }).whatsapp_verified_at} />
         </div>
@@ -50,7 +50,7 @@ export default async function DashboardSettingsPage() {
         <div className="mt-4 bg-white border border-slate-200 rounded-2xl shadow-sm p-5">
           <p className="text-slate-900 font-semibold text-sm">Business registration certificate</p>
           <p className="text-slate-500 text-xs mt-0.5 mb-3">
-            Upload your business registration certificate. An admin reviews it before your page is marked a verified business. Private — only you and DriveLink admin can view it.
+            Upload your business registration certificate. An admin reviews it before your page is marked a verified business. Private, only you and DriveLink admin can view it.
           </p>
           <BusinessCertUpload agencyId={page.id} existingUrl={page.business_reg_url} existingRegNo={page.business_reg_no} />
         </div>
@@ -58,14 +58,14 @@ export default async function DashboardSettingsPage() {
 
       {isOwner && page.page_type === "business" && !page.is_verified && (
         <div className="mt-4 p-4 bg-amber-50 border border-amber-200 rounded-2xl text-sm text-amber-800">
-          This page is pending review — an admin may contact you for your business registration certificate.
+          This page is pending review. An admin may contact you for your business registration certificate.
         </div>
       )}
 
       {/* PAGE-005: staff/team management (owner only) */}
       {isOwner && <PageTeamSection agencyId={page.id} />}
 
-      {/* PAGE-005: page lifecycle — pause/resume + transfer (owner only) */}
+      {/* PAGE-005: page lifecycle: pause/resume + transfer (owner only) */}
       {isOwner && <PageLifecycleControls agencyId={page.id} deactivated={!!page.deactivated_at} />}
     </div>
   );

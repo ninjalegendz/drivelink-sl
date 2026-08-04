@@ -13,14 +13,16 @@
  *
  * Uses `wrangler deploy` rather than `opennextjs-cloudflare deploy` because
  * the latter's populateCache step intermittently times out against R2.
- * Build first (`npm run cf:build`) — this script only uploads.
+ * Build first (`npm run cf:build`) - this script only uploads.
  */
 import { spawnSync } from "node:child_process";
 import { existsSync, readFileSync } from "node:fs";
 
-// Resolve npx directly rather than going through a shell — passing args with
-// `shell: true` is deprecated (and unescaped) on Node 22+.
-const NPX = process.platform === "win32" ? "npx.cmd" : "npx";
+// Run through a shell with the command as ONE string. Node 22+ refuses to
+// spawn `npx.cmd` without a shell (EINVAL), and pairing an args array with
+// `shell: true` is deprecated, so a single string is the supported form.
+// Nothing user-supplied is interpolated into these commands.
+const run = (cmd, opts = {}) => spawnSync(cmd, { shell: true, ...opts });
 
 const EXPECTED_ACCOUNT = "drivelink.support@gmail.com";
 const ENV_FILE = ".env.local";
@@ -55,7 +57,7 @@ delete env.CLOUDFLARE_API_KEY;
 delete env.CLOUDFLARE_EMAIL;
 
 // Guard: confirm the token points at DriveLink before uploading anything.
-const who = spawnSync(NPX, ["wrangler", "whoami"], { env, encoding: "utf8" });
+const who = run("npx wrangler whoami", { env, encoding: "utf8" });
 const whoOut = `${who.stdout ?? ""}${who.stderr ?? ""}`;
 if (!whoOut.includes(EXPECTED_ACCOUNT)) {
   fail(
@@ -65,5 +67,5 @@ if (!whoOut.includes(EXPECTED_ACCOUNT)) {
 }
 console.log(`[deploy] account verified: ${EXPECTED_ACCOUNT}`);
 
-const res = spawnSync(NPX, ["wrangler", "deploy"], { env, stdio: "inherit" });
+const res = run("npx wrangler deploy", { env, stdio: "inherit" });
 process.exit(res.status ?? 1);

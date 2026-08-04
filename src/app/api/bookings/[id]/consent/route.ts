@@ -3,8 +3,8 @@ import { createClient, createServiceClient } from "@/lib/supabase/server";
 import { notifyCascade } from "@/lib/notify";
 import { runAfterResponse } from "@/lib/after-response";
 
-// POST /api/bookings/[id]/consent   — renter grants document-sharing consent
-// DELETE /api/bookings/[id]/consent — renter revokes it
+// POST /api/bookings/[id]/consent - renter grants document-sharing consent
+// DELETE /api/bookings/[id]/consent - renter revokes it
 //
 // Renter-side consent for migration 051's bookings.doc_share_consent_at,
 // the gate the in-app document viewer (dashboard/bookings/[id]/documents)
@@ -14,7 +14,7 @@ import { runAfterResponse } from "@/lib/after-response";
 // validated entry point (party check + status check), same idiom as the
 // dispute and inspections routes.
 //
-// Grant is allowed while confirmed / payment_pending / active — the
+// Grant is allowed while confirmed / payment_pending / active - the
 // window where a page still needs to review the renter before or during
 // handover. Revoke is narrower: only while active. Once a booking is
 // completed, the document viewer's own status check already cuts off
@@ -111,7 +111,7 @@ export async function DELETE(req: NextRequest, { params }: { params: Promise<{ i
   if (b.renter_id !== user.id) return NextResponse.json({ error: "Not your booking" }, { status: 403 });
 
   // Decision 12: the renter can withdraw document access any time before the
-  // evidence-retention point — i.e. while the booking is still confirmed,
+  // evidence-retention point - i.e. while the booking is still confirmed,
   // awaiting payment, or active (in progress). Once it's completed / disputed /
   // cancelled the shared record is retained and revocation is closed.
   if (!["confirmed", "payment_pending", "active"].includes(b.status)) {

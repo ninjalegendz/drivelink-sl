@@ -83,7 +83,7 @@ export function MobileNav({ primary, secondary = [], requireApp = false }: Props
   const SHEET_HIDDEN = 900;                 // px below the viewport when closed
   const [sheetY, setSheetY] = useState(SHEET_HIDDEN); // current translateY
   const [dragging, setDragging] = useState(false);
-  const dragOffset = useRef(0);             // pointerY − sheetY at grab start
+  const dragOffset = useRef(0);             // pointerY: sheetY at grab start
 
   // Slide up on open, reset to hidden when closed/unmounted.
   useEffect(() => {

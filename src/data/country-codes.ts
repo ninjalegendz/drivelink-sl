@@ -224,12 +224,12 @@ export function matchDialCode(e164: string): CountryCode | null {
 //
 // `example` is the NATIONAL number (no dial code) shown as the field's
 // placeholder. `min`/`max` bound the national significant digit count.
-// `startsWith` (optional) lists the allowed leading digit(s) — used for
+// `startsWith` (optional) lists the allowed leading digit(s) - used for
 // Sri Lanka, whose mobiles are all 07X locally (national 7XXXXXXXX).
 //
 // We keep ACCURATE rules for the home market + the countries DriveLink
 // users actually come from, and fall back to a permissive E.164 range
-// (6–14 national digits) everywhere else, so a real number from a country
+// (6-14 national digits) everywhere else, so a real number from a country
 // we haven't tabulated is never wrongly rejected.
 export interface PhoneRule {
   example:     string;

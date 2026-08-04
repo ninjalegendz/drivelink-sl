@@ -21,7 +21,7 @@ export default async function AccountDocumentsPage() {
   if (!user) redirect("/login?next=/account/documents");
 
   // Bookings currently sharing (doc_share_consent_at clears on revoke, so
-  // this reflects "sharing right now", not full history — the access log
+  // this reflects "sharing right now", not full history - the access log
   // below is the durable trail of every past view).
   const { data: sharingRaw } = await supabase
     .from("bookings")

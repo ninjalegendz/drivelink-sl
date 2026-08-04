@@ -1,6 +1,6 @@
 // Shared final-settlement math (BUILD 3 / MONEY-005). One authoritative
 // statement both the owner and renter see: the rental (already agreed/paid),
-// itemised extra charges from the ledger, and the security deposit — netted to
+// itemised extra charges from the ledger, and the security deposit - netted to
 // a single "renter still owes" / "owner refunds" figure. Deposit is part of the
 // statement so a future platform-mediated payment reads the same structure.
 
@@ -44,7 +44,7 @@ export interface Settlement {
 }
 
 /**
- * The ledger is the single settlement source of truth: net = extra charges −
+ * The ledger is the single settlement source of truth: net = extra charges - 
  * deposit held. The rental itself is paid directly at pickup, so it's shown for
  * context but not re-charged. Owner refunds when net < 0, collects the balance
  * when net > 0. Deposit is part of the statement so a future platform-mediated

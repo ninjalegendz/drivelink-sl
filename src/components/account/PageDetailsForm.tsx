@@ -144,7 +144,7 @@ export function PageDetailsForm({ page }: Props) {
         </label>
         <input
           type="text" value={businessHours} onChange={(e) => { setBusinessHours(e.target.value); setSuccess(false); }}
-          placeholder="e.g. Mon–Sat, 8am–6pm"
+          placeholder="e.g. Mon-Sat, 8am-6pm"
           className="w-full px-4 py-2.5 bg-slate-100 border border-slate-200 rounded-xl text-slate-900 placeholder-slate-400 text-sm focus:outline-none focus:border-blue-500"
         />
       </div>

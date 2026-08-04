@@ -36,7 +36,7 @@ export async function POST(req: NextRequest, ctx: RouteContext) {
   // ── Verify ──
   if (body.code) {
     if (!a.page_otp_hash || !a.page_otp_expires_at || new Date(a.page_otp_expires_at) < new Date()) {
-      return NextResponse.json({ error: "Code expired — request a new one." }, { status: 400 });
+      return NextResponse.json({ error: "Code expired: request a new one." }, { status: 400 });
     }
     const ok = await compareOtp(body.code.trim(), a.owner_id + ":" + id, a.page_otp_hash);
     if (!ok) return NextResponse.json({ error: "Incorrect code." }, { status: 400 });

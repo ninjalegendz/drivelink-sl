@@ -65,7 +65,7 @@ export function RentalPageList({ pages }: Props) {
         </div>
         <h2 className="text-slate-900 font-semibold">Rent out your vehicle</h2>
         <p className="text-slate-500 text-xs mt-1 mb-4">
-          Create your first Rental Page — free, and it takes two minutes.
+          Create your first Rental Page. Free, and it takes two minutes.
         </p>
         <Link href="/account/pages/new">
           <Button className="w-full">Create Rental Page</Button>

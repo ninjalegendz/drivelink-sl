@@ -30,11 +30,11 @@ export async function sendSms(to: string, message: string): Promise<SendSmsResul
 
   if (!apiToken) {
     // Fail CLOSED in production. The devOnly path returns ok:true and lets
-    // callers surface the code (devCode) — safe locally, catastrophic in a
+    // callers surface the code (devCode) - safe locally, catastrophic in a
     // deployed build where it would hand any caller a valid login OTP. Only
     // the local dev/test runtime (NODE_ENV !== "production") may fail open.
     if (process.env.NODE_ENV === "production") {
-      console.error("[textlk] TEXTLK_API_TOKEN missing in production — refusing to fail open");
+      console.error("[textlk] TEXTLK_API_TOKEN missing in production. Refusing to fail open");
       return { ok: false, error: "SMS delivery is not configured" };
     }
     console.warn("[textlk] TEXTLK_API_TOKEN missing, printing instead of sending", { recipient, message });

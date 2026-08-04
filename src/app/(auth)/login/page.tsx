@@ -205,7 +205,7 @@ function LoginForm() {
           {accountMissing ? (
             <div className="p-4 bg-blue-50 border border-blue-200 rounded-xl space-y-3">
               <p className="text-slate-700 text-sm">
-                No DriveLink account uses that {method === "email" ? "email" : "number"}. Create one to continue —
+                No DriveLink account uses that {method === "email" ? "email" : "number"}. Create one to continue:
                 it takes about a minute.
               </p>
               <Link href={signupHref} className="block">

@@ -158,7 +158,7 @@ const OWNERS = [
 ];
 
 const VEHICLES = [
-  // Lanka Wheels (Colombo, business) — verified fleet
+  // Lanka Wheels (Colombo, business) - verified fleet
   { owner: "lanka", make: "Toyota", model: "Aqua", year: 2017, type: "car", emoji: "🚗", hue: 210, featured: true,
     rate: 9500, weekly: 60000, monthly: 195000, deposit: 25000, km: 100, extraKm: 30, seats: 5, trans: "automatic", fuel: "hybrid",
     plate: "CAB-4471", color: "Pearl White", body: "Hatchback", doors: 5, cc: 1500, odo: 68000,

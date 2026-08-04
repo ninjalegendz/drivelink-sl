@@ -100,19 +100,19 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: `Can't do that from '${bk.status}'.` }, { status: 409 });
   }
 
-  // Starting the rental ("active") is a pickup action — don't let it happen
+  // Starting the rental ("active") is a pickup action - don't let it happen
   // weeks early. Allow it from a day before the pickup date onward.
   if (to === "active" && bk.start_at) {
     const EARLY_GRACE = 24 * 3600_000;
     if (Date.now() < new Date(bk.start_at).getTime() - EARLY_GRACE) {
       return NextResponse.json(
-        { error: "It's too early to start this rental — you can start it from the day before pickup." },
+        { error: "It's too early to start this rental. You can start it from the day before pickup." },
         { status: 409 },
       );
     }
   }
 
-  // BUILD 1 — mandatory inspection gates (TRUST-001). A rental can't be started
+  // BUILD 1 - mandatory inspection gates (TRUST-001). A rental can't be started
   // without a recorded PICKUP inspection, and can't be completed without a
   // RETURN inspection. This is DriveLink's flagship deposit-dispute protection,
   // so it's enforced here (not just in the UI). Admins keep an audited emergency
@@ -164,7 +164,7 @@ export async function POST(req: NextRequest) {
 
   // Freeze the digital rental agreement at confirmation (reservation). TRUST-006:
   // awaited (not fire-and-forget) so the snapshot is guaranteed to exist before
-  // we report success — the renter can open Agreement immediately after. The
+  // we report success - the renter can open Agreement immediately after. The
   // helper is idempotent and retries once; a hard failure is logged but doesn't
   // block the confirmation the owner already committed.
   if (to === "confirmed") {
@@ -195,7 +195,7 @@ export async function POST(req: NextRequest) {
         const rr = r as { phone?: string | null; email?: string | null } | null;
         const vname = l.vehicles ? `${l.vehicles.year} ${l.vehicles.make} ${l.vehicles.model}` : "that vehicle";
         const realEmail = rr?.email && !rr.email.endsWith("@phone.drivelink.invalid") ? rr.email : null;
-        const text = `DriveLink: the ${vname} you requested (${l.start_date}–${l.end_date}) was just booked by another renter. Browse other options: ${appUrl}/vehicles`;
+        const text = `DriveLink: the ${vname} you requested (${l.start_date} to ${l.end_date}) was just booked by another renter. Browse other options: ${appUrl}/vehicles`;
         await notifyCascade({
           phone: rr?.phone ?? undefined, smsKey: "booking_status_renter", text,
           email: realEmail, emailSubject: "Those dates were just booked", emailText: text,
@@ -292,7 +292,7 @@ async function handlePageCancellation(
   const b = row as unknown as Joined | null;
   if (!b) return NextResponse.json({ error: "Booking not found" }, { status: 404 });
 
-  // Explicit party check — don't rely on RLS alone here. It reaches the
+  // Explicit party check - don't rely on RLS alone here. It reaches the
   // same verdict, but a bad caller against a bare `.update()` would just
   // silently match zero rows and still get a 200, which is a worse
   // failure mode for a "your cancellation went through" action.
@@ -310,13 +310,13 @@ async function handlePageCancellation(
   // A live (active) rental past pickup is a dispute, not a cancellation.
   if (b.status === "active" && pickupPassed) {
     return NextResponse.json(
-      { error: "This booking's pickup time has already passed — use dispute reporting instead." },
+      { error: "This booking's pickup time has already passed. Use dispute reporting instead." },
       { status: 400 },
     );
   }
   // A CONFIRMED booking whose pickup passed is a renter no-show. Decision 3
   // introduced this state (reserved bookings no longer auto-activate), so the
-  // owner must be able to release it — it otherwise holds the dates forever.
+  // owner must be able to release it - it otherwise holds the dates forever.
   // Neutral 'system' attribution: it frees the dates without striking the page
   // or auto-penalising the renter (the owner can report a genuine no-show
   // separately).
@@ -325,7 +325,7 @@ async function handlePageCancellation(
   const now = new Date().toISOString();
   const trimmedReason = reason?.trim();
   const cancellationReason = isNoShow
-    ? "Reserved booking released — the vehicle was not picked up."
+    ? "Reserved booking released: the vehicle was not picked up."
     : trimmedReason
       ? `Cancelled by the Rental Page: ${trimmedReason}`
       : "Cancelled by the Rental Page";

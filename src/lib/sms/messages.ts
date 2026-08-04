@@ -106,7 +106,7 @@ export function buildRenterCancelledMessage({
 }
 
 // Sent to the renter when the page (agency/host) cancels a booking they'd
-// already confirmed — the renter-trust-costing case, distinct from
+// already confirmed - the renter-trust-costing case, distinct from
 // buildRenterCancelledMessage's system/admin cancellations. Points at the
 // marketplace instead of the (now dead-end) booking page.
 export function buildRenterPageCancelledMessage({

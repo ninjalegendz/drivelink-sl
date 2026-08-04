@@ -261,7 +261,7 @@ function SubmitForm({ bookingId, phase, vehiclePlate, depositLkr, existing, onSu
             className="mt-0.5"
           />
           <span className="text-slate-700 text-sm">
-            Number plate matches the listing: <span className="font-mono font-semibold">{vehiclePlate ?? "—"}</span>
+            Number plate matches the listing: <span className="font-mono font-semibold">{vehiclePlate ?? "-"}</span>
           </span>
         </label>
       )}
@@ -448,11 +448,11 @@ function PendingReview({
       <div className="grid grid-cols-2 gap-3 text-sm">
         <div>
           <p className="text-slate-500 text-xs">Odometer</p>
-          <p className="text-slate-900 font-semibold">{inspection.odometer_km?.toLocaleString() ?? "—"} km</p>
+          <p className="text-slate-900 font-semibold">{inspection.odometer_km?.toLocaleString() ?? "-"} km</p>
         </div>
         <div>
           <p className="text-slate-500 text-xs">Fuel level</p>
-          <p className="text-slate-900 font-semibold">{inspection.fuel_level ? FUEL_LEVEL_LABELS[inspection.fuel_level] : "—"}</p>
+          <p className="text-slate-900 font-semibold">{inspection.fuel_level ? FUEL_LEVEL_LABELS[inspection.fuel_level] : "-"}</p>
         </div>
       </div>
 
@@ -560,11 +560,11 @@ function AckedSummary({
           <div className="grid grid-cols-2 gap-3 text-sm">
             <div>
               <p className="text-slate-500 text-xs">Odometer</p>
-              <p className="text-slate-900 font-medium">{inspection.odometer_km?.toLocaleString() ?? "—"} km</p>
+              <p className="text-slate-900 font-medium">{inspection.odometer_km?.toLocaleString() ?? "-"} km</p>
             </div>
             <div>
               <p className="text-slate-500 text-xs">Fuel level</p>
-              <p className="text-slate-900 font-medium">{inspection.fuel_level ? FUEL_LEVEL_LABELS[inspection.fuel_level] : "—"}</p>
+              <p className="text-slate-900 font-medium">{inspection.fuel_level ? FUEL_LEVEL_LABELS[inspection.fuel_level] : "-"}</p>
             </div>
           </div>
           {phase === "return" && pickupInspection && <ComparisonStrip pickup={pickupInspection} ret={inspection} />}
@@ -601,7 +601,7 @@ function ComparisonStrip({ pickup, ret }: { pickup: InspectionRow; ret: Inspecti
       <div className="flex items-center justify-between">
         <span className="text-slate-600">Odometer</span>
         <span className="text-slate-900 font-medium">
-          {pickup.odometer_km?.toLocaleString() ?? "—"} → {ret.odometer_km?.toLocaleString() ?? "—"} km
+          {pickup.odometer_km?.toLocaleString() ?? "-"} → {ret.odometer_km?.toLocaleString() ?? "-"} km
           {kmDriven !== null && (
             <span className="text-slate-500"> ({kmDriven >= 0 ? "+" : ""}{kmDriven.toLocaleString()} km)</span>
           )}
@@ -610,7 +610,7 @@ function ComparisonStrip({ pickup, ret }: { pickup: InspectionRow; ret: Inspecti
       <div className="flex items-center justify-between">
         <span className="text-slate-600">Fuel</span>
         <span className="text-slate-900 font-medium">
-          {pickup.fuel_level ? FUEL_LEVEL_LABELS[pickup.fuel_level] : "—"} → {ret.fuel_level ? FUEL_LEVEL_LABELS[ret.fuel_level] : "—"}
+          {pickup.fuel_level ? FUEL_LEVEL_LABELS[pickup.fuel_level] : "-"} → {ret.fuel_level ? FUEL_LEVEL_LABELS[ret.fuel_level] : "-"}
         </span>
       </div>
     </div>

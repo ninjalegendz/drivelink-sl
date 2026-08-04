@@ -31,7 +31,7 @@ const RESEND_ENDPOINT = "https://api.resend.com/emails";
 //
 // Caveat worth knowing: webfont support in email is uneven. Apple Mail and
 // Outlook-for-Mac honour the @font-face, while Gmail and Outlook-on-Windows
-// strip it and use the fallback. Nothing renders in a *different* brand font —
+// strip it and use the fallback. Nothing renders in a *different* brand font - 
 // the fallback is the reader's own system UI font, which is the ceiling for
 // email everywhere.
 const EMAIL_FONT_STACK =
@@ -60,11 +60,11 @@ export async function sendEmail({ to, subject, text, html }: SendEmailInput): Pr
   const fromAddr = process.env.RESEND_FROM_EMAIL;
 
   if (!apiKey || !fromAddr) {
-    // Fail CLOSED in production — the devOnly path can surface OTP codes to
+    // Fail CLOSED in production - the devOnly path can surface OTP codes to
     // the client (see login/signup send-code routes). Only local dev/test
     // (NODE_ENV !== "production") may log-and-succeed without credentials.
     if (process.env.NODE_ENV === "production") {
-      console.error("[email] RESEND_API_KEY/RESEND_FROM_EMAIL missing in production — refusing to fail open");
+      console.error("[email] RESEND_API_KEY/RESEND_FROM_EMAIL missing in production. Refusing to fail open");
       return { ok: false, error: "Email delivery is not configured" };
     }
     console.warn("[email] RESEND_API_KEY or RESEND_FROM_EMAIL missing, logging instead of sending", { to, subject });

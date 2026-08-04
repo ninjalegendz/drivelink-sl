@@ -16,7 +16,7 @@ interface Props {
  * Tap-to-toggle chip picker fed by a platform preset catalog (each preset has
  * its own icon). Anything the provider previously free-typed that isn't in
  * the catalog shows up as a removable custom chip, and they can still add
- * their own via the inline input — so we never lose data from older listings.
+ * their own via the inline input - so we never lose data from older listings.
  */
 export function PresetPicker({ presets, value, onChange, addLabel = "Add your own", addPlaceholder = "Type and press Add" }: Props) {
   const [customText, setCustomText] = useState("");

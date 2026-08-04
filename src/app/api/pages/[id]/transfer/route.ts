@@ -6,10 +6,10 @@ interface RouteContext { params: Promise<{ id: string }> }
 
 // POST /api/pages/{id}/transfer  body: { email }  (PAGE-005)
 //
-// Hand a Rental Page to another account — the person who signed up isn't always
+// Hand a Rental Page to another account - the person who signed up isn't always
 // the permanent owner (a staffer set it up, the business changes hands, etc.).
 // Owner-only. The new owner must be a KYC-verified account, because vehicle
-// management is gated on the OWNER's KYC — transferring to an unverified
+// management is gated on the OWNER's KYC - transferring to an unverified
 // account would silently freeze the fleet. The previous owner is kept on as
 // staff so access isn't abruptly lost; the new owner can remove them.
 export async function POST(req: NextRequest, ctx: RouteContext) {

@@ -15,7 +15,7 @@ import { canActOnAgency } from "@/lib/pages/access";
 //
 // Goes through the service client deliberately: the bookings RLS update
 // policies don't include 'disputed' as a reachable target for either
-// party, and we keep it that way — this route is the single, validated
+// party, and we keep it that way - this route is the single, validated
 // entry point (party check, status check, claim window, reason required).
 
 const CLAIM_WINDOW_MS = 72 * 60 * 60 * 1000;

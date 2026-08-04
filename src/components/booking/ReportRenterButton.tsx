@@ -15,12 +15,12 @@ interface Props {
 /**
  * "Report renter" entry point for the page-side blacklist flow. Renders
  * nothing unless the booking is reportable: completed, disputed, or
- * overdue-critical — the caller computes that gate (mirrors
+ * overdue-critical - the caller computes that gate (mirrors
  * ReportProblemButton's pattern, but this feeds a different, admin-only
  * pipeline). Posts to /api/bookings/[id]/report-renter, which does its own
  * party/status/duplicate validation server-side; this is just the UI.
  *
- * Deliberately low-key (slate, not amber/red) — this is a serious,
+ * Deliberately low-key (slate, not amber/red) - this is a serious,
  * one-way accusation, not a routine action.
  */
 export function ReportRenterButton({ bookingId, reportable }: Props) {
@@ -118,7 +118,7 @@ function ReportRenterModal({
         ) : (
           <form onSubmit={submit} className="space-y-4">
             <p className="text-slate-500 text-xs bg-slate-50 border border-slate-200 rounded-lg px-3 py-2 leading-normal">
-              For serious issues only — non-return, fraud, damage with refusal to settle. Reports are
+              For serious issues only: non-return, fraud, damage with refusal to settle. Reports are
               reviewed by DriveLink with your booking&apos;s evidence (agreement, inspections, incidents)
               before any action. False reports affect your page&apos;s standing.
             </p>

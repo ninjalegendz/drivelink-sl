@@ -92,7 +92,7 @@ export async function POST(req: NextRequest) {
   return NextResponse.json({
     key,
     putUrl,
-    // Proxy URL for private prefixes (kyc, vehicle-docs) — the stored URL
+    // Proxy URL for private prefixes (kyc, vehicle-docs) - the stored URL
     // is only fetchable through /api/docs with a session; CDN URL otherwise.
     publicUrl: getDocUrl(key),
     maxBytesHint: MAX_BYTES_HINT,

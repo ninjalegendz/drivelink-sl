@@ -18,7 +18,7 @@ interface Props {
   settlementAckAt:    string | null;
 }
 
-// BUILD 3 — the return settlement both sides see. The owner itemises extra
+// BUILD 3 - the return settlement both sides see. The owner itemises extra
 // charges (fuel, late, damage…); everyone sees the deposit netted to one
 // figure; the renter accepts, which locks the ledger.
 export function ChargeLedger({ bookingId, mode, rentalSubtotalLkr, depositHeldLkr, settlementAckAt }: Props) {
@@ -98,7 +98,7 @@ export function ChargeLedger({ bookingId, mode, rentalSubtotalLkr, depositHeldLk
         {s.charges.map((c) => (
           <div key={c.id} className="flex items-center justify-between gap-2">
             <span className="text-slate-700">
-              {CHARGE_KIND_LABELS[c.kind]}{c.label ? ` — ${c.label}` : ""}
+              {CHARGE_KIND_LABELS[c.kind]}{c.label ? `: ${c.label}` : ""}
             </span>
             <span className="flex items-center gap-2">
               <span className="text-slate-900">+{formatLKR(c.amount_lkr)}</span>
@@ -112,7 +112,7 @@ export function ChargeLedger({ bookingId, mode, rentalSubtotalLkr, depositHeldLk
           </div>
         ))}
         {s.charges.length === 0 && <p className="text-slate-400 text-xs">No extra charges added.</p>}
-        {s.depositHeldLkr > 0 && <Row k="Security deposit held" v={`−${formatLKR(s.depositHeldLkr)}`} />}
+        {s.depositHeldLkr > 0 && <Row k="Security deposit held" v={`. ${formatLKR(s.depositHeldLkr)}`} />}
       </div>
 
       {/* Net */}
@@ -158,7 +158,7 @@ export function ChargeLedger({ bookingId, mode, rentalSubtotalLkr, depositHeldLk
 function netLabel(net: number): string {
   if (net > 0) return "Renter still owes";
   if (net < 0) return "Owner refunds renter";
-  return "Settled — nothing owed";
+  return "Settled: nothing owed";
 }
 
 function Row({ k, v, muted }: { k: string; v: string; muted?: boolean }) {

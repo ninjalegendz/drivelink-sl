@@ -11,7 +11,7 @@
 // blacklist reporting, page switcher authorization, and key SSR pages.
 //
 // Run:  node scripts/e2e-walkthrough.mjs   (dev server must be up; start it
-//       with SMS/WhatsApp neutralized — see run instructions in the session)
+//       with SMS/WhatsApp neutralized - see run instructions in the session)
 //
 // Cleans up everything it created (rows, users, R2 probes, SMS toggles).
 import { createClient as createSb } from "@supabase/supabase-js";

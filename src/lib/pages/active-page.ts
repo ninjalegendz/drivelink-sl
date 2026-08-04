@@ -1,11 +1,11 @@
-// Rental Pages — active-page resolution.
+// Rental Pages - active-page resolution.
 //
 // One DriveLink account can own many Rental Pages (rows in `agencies`;
 // the table keeps its internal name, the product name is "Rental Page").
 // The dashboard is always scoped to ONE page at a time: the "active" page,
 // chosen with the page switcher and remembered in a cookie.
 //
-// Ownership is validated server-side on every read — the cookie is a hint,
+// Ownership is validated server-side on every read - the cookie is a hint,
 // never an authority. RLS enforces the same ownership set underneath
 // (`agency_id IN (SELECT id FROM agencies WHERE owner_id = auth.uid())`),
 // so even a forged cookie can only ever select among the user's own pages.
@@ -24,7 +24,7 @@ const PAGE_COLUMNS =
 
 /**
  * All live (non-deleted) Rental Pages the user OWNS, oldest first.
- * Strictly ownership — used where ownership is the authority: account
+ * Strictly ownership - used where ownership is the authority: account
  * deletion, page transfer, and staff (member) management. For "pages this
  * user can operate" (which also includes pages they're a staff member of),
  * use getActingPages.
@@ -71,7 +71,7 @@ export async function getActingPages(
 /**
  * The page the dashboard is currently scoped to: the cookie's page if the
  * user can operate it, otherwise the first page they can operate, otherwise
- * null (no pages yet — caller should route to the create-page flow).
+ * null (no pages yet - caller should route to the create-page flow).
  * Resolves across pages the user owns AND pages they staff.
  */
 export async function getActivePage(

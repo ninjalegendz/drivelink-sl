@@ -11,7 +11,7 @@ interface RouteContext {
 // Owner unlist/relist. vehicles.status is a protected column now (service-role
 // only), so the owner's Unlist/Relist toggle goes through here. The owner may
 // ONLY flip between available and unlisted on a listing that is already in one
-// of those states — this deliberately cannot approve a pending_review listing
+// of those states - this deliberately cannot approve a pending_review listing
 // (that stays an admin action) or disturb a rented/maintenance vehicle.
 export async function POST(req: NextRequest, ctx: RouteContext) {
   const supabase = await createClient();

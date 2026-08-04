@@ -1,7 +1,7 @@
 // Client-side image downscale before upload. A modern phone photo is ~8MP and
-// 3–6MB; we serve marketplace images UNOPTIMIZED straight from R2/CDN (no Worker
+// 3-6MB; we serve marketplace images UNOPTIMIZED straight from R2/CDN (no Worker
 // resizing), so the uploaded size IS the size every renter downloads. Capping the
-// largest dimension + re-encoding to JPEG turns that 5MB original into ~200–400KB.
+// largest dimension + re-encoding to JPEG turns that 5MB original into ~200-400KB.
 //
 // Any failure (unsupported type, no canvas, decode error) falls back to the
 // original file, compression is a best-effort optimisation, never a gate.

@@ -54,7 +54,7 @@ export function VehicleDetailModal({ vehicle, onClose }: { vehicle: VehicleWithA
     let cancelled = false;
     (async () => {
       const supabase = createClient();
-      // BOOK-009: privacy-safe availability RPC — works for signed-out visitors
+      // BOOK-009: privacy-safe availability RPC - works for signed-out visitors
       // (a direct bookings read returns nothing under party-only RLS for anon).
       const { data: avail } = await supabase.rpc("vehicle_availability", { p_vehicle_id: vehicle.id });
       if (cancelled) return;

@@ -8,7 +8,7 @@ const CATEGORY_LABEL: Record<string, string> = {
   duplicate: "Duplicate", inappropriate: "Inappropriate", other: "Other",
 };
 
-// ADMIN-003 — triage queue for reported listings / pages / accounts.
+// ADMIN-003 - triage queue for reported listings / pages / accounts.
 export default async function AdminReportsPage() {
   const service = await createServiceClient(); // (admin) layout enforces the role
 
@@ -42,7 +42,7 @@ export default async function AdminReportsPage() {
                 </div>
                 {r.detail && <p className="text-slate-700 text-sm">{r.detail}</p>}
                 <div className="flex gap-3 mt-1 text-xs text-slate-500">
-                  <span>By {r.reporter?.full_name ?? "—"}</span>
+                  <span>By {r.reporter?.full_name ?? "-"}</span>
                   <span>{new Date(r.created_at).toLocaleDateString("en-LK")}</span>
                   {r.target_type === "vehicle" && (
                     <Link href={`/admin/vehicles`} className="text-blue-600 hover:underline">Open listings</Link>

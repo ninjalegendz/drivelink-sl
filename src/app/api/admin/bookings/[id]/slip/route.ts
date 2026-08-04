@@ -21,7 +21,7 @@ async function requireAdmin() {
 //
 // Admin verifies a payment slip. Guarded on the service client: the booking
 // must still be in 'payment_pending' (so a slip approved after the booking
-// was cancelled elsewhere can't silently revive it — BOOK-023). Approve
+// was cancelled elsewhere can't silently revive it - BOOK-023). Approve
 // activates the booking; reject rolls back to 'confirmed' and clears the slip
 // so the renter can re-upload.
 export async function POST(req: NextRequest, ctx: RouteContext) {

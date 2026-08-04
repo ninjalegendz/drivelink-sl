@@ -1,4 +1,4 @@
-// AUTO-GENERATED — regenerate if the brand font changes.
+// AUTO-GENERATED - regenerate if the brand font changes.
 // Poppins SemiBold (latin subset, ~8KB) as a base64 woff2.
 //
 // Why inline: the document watermarks are SVGs rendered AS IMAGES (a CSS

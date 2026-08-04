@@ -6,7 +6,7 @@ import { canActOnAgency } from "@/lib/pages/access";
 
 interface RouteContext { params: Promise<{ id: string }> }
 
-// GET /api/bookings/{id}/agreement/pdf — either party (or admin) downloads the
+// GET /api/bookings/{id}/agreement/pdf - either party (or admin) downloads the
 // immutable agreement as a self-contained, fingerprinted PDF (TRUST-007).
 export async function GET(_req: NextRequest, ctx: RouteContext) {
   const { id } = await ctx.params;

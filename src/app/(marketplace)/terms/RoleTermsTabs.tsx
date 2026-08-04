@@ -58,7 +58,7 @@ export function RoleTermsTabs() {
                 claim at that moment, they must provide a written estimate within 48 hours. You
                 can request a second estimate. Deposits are held maximum 7 days.</li>
             <li><strong>Late return ladder:</strong> late return is free for the first 2 hours.
-                After that, an hourly late fee applies, capped at one day&apos;s rental rate — a
+                After that, an hourly late fee applies, capped at one day&apos;s rental rate. A
                 late return never costs more than one extra day. If you are unreachable for 24
                 hours, this may be treated as misappropriation and your account will be frozen
                 pending investigation.</li>

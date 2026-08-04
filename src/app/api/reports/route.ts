@@ -6,7 +6,7 @@ const CATEGORIES = new Set([
   "fake_or_stolen", "wrong_info", "inappropriate", "scam", "duplicate", "other",
 ]);
 
-// POST /api/reports — a signed-in user reports a listing / page / account.
+// POST /api/reports - a signed-in user reports a listing / page / account.
 // body: { target_type, target_id, category, detail? }
 export async function POST(req: NextRequest) {
   const supabase = await createClient();
@@ -35,7 +35,7 @@ export async function POST(req: NextRequest) {
     .from("content_reports").select("id", { count: "exact", head: true })
     .eq("reporter_id", user.id).gt("created_at", since);
   if ((recent ?? 0) >= 20) {
-    return NextResponse.json({ error: "You've reported a lot recently — try again later." }, { status: 429 });
+    return NextResponse.json({ error: "You've reported a lot recently. Try again later." }, { status: 429 });
   }
   const { data: dupe } = await service
     .from("content_reports").select("id")

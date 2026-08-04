@@ -4,7 +4,7 @@ import { logEvent } from "@/lib/activity/log";
 
 interface RouteContext { params: Promise<{ id: string }> }
 
-// POST /api/bookings/{id}/settlement — the RENTER acknowledges the final
+// POST /api/bookings/{id}/settlement - the RENTER acknowledges the final
 // settlement statement, locking the charge ledger. Two-sided sign-off: the
 // owner itemised the charges, the renter accepts the net figure.
 export async function POST(_req: NextRequest, ctx: RouteContext) {

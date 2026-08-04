@@ -35,7 +35,7 @@ export function PageCreateForm() {
     if (!city)                  { setError("Pick a city."); return; }
     if (!whatsapp.trim())       { setError("Enter a WhatsApp number for booking alerts."); return; }
     if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim())) {
-      setError("Enter a valid email — statements and booking records go there."); return;
+      setError("Enter a valid email: statements and booking records go there."); return;
     }
 
     setLoading(true);

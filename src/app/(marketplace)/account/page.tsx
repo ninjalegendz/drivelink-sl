@@ -147,7 +147,7 @@ export default async function AccountPage({ searchParams }: Props) {
       {/* My Rental Pages (every signed-in account can host now) */}
       <RentalPageList pages={pages} />
 
-      {/* My bookings — everyone rents (decision 9: one identity, page owners
+      {/* My bookings: everyone rents (decision 9: one identity, page owners
           keep their personal renter screens). Admins use the admin console. */}
       {profile.role !== "admin" && (
         <Link

@@ -18,7 +18,7 @@ export function digitsOnly(input: string): string {
 /**
  * Normalise any reasonable phone input to E.164 (`+<country><number>`).
  *   - Starts with "+"  → treated as already-international (any country); we just
- *     validate the digit count (8–15, per E.164).
+ *     validate the digit count (8-15, per E.164).
  *   - No "+"           → assumed Sri Lankan local/national and defaulted to +94.
  * Returns null when it can't be parsed into a plausible number.
  *

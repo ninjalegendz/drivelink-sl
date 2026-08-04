@@ -107,10 +107,10 @@ export function RatingAdjustModal({ targetKind, targetId, targetName, currentRat
 
           <div>
             <label className="text-slate-700 text-xs font-medium mb-1.5 block">
-              Change by ({field === "rating_avg" ? "0.1 to 5.0" : "−100 to +100"})
+              Change by ({field === "rating_avg" ? "0.1 to 5.0" : ": 100 to +100"})
             </label>
             <div className="flex gap-2">
-              <button type="button" onClick={() => setDelta(String(deltaNum - (field === "rating_avg" ? 0.1 : 5)))} className="px-3 py-2 bg-slate-100 border border-slate-200 rounded-lg text-slate-900">−</button>
+              <button type="button" onClick={() => setDelta(String(deltaNum - (field === "rating_avg" ? 0.1 : 5)))} className="px-3 py-2 bg-slate-100 border border-slate-200 rounded-lg text-slate-900">. </button>
               <input
                 type="number"
                 step={field === "rating_avg" ? "0.1" : "1"}

@@ -7,7 +7,7 @@ import { createClient } from "@/lib/supabase/client";
 import { uploadToR2 } from "@/lib/storage/upload";
 import { Button } from "@/components/ui/Button";
 
-// PAGE-006: business registration — the number + the certificate image/PDF.
+// PAGE-006: business registration - the number + the certificate image/PDF.
 // The cert is private (business-docs prefix); only the page owner + admin can
 // view it via /api/docs. An admin cross-checks the number against the cert
 // before marking the page a verified business.

@@ -15,17 +15,17 @@ const STEPS: { icon: React.ReactNode; title: string; body: string }[] = [
   {
     icon: <Siren size={18} />,
     title: "1. Safety first",
-    body: "Hazard lights on. Move people away from traffic. Only move the vehicles if police tell you to, or if it's a minor scrape and both drivers agree — insurers can reject claims when the scene was changed.",
+    body: "Hazard lights on. Move people away from traffic. Only move the vehicles if police tell you to, or if it's a minor scrape and both drivers agree. Insurers can reject claims when the scene was changed.",
   },
   {
     icon: <Phone size={18} />,
-    title: "2. Call the police — 119",
+    title: "2. Call the police: 119",
     body: "Do not leave without a police report number. Sri Lankan insurers require a police report for accident claims; without one the damage usually becomes a personal cost.",
   },
   {
     icon: <Phone size={18} />,
     title: "3. Call the owner now",
-    body: "Their number is on your booking page and in the rental agreement. The owner deals with their insurer — you deal with the owner, through the booking.",
+    body: "Their number is on your booking page and in the rental agreement. The owner deals with their insurer. You deal with the owner, through the booking.",
   },
   {
     icon: <Camera size={18} />,
@@ -35,7 +35,7 @@ const STEPS: { icon: React.ReactNode; title: string; body: string }[] = [
   {
     icon: <HandCoins size={18} />,
     title: "5. Do not settle in cash at the roadside",
-    body: "And do not admit fault. Roadside 'settle it now' pressure is common — money handed over at the scene is unrecoverable and can void the insurance path entirely.",
+    body: "And do not admit fault. Roadside 'settle it now' pressure is common. Money handed over at the scene is unrecoverable and can void the insurance path entirely.",
   },
   {
     icon: <FileText size={18} />,
@@ -53,7 +53,7 @@ export default function AccidentProtocolPage() {
         </p>
         <h1 className="text-3xl font-bold text-slate-900">Accident or breakdown? Do this.</h1>
         <p className="text-slate-600 leading-relaxed">
-          Six steps, in order. Every DriveLink rental agreement includes this protocol — following it
+          Six steps, in order. Every DriveLink rental agreement includes this protocol. Following it
           protects your deposit, the owner&apos;s insurance claim, and you.
         </p>
       </header>
@@ -75,7 +75,7 @@ export default function AccidentProtocolPage() {
         <p>
           Mechanical failure that isn&apos;t caused by the renter is the <strong>owner&apos;s</strong>{" "}
           responsibility: repair, a replacement vehicle, or a refund for the lost days. Report it through
-          the booking and give the owner a chance to respond — but{" "}
+          the booking and give the owner a chance to respond, but{" "}
           <strong>never authorise repairs yourself without the owner&apos;s written OK</strong> in the
           conversation, or the cost may not be reimbursed. Towing for a mechanical failure is the
           owner&apos;s cost.
@@ -83,7 +83,7 @@ export default function AccidentProtocolPage() {
         <h2 className="font-semibold text-slate-900 text-base pt-2">What you're liable for</h2>
         <p>
           With a properly hire-insured vehicle, your exposure in an at-fault accident is normally the
-          insurance excess plus anything the insurer excludes — as written in your rental agreement.{" "}
+          insurance excess plus anything the insurer excludes, as written in your rental agreement.{" "}
           <strong>Breaching the agreement changes that to full liability</strong>: an unlisted driver at
           the wheel, alcohol or drugs, prohibited-use trips, or driving without a valid licence/permit.
         </p>

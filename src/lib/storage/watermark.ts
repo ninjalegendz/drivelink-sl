@@ -1,11 +1,11 @@
-// Decision 11 — free, in-Worker document watermarking. When a page owner (or
+// Decision 11 - free, in-Worker document watermarking. When a page owner (or
 // admin) views someone else's ID/licence image, we don't hand back the raw
 // original: we wrap it in an SVG that embeds the image plus a repeating,
 // diagonal watermark baked into what the browser renders and saves. Not DRM
 // (a determined user can still extract the raster via devtools), but it closes
 // the "open the raw URL and save a clean copy" gap and every saved/screenshot
 // copy now carries the viewer + date. Private KYC images never leave our
-// infrastructure — no third-party image CDN.
+// infrastructure - no third-party image CDN.
 
 import { SVG_POPPINS_FACE } from "@/lib/brand/poppins-font";
 
@@ -49,7 +49,7 @@ function esc(s: string): string {
 function toBase64(bytes: Uint8Array): string {
   // Chunked to avoid call-stack limits on large images.
   let bin = "";
-  const chunk = 0x2000; // 8 KB — comfortably under any spread-arg limit
+  const chunk = 0x2000; // 8 KB: comfortably under any spread-arg limit
   for (let i = 0; i < bytes.length; i += chunk) {
     bin += String.fromCharCode(...bytes.subarray(i, i + chunk));
   }

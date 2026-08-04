@@ -20,7 +20,7 @@ async function requireAdmin() {
 // POST /api/admin/blacklist-reports/{id}   body: { approve: boolean }
 //
 // Reviews a renter blacklist report. Runs on the service client because
-// blacklisting a renter writes profiles.is_blacklisted — a protected column
+// blacklisting a renter writes profiles.is_blacklisted - a protected column
 // no browser session may set. Approving also fixes two long-standing bugs:
 //   - it matches profiles.nic_number (the actual NIC), not nic_url (a
 //     storage URL that never contains the NIC), and

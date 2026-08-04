@@ -78,7 +78,7 @@ export default async function VehicleDetailPage({ params }: Props) {
     .eq("status", "completed");
   const rentalsDone = completedRentals ?? 0;
 
-  // Reviews of this Rental Page (renters review the PAGE after a trip — BUILD 2).
+  // Reviews of this Rental Page (renters review the PAGE after a trip - BUILD 2).
   const { data: reviewRows } = await supabase
     .from("reviews")
     .select("id, rating, comment, created_at, reviewer:profiles!reviewer_id(full_name)")
@@ -116,7 +116,7 @@ export default async function VehicleDetailPage({ params }: Props) {
     ...(!vehicle.unlimited_km && vehicle.extra_mileage_lkr
       ? [{ Icon: Route, text: `${formatLKR(vehicle.extra_mileage_lkr)}/extra km beyond the allowance` }] : []),
     ...(vehicle.delivery_available
-      ? [{ Icon: Truck, text: vehicle.delivery_fee_lkr ? `Delivery available — ${formatLKR(vehicle.delivery_fee_lkr)}` : "Delivery available" }] : []),
+      ? [{ Icon: Truck, text: vehicle.delivery_fee_lkr ? `Delivery available: ${formatLKR(vehicle.delivery_fee_lkr)}` : "Delivery available" }] : []),
     ...(vehicle.airport_pickup ? [{ Icon: Plane, text: "Airport pickup available" }] : []),
   ];
 
@@ -152,7 +152,7 @@ export default async function VehicleDetailPage({ params }: Props) {
 
   const disclosureRows: TermItem[] = [
     ...(vehicle.has_gps_tracker ? [{ Icon: Satellite, text: "GPS tracker fitted (disclosed in your rental agreement)" }] : []),
-    ...(vehicle.has_etc_tag ? [{ Icon: Ticket, text: "Expressway ETC tag fitted — toll charges during your rental are yours" }] : []),
+    ...(vehicle.has_etc_tag ? [{ Icon: Ticket, text: "Expressway ETC tag fitted: toll charges during your rental are yours" }] : []),
   ];
 
   const withDriverRows: TermItem[] = vehicle.with_driver
@@ -170,7 +170,7 @@ export default async function VehicleDetailPage({ params }: Props) {
 
   // Blocked date ranges for the calendar. BOOK-009: use the privacy-safe
   // vehicle_availability RPC (committed bookings + maintenance blocks, dates
-  // only) so SIGNED-OUT visitors see accurate availability too — a direct
+  // only) so SIGNED-OUT visitors see accurate availability too - a direct
   // bookings read returns nothing under party-only RLS for anon.
   const { data: availRows } = await supabase.rpc("vehicle_availability", { p_vehicle_id: vehicle.id });
   const bookedRanges = ((availRows ?? []) as { start_date: string; end_date: string }[])
@@ -357,14 +357,14 @@ export default async function VehicleDetailPage({ params }: Props) {
             </div>
           )}
 
-          {/* Rental terms — trust panel (Terms Engine) */}
+          {/* Rental terms: trust panel (Terms Engine) */}
           <div className="rounded-2xl border border-slate-100 bg-white p-4 shadow-sm space-y-4">
             <div>
               <h3 className="font-bold text-slate-800 text-sm flex items-center gap-1.5">
                 <ShieldCheck size={15} className="text-blue-600" /> Rental terms
               </h3>
               <p className="text-slate-500 text-xs mt-0.5">
-                No surprise charges — these terms are locked into your booking agreement.
+                No surprise charges: these terms are locked into your booking agreement.
               </p>
             </div>
 

@@ -30,7 +30,7 @@ export async function PageTeamSection({ agencyId }: { agencyId: string }) {
     <div className="mt-4 bg-white border border-slate-200 rounded-2xl shadow-sm p-5">
       <p className="text-slate-900 font-semibold text-sm">Team</p>
       <p className="text-slate-500 text-xs mt-0.5 mb-3">
-        Add staff who help run this page. They can handle bookings, messages, vehicles and inspections — but can&apos;t add or remove staff, delete the page, or change its verification.
+        Add staff who help run this page. They can handle bookings, messages, vehicles and inspections, but can&apos;t add or remove staff, delete the page, or change its verification.
       </p>
       <PageTeamManager agencyId={agencyId} initial={members} />
     </div>

@@ -26,7 +26,7 @@ const ACTIVE_BOOKING_STATUSES = [
   "confirmed",
   "payment_pending",
   "active",
-  // PRIV-001: an open dispute must block deletion — a party can't scrub their
+  // PRIV-001: an open dispute must block deletion - a party can't scrub their
   // identity/evidence mid-investigation. (An overdue rental is still 'active',
   // already covered above.)
   "disputed",
@@ -77,7 +77,7 @@ export async function getDeletionBlockers(userId: string): Promise<DeletionBlock
     });
   }
 
-  // Rental Page owner checks — an account can own up to 5 pages, so every
+  // Rental Page owner checks - an account can own up to 5 pages, so every
   // owned (non-deleted) page is checked, not just one.
   if (profile.role === "agency_owner") {
     const ownedPages = await getOwnedPages(service, userId);
@@ -242,7 +242,7 @@ export async function softDeleteUser(userId: string): Promise<void> {
   }
 
   // Storage cleanup, best-effort, before nulling the URLs. Includes BOTH
-  // driving-licence images — the confirmation email promises identity
+  // driving-licence images - the confirmation email promises identity
   // documents were removed, so leaving licences in R2 would break that.
   if (profile.nic_url)           await deleteStorageObjectByUrl(profile.nic_url);
   if (profile.selfie_url)        await deleteStorageObjectByUrl(profile.selfie_url);
@@ -275,7 +275,7 @@ export async function softDeleteUser(userId: string): Promise<void> {
     .eq("id", userId);
 
   // Soft-delete every page they own. Query ownership directly rather than
-  // gating on profile.role — a stale/changed role would otherwise skip
+  // gating on profile.role - a stale/changed role would otherwise skip
   // active page cleanup and leave a page live after its owner is deleted.
   const ownedPages = await getOwnedPages(service, userId);
   for (const p of ownedPages) await softDeleteAgency(p.id);

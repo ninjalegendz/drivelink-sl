@@ -1,7 +1,7 @@
 @import "tailwindcss";
 
 /* Country-flag emoji font (Twemoji flags, CC-BY 4.0, self-hosted). Windows
-   Chrome/Edge don't render regional-indicator flag emoji — they fall back to
+   Chrome/Edge don't render regional-indicator flag emoji. They fall back to
    the two ISO letters ("LK", "SZ"). This font supplies the flag glyphs so the
    picker shows real flags on every platform. Applied via the .flag class. */
 @font-face {
@@ -14,11 +14,11 @@
   font-family: "Twemoji Country Flags", var(--font-sans);
 }
 
-/* ─── DriveLink theme — cool slate + blue, standard Tailwind scale ───
+/* ─── DriveLink theme - cool slate + blue, standard Tailwind scale ───
    The marketplace theme uses the STANDARD slate scale (slate-50 page,
    white cards, slate-900 dark surfaces) with a blue-600 primary accent.
 
-   TYPOGRAPHY: Poppins is the single brand typeface — no other font may
+   TYPOGRAPHY: Poppins is the single brand typeface, no other font may
    appear anywhere in the product. It's injected by next/font in layout.tsx
    and surfaced here so EVERY font utility resolves to it: `font-sans`,
    `font-display` and `font-mono` all point at Poppins, which means the
@@ -31,7 +31,7 @@
 
   /* ─── Bouncy easing tokens ────────────────────────────────
      Snappy is the everyday transition (most hovers, dropdowns).
-     Bouncy overshoots a touch — for click-presses, modal opens. */
+     Bouncy overshoots a touch, for click-presses, modal opens. */
   --ease-snappy: cubic-bezier(0.4, 0, 0.2, 1);
   --ease-bouncy: cubic-bezier(0.34, 1.56, 0.64, 1);
 }
@@ -55,7 +55,7 @@
     transition-timing-function: var(--ease-snappy);
   }
 
-  /* Fallback chevron for any native <select> — most are replaced by
+  /* Fallback chevron for any native <select> - most are replaced by
      the custom <Select> component. Slate-500 arrow on light bg. */
   select {
     appearance: none;
@@ -80,7 +80,7 @@
   input[type="password"]::-ms-reveal,
   input[type="password"]::-ms-clear { display: none; }
 
-  /* Date-picker icon — readable on light bg */
+  /* Date-picker icon - readable on light bg */
   input[type="date"]::-webkit-calendar-picker-indicator {
     opacity: 0.6;
     cursor: pointer;
@@ -94,7 +94,7 @@
     color: #0f172a;
   }
 
-  /* Themed scrollbars — slate thumb */
+  /* Themed scrollbars - slate thumb */
   * {
     scrollbar-width: thin;
     scrollbar-color: #cbd5e1 transparent;
@@ -196,7 +196,7 @@
   .animate-fade-up { animation: fade-up 0.26s var(--ease-snappy) both; }
 
   /* ─── Car loader (loading.tsx / <CarLoader/>) ───
-     A little driving car for route-loading states — on theme for a rental app. */
+     A little driving car for route-loading states, on theme for a rental app. */
   .car__body { animation: car-shake 0.2s ease-in-out infinite alternate; }
   .car__line {
     transform-origin: center right;

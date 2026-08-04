@@ -4,7 +4,7 @@ import { canActOnAgency } from "@/lib/pages/access";
 
 interface RouteContext { params: Promise<{ id: string }> }
 
-// POST /api/vehicles/{id}/resubmit — the owner resubmits a rejected (unlisted)
+// POST /api/vehicles/{id}/resubmit - the owner resubmits a rejected (unlisted)
 // listing for admin review (UX-008). Clears the rejection reason and sends it
 // back to pending_review.
 export async function POST(_req: NextRequest, ctx: RouteContext) {

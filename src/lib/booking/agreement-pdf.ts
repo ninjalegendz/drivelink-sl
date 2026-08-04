@@ -3,7 +3,7 @@ import { shortHash } from "@/lib/booking/agreement-hash";
 import type { AgreementTerms } from "@/lib/booking/agreement";
 
 function lkr(n: number | null | undefined): string {
-  return n == null ? "—" : `Rs ${Number(n).toLocaleString("en-LK")}`;
+  return n == null ? "-" : `Rs ${Number(n).toLocaleString("en-LK")}`;
 }
 function dt(iso: string | null): string {
   if (!iso) return "Not yet";
@@ -22,17 +22,17 @@ export async function buildAgreementPdf(t: AgreementTerms, meta: AgreementPdfMet
   const b = await PdfBuilder.create();
 
   b.title("Rental Agreement");
-  b.text(`DriveLink booking ${meta.bookingRef} — recorded by DriveLink (drivelink.lk) as venue and record-keeper.`, { muted: true, gap: 4 });
+  b.text(`DriveLink booking ${meta.bookingRef}: recorded by DriveLink (drivelink.lk) as venue and record-keeper.`, { muted: true, gap: 4 });
   b.rule();
 
   b.h2("1. Parties");
   b.kv("Renter", `${t.parties.renter.name}${t.parties.renter.nic_masked ? ` (NIC ${t.parties.renter.nic_masked})` : ""}`);
-  b.kv("Rental Page", `${t.parties.page.name} — ${t.parties.page.page_type_label}`);
+  b.kv("Rental Page", `${t.parties.page.name}: ${t.parties.page.page_type_label}`);
   b.kv("Page contact", t.parties.page.whatsapp_number);
   b.text(t.parties.platform_disclaimer, { muted: true, size: 8.5 });
 
   b.h2("2. Vehicle");
-  b.kv("Vehicle", `${t.vehicle.year} ${t.vehicle.make} ${t.vehicle.model}${t.vehicle.plate_number ? ` — ${t.vehicle.plate_number}` : ""}`);
+  b.kv("Vehicle", `${t.vehicle.year} ${t.vehicle.make} ${t.vehicle.model}${t.vehicle.plate_number ? `: ${t.vehicle.plate_number}` : ""}`);
   b.kv("Insurance", t.vehicle.insurance_type_label);
   b.kv("Fuel policy", t.vehicle.fuel_policy_label);
 

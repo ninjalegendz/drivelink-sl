@@ -42,7 +42,7 @@ export function Footer() {
       <div className="max-w-7xl mx-auto grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-x-8 gap-y-10 text-sm text-slate-400">
         <div className="space-y-3">
           <div className="flex items-center">
-            {/* Full wordmark (light-on-dark variant) — no separate text label,
+            {/* Full wordmark (light-on-dark variant), no separate text label,
                 the artwork already reads "DriveLink". */}
             <Image src="/logo-mark-light.png" alt="DriveLink" width={1038} height={175} unoptimized className="h-8 w-auto shrink-0" />
           </div>

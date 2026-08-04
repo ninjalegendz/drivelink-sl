@@ -177,7 +177,7 @@ async function main() {
     ok("sidebar has Page settings", settingsVisible);
     await shot(ownerPg, "03-dashboard");
 
-    // wizard structure (not full submit — photos flow verified via API E2E)
+    // wizard structure (not full submit - photos flow verified via API E2E)
     await ownerPg.goto(`${BASE}/dashboard/vehicles/new`);
     await settled(ownerPg);
     const wizText = await ownerPg.locator("body").innerText();
@@ -216,7 +216,7 @@ async function main() {
     await dateInputs.nth(0).fill(d(3));
     await dateInputs.nth(1).fill(d(5));
     await renterPg.getByRole("button", { name: /request/i }).first().click();
-    // lands on booking page or shows success — resolve booking from DB
+    // lands on booking page or shows success - resolve booking from DB
     const booking = await (async () => {
       for (let i = 0; i < 20; i++) {
         const { data } = await svc.from("bookings").select("id, status").eq("renter_id", renterId).order("created_at", { ascending: false }).limit(1).maybeSingle();

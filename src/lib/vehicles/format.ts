@@ -54,7 +54,7 @@ export const RELIABILITY_HELP =
   "% of confirmed bookings the agency actually fulfilled, from completed vs. cancelled bookings. Shown once they've completed at least 3 rentals, a \"-\" means they're still new, not unreliable.";
 
 export const RATING_HELP =
-  "Average score from past renters (1–5 stars). Only renters with completed bookings can leave reviews, no fake ratings.";
+  "Average score from past renters (1-5 stars). Only renters with completed bookings can leave reviews, no fake ratings.";
 
 export const REVIEW_COUNT_HELP =
   "Number of reviews left by renters after completed bookings.";

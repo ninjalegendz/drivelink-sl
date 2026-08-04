@@ -1,10 +1,10 @@
-// Cron worker — fires the booking-lifecycle sweep on the main DriveLink
+// Cron worker - fires the booking-lifecycle sweep on the main DriveLink
 // site. Lives in its own Worker so the main OpenNext build stays untouched
 // (OpenNext doesn't expose a scheduled handler hook).
 //
 // Two cadences (see wrangler.jsonc → triggers.crons):
 //   */15 * * * *  → task=frequent  (payment expiry, auto-complete, overdue
-//                                   alerts — the time-sensitive lifecycle)
+//                                   alerts - the time-sensitive lifecycle)
 //   0 3 * * *     → task=daily     (everything + the R2 orphan-storage sweep)
 //
 // The scheduled event's cron string tells us which trigger fired.

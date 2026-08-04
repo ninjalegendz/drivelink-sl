@@ -8,13 +8,13 @@ import type { AcceptMeta } from "@/lib/booking/agreement";
 import { canActOnAgency } from "@/lib/pages/access";
 
 // POST /api/bookings/[id]/agreement/accept
-// body: {} — the caller's session decides which side is accepting.
+// body: {} - the caller's session decides which side is accepting.
 //
 // Stamps the digital rental agreement (migration 051) for the caller's side:
 // renter_accepted_at/_meta when the renter accepts, owner_accepted_at/_meta
 // when the Rental Page owner accepts. Service client throughout, the
 // authorisation is the explicit party check below (mirrors the dispute
-// route) — booking_agreements has no client-side write policies on purpose,
+// route) - booking_agreements has no client-side write policies on purpose,
 // acceptance needs server-side timestamping + meta capture.
 //
 // 409 if the caller's side already accepted (accepting is one-shot; the
@@ -47,7 +47,7 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
   if (!b) return NextResponse.json({ error: "Booking not found" }, { status: 404 });
 
   // Party check: renter, or the page team (owner or staff). When the page side
-  // accepts it stamps owner_accepted_at regardless of which staffer clicked —
+  // accepts it stamps owner_accepted_at regardless of which staffer clicked - 
   // it's the page's acceptance.
   const isRenter = b.renter_id === user.id;
   const isPageSide = !isRenter && await canActOnAgency(service, user.id, b.agency_id);
@@ -80,7 +80,7 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
   }
 
   // Optional email capture at signing: the renter (or owner) can hand us an
-  // email here so their signed copy has somewhere to go. Only fills a blank —
+  // email here so their signed copy has somewhere to go. Only fills a blank - 
   // never overwrites an existing real address.
   const body = (await req.json().catch(() => ({}))) as Partial<{ email: string }>;
   const emailIn = typeof body.email === "string" ? body.email.trim().toLowerCase() : "";
@@ -138,7 +138,7 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
       const ref    = b.id.slice(0, 8).toUpperCase();
       const link   = `${appUrl}/bookings/${b.id}/agreement`;
       const text   =
-        `DriveLink: rental agreement for booking ${ref} signed by both parties — view it any time from the booking.`;
+        `DriveLink: rental agreement for booking ${ref} signed by both parties. View it any time from the booking.`;
 
       // Documents get the email ALWAYS (when an address exists), not as an
       // SMS-fallback: the emailed copy is the durable record both parties
@@ -153,7 +153,7 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
           try {
             await sendEmail({
               to:      realEmail,
-              subject: `Rental agreement signed — booking ${ref}`,
+              subject: `Rental agreement signed: booking ${ref}`,
               text:    `${text}\n\nView and print your copy:\n${link}`,
               html:    `<p>${text}</p><p><a href="${link}" style="color:#2563eb">View and print your copy</a></p>`,
             });
@@ -166,7 +166,7 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
         }
       }
 
-      // Renter side — prefer an email captured in THIS request over the
+      // Renter side - prefer an email captured in THIS request over the
       // stale pre-capture profile row.
       const renter = b.profiles;
       await notifyParty(

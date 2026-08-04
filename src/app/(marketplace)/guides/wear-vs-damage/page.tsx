@@ -3,7 +3,7 @@ import Link from "next/link";
 import { ShieldCheck, Wrench, AlertTriangle } from "lucide-react";
 
 export const metadata: Metadata = {
-  title: "Wear vs Damage — who pays for what | DriveLink",
+  title: "Wear vs Damage, who pays for what | DriveLink",
   description:
     "The plain-language guide every DriveLink rental agreement points to: what counts as normal wear (owner's cost) vs damage (renter's cost) on a vehicle rental in Sri Lanka.",
 };
@@ -33,20 +33,20 @@ export default function WearVsDamagePage() {
         <p className="inline-flex items-center gap-2 text-blue-600 text-sm font-semibold">
           <ShieldCheck size={16} /> DriveLink standard
         </p>
-        <h1 className="text-3xl font-bold text-slate-900">Wear vs damage — who pays for what</h1>
+        <h1 className="text-3xl font-bold text-slate-900">Wear vs damage, who pays for what</h1>
         <p className="text-slate-600 leading-relaxed">
           Every DriveLink rental agreement points to this page. Normal wear is the cost of running a
           rental vehicle and stays with the owner. Damage beyond normal use is the renter&apos;s
           responsibility, at the standards in the agreement (written estimate within 48 hours, maximum
-          7-day deposit hold, renter entitled to a second estimate). The pickup and return inspections —
-          with odometer, fuel and photos both sides confirmed — decide what changed during the rental.
+          7-day deposit hold, renter entitled to a second estimate). The pickup and return inspections,
+          with odometer, fuel and photos both sides confirmed, decide what changed during the rental.
         </p>
       </header>
 
       <section className="grid md:grid-cols-2 gap-4">
         <div className="rounded-2xl border border-emerald-200 bg-emerald-50/60 p-5">
           <h2 className="flex items-center gap-2 font-semibold text-emerald-800 mb-3">
-            <Wrench size={16} /> Normal wear — owner&apos;s cost
+            <Wrench size={16} /> Normal wear: owner&apos;s cost
           </h2>
           <ul className="space-y-2 text-sm text-emerald-900/90">
             {WEAR.map((item) => (
@@ -60,7 +60,7 @@ export default function WearVsDamagePage() {
 
         <div className="rounded-2xl border border-amber-200 bg-amber-50/60 p-5">
           <h2 className="flex items-center gap-2 font-semibold text-amber-800 mb-3">
-            <AlertTriangle size={16} /> Damage — renter&apos;s cost
+            <AlertTriangle size={16} /> Damage: renter&apos;s cost
           </h2>
           <ul className="space-y-2 text-sm text-amber-900/90">
             {DAMAGE.map((item) => (
@@ -85,7 +85,7 @@ export default function WearVsDamagePage() {
           renter&apos;s to fix on the road (like fuel); a destroyed tyre or rim from hitting something is damage.
         </p>
         <p>
-          <strong className="text-slate-800">Sand, mud, pet hair, smoke:</strong> not damage — cleaning.
+          <strong className="text-slate-800">Sand, mud, pet hair, smoke:</strong> not damage. Cleaning.
           The listing&apos;s declared cleaning fee (capped at Rs. 10,000 platform-wide) applies only with
           return-inspection photo evidence.
         </p>
@@ -101,7 +101,7 @@ export default function WearVsDamagePage() {
         <Link href="/bookings" className="text-blue-600 hover:underline">
           Open the booking
         </Link>{" "}
-        and use <em>Report a problem</em> — the DriveLink team reviews the inspection records against this
+        and use <em>Report a problem</em>. The DriveLink team reviews the inspection records against this
         guide.
       </footer>
     </div>

@@ -89,14 +89,14 @@ export async function POST(req: NextRequest) {
   }
 
   // Verified renters only. Quality over quantity: an owner should never
-  // receive a request from someone whose identity we haven't confirmed —
+  // receive a request from someone whose identity we haven't confirmed - 
   // it's the platform's core promise. 'pending' is called out separately so
   // a returning renter whose Didit webhook is still in flight sees "give it
   // a moment" instead of being pushed to re-verify.
   const kyc = (renter as { kyc_status?: string } | null)?.kyc_status;
   if (kyc === "pending") {
     return NextResponse.json(
-      { error: "Your identity check is still being reviewed — this usually takes a minute. Please try again shortly.", verificationPending: true },
+      { error: "Your identity check is still being reviewed. This usually takes a minute. Please try again shortly.", verificationPending: true },
       { status: 403 },
     );
   }
@@ -136,7 +136,7 @@ export async function POST(req: NextRequest) {
 
   const isSelfDrive = effectiveMode === "self_drive";
 
-  // Self-drive licence gate — now keyed on the chosen mode, not the vehicle.
+  // Self-drive licence gate - now keyed on the chosen mode, not the vehicle.
   if (isSelfDrive) {
     const r = renter as { license_front_url?: string | null; license_back_url?: string | null } | null;
     if (!r?.license_front_url || !r?.license_back_url) {
@@ -233,7 +233,7 @@ export async function POST(req: NextRequest) {
     .gt("end_at", startAt);
 
   // Decision 2: requests STACK. Only a COMMITTED booking (confirmed / paid /
-  // active / disputed) blocks the dates — pending requests do not, so several
+  // active / disputed) blocks the dates - pending requests do not, so several
   // renters can request the same dates and the owner picks one (the winning
   // confirmation auto-declines the overlapping pendings via the DB trigger).
   // A maintenance block still blocks.

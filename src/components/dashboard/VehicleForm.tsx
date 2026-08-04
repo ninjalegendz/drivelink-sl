@@ -69,7 +69,7 @@ const FUEL_POLICY_HELP =
   "Same-to-Same: renter returns the car at whatever fuel level they received it.";
 
 const MONTHLY_RATE_HELP =
-  "Optional discounted package for renters booking 28+ days. Typically 25–30% off (daily × 30). " +
+  "Optional discounted package for renters booking 28+ days. Typically 25-30% off (daily × 30). " +
   "Leave blank if you don't offer monthly rates.";
 
 // Starter selection for brand-new listings (edit keeps whatever was saved).
@@ -77,7 +77,7 @@ const FEATURES_STARTER = ["AC", "Bluetooth audio", "Reverse camera", "USB chargi
 
 // Seed the structured km fields. Older rows only have the free-text
 // mileage_limit ("Unlimited" / "150 km/day"), so parse that before falling
-// back to the wizard's default (100 km/day) — otherwise a plain re-save
+// back to the wizard's default (100 km/day) - otherwise a plain re-save
 // would silently rewrite a legacy allowance.
 function seedKmFields(v?: VehicleRow): { unlimited: boolean; included: string } {
   if (!v) return { unlimited: false, included: "100" };
@@ -126,7 +126,7 @@ export function VehicleForm({ agencyId, agencyCity, vehicle, documents }: Props)
   const [engineCc, setEngineCc]     = useState(vehicle?.engine_cc?.toString() ?? "");
   const [odometerKm, setOdometerKm] = useState(vehicle?.odometer_km?.toString() ?? "");
 
-  // ── rental terms (Terms Engine) — same SL defaults as the wizard ──
+  // ── rental terms (Terms Engine) - same SL defaults as the wizard ──
   const kmSeed = seedKmFields(vehicle);
   const [weeklyRate, setWeeklyRate]               = useState(vehicle?.weekly_rate_lkr?.toString() ?? "");
   const [includedKmPerDay, setIncludedKmPerDay]   = useState(kmSeed.included);
@@ -177,7 +177,7 @@ export function VehicleForm({ agencyId, agencyCity, vehicle, documents }: Props)
   const [error, setError]       = useState<string | null>(null);
 
   // Core specs are required, but doors don't apply to a bike/tuk-tuk and an
-  // electric vehicle has no engine cc — those are skipped rather than blocked.
+  // electric vehicle has no engine cc - those are skipped rather than blocked.
   const needsDoors = vehicleType === "car" || vehicleType === "suv" || vehicleType === "van";
   const isElectric = fuelType === "electric";
 
@@ -528,7 +528,7 @@ export function VehicleForm({ agencyId, agencyCity, vehicle, documents }: Props)
         <div>
           <h3 className="text-slate-900 text-sm font-bold">Rental terms</h3>
           <p className="text-slate-500 text-xs mt-0.5">
-            These become part of every booking&apos;s rental agreement. Standard Sri Lankan defaults are pre-filled — change only what&apos;s different for this vehicle.
+            These become part of every booking&apos;s rental agreement. Standard Sri Lankan defaults are pre-filled. Change only what&apos;s different for this vehicle.
           </p>
         </div>
 
@@ -753,7 +753,7 @@ export function VehicleForm({ agencyId, agencyCity, vehicle, documents }: Props)
         <div>
           <span className="text-slate-700 text-sm font-semibold block">Document proof <span className="text-slate-400 font-normal">(optional, private)</span></span>
           <span className="text-slate-500 text-xs">
-            Optional now — upload the vehicle registration (CR) and insurance certificate to earn the <strong>Verified Vehicle</strong> badge (better ranking, more bookings). We&apos;ll also ask before your first confirmed booking. Only DriveLink admins see these.
+            Optional now: upload the vehicle registration (CR) and insurance certificate to earn the <strong>Verified Vehicle</strong> badge (better ranking, more bookings). We&apos;ll also ask before your first confirmed booking. Only DriveLink admins see these.
           </span>
         </div>
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">

@@ -28,7 +28,7 @@ async function readAsset(file: string): Promise<ArrayBuffer | null> {
       const res = await env.ASSETS.fetch(new Request(`https://assets.local/fonts/${file}`));
       if (res.ok) return await res.arrayBuffer();
     }
-  } catch { /* not on Workers (e.g. `next dev`) — fall through */ }
+  } catch { /* not on Workers (e.g. `next dev`): fall through */ }
 
   // Fallback: fetch over the public origin.
   try {
@@ -70,13 +70,13 @@ export class PdfBuilder {
     const poppins = await loadPoppins();
     if (poppins) {
       b.doc.registerFontkit(fontkit);
-      // subset:false — these PDFs are legal records that get printed and
+      // subset:false - these PDFs are legal records that get printed and
       // re-opened in all sorts of viewers; a full embed is the safer bet.
       b.font = await b.doc.embedFont(poppins.regular);
       b.bold = await b.doc.embedFont(poppins.bold);
     } else {
       // Never fail a rental agreement over a font: fall back to the built-in.
-      console.error("[pdf] Poppins assets unavailable — falling back to Helvetica");
+      console.error("[pdf] Poppins assets unavailable: falling back to Helvetica");
       b.font = await b.doc.embedFont(StandardFonts.Helvetica);
       b.bold = await b.doc.embedFont(StandardFonts.HelveticaBold);
     }

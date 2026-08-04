@@ -81,7 +81,7 @@ export function VehicleWizard({ agencyId, agencyCity, prefill }: Props) {
   const [engineCc, setEngineCc] = useState("");
   const [odometerKm, setOdometerKm] = useState("");
 
-  // ── Rental terms (Step: Rental terms) — SL defaults pre-filled ──
+  // ── Rental terms (Step: Rental terms) - SL defaults pre-filled ──
   const [weeklyRate, setWeeklyRate] = useState("");
   const [includedKmPerDay, setIncludedKmPerDay] = useState("100");
   const [unlimitedKm, setUnlimitedKm] = useState(false);
@@ -178,7 +178,7 @@ export function VehicleWizard({ agencyId, agencyCity, prefill }: Props) {
 
   function stepError(s: number): string | null {
     // Decision 10: a listing needs the core photo set before it can be
-    // submitted for review — no more photo-less listings.
+    // submitted for review - no more photo-less listings.
     if (s === 0 && photos.length < MIN_LISTING_PHOTOS) {
       return `Add at least ${MIN_LISTING_PHOTOS} clear photos (front, back, sides, interior).`;
     }
@@ -208,7 +208,7 @@ export function VehicleWizard({ agencyId, agencyCity, prefill }: Props) {
   async function submit() {
     setLoading(true); setError(null);
     try {
-      // Upload every photo; a failed upload must NOT be silently dropped —
+      // Upload every photo; a failed upload must NOT be silently dropped - 
       // stop and let the owner retry (decision 10 / audit TRUST-020).
       const photoUrls: string[] = [];
       for (const { file } of photos) {
@@ -461,7 +461,7 @@ export function VehicleWizard({ agencyId, agencyCity, prefill }: Props) {
           <div>
             <p className="text-slate-600 text-sm mb-0.5">Documents (optional)</p>
             <p className="text-slate-400 text-xs mb-2">
-              Optional now — upload these to earn the Verified Vehicle badge (better ranking, more bookings). We&apos;ll also ask before your first confirmed booking.
+              Optional now: upload these to earn the Verified Vehicle badge (better ranking, more bookings). We&apos;ll also ask before your first confirmed booking.
             </p>
             <div className="grid grid-cols-2 gap-3">
               <DocPick label="Registration (CR)" file={crFile} onPick={setCrFile} />
@@ -476,7 +476,7 @@ export function VehicleWizard({ agencyId, agencyCity, prefill }: Props) {
       {step === 5 && (
         <div className="space-y-6">
           <p className="text-slate-600 text-sm -mt-2">
-            These become part of every booking&apos;s rental agreement. Standard Sri Lankan defaults are pre-filled — change only what&apos;s different for this vehicle.
+            These become part of every booking&apos;s rental agreement. Standard Sri Lankan defaults are pre-filled. Change only what&apos;s different for this vehicle.
           </p>
 
           {/* Pricing extras */}

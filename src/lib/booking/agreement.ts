@@ -342,12 +342,12 @@ export function buildAgreementTerms({ booking, vehicle, page, renterProfile }: B
       insurance_type: vehicle.insurance_type,
       note: liabilityNote,
       prominent: vehicle.insurance_type === "private",
-      // Decision 13 (INTERIM — pending Sri Lankan lawyer review): DriveLink
+      // Decision 13 (INTERIM - pending Sri Lankan lawyer review): DriveLink
       // states its venue-not-party posture plainly and does not certify cover.
       // The liability allocation wording below is owner/renter contract terms
       // the lawyer will finalise.
       platform_disclaimer:
-        "This agreement is between the renter and the owner. DriveLink is a listing platform — not a party to this rental and not an insurer. Insurance details shown here are provided by the owner; DriveLink does not verify or certify coverage. Both parties are responsible for confirming insurance terms before handover.",
+        "This agreement is between the renter and the owner. DriveLink is a listing platform, not a party to this rental and not an insurer. Insurance details shown here are provided by the owner; DriveLink does not verify or certify coverage. Both parties are responsible for confirming insurance terms before handover.",
       breach_full_liability:
         "Unlisted drivers, DUI, prohibited use or invalid licence = agreement breach, full liability.",
       accident_protocol:
@@ -363,11 +363,11 @@ export function buildAgreementTerms({ booking, vehicle, page, renterProfile }: B
     late_return: {
       grace: "2 hours",
       hourly_fee_label: feeLateLabel,
-      // Decision 7: ONE late-fee ladder — grace, then hourly, capped at a
+      // Decision 7: ONE late-fee ladder - grace, then hourly, capped at a
       // single day's rate. A late return never stacks an extra day on top of
       // the hourly fee.
       cap:
-        "The hourly late fee is capped at one day's rental rate — a late return never costs more than one extra day.",
+        "The hourly late fee is capped at one day's rental rate. A late return never costs more than one extra day.",
       after_24h:
         "If the vehicle is more than 24 hours overdue and the renter is unreachable, this is treated as misappropriation of the vehicle and will be reported to the police.",
     },

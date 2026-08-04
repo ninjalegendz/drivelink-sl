@@ -6,7 +6,7 @@ interface Props {
 /**
  * WhatsApp brand glyph. Uses the official Font Awesome "whatsapp" brand icon
  * path (FA viewBox 0 0 448 512), inlined as a single-colour SVG that inherits
- * `currentColor` — gives the recognisable WhatsApp logo without pulling in the
+ * `currentColor` - gives the recognisable WhatsApp logo without pulling in the
  * whole Font Awesome library. Drop it in anywhere we want a WhatsApp action.
  */
 export function WhatsAppIcon({ size = 16, className }: Props) {

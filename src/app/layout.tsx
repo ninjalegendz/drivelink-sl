@@ -3,7 +3,7 @@ import { Poppins } from "next/font/google";
 import "./globals.css";
 import { ServiceWorkerRegister } from "@/components/pwa/ServiceWorkerRegister";
 
-// Poppins is the ONE brand typeface — body, headings and monospace slots all
+// Poppins is the ONE brand typeface - body, headings and monospace slots all
 // resolve to it (see the --font-* tokens in globals.css). Weights match the
 // utilities actually used across the app: normal/medium/semibold/bold/extrabold.
 const poppins = Poppins({

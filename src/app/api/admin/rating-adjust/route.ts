@@ -53,7 +53,7 @@ export async function POST(req: NextRequest) {
   const cur = typeof curRaw === "number" ? curRaw : 0;
   let next = cur + body.delta;
 
-  // Clamp: rating_avg is 0–5, reliability_pct is 0–100
+  // Clamp: rating_avg is 0-5, reliability_pct is 0-100
   if (body.field === "rating_avg") {
     next = Math.max(0, Math.min(5,   next));
   } else {

@@ -21,7 +21,7 @@ export function WatermarkedImage({ src, alt, watermarkText }: Props) {
     .replace(/</g, "&lt;")
     .replace(/>/g, "&gt;");
 
-  // Poppins is embedded rather than referenced — this SVG is used as a CSS
+  // Poppins is embedded rather than referenced - this SVG is used as a CSS
   // background image, where external fonts and page fonts don't apply.
   const svg =
     `<svg xmlns="http://www.w3.org/2000/svg" width="360" height="180">` +

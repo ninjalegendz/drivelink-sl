@@ -11,7 +11,7 @@ export default async function MarketplaceLayout({ children }: { children: React.
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
 
-  // Decision 9: bottom-bar slots follow page operation (owned OR staffed —
+  // Decision 9: bottom-bar slots follow page operation (owned OR staffed - 
   // PAGE-005), not a flipped role.
   let ownsPages = false;
   if (user) {

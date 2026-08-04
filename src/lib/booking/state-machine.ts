@@ -63,7 +63,7 @@ export const TRANSITION_ACTORS: Partial<Record<BookingStatus, Partial<Record<Boo
 export const BOOKING_STATUS_LABELS: Record<BookingStatus, string> = {
   requested:            "Request Sent",
   pending_confirmation: "Waiting for Confirmation",
-  confirmed:            "Confirmed — Reserved",
+  confirmed:            "Confirmed: Reserved",
   payment_pending:      "Payment Under Review",
   active:               "Rental Active",
   completed:            "Completed",

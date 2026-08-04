@@ -93,7 +93,7 @@ export function AgencyBookingActions({ bookingId, status, renterReturnedAt, retu
   }
   const noShowButton = (
     <Button size="sm" variant="danger" loading={loading === "cancel"} onClick={markNoShow}>
-      Renter didn&apos;t show — release
+      Renter didn&apos;t show: release
     </Button>
   );
 
@@ -131,7 +131,7 @@ export function AgencyBookingActions({ bookingId, status, renterReturnedAt, retu
   }
 
   if (status === "confirmed") {
-    // Decision 3: "confirmed" means reserved — the rental hasn't started. The
+    // Decision 3: "confirmed" means reserved - the rental hasn't started. The
     // owner starts it at pickup with "Start rental", which is the handover
     // moment (server gates it to on/near the pickup date). Cancel stays
     // available before pickup.
@@ -142,7 +142,7 @@ export function AgencyBookingActions({ bookingId, status, renterReturnedAt, retu
           loading={loading === "start"}
           onClick={async () => {
             const proceed = window.confirm(
-              "Record the pickup inspection (photos + odometer + fuel) FIRST — it's required before a rental can start and it's your evidence for any later claim.\n\nOnce the pickup inspection is saved, start the rental to mark the vehicle handed over. Continue?",
+              "Record the pickup inspection (photos + odometer + fuel) FIRST. It's required before a rental can start and it's your evidence for any later claim.\n\nOnce the pickup inspection is saved, start the rental to mark the vehicle handed over. Continue?",
             );
             if (!proceed) return;
             setLoading("start");
@@ -180,7 +180,7 @@ export function AgencyBookingActions({ bookingId, status, renterReturnedAt, retu
             // block completion on it.
             if (!returnInspectionAcked) {
               const proceed = window.confirm(
-                "No return inspection on record — complete anyway? Without it you can't file damage claims later.",
+                "No return inspection on record. Complete anyway? Without it you can't file damage claims later.",
               );
               if (!proceed) return;
             }

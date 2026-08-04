@@ -5,7 +5,7 @@ import { canActOnAgency } from "@/lib/pages/access";
 
 interface RouteContext { params: Promise<{ id: string }> }
 
-// GET /api/bookings/{id}/evidence-pack — the Rental Page owner (or an admin)
+// GET /api/bookings/{id}/evidence-pack - the Rental Page owner (or an admin)
 // downloads a single ZIP: fingerprinted agreement PDF, a summary PDF (parties,
 // identity summary, inspections, timeline, transcript), and the inspection
 // vehicle photos (TRUST-024). Built for a late-return / dispute / police case.
