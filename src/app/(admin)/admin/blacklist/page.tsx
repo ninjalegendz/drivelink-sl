@@ -1,9 +1,13 @@
-import { createClient } from "@/lib/supabase/server";
+import { createServiceClient } from "@/lib/supabase/server";
 import { Badge } from "@/components/ui/Badge";
 import { BlacklistActions } from "@/components/admin/BlacklistActions";
 
 export default async function AdminBlacklistPage() {
-  const supabase = await createClient();
+  // Service client: blacklist_reports has RLS enabled with no admin SELECT
+  // policy, so the session client silently returned an empty queue
+  // (ADMIN-001). The (admin) layout already enforces the admin role — and
+  // profiles.role is server-only since the column lockdown.
+  const supabase = await createServiceClient();
 
   const { data } = await supabase
     .from("blacklist_reports")

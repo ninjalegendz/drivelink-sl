@@ -24,6 +24,9 @@ const FUEL_TILES = ["petrol", "diesel", "hybrid", "electric"];
 const CITY_OPTIONS = SL_CITIES.map((c) => ({ value: c, label: c }));
 const CURRENT_YEAR = new Date().getFullYear();
 const DRAFT_KEY = "drivelink_vehicle_wizard_draft";
+// Decision 10: minimum "core photo set" a listing must have before it can be
+// submitted for admin review. Also enforced server-side (vehicle_insert_guard).
+const MIN_LISTING_PHOTOS = 4;
 
 const BODY_TYPE_OPTIONS = BODY_TYPES.map((v) => ({ value: v, label: v }));
 
@@ -115,6 +118,12 @@ export function VehicleWizard({ agencyId, agencyCity, prefill }: Props) {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
+  // Which core specs apply to this vehicle. Doors are meaningless on a
+  // bike/tuk-tuk; an electric vehicle has no engine cc. Everything else
+  // (seats, transmission, fuel type) is required for every vehicle.
+  const needsDoors = vehicleType === "car" || vehicleType === "suv" || vehicleType === "van";
+  const isElectric = fuelType === "electric";
+
   // ── Autosave text fields ──
   useEffect(() => {
     if (prefill) return; // duplicating: keep the seeded values, don't load a stale draft
@@ -168,12 +177,23 @@ export function VehicleWizard({ agencyId, agencyCity, prefill }: Props) {
       perKmRate, tollsIncluded, driverBata]);
 
   function stepError(s: number): string | null {
+    // Decision 10: a listing needs the core photo set before it can be
+    // submitted for review — no more photo-less listings.
+    if (s === 0 && photos.length < MIN_LISTING_PHOTOS) {
+      return `Add at least ${MIN_LISTING_PHOTOS} clear photos (front, back, sides, interior).`;
+    }
     if (s === 1) {
       if (!make.trim() || !model.trim()) return "Add the make and model.";
       if (!year || String(year).length !== 4) return "Add a 4-digit year.";
+      if (!fuelType) return "Select the fuel type.";
+      if (needsDoors && !doors) return "Add the number of doors.";
+      if (!isElectric && !engineCc) return "Add the engine size (cc).";
     }
     if (s === 2 && (!dailyRate || Number(dailyRate) < 500)) return "Add a daily price (min Rs. 500).";
-    if (s === 3 && !selfDrive && !withDriver && !airportPickup) return "Pick at least one way to rent it.";
+    if (s === 3) {
+      if (!selfDrive && !withDriver && !airportPickup) return "Pick at least one way to rent it.";
+      if (!seats || Number(seats) < 1) return "Add the number of seats.";
+    }
     return null;
   }
 
@@ -188,9 +208,22 @@ export function VehicleWizard({ agencyId, agencyCity, prefill }: Props) {
   async function submit() {
     setLoading(true); setError(null);
     try {
+      // Upload every photo; a failed upload must NOT be silently dropped —
+      // stop and let the owner retry (decision 10 / audit TRUST-020).
       const photoUrls: string[] = [];
       for (const { file } of photos) {
-        try { photoUrls.push((await uploadToR2("vehicle-photos", file)).publicUrl); } catch { /* skip failed */ }
+        try {
+          photoUrls.push((await uploadToR2("vehicle-photos", file)).publicUrl);
+        } catch {
+          setError("A photo failed to upload. Check your connection and try again.");
+          setLoading(false);
+          return;
+        }
+      }
+      if (photoUrls.length < MIN_LISTING_PHOTOS) {
+        setError(`Please add at least ${MIN_LISTING_PHOTOS} clear photos before submitting.`);
+        setLoading(false);
+        return;
       }
       let crUrl: string | null = null, insUrl: string | null = null;
       if (crFile)        crUrl  = (await uploadToR2("vehicle-docs", crFile)).publicUrl;
@@ -222,8 +255,8 @@ export function VehicleWizard({ agencyId, agencyCity, prefill }: Props) {
           // ── Vehicle identity (optional) ──
           body_type: bodyType || null,
           variant: variant.trim() || null,
-          doors: doors ? Number(doors) : null,
-          engine_cc: engineCc ? Number(engineCc) : null,
+          doors: needsDoors && doors ? Number(doors) : null,
+          engine_cc: !isElectric && engineCc ? Number(engineCc) : null,
           odometer_km: odometerKm ? Number(odometerKm) : null,
           // ── Rental terms ──
           weekly_rate_lkr: weeklyRate ? Number(weeklyRate) : null,
@@ -342,9 +375,18 @@ export function VehicleWizard({ agencyId, agencyCity, prefill }: Props) {
             <BigField label="Body type (optional)"><Select value={bodyType} onChange={setBodyType} options={BODY_TYPE_OPTIONS} placeholder="Select…" /></BigField>
             <BigField label="Variant (optional)"><input className={bigInput} value={variant} onChange={(e) => setVariant(e.target.value)} placeholder="GLi, Hybrid, etc." /></BigField>
           </div>
+          <div>
+            <p className="text-slate-600 text-sm mb-2">Fuel</p>
+            <div className="grid grid-cols-4 gap-2">
+              {FUEL_TILES.map((f) => (
+                <button key={f} type="button" onClick={() => setFuelType(f)}
+                  className={`py-2.5 rounded-xl border-2 font-semibold text-xs capitalize ${fuelType === f ? "bg-blue-50 border-blue-500 text-blue-700" : "bg-white border-slate-200 text-slate-500"}`}>{f}</button>
+              ))}
+            </div>
+          </div>
           <div className="grid grid-cols-3 gap-3">
-            <BigField label="Doors (optional)"><input className={bigInput} type="number" value={doors} onChange={(e) => setDoors(e.target.value)} min={1} max={6} placeholder="4" /></BigField>
-            <BigField label="Engine cc (optional)"><input className={bigInput} type="number" value={engineCc} onChange={(e) => setEngineCc(e.target.value)} min={0} placeholder="1500" /></BigField>
+            {needsDoors && <BigField label="Doors"><input className={bigInput} type="number" value={doors} onChange={(e) => setDoors(e.target.value)} min={1} max={6} placeholder="4" /></BigField>}
+            {!isElectric && <BigField label="Engine cc"><input className={bigInput} type="number" value={engineCc} onChange={(e) => setEngineCc(e.target.value)} min={0} placeholder="1500" /></BigField>}
             <BigField label="Odometer km (optional)"><input className={bigInput} type="number" value={odometerKm} onChange={(e) => setOdometerKm(e.target.value)} min={0} placeholder="65000" /></BigField>
           </div>
         </div>
@@ -389,15 +431,6 @@ export function VehicleWizard({ agencyId, agencyCity, prefill }: Props) {
               </div>
             </div>
             <BigField label="Seats"><input className={bigInput} type="number" value={seats} onChange={(e) => setSeats(Number(e.target.value))} min={1} max={20} /></BigField>
-          </div>
-          <div>
-            <p className="text-slate-600 text-sm mb-2">Fuel (optional)</p>
-            <div className="grid grid-cols-4 gap-2">
-              {FUEL_TILES.map((f) => (
-                <button key={f} type="button" onClick={() => setFuelType(fuelType === f ? "" : f)}
-                  className={`py-2.5 rounded-xl border-2 font-semibold text-xs capitalize ${fuelType === f ? "bg-blue-50 border-blue-500 text-blue-700" : "bg-white border-slate-200 text-slate-500"}`}>{f}</button>
-              ))}
-            </div>
           </div>
           <BigField label="City"><Select value={city} onChange={setCity} options={CITY_OPTIONS} /></BigField>
         </div>

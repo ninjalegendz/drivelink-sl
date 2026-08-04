@@ -3,7 +3,8 @@
 // The functions are async because Web Crypto's HMAC API is async. Update
 // callers to `await generateUndeleteToken` / `await verifyUndeleteToken`.
 
-export const UNDELETE_WINDOW_MS = 7 * 24 * 3600_000;
+// Decision 14: 30-day restoration window, matching the published privacy policy.
+export const UNDELETE_WINDOW_MS = 30 * 24 * 3600_000;
 
 function secret(): string {
   const s = process.env.SUPABASE_SERVICE_ROLE_KEY;

@@ -19,8 +19,8 @@ interface Props {
 export function VehicleCard({ vehicle, onOpen }: Props) {
   const photo = vehicle.photos?.[0];
   const agency = vehicle.agencies;
-  const rating = agency?.profiles?.rating_avg ?? null;
-  const reviews = agency?.profiles?.rating_count ?? 0;
+  const rating = agency?.rating_avg ?? null;
+  const reviews = agency?.rating_count ?? 0;
   const usd = usdFromLkr(vehicle.daily_rate_lkr, vehicle.daily_rate_usd);
   const badges = vehicle.badges ?? [];
   const href = `/vehicles/${vehicle.slug}`;

@@ -2,13 +2,11 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { createClient } from "@/lib/supabase/client";
 import { uploadToR2 } from "@/lib/storage/upload";
 import { Button } from "@/components/ui/Button";
 import Image from "next/image";
 
 interface Props {
-  userId: string;
   existingNicUrl: string | null;
   existingSelfieUrl: string | null;
 }
@@ -23,7 +21,7 @@ function FilePreview({ file, label }: { file: File | null; label: string }) {
   );
 }
 
-export function KycUploadForm({ userId, existingNicUrl, existingSelfieUrl }: Props) {
+export function KycUploadForm({ existingNicUrl, existingSelfieUrl }: Props) {
   const router = useRouter();
 
   const [nicFile, setNicFile]       = useState<File | null>(null);
@@ -70,14 +68,20 @@ export function KycUploadForm({ userId, existingNicUrl, existingSelfieUrl }: Pro
       }
     }
 
-    const supabase = createClient();
-    const { error: upErr } = await supabase
-      .from("profiles")
-      .update({ nic_url: nicUrl, selfie_url: selfieUrl, kyc_status: "pending" })
-      .eq("id", userId);
+    // kyc_status is server-only now; submit through the API which validates
+    // the uploads belong to this account and flips status to "pending".
+    const res = await fetch("/api/account/kyc", {
+      method:  "POST",
+      headers: { "Content-Type": "application/json" },
+      body:    JSON.stringify({ nicUrl, selfieUrl }),
+    });
 
     setLoading(false);
-    if (upErr) { setError("Submission failed. Please try again."); return; }
+    if (!res.ok) {
+      const payload = await res.json().catch(() => ({}));
+      setError(payload.error ?? "Submission failed. Please try again.");
+      return;
+    }
     router.refresh();
   }
 

@@ -1,4 +1,4 @@
-import { createClient } from "@/lib/supabase/server";
+import { createServiceClient } from "@/lib/supabase/server";
 import { AdminBookingsList } from "@/components/bookings/AdminBookingsList";
 import { ADMIN_BOOKINGS_SELECT, type AdminBookingRow } from "@/components/bookings/admin-bookings-query";
 import type { BookingStatus } from "@/types/database";
@@ -18,7 +18,10 @@ interface Props {
 
 export default async function AdminBookingsPage({ searchParams }: Props) {
   const { status: filterStatus } = await searchParams;
-  const supabase = await createClient();
+  // Service client: these admin dashboards read protected profile columns
+  // (phone, email, KYC docs, blacklist state) that browser sessions can no
+  // longer SELECT. The (admin) layout enforces the admin role upstream.
+  const supabase = await createServiceClient();
 
   let query = supabase
     .from("bookings")

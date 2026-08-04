@@ -11,8 +11,6 @@ import { vehicleTypeLabel, usdFromLkr } from "@/data/vehicles";
 import { siteConfig } from "@/lib/site-config";
 import type { VehicleWithAgency } from "@/types/queries";
 
-const ACTIVE_BOOKING_STATUSES = ["requested", "pending_confirmation", "confirmed", "payment_pending", "active", "disputed"];
-
 type ModalReview = {
   id: string; rating: number; comment: string | null; created_at: string;
   reviewer: { full_name: string } | null;
@@ -24,8 +22,9 @@ function initials(name: string): string {
 
 export function VehicleDetailModal({ vehicle, onClose }: { vehicle: VehicleWithAgency; onClose: () => void }) {
   const agency = vehicle.agencies;
-  const rating = agency?.profiles?.rating_avg ?? null;
-  const reviewCount = agency?.profiles?.rating_count ?? 0;
+  // BUILD 2: page rating, not the owner's personal rating.
+  const rating = agency?.rating_avg ?? null;
+  const reviewCount = agency?.rating_count ?? 0;
   const usd = usdFromLkr(vehicle.daily_rate_lkr, vehicle.daily_rate_usd);
   const badges = vehicle.badges ?? [];
   const rules = vehicle.rules ?? [];
@@ -55,38 +54,35 @@ export function VehicleDetailModal({ vehicle, onClose }: { vehicle: VehicleWithA
     let cancelled = false;
     (async () => {
       const supabase = createClient();
-      const todayIso = new Date().toISOString().split("T")[0];
-      const [{ data: booked }, { data: blocks }] = await Promise.all([
-        supabase.from("bookings").select("start_at, end_at").eq("vehicle_id", vehicle.id).in("status", ACTIVE_BOOKING_STATUSES).gte("end_date", todayIso),
-        supabase.from("vehicle_blocks").select("start_date, end_date").eq("vehicle_id", vehicle.id).gte("end_date", todayIso),
-      ]);
+      // BOOK-009: privacy-safe availability RPC — works for signed-out visitors
+      // (a direct bookings read returns nothing under party-only RLS for anon).
+      const { data: avail } = await supabase.rpc("vehicle_availability", { p_vehicle_id: vehicle.id });
       if (cancelled) return;
-      const ranges = [
-        ...((booked ?? []) as { start_at: string; end_at: string }[]).map((r) => ({ start: r.start_at, end: r.end_at })),
-        ...((blocks ?? []) as { start_date: string; end_date: string }[]).map((r) => ({ start: `${r.start_date}T00:00`, end: `${r.end_date}T00:00` })),
-      ].sort((a, b) => a.start.localeCompare(b.start));
+      const ranges = ((avail ?? []) as { start_date: string; end_date: string }[])
+        .map((r) => ({ start: `${r.start_date}T00:00`, end: `${r.end_date}T00:00` }))
+        .sort((a, b) => a.start.localeCompare(b.start));
       setBookedRanges(ranges);
     })();
     return () => { cancelled = true; };
   }, [vehicle.id]);
 
-  // Guest reviews of this provider.
+  // Reviews of this Rental Page (BUILD 2: page reviews, not the owner's).
   useEffect(() => {
-    const ownerId = agency?.owner_id;
-    if (!ownerId) return;
+    const agencyId = agency?.id;
+    if (!agencyId) return;
     let cancelled = false;
     (async () => {
       const supabase = createClient();
       const { data } = await supabase
         .from("reviews")
         .select("id, rating, comment, created_at, reviewer:profiles!reviewer_id(full_name)")
-        .eq("reviewee_id", ownerId)
+        .eq("agency_id", agencyId)
         .order("created_at", { ascending: false })
         .limit(6);
       if (!cancelled) setReviews((data ?? []) as unknown as ModalReview[]);
     })();
     return () => { cancelled = true; };
-  }, [agency?.owner_id]);
+  }, [agency?.id]);
 
   return (
     <div
@@ -256,6 +252,8 @@ export function VehicleDetailModal({ vehicle, onClose }: { vehicle: VehicleWithA
             vehicleName={`${vehicle.year} ${vehicle.make} ${vehicle.model}`}
             dailyRateLkr={vehicle.daily_rate_lkr}
             monthlyRateLkr={vehicle.monthly_rate_lkr}
+            selfDrive={vehicle.self_drive}
+            withDriver={vehicle.with_driver}
             bookedRanges={bookedRanges}
           />
         </div>

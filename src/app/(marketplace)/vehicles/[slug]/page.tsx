@@ -1,4 +1,5 @@
 import { notFound } from "next/navigation";
+import Link from "next/link";
 import {
   AlertTriangle, Car, User, Plane, ShieldCheck, Star, Info,
   Gauge, Route, Truck, Droplets, Fuel, Clock, Cigarette, CigaretteOff, PawPrint,
@@ -9,6 +10,7 @@ import { createClient } from "@/lib/supabase/server";
 import { Badge, VerificationBadge } from "@/components/ui/Badge";
 import { HelpHint } from "@/components/ui/HelpHint";
 import { BookingRequestForm } from "@/components/booking/BookingRequestForm";
+import { ReportListingButton } from "@/components/vehicles/ReportListingButton";
 import { VehicleGallery } from "@/components/vehicles/VehicleGallery";
 import { formatLKR, insuranceLabel, fuelPolicyLabel, reliabilityColor, reliabilityLabel, responseTimeLabel, RELIABILITY_HELP, RATING_HELP, REVIEW_COUNT_HELP } from "@/lib/vehicles/format";
 import { vehicleTypeLabel, usdFromLkr, BADGE_DESCRIPTIONS } from "@/data/vehicles";
@@ -54,7 +56,7 @@ export default async function VehicleDetailPage({ params }: Props) {
 
   const { data } = await supabase
     .from("vehicles")
-    .select("*, agencies(id, owner_id, name, city, provider_type, is_verified, reliability_pct, cancellation_count, avg_response_minutes, profiles!owner_id(rating_avg, rating_count))")
+    .select("*, agencies(id, owner_id, name, slug, city, provider_type, is_verified, reliability_pct, cancellation_count, avg_response_minutes, rating_avg, rating_count, profiles!owner_id(rating_avg, rating_count))")
     .eq("slug", slug)
     .single();
 
@@ -76,15 +78,13 @@ export default async function VehicleDetailPage({ params }: Props) {
     .eq("status", "completed");
   const rentalsDone = completedRentals ?? 0;
 
-  // Guest reviews of this provider (renters review the agency owner after a trip).
-  const { data: reviewRows } = ownerId
-    ? await supabase
-        .from("reviews")
-        .select("id, rating, comment, created_at, reviewer:profiles!reviewer_id(full_name)")
-        .eq("reviewee_id", ownerId)
-        .order("created_at", { ascending: false })
-        .limit(8)
-    : { data: null };
+  // Reviews of this Rental Page (renters review the PAGE after a trip — BUILD 2).
+  const { data: reviewRows } = await supabase
+    .from("reviews")
+    .select("id, rating, comment, created_at, reviewer:profiles!reviewer_id(full_name)")
+    .eq("agency_id", agency.id)
+    .order("created_at", { ascending: false })
+    .limit(8);
   const reviews = (reviewRows ?? []) as unknown as {
     id: string; rating: number; comment: string | null; created_at: string;
     reviewer: { full_name: string } | null;
@@ -129,8 +129,8 @@ export default async function VehicleDetailPage({ params }: Props) {
     {
       Icon: Clock,
       text: vehicle.late_fee_per_hour_lkr
-        ? `Late return: ${formatLKR(vehicle.late_fee_per_hour_lkr)}/hour after a 2-hour grace period`
-        : "Late return: daily rate ÷ 8 per hour after a 2-hour grace period",
+        ? `Late return: ${formatLKR(vehicle.late_fee_per_hour_lkr)}/hour after a 2-hour grace period, capped at one day's rate`
+        : "Late return: daily rate ÷ 8 per hour after a 2-hour grace period, capped at one day's rate",
     },
   ];
 
@@ -168,29 +168,14 @@ export default async function VehicleDetailPage({ params }: Props) {
       ]
     : [];
 
-  // Fetch already-blocked date ranges so the booking form can warn renters
-  // upfront. Two sources: in-flight bookings + agency-managed vehicle_blocks.
-  const todayIso = new Date().toISOString().split("T")[0];
-  const [{ data: bookedRows }, { data: blockRows }] = await Promise.all([
-    supabase
-      .from("bookings")
-      .select("start_at, end_at")
-      .eq("vehicle_id", vehicle.id)
-      .in("status", ["requested", "pending_confirmation", "confirmed", "payment_pending", "active", "disputed"])
-      .gte("end_date", todayIso)
-      .order("start_at", { ascending: true }),
-    supabase
-      .from("vehicle_blocks")
-      .select("start_date, end_date")
-      .eq("vehicle_id", vehicle.id)
-      .gte("end_date", todayIso),
-  ]);
-
-  const bookedRanges = [
-    ...(bookedRows ?? []).map((r) => ({ start: (r as { start_at: string }).start_at, end: (r as { end_at: string }).end_at })),
-    // Maintenance blocks are whole-day, represent at day boundaries.
-    ...(blockRows ?? []).map((r) => ({ start: `${(r as { start_date: string }).start_date}T00:00`, end: `${(r as { end_date: string }).end_date}T00:00` })),
-  ].sort((a, b) => a.start.localeCompare(b.start));
+  // Blocked date ranges for the calendar. BOOK-009: use the privacy-safe
+  // vehicle_availability RPC (committed bookings + maintenance blocks, dates
+  // only) so SIGNED-OUT visitors see accurate availability too — a direct
+  // bookings read returns nothing under party-only RLS for anon.
+  const { data: availRows } = await supabase.rpc("vehicle_availability", { p_vehicle_id: vehicle.id });
+  const bookedRanges = ((availRows ?? []) as { start_date: string; end_date: string }[])
+    .map((r) => ({ start: `${r.start_date}T00:00`, end: `${r.end_date}T00:00` }))
+    .sort((a, b) => a.start.localeCompare(b.start));
 
   return (
     <div className="max-w-5xl mx-auto px-4 py-8">
@@ -344,6 +329,17 @@ export default async function VehicleDetailPage({ params }: Props) {
             </div>
           )}
 
+          {/* TRUST-023: insurance expiry awareness */}
+          {vehicle.insurance_expiry && new Date(vehicle.insurance_expiry as string) < new Date() && (
+            <div className="flex gap-3 p-3 bg-red-50 border border-red-200 rounded-xl">
+              <AlertTriangle size={18} className="text-red-500 shrink-0 mt-0.5" />
+              <p className="text-red-800 text-sm">
+                The insurance on file for this vehicle shows as expired ({new Date(vehicle.insurance_expiry as string).toLocaleDateString("en-LK")}).
+                Confirm current, valid coverage with the {provNoun} before you drive.
+              </p>
+            </div>
+          )}
+
           {/* Features */}
           {vehicle.features && vehicle.features.length > 0 && (
             <div>
@@ -455,7 +451,11 @@ export default async function VehicleDetailPage({ params }: Props) {
             <div className="flex items-center justify-between mb-3">
               <div>
                 <p className="text-[10px] text-slate-400 font-semibold uppercase tracking-wider">{provNounCap === "Host" ? "Vehicle host" : "Registered agency"}</p>
-                <p className="font-semibold text-slate-900">{agency.name}</p>
+                {(agency as { slug?: string | null }).slug ? (
+                  <Link href={`/pages/${(agency as { slug?: string | null }).slug}`} className="font-semibold text-slate-900 hover:text-blue-600 hover:underline">{agency.name}</Link>
+                ) : (
+                  <p className="font-semibold text-slate-900">{agency.name}</p>
+                )}
                 <p className="text-slate-600 text-xs mt-0.5">{agency.city}</p>
                 {responseTimeLabel(agency.avg_response_minutes) && (
                   <p className="text-emerald-600 text-[11px] font-medium mt-0.5">Typically replies in {responseTimeLabel(agency.avg_response_minutes)}</p>
@@ -470,11 +470,11 @@ export default async function VehicleDetailPage({ params }: Props) {
                 <p className="text-slate-500 text-xs inline-flex items-center justify-center">Reliability <HelpHint text={RELIABILITY_HELP} /></p>
               </div>
               <div>
-                <p className="text-lg font-bold text-slate-900">{agency.profiles?.rating_avg ? agency.profiles.rating_avg.toFixed(1) : "-"}</p>
+                <p className="text-lg font-bold text-slate-900">{agency.rating_avg ? Number(agency.rating_avg).toFixed(1) : "-"}</p>
                 <p className="text-slate-500 text-xs inline-flex items-center justify-center">Rating <HelpHint text={RATING_HELP} /></p>
               </div>
               <div>
-                <p className="text-lg font-bold text-slate-900">{agency.profiles?.rating_count ?? 0}</p>
+                <p className="text-lg font-bold text-slate-900">{agency.rating_count ?? 0}</p>
                 <p className="text-slate-500 text-xs inline-flex items-center justify-center">Reviews <HelpHint text={REVIEW_COUNT_HELP} /></p>
               </div>
             </div>
@@ -492,9 +492,14 @@ export default async function VehicleDetailPage({ params }: Props) {
               vehicleName={`${vehicle.year} ${vehicle.make} ${vehicle.model}`}
               dailyRateLkr={vehicle.daily_rate_lkr}
               monthlyRateLkr={vehicle.monthly_rate_lkr}
+              selfDrive={vehicle.self_drive}
+              withDriver={vehicle.with_driver}
               bookedRanges={bookedRanges}
               listingPath={`/vehicles/${vehicle.slug}`}
             />
+            <div className="mt-2 text-right">
+              <ReportListingButton vehicleId={vehicle.id} />
+            </div>
           </div>
 
           {/* How it works */}

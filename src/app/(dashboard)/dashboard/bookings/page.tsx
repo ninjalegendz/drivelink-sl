@@ -1,4 +1,4 @@
-import { createClient } from "@/lib/supabase/server";
+import { createClient, createServiceClient } from "@/lib/supabase/server";
 import { redirect } from "next/navigation";
 import { getActivePage } from "@/lib/pages/active-page";
 import { AgencyBookingsList } from "@/components/bookings/AgencyBookingsList";
@@ -28,7 +28,12 @@ export default async function AgencyBookingsPage({ searchParams }: Props) {
   if (!page) redirect("/account/pages/new");
   const agency = page;
 
-  let query = supabase
+  // Service client: the renter trust embed (is_blacklisted /
+  // blacklist_reason_public) reads protected profile columns that browser
+  // sessions can no longer SELECT. Ownership is already proven above
+  // (getActivePage), and the explicit agency_id filter scopes the rows.
+  const service = await createServiceClient();
+  let query = service
     .from("bookings")
     .select(AGENCY_BOOKINGS_SELECT)
     .eq("agency_id", agency.id)

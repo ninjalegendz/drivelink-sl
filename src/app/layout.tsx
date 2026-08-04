@@ -1,17 +1,15 @@
 import type { Metadata, Viewport } from "next";
-import { Inter, Space_Grotesk } from "next/font/google";
+import { Poppins } from "next/font/google";
 import "./globals.css";
 import { ServiceWorkerRegister } from "@/components/pwa/ServiceWorkerRegister";
 
-const inter = Inter({
+// Poppins is the ONE brand typeface — body, headings and monospace slots all
+// resolve to it (see the --font-* tokens in globals.css). Weights match the
+// utilities actually used across the app: normal/medium/semibold/bold/extrabold.
+const poppins = Poppins({
   subsets: ["latin"],
-  variable: "--font-inter",
-  display: "swap",
-});
-const spaceGrotesk = Space_Grotesk({
-  subsets: ["latin"],
-  weight: ["400", "500", "600", "700"],
-  variable: "--font-space-grotesk",
+  weight: ["400", "500", "600", "700", "800"],
+  variable: "--font-poppins",
   display: "swap",
 });
 
@@ -52,7 +50,7 @@ export const viewport: Viewport = {
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
-    <html lang="en" className={`${inter.variable} ${spaceGrotesk.variable}`}>
+    <html lang="en" className={poppins.variable}>
       {/* Body bg + gradient lives in globals.css so the layered radial-
           gradients can be fixed-attached. Font + base text colour here. */}
       <body className="font-sans bg-slate-50 text-slate-900 antialiased" suppressHydrationWarning>

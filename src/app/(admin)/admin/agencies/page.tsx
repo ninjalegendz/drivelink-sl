@@ -1,16 +1,21 @@
-import { createClient } from "@/lib/supabase/server";
+import { FileText } from "lucide-react";
+import { createServiceClient } from "@/lib/supabase/server";
 import { Badge } from "@/components/ui/Badge";
 import { AgencyVerifyAction } from "@/components/admin/AgencyVerifyAction";
 import { AgencyActions } from "@/components/admin/AgencyActions";
 import { reliabilityColor, reliabilityLabel } from "@/lib/vehicles/format";
 
 export default async function AdminAgenciesPage() {
-  const supabase = await createClient();
+  // Service client: these admin dashboards read protected profile columns
+  // (phone, email, KYC docs, blacklist state) that browser sessions can no
+  // longer SELECT. The (admin) layout enforces the admin role upstream.
+  const supabase = await createServiceClient();
 
   const { data } = await supabase
     .from("agencies")
     .select(`
       id, name, description, address, city, whatsapp_number, is_verified, is_blocked,
+      page_type, business_reg_no, business_reg_url,
       reliability_pct, confirmed_count, cancellation_count, strike_count, created_at,
       profiles(full_name, phone, kyc_status, rating_avg, rating_count),
       vehicles(count)
@@ -26,6 +31,9 @@ export default async function AdminAgenciesPage() {
     whatsapp_number: string;
     is_verified: boolean;
     is_blocked: boolean;
+    page_type: string;
+    business_reg_no: string | null;
+    business_reg_url: string | null;
     reliability_pct: number | null;
     confirmed_count: number;
     cancellation_count: number;
@@ -81,6 +89,22 @@ export default async function AdminAgenciesPage() {
             </p>
           </div>
           <div className="flex flex-col items-end gap-2 shrink-0">
+            {a.page_type === "business" && (
+              a.business_reg_url ? (
+                <a
+                  href={a.business_reg_url.startsWith("/api/docs/") ? a.business_reg_url : `/api/docs/${a.business_reg_url}`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="inline-flex items-center gap-1.5 text-blue-600 hover:text-blue-700 text-xs font-semibold"
+                >
+                  <FileText size={13} /> View certificate{a.business_reg_no ? ` · ${a.business_reg_no}` : ""}
+                </a>
+              ) : (
+                <span className="inline-flex items-center gap-1.5 text-amber-600 text-xs font-medium">
+                  <FileText size={13} /> No certificate yet
+                </span>
+              )
+            )}
             <AgencyVerifyAction agencyId={a.id} isVerified={a.is_verified} />
             <AgencyActions
               agencyId={a.id}

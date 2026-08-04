@@ -24,6 +24,9 @@ interface BookingDraft {
   endTime?:    string;
   totalDays:   number;
   subtotal:    number;
+  rentalMode?: "self_drive" | "with_driver";
+  isForeign?:  boolean;
+  permitAck?:  boolean;
 }
 
 interface Props {
@@ -246,6 +249,9 @@ export function GuestBookingModal({ draft, onClose }: Props) {
         end_date:   draft.endDate,
         start_time: draft.startTime ?? "10:00",
         end_time:   draft.endTime ?? "10:00",
+        rental_mode:       draft.rentalMode ?? null,
+        is_foreign_renter: draft.isForeign ?? false,
+        permit_ack:        draft.permitAck ?? false,
       }),
     });
     const bookingPayload = await bookingRes.json().catch(() => ({}));

@@ -3,7 +3,6 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { Check, X, Undo2 } from "lucide-react";
-import { createClient } from "@/lib/supabase/client";
 import { Button } from "@/components/ui/Button";
 import type { VehicleStatus } from "@/types/database";
 
@@ -18,24 +17,35 @@ export function VehicleApprovalActions({ vehicleId, status }: Props) {
   const [error, setError]     = useState<string | null>(null);
 
   async function update(next: VehicleStatus, key: string) {
+    // UX-008: rejecting / unlisting captures a reason the owner sees.
+    let rejection_reason: string | undefined;
+    if (next === "unlisted") {
+      const r = window.prompt("Reason (shown to the owner so they can fix & resubmit):");
+      if (r === null) return; // cancelled
+      rejection_reason = r.trim();
+    }
     setLoading(key);
     setError(null);
 
-    const supabase = createClient();
-    const { error: updateError } = await supabase
-      .from("vehicles")
-      .update({ status: next })
-      .eq("id", vehicleId);
+    const res = await fetch(`/api/admin/vehicles/${vehicleId}`, {
+      method:  "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body:    JSON.stringify({ status: next, ...(rejection_reason !== undefined ? { rejection_reason } : {}) }),
+    });
 
     setLoading(null);
 
-    if (updateError) { setError(updateError.message); return; }
+    if (!res.ok) {
+      const payload = await res.json().catch(() => ({}));
+      setError(payload.error ?? "Update failed.");
+      return;
+    }
     router.refresh();
   }
 
   return (
     <div className="flex flex-col items-end gap-2">
-      <div className="flex gap-2 shrink-0">
+      <div className="flex flex-wrap gap-2 justify-end">
         {status === "pending_review" && (
           <>
             <Button size="sm" loading={loading === "approve"} onClick={() => update("available", "approve")}>

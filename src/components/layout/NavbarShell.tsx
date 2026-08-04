@@ -8,10 +8,9 @@ import {
   Building2, Tag, HelpCircle, LogIn, User, ShieldAlert, Plane, Compass,
 } from "lucide-react";
 
-type NavRole = "admin" | "agency_owner" | "renter" | null;
-
 interface Props {
-  role: NavRole;
+  isAdmin: boolean;
+  ownsPages: boolean;
   signedIn: boolean;
 }
 
@@ -22,7 +21,7 @@ const LINKS = [
   { href: "/faq",      label: "Help",             Icon: HelpCircle },
 ];
 
-export function NavbarShell({ role, signedIn }: Props) {
+export function NavbarShell({ isAdmin, ownsPages, signedIn }: Props) {
   const pathname = usePathname();
   const [open, setOpen] = useState(false);
   const headerRef = useRef<HTMLElement>(null);
@@ -48,17 +47,26 @@ export function NavbarShell({ role, signedIn }: Props) {
   }, [open]);
 
   return (
-    <header ref={headerRef} className="sticky top-0 z-40 glass-strong border-b border-slate-200">
+    <header ref={headerRef} className="sticky top-0 z-40 glass-strong border-b border-slate-200 pt-[env(safe-area-inset-top)]">
       <div className="max-w-7xl mx-auto px-4 h-16 flex items-center justify-between">
         {/* Brand */}
-        <Link href="/" className="flex items-center gap-2.5">
-          <Image src="/logo-circle.png" alt="DriveLink logo" width={40} height={40} priority unoptimized className="h-10 w-10 shrink-0" />
-          <span className="leading-none">
-            <span className="flex items-baseline gap-1.5">
-              <span className="font-display font-extrabold text-lg text-slate-900 tracking-tight">DriveLink</span>
-              <span className="text-[10px] font-extrabold uppercase bg-blue-50 text-blue-700 px-1.5 py-0.5 rounded">Beta</span>
+        <Link href="/" className="flex items-center gap-2.5 min-w-0">
+          <span className="leading-none min-w-0">
+            {/* Full wordmark (light-background variant) — the artwork already
+                reads "DriveLink", so there's no separate text label. */}
+            <span className="flex items-center gap-1.5">
+              <Image
+                src="/logo-horizontal.png"
+                alt="DriveLink"
+                width={1034}
+                height={175}
+                priority
+                unoptimized
+                className="h-6 sm:h-7 w-auto shrink-0"
+              />
+              <span className="text-[10px] font-extrabold uppercase bg-blue-50 text-blue-700 px-1.5 py-0.5 rounded shrink-0">Beta</span>
             </span>
-            <span className="hidden sm:block text-[10px] text-slate-400 font-semibold tracking-wider uppercase mt-0.5">
+            <span className="hidden sm:block text-[10px] text-slate-400 font-semibold tracking-wider uppercase mt-1">
               Sri Lanka Vehicle Marketplace
             </span>
           </span>
@@ -74,27 +82,30 @@ export function NavbarShell({ role, signedIn }: Props) {
         {/* Desktop auth */}
         <div className="hidden md:flex items-center gap-2">
           {signedIn ? (
-            role === "admin" ? (
+            isAdmin ? (
               <Link
                 href="/admin"
                 className="px-4 py-2 text-sm bg-rose-50 hover:bg-rose-100 text-rose-600 font-semibold rounded-xl transition-colors border border-rose-200"
               >
                 Admin
               </Link>
-            ) : role === "agency_owner" ? (
-              <Link
-                href="/dashboard"
-                className="px-4 py-2 text-sm bg-blue-600 hover:bg-blue-700 text-white font-semibold rounded-xl transition-colors shadow-sm shadow-blue-600/10"
-              >
-                Dashboard
-              </Link>
             ) : (
-              <Link
-                href="/account"
-                className="px-4 py-2 text-sm bg-slate-100 hover:bg-slate-200 text-slate-900 font-semibold rounded-xl transition-colors"
-              >
-                Account
-              </Link>
+              <>
+                {ownsPages && (
+                  <Link
+                    href="/dashboard"
+                    className="px-4 py-2 text-sm bg-blue-600 hover:bg-blue-700 text-white font-semibold rounded-xl transition-colors shadow-sm shadow-blue-600/10"
+                  >
+                    Dashboard
+                  </Link>
+                )}
+                <Link
+                  href="/account"
+                  className="px-4 py-2 text-sm bg-slate-100 hover:bg-slate-200 text-slate-900 font-semibold rounded-xl transition-colors"
+                >
+                  Account
+                </Link>
+              </>
             )
           ) : (
             <>
@@ -165,27 +176,30 @@ export function NavbarShell({ role, signedIn }: Props) {
 
             <div className="border-t border-slate-200 mt-2 pt-2 space-y-1">
               {signedIn ? (
-                role === "admin" ? (
+                isAdmin ? (
                   <Link
                     href="/admin"
                     className="spring-press flex items-center gap-3 px-3 py-2.5 rounded-xl bg-rose-50 border border-rose-200 text-rose-600 font-semibold"
                   >
                     <ShieldAlert size={16} /> Admin
                   </Link>
-                ) : role === "agency_owner" ? (
-                  <Link
-                    href="/dashboard"
-                    className="spring-press flex items-center gap-3 px-3 py-2.5 rounded-xl bg-blue-600 text-white font-semibold"
-                  >
-                    <Building2 size={16} /> Dashboard
-                  </Link>
                 ) : (
-                  <Link
-                    href="/account"
-                    className="spring-press flex items-center gap-3 px-3 py-2.5 rounded-xl bg-slate-100 text-slate-900 font-medium"
-                  >
-                    <User size={16} /> Account
-                  </Link>
+                  <>
+                    {ownsPages && (
+                      <Link
+                        href="/dashboard"
+                        className="spring-press flex items-center gap-3 px-3 py-2.5 rounded-xl bg-blue-600 text-white font-semibold"
+                      >
+                        <Building2 size={16} /> Dashboard
+                      </Link>
+                    )}
+                    <Link
+                      href="/account"
+                      className="spring-press flex items-center gap-3 px-3 py-2.5 rounded-xl bg-slate-100 text-slate-900 font-medium"
+                    >
+                      <User size={16} /> Account
+                    </Link>
+                  </>
                 )
               ) : (
                 <>

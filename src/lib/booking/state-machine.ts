@@ -4,7 +4,10 @@ import type { BookingStatus } from "@/types/database";
 export const BOOKING_TRANSITIONS: Record<BookingStatus, BookingStatus[]> = {
   requested:            ["pending_confirmation", "cancelled"],
   pending_confirmation: ["confirmed", "declined", "cancelled"],
-  confirmed:            ["payment_pending", "cancelled"],
+  // "confirmed" = reserved. Free-launch bookings go straight to "active" when
+  // the owner starts the rental at pickup; the paid path routes via
+  // payment_pending -> active (slip verified).
+  confirmed:            ["active", "payment_pending", "cancelled"],
   payment_pending:      ["active", "cancelled"],
   // "cancelled" here also covers the page cancelling before pickup
   // (/api/bookings/transition, strike logic), not just renter cancellation.
@@ -35,7 +38,8 @@ export const TRANSITION_ACTORS: Partial<Record<BookingStatus, Partial<Record<Boo
     cancelled:  ["renter"],
   },
   confirmed: {
-    payment_pending: ["renter"],        // renter uploads slip
+    active:          ["agency"],         // owner starts the rental at pickup
+    payment_pending: ["renter"],         // (paid path) renter uploads slip
     cancelled:       ["renter", "agency"], // agency: before pickup, strike logic applies
   },
   payment_pending: {
@@ -59,9 +63,9 @@ export const TRANSITION_ACTORS: Partial<Record<BookingStatus, Partial<Record<Boo
 export const BOOKING_STATUS_LABELS: Record<BookingStatus, string> = {
   requested:            "Request Sent",
   pending_confirmation: "Waiting for Confirmation",
-  confirmed:            "Confirmed, Pay to Lock In",
+  confirmed:            "Confirmed — Reserved",
   payment_pending:      "Payment Under Review",
-  active:               "Booking Active",
+  active:               "Rental Active",
   completed:            "Completed",
   declined:             "Declined",
   cancelled:            "Cancelled",

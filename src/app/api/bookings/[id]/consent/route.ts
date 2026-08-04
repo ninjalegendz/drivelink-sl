@@ -110,9 +110,13 @@ export async function DELETE(req: NextRequest, { params }: { params: Promise<{ i
   if (!b) return NextResponse.json({ error: "Booking not found" }, { status: 404 });
   if (b.renter_id !== user.id) return NextResponse.json({ error: "Not your booking" }, { status: 403 });
 
-  if (b.status !== "active") {
+  // Decision 12: the renter can withdraw document access any time before the
+  // evidence-retention point — i.e. while the booking is still confirmed,
+  // awaiting payment, or active (in progress). Once it's completed / disputed /
+  // cancelled the shared record is retained and revocation is closed.
+  if (!["confirmed", "payment_pending", "active"].includes(b.status)) {
     return NextResponse.json(
-      { error: "Sharing can only be revoked while the booking is active." },
+      { error: "Document sharing can no longer be withdrawn for this booking." },
       { status: 409 },
     );
   }

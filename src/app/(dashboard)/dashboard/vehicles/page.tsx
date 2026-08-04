@@ -6,6 +6,7 @@ import { Car, Plus, ExternalLink } from "lucide-react";
 import { getActivePage } from "@/lib/pages/active-page";
 import { Badge } from "@/components/ui/Badge";
 import { VehicleStatusToggle } from "@/components/dashboard/VehicleStatusToggle";
+import { ResubmitButton } from "@/components/dashboard/ResubmitButton";
 import { formatLKR, insuranceLabel } from "@/lib/vehicles/format";
 import type { Database } from "@/types/database";
 
@@ -161,6 +162,14 @@ export default async function FleetPage() {
                     </div>
                     <VehicleStatusToggle vehicleId={v.id} status={v.status} />
                   </div>
+
+                  {/* UX-008: rejection reason + resubmit for review */}
+                  {v.status === "unlisted" && (v as { rejection_reason?: string | null }).rejection_reason && (
+                    <div className="mt-2 rounded-lg bg-red-50 border border-red-200 px-2.5 py-2">
+                      <p className="text-red-700 text-xs"><span className="font-semibold">Rejected:</span> {(v as { rejection_reason?: string | null }).rejection_reason}</p>
+                      <div className="mt-1.5"><ResubmitButton vehicleId={v.id} /></div>
+                    </div>
+                  )}
                 </div>
               </div>
             );

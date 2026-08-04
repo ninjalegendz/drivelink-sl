@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient, createServiceClient } from "@/lib/supabase/server";
 import { extractKeyFromUrl } from "@/lib/storage/r2";
+import { canActOnAgency } from "@/lib/pages/access";
 import { notifyCascade } from "@/lib/notify";
 import { runAfterResponse } from "@/lib/after-response";
 import {
@@ -144,12 +145,21 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
   const b = bookingRow as unknown as Joined | null;
   if (!b) return NextResponse.json({ error: "Booking not found" }, { status: 404 });
 
-  // Party check: page-owner only, this route is page-side submission only.
-  if (b.agencies?.owner_id !== user.id) {
+  // Party check: page team (owner or staff) only — this route is page-side submission.
+  if (!(await canActOnAgency(service, user.id, b.agency_id))) {
     return NextResponse.json({ error: "Not your booking" }, { status: 403 });
   }
-  if (b.status !== "active") {
-    return NextResponse.json({ error: "Inspections can only be recorded while the booking is active." }, { status: 409 });
+  // BUILD 1: the PICKUP inspection is recorded before the rental starts (it
+  // gates activation), so it's allowed while the booking is 'confirmed' or
+  // 'active'. The RETURN inspection is only meaningful once the rental is live.
+  const allowedStatuses = phase === "pickup" ? ["confirmed", "active"] : ["active"];
+  if (!allowedStatuses.includes(b.status)) {
+    return NextResponse.json(
+      { error: phase === "pickup"
+          ? "The pickup inspection can be recorded once the booking is confirmed."
+          : "The return inspection can only be recorded while the rental is active." },
+      { status: 409 },
+    );
   }
 
   if (hasDepositReturn && b.deposit_lkr != null && depositReturnAmount! < b.deposit_lkr && !depositReturnReason) {

@@ -24,6 +24,8 @@ interface Props {
   vehicleName:    string;
   dailyRateLkr:   number;
   monthlyRateLkr?: number | null;
+  selfDrive?:     boolean;
+  withDriver?:    boolean;
   bookedRanges?:  DateRange[];
   /** Path to this listing (e.g. "/vehicles/aqua-2019"). Embedded into the
    *  pre-filled WhatsApp links so support can open the exact post even when
@@ -59,7 +61,8 @@ function to12h(hhmm: string): string {
   return `${h % 12 === 0 ? 12 : h % 12}:${PAD(m)} ${period}`;
 }
 
-export function BookingRequestForm({ vehicleId, agencyId, vehicleName, dailyRateLkr, monthlyRateLkr, bookedRanges = [], listingPath }: Props) {
+export function BookingRequestForm({ vehicleId, agencyId, vehicleName, dailyRateLkr, monthlyRateLkr, selfDrive = true, withDriver = false, bookedRanges = [], listingPath }: Props) {
+  const bothModes = selfDrive && withDriver;
   // Full listing URL for the pre-filled WhatsApp links, lets support open the
   // exact post (the vehicle name alone isn't unique).
   const listingUrl = listingPath ? `${siteConfig.appUrl}${listingPath}` : "";
@@ -86,6 +89,12 @@ export function BookingRequestForm({ vehicleId, agencyId, vehicleName, dailyRate
   const [loading, setLoading]     = useState(false);
   const [error, setError]         = useState<string | null>(null);
   const [guestModal, setGuestModal] = useState(false);
+  // BOOK-011 / TRUST-022 — drive mode + foreign-visitor permit declaration.
+  const [mode, setMode]           = useState<"self_drive" | "with_driver">(selfDrive ? "self_drive" : "with_driver");
+  const [isForeign, setIsForeign] = useState(false);
+  const [permitAck, setPermitAck] = useState(false);
+  const effectiveMode = bothModes ? mode : (selfDrive ? "self_drive" : "with_driver");
+  const isSelfDrive   = effectiveMode === "self_drive";
   // Shown when an unverified renter tries to send — a "verify to continue"
   // step rather than a dead error. `pending` = Didit still processing.
   const [needsVerify, setNeedsVerify] = useState(false);
@@ -164,6 +173,10 @@ export function BookingRequestForm({ vehicleId, agencyId, vehicleName, dailyRate
       setError(`Pick-up must be at least ${LEAD_HOURS} hours from now. For an urgent booking, message us on WhatsApp.`);
       return;
     }
+    if (isSelfDrive && isForeign && !permitAck) {
+      setError("Please confirm the driving-permit requirement for self-drive.");
+      return;
+    }
 
     setLoading(true);
 
@@ -188,6 +201,9 @@ export function BookingRequestForm({ vehicleId, agencyId, vehicleName, dailyRate
         end_date:   endDate,
         start_time: startTime,
         end_time:   endTime,
+        rental_mode:       effectiveMode,
+        is_foreign_renter: isForeign,
+        permit_ack:        permitAck,
       }),
     });
 
@@ -269,6 +285,43 @@ export function BookingRequestForm({ vehicleId, agencyId, vehicleName, dailyRate
         </div>
       </div>
       <p className="text-slate-400 text-[11px] -mt-1">Billed in 24-hour blocks, a later return time can add a day.</p>
+
+      {/* BOOK-011: choose the drive mode when the vehicle offers both. */}
+      {bothModes && (
+        <div>
+          <label className="text-slate-600 text-xs mb-1 block">How do you want to rent?</label>
+          <div className="grid grid-cols-2 gap-2">
+            {([["self_drive", "Self-drive"], ["with_driver", "With driver"]] as const).map(([val, label]) => (
+              <button
+                key={val}
+                type="button"
+                onClick={() => setMode(val)}
+                className={`px-3 py-2 rounded-lg text-sm font-medium border transition-colors ${
+                  mode === val ? "bg-blue-600 text-white border-blue-600" : "bg-slate-100 text-slate-700 border-slate-200 hover:bg-slate-200"
+                }`}
+              >
+                {label}
+              </button>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* TRUST-022: foreign visitor doing self-drive → permit declaration. */}
+      {isSelfDrive && (
+        <div className="space-y-2">
+          <label className="flex items-start gap-2 text-xs text-slate-600 cursor-pointer">
+            <input type="checkbox" checked={isForeign} onChange={(e) => { setIsForeign(e.target.checked); if (!e.target.checked) setPermitAck(false); }} className="mt-0.5" />
+            <span>I&apos;m a foreign visitor (not a Sri Lankan licence holder).</span>
+          </label>
+          {isForeign && (
+            <label className="flex items-start gap-2 text-xs text-slate-600 cursor-pointer p-2.5 bg-amber-50 border border-amber-200 rounded-lg">
+              <input type="checkbox" checked={permitAck} onChange={(e) => setPermitAck(e.target.checked)} className="mt-0.5" />
+              <span>I hold, or will obtain before pickup, a valid <strong>International Driving Permit</strong> and a <strong>Sri Lankan recognition permit</strong> (AA Ceylon / DMT) for self-drive. I&apos;ll show the originals at handover. <span className="text-amber-700">This is guidance, not legal advice.</span></span>
+            </label>
+          )}
+        </div>
+      )}
 
       {/* Shown only when the chosen pick-up is under 24h away */}
       {within24h && (
@@ -437,6 +490,9 @@ export function BookingRequestForm({ vehicleId, agencyId, vehicleName, dailyRate
           endTime,
           totalDays: days,
           subtotal:  price.subtotal,
+          rentalMode: effectiveMode,
+          isForeign,
+          permitAck,
         }}
         onClose={() => setGuestModal(false)}
       />

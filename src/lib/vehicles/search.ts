@@ -10,10 +10,11 @@ const CACHE_TTL = 60; // seconds, public browse data can be ~1 min stale
 
 export interface VehicleSearchParams {
   q?:        string | null;
-  city?:     string | null;
-  type?:     string | null;
-  option?:   string | null;
-  maxPrice?: number | null;
+  city?:      string | null;
+  type?:      string | null;
+  option?:    string | null;
+  maxPrice?:  number | null;
+  insurance?: string | null;
   from?:     string | null;
   to?:       string | null;
   limit?:    number;
@@ -39,6 +40,7 @@ export async function searchVehiclePage(
     p_to:        p.to || null,
     p_limit:     p.limit ?? VEHICLES_PAGE_SIZE,
     p_offset:    p.offset ?? 0,
+    p_insurance: p.insurance || null,
   });
   const rows = (data ?? []) as VehicleRow[];
   if (rows.length === 0) return [];
@@ -47,7 +49,7 @@ export async function searchVehiclePage(
   const agencyById = new Map<string, AgencySnippet>();
   const { data: agencyRows } = await supabase
     .from("agencies")
-    .select("id, owner_id, name, city, is_verified, reliability_pct, cancellation_count, avg_response_minutes, profiles!owner_id(rating_avg, rating_count)")
+    .select("id, owner_id, name, city, is_verified, reliability_pct, cancellation_count, avg_response_minutes, rating_avg, rating_count, profiles!owner_id(rating_avg, rating_count)")
     .in("id", agencyIds);
   for (const a of (agencyRows ?? []) as unknown as AgencySnippet[]) agencyById.set(a.id, a);
 
@@ -76,7 +78,7 @@ export async function getHomeFeaturedCached(): Promise<VehicleWithAgency[]> {
       const supabase = createPublicClient();
       const { data } = await supabase
         .from("vehicles")
-        .select("*, agencies(id, owner_id, name, city, is_verified, reliability_pct, cancellation_count, avg_response_minutes, profiles!owner_id(rating_avg, rating_count))")
+        .select("*, agencies(id, owner_id, name, city, is_verified, reliability_pct, cancellation_count, avg_response_minutes, rating_avg, rating_count, profiles!owner_id(rating_avg, rating_count))")
         .eq("status", "available")
         .order("created_at", { ascending: false })
         .limit(12);

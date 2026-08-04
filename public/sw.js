@@ -6,13 +6,25 @@
  *   - hashed static assets    -> cache-first (immutable, content-hashed)
  *   - everything else         -> straight to network (API, Supabase, R2, etc.)
  */
-const VERSION = "dl-sw-v3";
+// Bump this on any change to precached/cache-first assets (icons, logos) —
+// `activate` deletes every cache whose key doesn't start with VERSION, so
+// returning visitors drop stale copies instead of keeping them forever.
+const VERSION = "dl-sw-v5";
 const STATIC_CACHE = `${VERSION}-static`;
 // Next strips the .html extension, so the canonical 200 URL is /offline.
 // Precaching /offline.html would 307-redirect and make install fail.
 const OFFLINE_URL = "/offline";
 
-const PRECACHE = [OFFLINE_URL, "/icon-192.png", "/icon-512.png"];
+// Poppins faces used by /offline are precached too — otherwise the offline
+// page would fall back to a system font, which the brand doesn't allow.
+const PRECACHE = [
+  OFFLINE_URL,
+  "/icon-192.png",
+  "/icon-512.png",
+  "/fonts/Poppins-Regular.woff2",
+  "/fonts/Poppins-Bold.woff2",
+  "/fonts/Poppins-ExtraBold.woff2",
+];
 
 self.addEventListener("install", (event) => {
   event.waitUntil(

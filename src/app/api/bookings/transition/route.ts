@@ -9,7 +9,8 @@ import {
 import { notifyCascade } from "@/lib/notify";
 import { runAfterResponse } from "@/lib/after-response";
 import { logEvent } from "@/lib/activity/log";
-import { createAgreementSnapshot } from "@/lib/booking/agreement-snapshot";
+import { ensureAgreementSnapshot } from "@/lib/booking/agreement-snapshot";
+import { canActOnAgency } from "@/lib/pages/access";
 
 // POST /api/bookings/transition
 // body: { bookingId: string, to: "confirmed" | "declined" | "completed" | "cancelled", reason?: string }
@@ -36,8 +37,18 @@ import { createAgreementSnapshot } from "@/lib/booking/agreement-snapshot";
 // bad caller instead of erroring, and has no notion of "before pickup"),
 // plus the strike bookkeeping that makes late cancellations cost the page.
 
-const ALLOWED = new Set(["confirmed", "declined", "completed", "cancelled"] as const);
+const ALLOWED = new Set(["confirmed", "active", "declined", "completed", "cancelled"] as const);
 type AllowedStatus = typeof ALLOWED extends Set<infer T> ? T : never;
+
+// Decision 3: "confirmed" means reserved (not started). The rental only becomes
+// "active" when the owner starts it at pickup. Per-target current-state gate so
+// a stale control can't jump a booking into an impossible state (audit BOOK-001).
+const VALID_FROM: Record<Exclude<AllowedStatus, "cancelled">, string[]> = {
+  confirmed: ["pending_confirmation"],
+  active:    ["confirmed"],
+  declined:  ["pending_confirmation"],
+  completed: ["active"],
+};
 
 const STRIKE_WINDOW_MS = 48 * 60 * 60 * 1000;
 
@@ -63,34 +74,86 @@ export async function POST(req: NextRequest) {
 
   const now = new Date().toISOString();
 
-  // Free-launch: when the booking carries no fee, "confirm" goes straight to
-  // active (no pay-to-lock-in step) so the renter immediately gets the
-  // provider's contact. With a fee, confirm enters the payment window.
-  let effective: string = to;
-  if (to === "confirmed") {
-    const svc = await createServiceClient();
-    const { data: feeRow } = await svc.from("bookings").select("booking_fee_lkr").eq("id", body.bookingId).single();
-    const fee = (feeRow as { booking_fee_lkr?: number } | null)?.booking_fee_lkr ?? 0;
-    if (fee <= 0) effective = "active";
+  // bookings is locked to server-side writes, so ownership is enforced here
+  // explicitly (was previously the "Agency can transition booking" RLS gate):
+  // the caller must own the page, and the booking must be in a live,
+  // transitionable state. The write then runs on the service client.
+  const service = await createServiceClient();
+  const { data: bookingRow } = await service
+    .from("bookings")
+    .select("id, status, start_at, vehicle_id, agency_id, agencies!inner(owner_id)")
+    .eq("id", body.bookingId)
+    .single();
+  const bk = bookingRow as {
+    id: string;
+    status: string;
+    start_at: string | null;
+    vehicle_id: string;
+    agency_id: string;
+    agencies: { owner_id: string } | null;
+  } | null;
+  if (!bk) return NextResponse.json({ error: "Booking not found" }, { status: 404 });
+  if (!(await canActOnAgency(service, user.id, bk.agency_id))) {
+    return NextResponse.json({ error: "Not your booking" }, { status: 403 });
+  }
+  if (!VALID_FROM[to].includes(bk.status)) {
+    return NextResponse.json({ error: `Can't do that from '${bk.status}'.` }, { status: 409 });
   }
 
-  const update: Record<string, unknown> = { status: effective };
-  if (to === "confirmed") {
-    update.confirmed_at = now;
-    if (effective === "active") update.activated_at = now;
+  // Starting the rental ("active") is a pickup action — don't let it happen
+  // weeks early. Allow it from a day before the pickup date onward.
+  if (to === "active" && bk.start_at) {
+    const EARLY_GRACE = 24 * 3600_000;
+    if (Date.now() < new Date(bk.start_at).getTime() - EARLY_GRACE) {
+      return NextResponse.json(
+        { error: "It's too early to start this rental — you can start it from the day before pickup." },
+        { status: 409 },
+      );
+    }
   }
+
+  // BUILD 1 — mandatory inspection gates (TRUST-001). A rental can't be started
+  // without a recorded PICKUP inspection, and can't be completed without a
+  // RETURN inspection. This is DriveLink's flagship deposit-dispute protection,
+  // so it's enforced here (not just in the UI). Admins keep an audited emergency
+  // override via /api/admin/bookings/transition.
+  async function inspectionExists(phase: "pickup" | "return"): Promise<boolean> {
+    const { count } = await service
+      .from("booking_inspections")
+      .select("id", { count: "exact", head: true })
+      .eq("booking_id", body.bookingId)
+      .eq("phase", phase);
+    return (count ?? 0) > 0;
+  }
+  if (to === "active" && !(await inspectionExists("pickup"))) {
+    return NextResponse.json(
+      { error: "Record the pickup inspection (photos, odometer, fuel) before starting the rental." },
+      { status: 409 },
+    );
+  }
+  if (to === "completed" && !(await inspectionExists("return"))) {
+    return NextResponse.json(
+      { error: "Record the return inspection before completing the booking." },
+      { status: 409 },
+    );
+  }
+
+  const update: Record<string, unknown> = { status: to };
+  if (to === "confirmed") update.confirmed_at = now;   // reserved, not started
+  if (to === "active")    update.activated_at = now;   // rental starts at pickup
   if (to === "declined")  update.declined_at  = now;
   if (to === "completed") {
     update.completed_at        = now;
     update.return_confirmed_at = now; // agency confirms receipt as it completes
   }
 
-  // Use the caller's cookie-bound client so RLS enforces ownership.
-  // Postgres exclusion violation (23P01) bubbles up if the dates clash.
-  const { error: updateError } = await supabase
+  // Service client (bookings has no browser UPDATE grant). The Postgres
+  // exclusion violation (23P01) still bubbles up if the dates clash.
+  const { error: updateError } = await service
     .from("bookings")
     .update(update)
-    .eq("id", body.bookingId);
+    .eq("id", body.bookingId)
+    .eq("status", bk.status);
 
   if (updateError) {
     return NextResponse.json(
@@ -99,13 +162,46 @@ export async function POST(req: NextRequest) {
     );
   }
 
-  // Freeze the digital rental agreement at confirmation. `to === "confirmed"`
-  // covers BOTH monetised paths (fee>0 stays in 'confirmed' awaiting payment)
-  // and the free-launch path (effective status jumps straight to 'active'),
-  // the terms snapshot is identical either way. Runs after the response so
-  // the owner's confirm click isn't slowed; the helper is idempotent.
+  // Freeze the digital rental agreement at confirmation (reservation). TRUST-006:
+  // awaited (not fire-and-forget) so the snapshot is guaranteed to exist before
+  // we report success — the renter can open Agreement immediately after. The
+  // helper is idempotent and retries once; a hard failure is logged but doesn't
+  // block the confirmation the owner already committed.
   if (to === "confirmed") {
-    runAfterResponse(createAgreementSnapshot(body.bookingId));
+    await ensureAgreementSnapshot(body.bookingId);
+  }
+
+  // Decision 2 follow-up: confirming auto-declines the OTHER pending requests
+  // whose dates overlap (auto_decline_overlapping_pending trigger). Tell those
+  // renters their dates went to someone else so a silent decline doesn't leave
+  // them hanging. Matches the trigger's reason + a fresh declined_at.
+  if (to === "confirmed") {
+    runAfterResponse((async () => {
+      const svc = await createServiceClient();
+      const { data: losers } = await svc
+        .from("bookings")
+        .select("id, renter_id, start_date, end_date, vehicles(make, model, year)")
+        .eq("vehicle_id", bk.vehicle_id)
+        .eq("status", "declined")
+        .eq("cancellation_reason", "Dates booked by another renter")
+        .gt("declined_at", new Date(Date.now() - 60_000).toISOString());
+      const rows = (losers ?? []) as unknown as {
+        renter_id: string; start_date: string; end_date: string;
+        vehicles: { make: string; model: string; year: number } | null;
+      }[];
+      const appUrl = process.env.NEXT_PUBLIC_APP_URL!;
+      for (const l of rows) {
+        const { data: r } = await svc.from("profiles").select("phone, email").eq("id", l.renter_id).single();
+        const rr = r as { phone?: string | null; email?: string | null } | null;
+        const vname = l.vehicles ? `${l.vehicles.year} ${l.vehicles.make} ${l.vehicles.model}` : "that vehicle";
+        const realEmail = rr?.email && !rr.email.endsWith("@phone.drivelink.invalid") ? rr.email : null;
+        const text = `DriveLink: the ${vname} you requested (${l.start_date}–${l.end_date}) was just booked by another renter. Browse other options: ${appUrl}/vehicles`;
+        await notifyCascade({
+          phone: rr?.phone ?? undefined, smsKey: "booking_status_renter", text,
+          email: realEmail, emailSubject: "Those dates were just booked", emailText: text,
+        });
+      }
+    })());
   }
 
   // Fire renter SMS for confirm/decline/complete after the response, the agency
@@ -200,7 +296,7 @@ async function handlePageCancellation(
   // same verdict, but a bad caller against a bare `.update()` would just
   // silently match zero rows and still get a 200, which is a worse
   // failure mode for a "your cancellation went through" action.
-  if (b.agencies?.owner_id !== userId) {
+  if (!(await canActOnAgency(service, userId, b.agency_id))) {
     return NextResponse.json({ error: "Not your booking" }, { status: 403 });
   }
   if (b.status !== "confirmed" && b.status !== "active") {
@@ -210,22 +306,33 @@ async function handlePageCancellation(
     );
   }
   const startMs = new Date(b.start_at).getTime();
-  if (startMs <= Date.now()) {
+  const pickupPassed = startMs <= Date.now();
+  // A live (active) rental past pickup is a dispute, not a cancellation.
+  if (b.status === "active" && pickupPassed) {
     return NextResponse.json(
       { error: "This booking's pickup time has already passed — use dispute reporting instead." },
       { status: 400 },
     );
   }
+  // A CONFIRMED booking whose pickup passed is a renter no-show. Decision 3
+  // introduced this state (reserved bookings no longer auto-activate), so the
+  // owner must be able to release it — it otherwise holds the dates forever.
+  // Neutral 'system' attribution: it frees the dates without striking the page
+  // or auto-penalising the renter (the owner can report a genuine no-show
+  // separately).
+  const isNoShow = b.status === "confirmed" && pickupPassed;
 
   const now = new Date().toISOString();
   const trimmedReason = reason?.trim();
-  const cancellationReason = trimmedReason
-    ? `Cancelled by the Rental Page: ${trimmedReason}`
-    : "Cancelled by the Rental Page";
+  const cancellationReason = isNoShow
+    ? "Reserved booking released — the vehicle was not picked up."
+    : trimmedReason
+      ? `Cancelled by the Rental Page: ${trimmedReason}`
+      : "Cancelled by the Rental Page";
 
   const { error: updateError } = await service
     .from("bookings")
-    .update({ status: "cancelled", cancelled_at: now, cancellation_reason: cancellationReason, cancelled_by: "page" })
+    .update({ status: "cancelled", cancelled_at: now, cancellation_reason: cancellationReason, cancelled_by: isNoShow ? "system" : "page" })
     .eq("id", bookingId);
   if (updateError) {
     console.error("[booking transition] page cancel failed", bookingId, updateError);
@@ -238,7 +345,7 @@ async function handlePageCancellation(
   // update above already ticks it. Only strike_count needs a manual
   // increment, and only for the renter-trust-killing case: cancelling
   // inside the 48h pre-pickup window.
-  const withinStrikeWindow = startMs - Date.now() <= STRIKE_WINDOW_MS;
+  const withinStrikeWindow = !isNoShow && startMs - Date.now() <= STRIKE_WINDOW_MS;
   if (withinStrikeWindow) {
     const { error: agencyError } = await service
       .from("agencies")

@@ -45,8 +45,9 @@ export function DocumentShareCard({ bookingId, pageName, consentGranted, canRevo
           <div className="flex-1">
             <p className="text-emerald-700 font-semibold text-sm">Documents shared with {pageName}</p>
             <p className="text-slate-600 text-xs mt-0.5">
-              Your identity summary and driving licence photos are viewable (not downloadable) by{" "}
-              {pageName} for this booking only. Every view is logged, see your{" "}
+              Your identity summary and driving licence photos are shown to {pageName} in a
+              watermarked, view-only viewer for this booking only (no download button, though
+              screenshots can&apos;t be technically prevented). Every view is logged, see your{" "}
               <Link href="/account/documents" className="underline hover:text-slate-800">
                 sharing history
               </Link>.

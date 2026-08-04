@@ -17,11 +17,11 @@ interface Props {
   startAt?: string | null;
 }
 
-type AgencyTransition = "confirmed" | "declined" | "completed" | "cancelled";
+type AgencyTransition = "confirmed" | "active" | "declined" | "completed" | "cancelled";
 
 export function AgencyBookingActions({ bookingId, status, renterReturnedAt, returnInspectionAcked, startAt }: Props) {
   const router = useRouter();
-  const [loading, setLoading] = useState<"confirm" | "decline" | "complete" | "cancel" | null>(null);
+  const [loading, setLoading] = useState<"confirm" | "decline" | "start" | "complete" | "cancel" | null>(null);
   const [error, setError]     = useState<string | null>(null);
 
   // Goes through /api/bookings/transition so the server can fire the
@@ -78,6 +78,25 @@ export function AgencyBookingActions({ bookingId, status, renterReturnedAt, retu
     </Button>
   );
 
+  // Decision 3 follow-up: a reserved booking whose pickup passed and was never
+  // started is a renter no-show. Let the owner release it (frees the dates, no
+  // page strike) instead of leaving it stuck.
+  const pickupPassed = !!startAt && new Date(startAt).getTime() <= Date.now();
+  async function markNoShow() {
+    const proceed = window.confirm(
+      "Mark this as a no-show? The renter didn't pick up the vehicle. This releases the dates and does NOT add a strike to your page.",
+    );
+    if (!proceed) return;
+    setLoading("cancel");
+    await transition("cancelled");
+    setLoading(null);
+  }
+  const noShowButton = (
+    <Button size="sm" variant="danger" loading={loading === "cancel"} onClick={markNoShow}>
+      Renter didn&apos;t show — release
+    </Button>
+  );
+
   if (status === "pending_confirmation") {
     return (
       <div className="flex flex-col items-end gap-2 shrink-0">
@@ -112,13 +131,31 @@ export function AgencyBookingActions({ bookingId, status, renterReturnedAt, retu
   }
 
   if (status === "confirmed") {
-    // Fee>0 path only (free-launch confirms jump straight to 'active'):
-    // the renter has committed but hasn't paid the lock-in yet. Cancel is
-    // still available here, since "confirmed" already means the renter
-    // was told this booking is happening.
+    // Decision 3: "confirmed" means reserved — the rental hasn't started. The
+    // owner starts it at pickup with "Start rental", which is the handover
+    // moment (server gates it to on/near the pickup date). Cancel stays
+    // available before pickup.
     return (
       <div className="flex flex-col items-end gap-2 shrink-0">
-        {cancelButton}
+        <Button
+          size="sm"
+          loading={loading === "start"}
+          onClick={async () => {
+            const proceed = window.confirm(
+              "Record the pickup inspection (photos + odometer + fuel) FIRST — it's required before a rental can start and it's your evidence for any later claim.\n\nOnce the pickup inspection is saved, start the rental to mark the vehicle handed over. Continue?",
+            );
+            if (!proceed) return;
+            setLoading("start");
+            const res = await transition("active");
+            setLoading(null);
+            // If the server blocks activation for a missing pickup inspection,
+            // the transition helper surfaces the error into `error` state below.
+            void res;
+          }}
+        >
+          Start rental (mark picked up)
+        </Button>
+        {pickupPassed ? noShowButton : cancelButton}
         {error && <p className="text-red-400 text-xs max-w-xs text-right">{error}</p>}
       </div>
     );

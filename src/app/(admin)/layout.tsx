@@ -3,7 +3,7 @@ import Link from "next/link";
 import Image from "next/image";
 import {
   LayoutDashboard, ReceiptText, ClipboardList, Users, Building2, Settings, Car,
-  Headphones, Receipt, BarChart3, UserCog,
+  Headphones, Receipt, BarChart3, UserCog, Flag,
 } from "lucide-react";
 import { createClient } from "@/lib/supabase/server";
 import { SignOutButton } from "@/components/account/SignOutButton";
@@ -32,6 +32,7 @@ const NAV: AdminNavItem[] = [
   { href: "/admin/invoices",        label: "Invoices",      Icon: Receipt, feeOnly: true },
   { href: "/admin/users",           label: "Renters / KYC", Icon: Users },
   { href: "/admin/agencies",        label: "Agencies",      Icon: Building2 },
+  { href: "/admin/reports",         label: "Reports",       Icon: Flag },
   { href: "/admin/support",         label: "Support",       Icon: Headphones, badge: "support" },
   { href: "/admin/settings",        label: "Settings",      Icon: Settings },
 ];
@@ -151,7 +152,7 @@ export default async function AdminLayout({ children }: { children: React.ReactN
       </aside>
 
       {/* Content */}
-      <main className="flex-1 min-w-0 md:ml-52 p-4 md:p-8 pb-24 md:pb-8 max-w-full min-h-screen">{children}</main>
+      <main className="flex-1 min-w-0 md:ml-52 p-4 md:p-8 pb-24 md:pb-8 pt-[calc(1rem_+_env(safe-area-inset-top))] md:pt-8 max-w-full min-h-screen">{children}</main>
 
       <MobileNav primary={mobilePrimary} secondary={mobileSecondary} />
 

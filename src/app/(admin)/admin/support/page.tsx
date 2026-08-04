@@ -10,18 +10,21 @@ export default async function AdminSupportListPage() {
   const { data: threadsData } = await supabase
     .from("support_threads")
     .select(`
-      id, agency_id, last_message_at, has_unread_admin, created_at,
-      agencies(name, city)
+      id, agency_id, renter_id, last_message_at, has_unread_admin, created_at,
+      agencies(name, city),
+      profiles:renter_id(full_name)
     `)
     .order("last_message_at", { ascending: false, nullsFirst: false });
 
   const threads = (threadsData ?? []) as unknown as {
     id: string;
-    agency_id: string;
+    agency_id: string | null;
+    renter_id: string | null;
     last_message_at: string | null;
     has_unread_admin: boolean;
     created_at: string;
     agencies: { name: string; city: string } | null;
+    profiles: { full_name: string } | null;
   }[];
 
   // Fetch the latest message body for each thread (simple per-thread query;
@@ -68,8 +71,9 @@ export default async function AdminSupportListPage() {
                 <div className="flex items-center justify-between gap-3">
                   <div className="min-w-0 flex-1">
                     <div className="flex items-center gap-2 flex-wrap">
-                      <p className="font-semibold text-slate-900">{t.agencies?.name ?? "Unknown agency"}</p>
-                      <span className="text-slate-500 text-xs">{t.agencies?.city}</span>
+                      <p className="font-semibold text-slate-900">{t.agencies?.name ?? t.profiles?.full_name ?? "Unknown"}</p>
+                      <Badge variant="slate">{t.renter_id ? "Renter" : "Agency"}</Badge>
+                      {t.agencies?.city && <span className="text-slate-500 text-xs">{t.agencies.city}</span>}
                       {t.has_unread_admin && <Badge variant="red">New</Badge>}
                     </div>
                     {last && (

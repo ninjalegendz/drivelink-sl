@@ -29,13 +29,14 @@ interface Props {
   initialMaxPrice?: string;
   initialFrom?:     string;
   initialTo?:       string;
+  initialInsurance?: string;
   /** Result count, shown on the mobile sheet's "Show results" button. */
   resultCount?:     number;
 }
 
 export function VehiclesFilter({
   initialQ = "", initialCity = "", initialType = "", initialOption = "", initialMaxPrice = "",
-  initialFrom = "", initialTo = "",
+  initialFrom = "", initialTo = "", initialInsurance = "",
   resultCount,
 }: Props) {
   const router = useRouter();
@@ -46,10 +47,11 @@ export function VehiclesFilter({
   const [maxPrice, setMaxPrice] = useState(initialMaxPrice);
   const [from, setFrom]         = useState(initialFrom);
   const [to, setTo]             = useState(initialTo);
+  const [insurance, setInsurance] = useState(initialInsurance);
   const [sheetOpen, setSheetOpen] = useState(false); // mobile filter sheet
 
   const today = new Date().toISOString().slice(0, 10);
-  const activeCount = [q, city, type, option, maxPrice, from, to].filter(Boolean).length;
+  const activeCount = [q, city, type, option, maxPrice, from, to, insurance].filter(Boolean).length;
 
   // Lock body scroll + Escape-to-close while the mobile sheet is open.
   useEffect(() => {
@@ -62,7 +64,7 @@ export function VehiclesFilter({
   }, [sheetOpen]);
 
   function push(next: Partial<Record<string, string>>) {
-    const state = { q, city, type, option, max_price: maxPrice, from, to, ...next };
+    const state = { q, city, type, option, max_price: maxPrice, from, to, insurance, ...next };
     const params = new URLSearchParams();
     if (state.q)         params.set("q", state.q);
     if (state.city)      params.set("city", state.city);
@@ -71,13 +73,20 @@ export function VehiclesFilter({
     if (state.max_price) params.set("max_price", state.max_price);
     if (state.from)      params.set("from", state.from);
     if (state.to)        params.set("to", state.to);
+    if (state.insurance) params.set("insurance", state.insurance);
     const qs = params.toString();
     router.push(qs ? `/vehicles?${qs}` : "/vehicles");
   }
 
   function reset() {
-    setQ(""); setCity(""); setType(""); setOption(""); setMaxPrice(""); setFrom(""); setTo("");
+    setQ(""); setCity(""); setType(""); setOption(""); setMaxPrice(""); setFrom(""); setTo(""); setInsurance("");
     router.push("/vehicles");
+  }
+
+  function toggleInsurance() {
+    const next = insurance === "hire" ? "" : "hire";
+    setInsurance(next);
+    push({ insurance: next });
   }
 
   // Keep the return date on/after the pick-up date, then navigate.
@@ -137,6 +146,17 @@ export function VehiclesFilter({
       <div className="space-y-2">
         <label className="text-xs font-semibold text-slate-500 uppercase tracking-wider">Location</label>
         <Select value={city} onChange={(v) => { setCity(v); push({ city: v }); }} options={CITY_OPTIONS} />
+      </div>
+
+      {/* Insurance (TRUST-023) */}
+      <div className="space-y-2">
+        <label className="text-xs font-semibold text-slate-500 uppercase tracking-wider">Insurance</label>
+        <button
+          onClick={toggleInsurance}
+          className={`w-full text-left px-3 py-2 text-sm rounded-lg transition-all ${insurance === "hire" ? "bg-blue-50 text-blue-700 font-medium" : "text-slate-600 hover:bg-slate-50 border border-slate-200"}`}
+        >
+          {insurance === "hire" ? "✓ " : ""}Hire-insured only
+        </button>
       </div>
 
       {/* Vehicle type */}

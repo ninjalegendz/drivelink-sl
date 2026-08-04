@@ -34,3 +34,32 @@ export async function getOrCreateThreadForAgency(
   }
   return created as { id: string };
 }
+
+/** Renter's own support thread (MSG-005), created on first use. */
+export async function getOrCreateThreadForRenter(
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  supabase: SupabaseClient<any>,
+  renterId: string
+): Promise<{ id: string } | null> {
+  const { data: existing } = await supabase
+    .from("support_threads")
+    .select("id")
+    .eq("renter_id", renterId)
+    .maybeSingle();
+  if (existing) return existing as { id: string };
+
+  const { data: created, error } = await supabase
+    .from("support_threads")
+    .insert({ renter_id: renterId })
+    .select("id")
+    .single();
+  if (error) {
+    const { data: refetched } = await supabase
+      .from("support_threads")
+      .select("id")
+      .eq("renter_id", renterId)
+      .maybeSingle();
+    return (refetched as { id: string } | null) ?? null;
+  }
+  return created as { id: string };
+}

@@ -3,6 +3,7 @@ import { createClient, createServiceClient } from "@/lib/supabase/server";
 import { notifyCascade } from "@/lib/notify";
 import { runAfterResponse } from "@/lib/after-response";
 import { raiseDispute } from "@/lib/booking/raise-dispute";
+import { canActOnAgency } from "@/lib/pages/access";
 
 // POST /api/bookings/[id]/dispute
 // body: { reason: string, type?: incident_type, amount_lkr?: number, photo_urls?: string[] }
@@ -70,10 +71,10 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
   const b = bookingRow as unknown as Joined | null;
   if (!b) return NextResponse.json({ error: "Booking not found" }, { status: 404 });
 
-  // Party check: renter, or owner of the page the booking belongs to.
+  // Party check: renter, or the page team (owner or staff) the booking belongs to.
   const isRenter = b.renter_id === user.id;
-  const isOwner  = b.agencies?.owner_id === user.id;
-  if (!isRenter && !isOwner) {
+  const isPageSide = !isRenter && await canActOnAgency(service, user.id, b.agency_id);
+  if (!isRenter && !isPageSide) {
     return NextResponse.json({ error: "Not your booking" }, { status: 403 });
   }
 

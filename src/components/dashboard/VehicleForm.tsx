@@ -176,6 +176,11 @@ export function VehicleForm({ agencyId, agencyCity, vehicle, documents }: Props)
   const [loading, setLoading]   = useState(false);
   const [error, setError]       = useState<string | null>(null);
 
+  // Core specs are required, but doors don't apply to a bike/tuk-tuk and an
+  // electric vehicle has no engine cc — those are skipped rather than blocked.
+  const needsDoors = vehicleType === "car" || vehicleType === "suv" || vehicleType === "van";
+  const isElectric = fuelType === "electric";
+
   function validateYear(y: number | ""): string | null {
     if (y === "" || Number.isNaN(y)) return "Year is required.";
     const s = String(y);
@@ -197,6 +202,12 @@ export function VehicleForm({ agencyId, agencyCity, vehicle, documents }: Props)
 
     const yErr = validateYear(year);
     if (yErr) { setYearError(yErr); return; }
+
+    // Required core specs (with the type/fuel exceptions).
+    if (!fuelType)                     { setError("Select the fuel type."); return; }
+    if (needsDoors && !doors)          { setError("Add the number of doors."); return; }
+    if (!isElectric && !engineCc)      { setError("Add the engine size (cc)."); return; }
+    if (!seats || Number(seats) < 1)   { setError("Add the number of seats."); return; }
 
     setLoading(true);
 
@@ -268,8 +279,8 @@ export function VehicleForm({ agencyId, agencyCity, vehicle, documents }: Props)
         // ── vehicle identity extras ──
         body_type:   bodyType || null,
         variant:     variant.trim() || null,
-        doors:       doors ? Number(doors) : null,
-        engine_cc:   engineCc ? Number(engineCc) : null,
+        doors:       needsDoors && doors ? Number(doors) : null,
+        engine_cc:   !isElectric && engineCc ? Number(engineCc) : null,
         odometer_km: odometerKm ? Number(odometerKm) : null,
         // ── rental terms ──
         weekly_rate_lkr: weeklyRate ? Number(weeklyRate) : null,
@@ -396,12 +407,16 @@ export function VehicleForm({ agencyId, agencyCity, vehicle, documents }: Props)
       </div>
 
       <div className="grid grid-cols-3 gap-4">
-        <Field label="Doors" hint="Optional">
-          <input type="number" value={doors} onChange={(e) => setDoors(e.target.value)} min={1} max={6} placeholder="4" className={inputClass} />
-        </Field>
-        <Field label="Engine (cc)" hint="Optional">
-          <input type="number" value={engineCc} onChange={(e) => setEngineCc(e.target.value)} min={0} placeholder="1500" className={inputClass} />
-        </Field>
+        {needsDoors && (
+          <Field label="Doors" required>
+            <input type="number" value={doors} onChange={(e) => setDoors(e.target.value)} min={1} max={6} placeholder="4" className={inputClass} />
+          </Field>
+        )}
+        {!isElectric && (
+          <Field label="Engine (cc)" required>
+            <input type="number" value={engineCc} onChange={(e) => setEngineCc(e.target.value)} min={0} placeholder="1500" className={inputClass} />
+          </Field>
+        )}
         <Field label="Odometer (km)" hint="Optional">
           <input type="number" value={odometerKm} onChange={(e) => setOdometerKm(e.target.value)} min={0} placeholder="65000" className={inputClass} />
         </Field>
@@ -411,7 +426,7 @@ export function VehicleForm({ agencyId, agencyCity, vehicle, documents }: Props)
         <Field label="Vehicle type" required hint="Search category.">
           <Select value={vehicleType} onChange={(v) => setVehicleType(v as VehicleType)} options={VEHICLE_TYPE_OPTIONS} />
         </Field>
-        <Field label="Fuel type" hint="Shown to tourists.">
+        <Field label="Fuel type" required hint="Shown to tourists.">
           <Select value={fuelType} onChange={setFuelType} options={FUEL_TYPE_OPTIONS} />
         </Field>
         <Field label="Luggage (bags)" hint="Large bags it fits">
@@ -476,10 +491,10 @@ export function VehicleForm({ agencyId, agencyCity, vehicle, documents }: Props)
       </div>
 
       <div className="grid grid-cols-3 gap-4">
-        <Field label="Seats">
-          <input type="number" value={seats} onChange={(e) => setSeats(Number(e.target.value))} min={2} max={15} className={inputClass} />
+        <Field label="Seats" required>
+          <input type="number" value={seats} onChange={(e) => setSeats(Number(e.target.value))} min={1} max={20} className={inputClass} />
         </Field>
-        <Field label="Transmission">
+        <Field label="Transmission" required>
           <Select
             value={transmission}
             onChange={setTransmission}

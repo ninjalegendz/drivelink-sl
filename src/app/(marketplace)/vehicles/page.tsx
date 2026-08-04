@@ -6,7 +6,7 @@ import { searchVehiclePageCached, VEHICLES_PAGE_SIZE } from "@/lib/vehicles/sear
 import type { Metadata } from "next";
 
 interface Props {
-  searchParams: Promise<{ q?: string; city?: string; type?: string; option?: string; max_price?: string; from?: string; to?: string }>;
+  searchParams: Promise<{ q?: string; city?: string; type?: string; option?: string; max_price?: string; from?: string; to?: string; insurance?: string }>;
 }
 
 export async function generateMetadata({ searchParams }: Props): Promise<Metadata> {
@@ -16,7 +16,7 @@ export async function generateMetadata({ searchParams }: Props): Promise<Metadat
 }
 
 export default async function VehiclesPage({ searchParams }: Props) {
-  const { q, city, type, option, max_price, from, to } = await searchParams;
+  const { q, city, type, option, max_price, from, to, insurance } = await searchParams;
 
   // Sanitize the free-text query before it reaches ILIKE (strip wildcards/delims).
   const safeQ = q ? q.replace(/[%_,():*.\\]/g, "").trim() : "";
@@ -32,8 +32,9 @@ export default async function VehiclesPage({ searchParams }: Props) {
     q:        safeQ || null,
     city:     city || null,
     type:     type || null,
-    option:   option || null,
-    maxPrice: max_price ? parseInt(max_price) : null,
+    option:    option || null,
+    maxPrice:  max_price ? parseInt(max_price) : null,
+    insurance: insurance || null,
     from:     dateOk ? from : null,
     to:       dateOk ? to : null,
     limit:    VEHICLES_PAGE_SIZE,
@@ -58,6 +59,7 @@ export default async function VehiclesPage({ searchParams }: Props) {
             initialMaxPrice={max_price ?? ""}
             initialFrom={from ?? ""}
             initialTo={to ?? ""}
+            initialInsurance={insurance ?? ""}
             resultCount={vehicles.length}
           />
         </div>

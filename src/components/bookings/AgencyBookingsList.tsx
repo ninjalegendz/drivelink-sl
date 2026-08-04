@@ -11,6 +11,7 @@ import { ReportProblemButton } from "@/components/booking/ReportProblemButton";
 import { ReportRenterButton } from "@/components/booking/ReportRenterButton";
 import { MessageRenterButton } from "@/components/booking/BookingChat";
 import { InspectionFlow } from "@/components/booking/InspectionFlow";
+import { ChargeLedger } from "@/components/booking/ChargeLedger";
 import { BOOKING_STATUS_LABELS } from "@/lib/booking/state-machine";
 import { formatLKR, reliabilityColor, reliabilityLabel } from "@/lib/vehicles/format";
 import { usePolledRows } from "@/lib/realtime/usePolledRows";
@@ -127,6 +128,12 @@ export function AgencyBookingsList({ initial, agencyId, currentUserId, filterSta
                     {renter.kyc_status === "verified" && (
                       <Badge variant="green">ID Verified</Badge>
                     )}
+                    {booking.rental_mode && (
+                      <Badge variant="slate">{booking.rental_mode === "self_drive" ? "Self-drive" : "With driver"}</Badge>
+                    )}
+                    {booking.is_foreign_renter && (
+                      <Badge variant="yellow">Foreign visitor — check permit at handover</Badge>
+                    )}
                     {(renter.rating_count ?? 0) > 0 && (
                       <span className="inline-flex items-center gap-1 text-slate-600 text-xs">
                         <Star size={11} fill="currentColor" className="text-amber-400" />
@@ -212,6 +219,15 @@ export function AgencyBookingsList({ initial, agencyId, currentUserId, filterSta
                   startAt={booking.start_at}
                 />
                 {status === "disputed" && <Badge variant="red">Under review</Badge>}
+                {(status === "active" || status === "completed" || status === "disputed" || !!booking.overdue_critical_at) && (
+                  <a
+                    href={`/api/bookings/${booking.id}/evidence-pack`}
+                    className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold border bg-slate-100 text-slate-700 border-slate-200 hover:bg-slate-200 transition-colors"
+                    title="Download agreement, inspections, timeline & photos as one file"
+                  >
+                    <FileText size={12} /> Evidence pack
+                  </a>
+                )}
                 {agreement && (
                   <Link
                     href={`/bookings/${booking.id}/agreement`}
@@ -227,18 +243,23 @@ export function AgencyBookingsList({ initial, agencyId, currentUserId, filterSta
                     )}
                   </Link>
                 )}
-                {status === "active" && (
+                {/* BUILD 1: the pickup inspection is now recorded BEFORE the
+                    rental starts (it gates activation), so it's available while
+                    'confirmed'. The return inspection appears once active. */}
+                {(status === "confirmed" || status === "active") && (
                   <div className="flex flex-col items-end gap-1.5">
                     <InspectionButton
                       label="Pickup inspection"
                       inspection={pickupInsp}
                       onClick={() => setOpenInspection({ booking, phase: "pickup" })}
                     />
-                    <InspectionButton
-                      label="Return inspection"
-                      inspection={returnInsp}
-                      onClick={() => setOpenInspection({ booking, phase: "return" })}
-                    />
+                    {status === "active" && (
+                      <InspectionButton
+                        label="Return inspection"
+                        inspection={returnInsp}
+                        onClick={() => setOpenInspection({ booking, phase: "return" })}
+                      />
+                    )}
                   </div>
                 )}
                 {(!chatClosed || msgsMeta.length > 0) && (
@@ -263,6 +284,17 @@ export function AgencyBookingsList({ initial, agencyId, currentUserId, filterSta
                   bookingId={booking.id}
                   reportable={status === "completed" || status === "disputed" || !!booking.overdue_critical_at}
                 />
+                {(status === "active" || status === "completed" || status === "disputed") && (
+                  <div className="w-full max-w-sm mt-1">
+                    <ChargeLedger
+                      bookingId={booking.id}
+                      mode="owner"
+                      rentalSubtotalLkr={booking.subtotal_lkr}
+                      depositHeldLkr={booking.deposit_received_at ? (booking.deposit_lkr ?? 0) : 0}
+                      settlementAckAt={booking.settlement_ack_at}
+                    />
+                  </div>
+                )}
               </div>
             </div>
           </div>

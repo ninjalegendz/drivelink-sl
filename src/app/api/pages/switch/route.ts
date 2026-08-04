@@ -2,13 +2,14 @@ import { NextRequest, NextResponse } from "next/server";
 import { cookies } from "next/headers";
 import { createClient } from "@/lib/supabase/server";
 import { ACTIVE_PAGE_COOKIE } from "@/lib/pages/active-page";
+import { canActOnAgency } from "@/lib/pages/access";
 
 // POST /api/pages/switch
 // body: { page_id }
 //
-// Sets the active-page cookie after verifying the caller actually owns
-// that page. The cookie is only ever a hint (every read re-validates
-// ownership server-side), this just makes the switch stick.
+// Sets the active-page cookie after verifying the caller can actually operate
+// that page (owns it, or is a staff member of it). The cookie is only ever a
+// hint (every read re-validates server-side), this just makes the switch stick.
 export async function POST(req: NextRequest) {
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
@@ -18,15 +19,9 @@ export async function POST(req: NextRequest) {
   const pageId = typeof body.page_id === "string" ? body.page_id.trim() : "";
   if (!pageId) return NextResponse.json({ error: "Missing page_id" }, { status: 400 });
 
-  const { data: page } = await supabase
-    .from("agencies")
-    .select("id")
-    .eq("id", pageId)
-    .eq("owner_id", user.id)
-    .is("deleted_at", null)
-    .maybeSingle();
-
-  if (!page) return NextResponse.json({ error: "Page not found." }, { status: 404 });
+  if (!(await canActOnAgency(supabase, user.id, pageId))) {
+    return NextResponse.json({ error: "Page not found." }, { status: 404 });
+  }
 
   const cookieStore = await cookies();
   cookieStore.set(ACTIVE_PAGE_COOKIE, pageId, {

@@ -1,7 +1,7 @@
 import { redirect } from "next/navigation";
 import Link from "next/link";
 import { ArrowLeft, ArrowRight } from "lucide-react";
-import { createClient } from "@/lib/supabase/server";
+import { createClient, createServiceClient } from "@/lib/supabase/server";
 import { AvatarUploader } from "@/components/account/AvatarUploader";
 import { ProfileDetailsForm } from "@/components/account/ProfileDetailsForm";
 import { DeleteAccountSection } from "@/components/account/DeleteAccountSection";
@@ -18,7 +18,11 @@ export default async function AccountSettingsPage() {
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) redirect("/login?next=/account/settings");
 
-  const { data: profileData } = await supabase
+  // Service client for the own-row read: settings shows phone/email, which
+  // are protected columns browser sessions can't SELECT. auth.getUser()
+  // above pins the row to the caller.
+  const service = await createServiceClient();
+  const { data: profileData } = await service
     .from("profiles")
     .select("*")
     .eq("id", user.id)

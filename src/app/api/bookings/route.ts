@@ -22,6 +22,10 @@ export async function POST(req: NextRequest) {
   // agency_id is intentionally NOT trusted from the client, we derive it from
   // the vehicle below. Only the vehicle + dates are required.
   const { vehicle_id, start_date, end_date } = body;
+  // BOOK-011 / TRUST-022: chosen drive mode + foreign-renter self-drive permit.
+  const requestedMode = body.rental_mode === "self_drive" || body.rental_mode === "with_driver" ? body.rental_mode : null;
+  const isForeignRenter = body.is_foreign_renter === true;
+  const permitAck = body.permit_ack === true;
   // Times are optional; default to 10:00 handover if the client omits them.
   const start_time = typeof body.start_time === "string" && body.start_time ? body.start_time.slice(0, 5) : "10:00";
   const end_time   = typeof body.end_time   === "string" && body.end_time   ? body.end_time.slice(0, 5)   : "10:00";
@@ -54,7 +58,7 @@ export async function POST(req: NextRequest) {
   // We never trust the client-supplied price OR agency_id, the agency is
   // derived from the vehicle row so a request can't be mis-attributed.
   const [{ data: vehicle }, { data: renter }] = await Promise.all([
-    service.from("vehicles").select("agency_id, status, make, model, year, plate_number, daily_rate_lkr, monthly_rate_lkr, self_drive, with_driver").eq("id", vehicle_id).single(),
+    service.from("vehicles").select("agency_id, status, make, model, year, plate_number, daily_rate_lkr, monthly_rate_lkr, deposit_lkr, self_drive, with_driver, min_rental_days, max_rental_days").eq("id", vehicle_id).single(),
     service.from("profiles").select("full_name, kyc_status, is_blacklisted, booking_frozen, license_front_url, license_back_url").eq("id", user.id).single(),
   ]);
 
@@ -71,8 +75,11 @@ export async function POST(req: NextRequest) {
     plate_number:     string | null;
     daily_rate_lkr:   number;
     monthly_rate_lkr: number | null;
+    deposit_lkr:      number | null;
     self_drive:       boolean;
     with_driver:      boolean;
+    min_rental_days:  number | null;
+    max_rental_days:  number | null;
   };
 
   // Only bookable while the listing is live. Blocks direct-API attempts to
@@ -114,17 +121,35 @@ export async function POST(req: NextRequest) {
     );
   }
 
-  // Self-drive licence gate: the booking-request flow doesn't capture a
-  // per-booking drive mode (self-drive vs chauffeured), so we gate on the
-  // VEHICLE being self-drive-ONLY (self_drive true, with_driver false). A
-  // vehicle that also offers with_driver isn't gated here, the renter may
-  // be requesting the chauffeured option, which doesn't need their licence.
-  if (v.self_drive && !v.with_driver) {
+  // BOOK-011: resolve the drive mode this booking is for. If the vehicle offers
+  // only one mode, that's it; if it offers both, the renter must have chosen.
+  let effectiveMode: "self_drive" | "with_driver" | null =
+    v.self_drive && !v.with_driver ? "self_drive" :
+    v.with_driver && !v.self_drive ? "with_driver" :
+    requestedMode;
+  if (v.self_drive && v.with_driver && !effectiveMode) {
+    return NextResponse.json({ error: "Choose self-drive or with-driver for this booking." }, { status: 400 });
+  }
+  // Guard against a mode the vehicle doesn't actually offer.
+  if (effectiveMode === "self_drive" && !v.self_drive) effectiveMode = "with_driver";
+  if (effectiveMode === "with_driver" && !v.with_driver) effectiveMode = "self_drive";
+
+  const isSelfDrive = effectiveMode === "self_drive";
+
+  // Self-drive licence gate — now keyed on the chosen mode, not the vehicle.
+  if (isSelfDrive) {
     const r = renter as { license_front_url?: string | null; license_back_url?: string | null } | null;
     if (!r?.license_front_url || !r?.license_back_url) {
       return NextResponse.json(
-        { error: "Upload your driving licence (front and back) in your account before booking self-drive vehicles." },
+        { error: "Upload your driving licence (front and back) in your account before booking self-drive." },
         { status: 403 },
+      );
+    }
+    // TRUST-022: a foreign visitor self-driving must confirm the permit position.
+    if (isForeignRenter && !permitAck) {
+      return NextResponse.json(
+        { error: "Please confirm you hold (or will obtain) a valid International Driving Permit and Sri Lankan recognition permit for self-drive." },
+        { status: 400 },
       );
     }
   }
@@ -134,7 +159,7 @@ export async function POST(req: NextRequest) {
 
   const { data: agency } = await service
     .from("agencies")
-    .select("id, name, whatsapp_number, sms_notifications_enabled, whatsapp_notifications_enabled, profiles!owner_id(email)")
+    .select("id, name, whatsapp_number, deactivated_at, sms_notifications_enabled, whatsapp_notifications_enabled, profiles!owner_id(email)")
     .eq("id", realAgencyId)
     .single();
 
@@ -146,10 +171,17 @@ export async function POST(req: NextRequest) {
     id:                              string;
     name:                            string;
     whatsapp_number:                 string;
+    deactivated_at:                  string | null;
     sms_notifications_enabled:       boolean;
     whatsapp_notifications_enabled:  boolean;
     profiles:                        { email: string | null } | null;
   };
+
+  // PAGE-005: a paused page never takes new bookings, even if a stray vehicle
+  // slipped back to 'available' (e.g. approved while paused).
+  if (a.deactivated_at) {
+    return NextResponse.json({ error: "This vehicle isn't available for booking." }, { status: 409 });
+  }
 
   // ── Lead-quality guards (C2): keep requests high-intent, not scattershot ──
   // Pull the renter's currently in-flight bookings once and derive the caps.
@@ -200,18 +232,19 @@ export async function POST(req: NextRequest) {
     .lt("start_at", endAt)
     .gt("end_at", startAt);
 
-  // Reject if the window clashes with any in-flight booking (incl. pending
-  // requests) OR an agency-set maintenance block. The slot only frees when
-  // the existing booking moves to declined/cancelled.
+  // Decision 2: requests STACK. Only a COMMITTED booking (confirmed / paid /
+  // active / disputed) blocks the dates — pending requests do not, so several
+  // renters can request the same dates and the owner picks one (the winning
+  // confirmation auto-declines the overlapping pendings via the DB trigger).
+  // A maintenance block still blocks.
   //   Bookings: time-aware overlap, existing.start_at < new.end_at AND
   //             existing.end_at > new.start_at (allows back-to-back same day).
-  //   Blocks:   whole-day maintenance, date overlap.
   const [{ data: bookingConflicts }, { data: blockConflicts }] = await Promise.all([
     service
       .from("bookings")
       .select("id")
       .eq("vehicle_id", vehicle_id)
-      .in("status", ["requested", "pending_confirmation", "confirmed", "payment_pending", "active", "disputed"])
+      .in("status", ["confirmed", "payment_pending", "active", "disputed"])
       .lt("start_at", endAt)
       .gt("end_at", startAt)
       .limit(1),
@@ -240,6 +273,23 @@ export async function POST(req: NextRequest) {
   // Strict 24-hour billable days (matches the DB's generated total_days),
   // then daily/monthly pricing on that day count.
   const days = billableDaysBetween(startAt, endAt);
+
+  // BOOK-012: enforce the listing's own min/max rental length server-side, so
+  // the owner doesn't have to manually reject a too-short or too-long request.
+  const minDays = v.min_rental_days ?? 1;
+  if (days < minDays) {
+    return NextResponse.json(
+      { error: `This vehicle has a minimum rental of ${minDays} day${minDays === 1 ? "" : "s"}.` },
+      { status: 409 },
+    );
+  }
+  if (v.max_rental_days && days > v.max_rental_days) {
+    return NextResponse.json(
+      { error: `This vehicle has a maximum rental of ${v.max_rental_days} day${v.max_rental_days === 1 ? "" : "s"}.` },
+      { status: 409 },
+    );
+  }
+
   const { subtotal } = calcBookingPriceByDays(days, v.daily_rate_lkr, v.monthly_rate_lkr);
 
   // Booking fee comes from platform settings, 0 during the free-launch period
@@ -263,6 +313,13 @@ export async function POST(req: NextRequest) {
       daily_rate_lkr:  v.daily_rate_lkr,
       subtotal_lkr:    subtotal,
       booking_fee_lkr: bookingFee,
+      // BOOK-013: snapshot the deposit at request time so it can't be raised
+      // before the owner accepts.
+      deposit_lkr:     v.deposit_lkr ?? null,
+      // BOOK-011 / TRUST-022
+      rental_mode:            effectiveMode,
+      is_foreign_renter:      isSelfDrive ? isForeignRenter : false,
+      tourist_permit_ack_at:  isSelfDrive && isForeignRenter && permitAck ? new Date().toISOString() : null,
     })
     .select("id")
     .single();

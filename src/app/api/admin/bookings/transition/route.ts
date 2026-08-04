@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { createClient, createServiceClient } from "@/lib/supabase/server";
 import { notifyCascade } from "@/lib/notify";
 import { runAfterResponse } from "@/lib/after-response";
-import { createAgreementSnapshot } from "@/lib/booking/agreement-snapshot";
+import { ensureAgreementSnapshot } from "@/lib/booking/agreement-snapshot";
 import {
   buildRenterConfirmedMessage,
   buildRenterDeclinedMessage,
@@ -113,10 +113,11 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: updateError.message }, { status: 500 });
   }
 
-  // Same agreement snapshot as the owner-confirm path, admin confirms on
-  // the page's behalf and the renter still needs a signed agreement.
+  // Same agreement snapshot as the owner-confirm path (TRUST-006: awaited so it
+  // exists before we return). Admin confirms on the page's behalf and the
+  // renter still needs a signed agreement.
   if (to === "confirmed") {
-    runAfterResponse(createAgreementSnapshot(body.bookingId));
+    await ensureAgreementSnapshot(body.bookingId);
   }
 
   // Close out the incident report(s) alongside the booking transition.

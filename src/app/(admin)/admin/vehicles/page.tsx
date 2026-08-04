@@ -93,8 +93,9 @@ export default async function AdminVehiclesPage({ searchParams }: Props) {
               const cover = photos[0];
               return (
                 <div key={v.id} className="bg-white border border-slate-200 rounded-2xl shadow-sm p-4">
-                  <div className="flex gap-4">
-                    <div className="relative w-28 h-20 shrink-0 rounded-lg overflow-hidden bg-slate-100">
+                  {/* Header: photo + title + price (kept compact so the rest can span full width below) */}
+                  <div className="flex gap-3">
+                    <div className="relative w-20 h-16 sm:w-28 sm:h-20 shrink-0 rounded-lg overflow-hidden bg-slate-100">
                       {cover ? (
                         <Image src={cover} alt={`${v.year} ${v.make} ${v.model}`} fill className="object-cover" sizes="112px" />
                       ) : (
@@ -103,36 +104,36 @@ export default async function AdminVehiclesPage({ searchParams }: Props) {
                         </div>
                       )}
                     </div>
-                    <div className="flex-1 min-w-0">
-                      <div className="flex items-start justify-between gap-3">
-                        <div className="min-w-0">
-                          <p className="font-semibold text-slate-900 text-sm">{v.year} {v.make} {v.model}</p>
-                          <p className="text-slate-600 text-xs mt-0.5">
-                            {v.agencies?.name ?? "-"} · {v.city}
-                          </p>
-                        </div>
-                        <p className="text-blue-600 font-bold text-sm shrink-0">
-                          {formatLKR(v.daily_rate_lkr)}<span className="text-slate-500 text-xs font-normal"> / day</span>
+                    <div className="flex-1 min-w-0 flex items-start justify-between gap-3">
+                      <div className="min-w-0">
+                        <p className="font-semibold text-slate-900 text-sm">{v.year} {v.make} {v.model}</p>
+                        <p className="text-slate-600 text-xs mt-0.5">
+                          {v.agencies?.name ?? "-"} · {v.city}
                         </p>
                       </div>
-                      <div className="mt-2 flex items-center justify-between gap-3">
-                        <Link
-                          href={`/vehicles/${v.slug}`}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="inline-flex items-center gap-1 text-xs text-blue-600 hover:text-blue-500"
-                        >
-                          Preview <ExternalLink size={11} />
-                        </Link>
-                        <div className="flex items-center gap-2">
-                          <VehicleFeatureToggle vehicleId={v.id} initial={v.is_featured ?? false} />
-                          <VehicleApprovalActions vehicleId={v.id} status={v.status} />
-                        </div>
-                      </div>
-                      <div className="mt-3">
-                        <VehicleBadgeEditor vehicleId={v.id} initialBadges={v.badges ?? []} />
-                      </div>
+                      <p className="text-blue-600 font-bold text-sm shrink-0 text-right">
+                        {formatLKR(v.daily_rate_lkr)}<span className="text-slate-500 text-xs font-normal"> / day</span>
+                      </p>
                     </div>
+                  </div>
+
+                  {/* Actions + badges span the full card width (no photo indent) */}
+                  <div className="mt-3 flex flex-wrap items-center justify-between gap-2">
+                    <Link
+                      href={`/vehicles/${v.slug}`}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="inline-flex items-center gap-1 text-xs text-blue-600 hover:text-blue-500"
+                    >
+                      Preview <ExternalLink size={11} />
+                    </Link>
+                    <div className="flex flex-wrap items-center gap-2 justify-end">
+                      <VehicleFeatureToggle vehicleId={v.id} initial={v.is_featured ?? false} />
+                      <VehicleApprovalActions vehicleId={v.id} status={v.status} />
+                    </div>
+                  </div>
+                  <div className="mt-3">
+                    <VehicleBadgeEditor vehicleId={v.id} initialBadges={v.badges ?? []} />
                   </div>
                 </div>
               );
@@ -271,7 +272,7 @@ export default async function AdminVehiclesPage({ searchParams }: Props) {
                 </div>
 
                 {/* Actions row */}
-                <div className="mt-4 pt-3 border-t border-slate-100 flex items-center justify-between gap-3">
+                <div className="mt-4 pt-3 border-t border-slate-100 flex flex-wrap items-center justify-between gap-2">
                   <Link
                     href={`/vehicles/${v.slug}`}
                     target="_blank"
@@ -280,7 +281,7 @@ export default async function AdminVehiclesPage({ searchParams }: Props) {
                   >
                     Open public preview <ExternalLink size={11} />
                   </Link>
-                  <div className="flex items-center gap-2">
+                  <div className="flex flex-wrap items-center gap-2 justify-end">
                     <VehicleFeatureToggle vehicleId={v.id} initial={v.is_featured ?? false} />
                     <VehicleApprovalActions vehicleId={v.id} status={v.status} />
                   </div>

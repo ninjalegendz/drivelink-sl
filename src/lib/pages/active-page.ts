@@ -18,11 +18,17 @@ export const ACTIVE_PAGE_COOKIE = "dl_active_page";
 const PAGE_COLUMNS =
   "id, owner_id, name, description, address, city, whatsapp_number, email, " +
   "page_type, logo_url, cover_url, business_hours, business_reg_no, business_reg_url, " +
-  "is_verified, is_blocked, cancellation_count, confirmed_count, strike_count, " +
+  "is_verified, is_blocked, deactivated_at, cancellation_count, confirmed_count, strike_count, " +
   "reliability_pct, sms_notifications_enabled, whatsapp_notifications_enabled, " +
-  "created_at, updated_at";
+  "whatsapp_verified_at, created_at, updated_at";
 
-/** All live (non-deleted) Rental Pages owned by the user, oldest first. */
+/**
+ * All live (non-deleted) Rental Pages the user OWNS, oldest first.
+ * Strictly ownership — used where ownership is the authority: account
+ * deletion, page transfer, and staff (member) management. For "pages this
+ * user can operate" (which also includes pages they're a staff member of),
+ * use getActingPages.
+ */
 export async function getOwnedPages(
   supabase: SupabaseClient,
   userId: string,
@@ -37,15 +43,42 @@ export async function getOwnedPages(
 }
 
 /**
+ * All live Rental Pages the user can OPERATE: ones they own plus ones they've
+ * been added to as staff (agency_members). This is what the dashboard, the
+ * page switcher and the storage-signer scope to. A staff member gets the same
+ * operational surface as the owner; owner-only actions are gated separately by
+ * comparing page.owner_id to the user id.
+ */
+export async function getActingPages(
+  supabase: SupabaseClient,
+  userId: string,
+): Promise<RentalPageRow[]> {
+  const { data: mems } = await supabase
+    .from("agency_members")
+    .select("agency_id")
+    .eq("user_id", userId);
+  const memberIds = (mems ?? []).map((m) => (m as { agency_id: string }).agency_id);
+
+  let query = supabase.from("agencies").select(PAGE_COLUMNS).is("deleted_at", null);
+  query = memberIds.length
+    ? query.or(`owner_id.eq.${userId},id.in.(${memberIds.join(",")})`)
+    : query.eq("owner_id", userId);
+
+  const { data } = await query.order("created_at", { ascending: true });
+  return (data ?? []) as unknown as RentalPageRow[];
+}
+
+/**
  * The page the dashboard is currently scoped to: the cookie's page if the
- * user owns it, otherwise the first page they own, otherwise null (no pages
- * yet — caller should route to the create-page flow).
+ * user can operate it, otherwise the first page they can operate, otherwise
+ * null (no pages yet — caller should route to the create-page flow).
+ * Resolves across pages the user owns AND pages they staff.
  */
 export async function getActivePage(
   supabase: SupabaseClient,
   userId: string,
 ): Promise<{ page: RentalPageRow | null; pages: RentalPageRow[] }> {
-  const pages = await getOwnedPages(supabase, userId);
+  const pages = await getActingPages(supabase, userId);
   if (pages.length === 0) return { page: null, pages };
 
   const cookieStore = await cookies();

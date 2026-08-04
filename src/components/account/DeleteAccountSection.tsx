@@ -74,7 +74,7 @@ export function DeleteAccountSection() {
         Deleting your account scrubs your personal info from DriveLink and signs you out
         permanently. Booking history is preserved (anonymised) so other parties can still see
         their records. <strong className="text-red-300">This can&apos;t be undone</strong> -
-        though support can sometimes reverse it within 7 days at our discretion.
+        though it can be restored within 30 days using the link in your deletion email.
       </p>
       <Button variant="danger" size="sm" onClick={() => setOpen(true)}>
         <Trash2 size={14} /> Delete my account

@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { BarChart3, TrendingUp, Wallet, Users, Building2 } from "lucide-react";
-import { createClient } from "@/lib/supabase/server";
+import { createServiceClient } from "@/lib/supabase/server";
 import { Sparkline } from "@/components/analytics/Sparkline";
 import { formatLKR } from "@/lib/vehicles/format";
 import {
@@ -26,7 +26,10 @@ export default async function AdminAnalyticsPage({ searchParams }: Props) {
   const { range: rangeParam } = await searchParams;
   const rangeKey = (RANGE_TABS.find((t) => t.key === rangeParam)?.key ?? "30d");
   const range = rangeForKey(rangeKey);
-  const supabase = await createClient();
+  // Service client: these admin dashboards read protected profile columns
+  // (phone, email, KYC docs, blacklist state) that browser sessions can no
+  // longer SELECT. The (admin) layout enforces the admin role upstream.
+  const supabase = await createServiceClient();
 
   // Run queries in parallel
   const [byStatus, trend, money, funnel, userCounts, agencyCounts, vehicleCounts] = await Promise.all([

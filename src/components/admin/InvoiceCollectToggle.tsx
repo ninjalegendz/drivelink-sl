@@ -2,7 +2,6 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { createClient } from "@/lib/supabase/client";
 
 interface Props {
   bookingId: string;
@@ -15,11 +14,11 @@ export function InvoiceCollectToggle({ bookingId, collected }: Props) {
 
   async function toggle() {
     setLoading(true);
-    const supabase = createClient();
-    await supabase
-      .from("bookings")
-      .update({ agency_fee_collected_at: collected ? null : new Date().toISOString() })
-      .eq("id", bookingId);
+    await fetch(`/api/admin/bookings/${bookingId}/fee-collected`, {
+      method:  "POST",
+      headers: { "Content-Type": "application/json" },
+      body:    JSON.stringify({ collected: !collected }),
+    });
     setLoading(false);
     router.refresh();
   }

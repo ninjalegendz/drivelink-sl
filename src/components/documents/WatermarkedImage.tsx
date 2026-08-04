@@ -1,6 +1,7 @@
 "use client";
 
 import Image from "next/image";
+import { SVG_POPPINS_FACE } from "@/lib/brand/poppins-font";
 
 interface Props {
   src:           string;
@@ -20,10 +21,13 @@ export function WatermarkedImage({ src, alt, watermarkText }: Props) {
     .replace(/</g, "&lt;")
     .replace(/>/g, "&gt;");
 
+  // Poppins is embedded rather than referenced — this SVG is used as a CSS
+  // background image, where external fonts and page fonts don't apply.
   const svg =
     `<svg xmlns="http://www.w3.org/2000/svg" width="360" height="180">` +
+    `<defs><style type="text/css">${SVG_POPPINS_FACE}</style></defs>` +
     `<text x="180" y="95" transform="rotate(-30 180 90)" text-anchor="middle" ` +
-    `font-family="sans-serif" font-size="15" fill="rgba(255,255,255,0.45)">${escaped}</text>` +
+    `font-family="Poppins" font-weight="600" font-size="15" fill="rgba(255,255,255,0.45)">${escaped}</text>` +
     `</svg>`;
 
   const watermark = `url("data:image/svg+xml,${encodeURIComponent(svg)}")`;

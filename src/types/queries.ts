@@ -92,7 +92,10 @@ export interface AgencySnippet {
   reliability_pct: number | null;
   cancellation_count: number;
   avg_response_minutes?: number | null;
-  // Rating lives on the owner's profile, joined via agencies.owner_id
+  // BUILD 2: the PUBLIC rating is the Rental Page's own (renters review the
+  // page). Kept `profiles` (owner's personal rating) for internal/legacy use.
+  rating_avg?: number | null;
+  rating_count?: number | null;
   profiles: { rating_avg: number | null; rating_count: number } | null;
   // whatsapp_number deliberately omitted, not exposed to the public marketplace.
   // Available only via agency dashboards and the renter's own /bookings/[id] page.
@@ -128,6 +131,8 @@ export interface AgencyRow {
   business_hours: string | null;
   business_reg_no: string | null;
   business_reg_url: string | null;
+  // Page lifecycle (082): when set, the page is paused by its owner.
+  deactivated_at: string | null;
   // Per-page notification channel preferences (037), read at booking-notify time.
   sms_notifications_enabled: boolean;
   whatsapp_notifications_enabled: boolean;

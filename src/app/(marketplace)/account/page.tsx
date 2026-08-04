@@ -1,7 +1,7 @@
 import { redirect } from "next/navigation";
 import Link from "next/link";
 import { Check, ChevronRight, Settings } from "lucide-react";
-import { createClient } from "@/lib/supabase/server";
+import { createClient, createServiceClient } from "@/lib/supabase/server";
 import { getOwnedPages } from "@/lib/pages/active-page";
 import { Badge } from "@/components/ui/Badge";
 import { DiditVerifyButton } from "@/components/account/DiditVerifyButton";
@@ -46,8 +46,12 @@ export default async function AccountPage({ searchParams }: Props) {
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) redirect("/login?next=/account");
 
+  // Own-profile read runs on the service client: phone / email / licence URLs
+  // are protected columns browser-session SELECT can no longer reach. The
+  // auth.getUser() check above pins the row to the caller.
+  const service = await createServiceClient();
   const [{ data: profile }, pages] = await Promise.all([
-    supabase
+    service
       .from("profiles")
       .select("full_name, phone, phone_verified, email, email_verified_at, role, kyc_status, rating_avg, rating_count, created_at, license_front_url, license_back_url")
       .eq("id", user.id)
@@ -143,8 +147,9 @@ export default async function AccountPage({ searchParams }: Props) {
       {/* My Rental Pages (every signed-in account can host now) */}
       <RentalPageList pages={pages} />
 
-      {/* Bookings link (renters) */}
-      {profile.role === "renter" && (
+      {/* My bookings — everyone rents (decision 9: one identity, page owners
+          keep their personal renter screens). Admins use the admin console. */}
+      {profile.role !== "admin" && (
         <Link
           href="/bookings"
           className="flex items-center justify-between spring-hover bg-white border border-slate-200 shadow-sm hover:border-blue-300 rounded-2xl p-4 transition-colors"
@@ -157,8 +162,8 @@ export default async function AccountPage({ searchParams }: Props) {
         </Link>
       )}
 
-      {/* Document sharing history (renters) */}
-      {profile.role === "renter" && (
+      {/* Document sharing history */}
+      {profile.role !== "admin" && (
         <Link
           href="/account/documents"
           className="flex items-center justify-between spring-hover bg-white border border-slate-200 shadow-sm hover:border-blue-300 rounded-2xl p-4 transition-colors"
@@ -166,6 +171,20 @@ export default async function AccountPage({ searchParams }: Props) {
           <div>
             <p className="text-slate-900 font-medium">Document sharing history</p>
             <p className="text-slate-500 text-xs mt-0.5">See which bookings you&apos;ve shared documents on, and who viewed them</p>
+          </div>
+          <ChevronRight size={20} className="text-slate-600" />
+        </Link>
+      )}
+
+      {/* Support (MSG-005) */}
+      {profile.role !== "admin" && (
+        <Link
+          href="/account/support"
+          className="flex items-center justify-between spring-hover bg-white border border-slate-200 shadow-sm hover:border-blue-300 rounded-2xl p-4 transition-colors"
+        >
+          <div>
+            <p className="text-slate-900 font-medium">Support</p>
+            <p className="text-slate-500 text-xs mt-0.5">Message the DriveLink team about verification, a booking, or a dispute</p>
           </div>
           <ChevronRight size={20} className="text-slate-600" />
         </Link>

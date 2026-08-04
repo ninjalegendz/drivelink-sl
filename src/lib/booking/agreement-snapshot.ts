@@ -15,7 +15,9 @@ import {
   type AgreementRenterInput,
 } from "@/lib/booking/agreement";
 
-export async function createAgreementSnapshot(bookingId: string): Promise<void> {
+export interface SnapshotResult { ok: boolean; reason?: string }
+
+export async function createAgreementSnapshot(bookingId: string): Promise<SnapshotResult> {
   const service = await createServiceClient();
   const { data: agRow } = await service
     .from("bookings")
@@ -39,7 +41,7 @@ export async function createAgreementSnapshot(bookingId: string): Promise<void> 
         agencies:  AgreementPageInput | null;
       })
     | null;
-  if (!ag?.vehicles || !ag.agencies) return;
+  if (!ag?.vehicles || !ag.agencies) return { ok: false, reason: "booking/vehicle/page missing" };
 
   const { data: renterRow } = await service
     .from("profiles")
@@ -47,7 +49,7 @@ export async function createAgreementSnapshot(bookingId: string): Promise<void> 
     .eq("id", ag.renter_id)
     .single();
   const renterProfile = renterRow as AgreementRenterInput | null;
-  if (!renterProfile) return;
+  if (!renterProfile) return { ok: false, reason: "renter profile missing" };
 
   const terms = buildAgreementTerms({
     booking:       ag,
@@ -61,8 +63,25 @@ export async function createAgreementSnapshot(bookingId: string): Promise<void> 
     template_version: AGREEMENT_TEMPLATE_VERSION,
     terms,
   });
-  // 23505 = unique violation on booking_id: the snapshot already exists.
+  // 23505 = unique violation on booking_id: the snapshot already exists (idempotent).
   if (error && error.code !== "23505") {
     console.error("[agreement snapshot] failed", bookingId, error);
+    return { ok: false, reason: error.message };
   }
+  return { ok: true };
+}
+
+/**
+ * TRUST-006: guarantee a snapshot exists before confirmation returns, rather
+ * than firing it off after the response where a failure was invisible and the
+ * renter could open Agreement to nothing. Retries once on transient failure.
+ * Returns whether a snapshot is now in place.
+ */
+export async function ensureAgreementSnapshot(bookingId: string): Promise<boolean> {
+  const first = await createAgreementSnapshot(bookingId);
+  if (first.ok) return true;
+  console.error("[agreement snapshot] retrying", bookingId, first.reason);
+  const second = await createAgreementSnapshot(bookingId);
+  if (!second.ok) console.error("[agreement snapshot] retry failed", bookingId, second.reason);
+  return second.ok;
 }

@@ -2,7 +2,6 @@
 
 import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
-import { createClient } from "@/lib/supabase/client";
 import type { VehicleStatus } from "@/types/database";
 
 interface Props {
@@ -30,14 +29,15 @@ export function VehicleStatusToggle({ vehicleId, status: initialStatus }: Props)
   const label = status === "available" ? "Unlist" : "Relist";
 
   async function toggle() {
-    const supabase = createClient();
-    const { error } = await supabase
-      .from("vehicles")
-      .update({ status: next })
-      .eq("id", vehicleId);
+    const res = await fetch(`/api/vehicles/${vehicleId}/status`, {
+      method:  "POST",
+      headers: { "Content-Type": "application/json" },
+      body:    JSON.stringify({ status: next }),
+    });
 
-    if (error) {
-      alert(`Failed: ${error.message}`);
+    if (!res.ok) {
+      const payload = await res.json().catch(() => ({}));
+      alert(`Failed: ${payload.error ?? "could not update"}`);
       return;
     }
     setStatus(next);

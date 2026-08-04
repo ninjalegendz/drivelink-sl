@@ -14,7 +14,7 @@ import { restrictedUseLabel } from "@/data/vehicle-presets";
 import { formatLKR, insuranceLabel, fuelPolicyLabel } from "@/lib/vehicles/format";
 import type { InsuranceType, FuelPolicy } from "@/types/database";
 
-export const AGREEMENT_TEMPLATE_VERSION = "v1";
+export const AGREEMENT_TEMPLATE_VERSION = "v2";
 
 // ─── Inputs (only the fields the builder reads) ─────────────────────────
 
@@ -164,6 +164,7 @@ export interface AgreementTerms {
     prominent:      boolean; // true for the private-insurance warning, UI should render it loudly
     breach_full_liability: string;
     accident_protocol:     string;
+    platform_disclaimer?:  string; // v2: DriveLink is a venue, not an insurer (decision 13)
   };
   fines_tolls: {
     renter_liable_note:      string;
@@ -173,7 +174,8 @@ export interface AgreementTerms {
   late_return: {
     grace:            string;
     hourly_fee_label: string;
-    after_6h:         string;
+    cap?:             string;   // v2: single capped ladder
+    after_6h?:        string;   // legacy v1 snapshots (double-charge wording)
     after_24h:        string;
   };
   disputes: {
@@ -340,6 +342,12 @@ export function buildAgreementTerms({ booking, vehicle, page, renterProfile }: B
       insurance_type: vehicle.insurance_type,
       note: liabilityNote,
       prominent: vehicle.insurance_type === "private",
+      // Decision 13 (INTERIM — pending Sri Lankan lawyer review): DriveLink
+      // states its venue-not-party posture plainly and does not certify cover.
+      // The liability allocation wording below is owner/renter contract terms
+      // the lawyer will finalise.
+      platform_disclaimer:
+        "This agreement is between the renter and the owner. DriveLink is a listing platform — not a party to this rental and not an insurer. Insurance details shown here are provided by the owner; DriveLink does not verify or certify coverage. Both parties are responsible for confirming insurance terms before handover.",
       breach_full_liability:
         "Unlisted drivers, DUI, prohibited use or invalid licence = agreement breach, full liability.",
       accident_protocol:
@@ -355,8 +363,11 @@ export function buildAgreementTerms({ booking, vehicle, page, renterProfile }: B
     late_return: {
       grace: "2 hours",
       hourly_fee_label: feeLateLabel,
-      after_6h:
-        "After 6 hours late, a full extra day's rental is charged in addition to the hourly late fee.",
+      // Decision 7: ONE late-fee ladder — grace, then hourly, capped at a
+      // single day's rate. A late return never stacks an extra day on top of
+      // the hourly fee.
+      cap:
+        "The hourly late fee is capped at one day's rental rate — a late return never costs more than one extra day.",
       after_24h:
         "If the vehicle is more than 24 hours overdue and the renter is unreachable, this is treated as misappropriation of the vehicle and will be reported to the police.",
     },
@@ -383,9 +394,10 @@ export interface BookingAgreementRow {
   renter_accept_meta: AcceptMeta | null;
   owner_accepted_at:  string | null;
   owner_accept_meta:  AcceptMeta | null;
+  terms_hash:         string | null;
   created_at:         string;
 }
 
 export const AGREEMENT_SELECT =
   "id, booking_id, template_version, terms, renter_accepted_at, renter_accept_meta, " +
-  "owner_accepted_at, owner_accept_meta, created_at";
+  "owner_accepted_at, owner_accept_meta, terms_hash, created_at";

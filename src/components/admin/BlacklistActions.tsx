@@ -2,52 +2,41 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { createClient } from "@/lib/supabase/client";
 import { Button } from "@/components/ui/Button";
 
-export function BlacklistActions({ reportId, reportedNic }: { reportId: string; reportedNic: string }) {
+export function BlacklistActions({ reportId }: { reportId: string; reportedNic: string }) {
   const router = useRouter();
   const [loading, setLoading] = useState<"approve" | "dismiss" | null>(null);
+  const [error, setError]     = useState<string | null>(null);
 
-  async function approve() {
-    setLoading("approve");
-    const supabase = createClient();
-
-    // Mark report approved
-    await supabase.from("blacklist_reports").update({
-      approved: true,
-      reviewed_at: new Date().toISOString(),
-    }).eq("id", reportId);
-
-    // Blacklist all profiles matching this NIC
-    await supabase.from("profiles").update({
-      is_blacklisted: true,
-      blacklist_reason: `NIC ${reportedNic} flagged for vehicle damage/theft.`,
-    }).ilike("nic_url", `%${reportedNic}%`);
-
+  async function review(approve: boolean) {
+    setLoading(approve ? "approve" : "dismiss");
+    setError(null);
+    const res = await fetch(`/api/admin/blacklist-reports/${reportId}`, {
+      method:  "POST",
+      headers: { "Content-Type": "application/json" },
+      body:    JSON.stringify({ approve }),
+    });
     setLoading(null);
-    router.refresh();
-  }
-
-  async function dismiss() {
-    setLoading("dismiss");
-    const supabase = createClient();
-    await supabase.from("blacklist_reports").update({
-      approved: false,
-      reviewed_at: new Date().toISOString(),
-    }).eq("id", reportId);
-    setLoading(null);
+    if (!res.ok) {
+      const payload = await res.json().catch(() => ({}));
+      setError(payload.error ?? "Action failed.");
+      return;
+    }
     router.refresh();
   }
 
   return (
-    <div className="flex gap-2 shrink-0">
-      <Button size="sm" variant="danger" loading={loading === "approve"} onClick={approve}>
-        Blacklist NIC
-      </Button>
-      <Button size="sm" variant="secondary" loading={loading === "dismiss"} onClick={dismiss}>
-        Dismiss
-      </Button>
+    <div className="flex flex-col items-end gap-1 shrink-0">
+      <div className="flex gap-2">
+        <Button size="sm" variant="danger" loading={loading === "approve"} onClick={() => review(true)}>
+          Blacklist NIC
+        </Button>
+        <Button size="sm" variant="secondary" loading={loading === "dismiss"} onClick={() => review(false)}>
+          Dismiss
+        </Button>
+      </div>
+      {error && <p className="text-red-400 text-xs">{error}</p>}
     </div>
   );
 }

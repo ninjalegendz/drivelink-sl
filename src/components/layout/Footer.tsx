@@ -41,9 +41,10 @@ export function Footer() {
     <footer className="bg-slate-950 text-white border-t border-slate-900 py-12 px-4 md:px-8 mt-16">
       <div className="max-w-7xl mx-auto grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-x-8 gap-y-10 text-sm text-slate-400">
         <div className="space-y-3">
-          <div className="flex items-center gap-2">
-            <Image src="/logo-mark-light.png" alt="DriveLink logo" width={516} height={1003} unoptimized className="h-9 w-auto shrink-0" />
-            <span className="font-display font-extrabold text-base text-white tracking-tight">DriveLink</span>
+          <div className="flex items-center">
+            {/* Full wordmark (light-on-dark variant) — no separate text label,
+                the artwork already reads "DriveLink". */}
+            <Image src="/logo-mark-light.png" alt="DriveLink" width={1038} height={175} unoptimized className="h-8 w-auto shrink-0" />
           </div>
           <p className="text-xs leading-relaxed text-slate-400/90">
             Sri Lanka&apos;s verified vehicle rental network, cars, bikes, vans, SUVs and tuk-tuks,

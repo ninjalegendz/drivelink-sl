@@ -105,7 +105,8 @@ export default function PrivacyPage() {
                 handover location / vehicle details so they can arrange pickup.</li>
             <li><strong>Driving licence and NIC documents:</strong> shared with the Rental Page owner
                 <strong> only after you explicitly consent</strong> in that specific booking. Documents
-                are displayed in-app with a watermark, are not downloadable, and an access log shows
+                are displayed in-app in a watermarked, view-only viewer (there is no download
+                button, though screenshots cannot be technically prevented), and an access log shows
                 you who viewed them and when. See <Link href="/account/documents" className="text-blue-600 hover:text-blue-500">
                 your document sharing history
               </Link> anytime.</li>
@@ -135,9 +136,11 @@ export default function PrivacyPage() {
             <li><strong>NIC/selfie images:</strong> stored encrypted and accessible only to admin
                 staff during KYC review. Deleted on account deletion (along with the 30-day grace
                 period).</li>
-            <li><strong>Driving licence photos:</strong> stored only if you consent to share them
-                for a booking. After the booking is closed, they are deleted unless a dispute is
-                active. Deleted when you delete your account.</li>
+            <li><strong>Driving licence photos:</strong> kept on your account once uploaded so you
+                don&apos;t have to re-submit them for every self-drive booking. They are shared with
+                a Rental Page owner only for bookings you make with them, and you can withdraw that
+                access before the rental&apos;s evidence-retention point. Deleted when you delete
+                your account (after the 30-day grace period).</li>
             <li><strong>OTP codes and verification tokens:</strong> 10 minutes maximum, then deleted.</li>
             <li><strong>Server access logs:</strong> 30 days for security and fraud monitoring.</li>
           </ul>

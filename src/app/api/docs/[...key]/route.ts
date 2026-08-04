@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient, createServiceClient } from "@/lib/supabase/server";
 import { getObject, isPrivateKey } from "@/lib/storage/r2";
+import { watermarkedSvg } from "@/lib/storage/watermark";
+import { canActOnAgency, getActingAgencyIds } from "@/lib/pages/access";
 
 // GET /api/docs/<prefix>/<ownerId>/<uuid>.<ext>
 //
@@ -37,38 +39,44 @@ export async function GET(_req: NextRequest, { params }: { params: Promise<{ key
 
   const service = await createServiceClient();
 
-  let allowed = ownerId === user.id;
+  const isOwnDoc = ownerId === user.id;
+  let allowed = isOwnDoc;
+  let viewerLabel = "";
 
   if (!allowed) {
-    const { data: me } = await service.from("profiles").select("role").eq("id", user.id).single();
-    allowed = (me as { role?: string } | null)?.role === "admin";
+    // Foreign viewer (page owner via consent, or admin). Capture who they are
+    // so the watermark below is traceable back to the account that viewed it.
+    const { data: me } = await service
+      .from("profiles").select("role, full_name, email").eq("id", user.id).single();
+    const m = me as { role?: string; full_name?: string | null; email?: string | null } | null;
+    allowed = m?.role === "admin";
+    viewerLabel = (m?.full_name || m?.email || user.id.slice(0, 8)) ?? "";
   }
 
-  if (!allowed && prefix === "vehicle-docs") {
-    // ownerId segment is the page (agency) id for vehicle documents.
-    const { data: page } = await service
-      .from("agencies")
-      .select("id")
-      .eq("id", ownerId)
-      .eq("owner_id", user.id)
-      .maybeSingle();
-    allowed = Boolean(page);
+  if (!allowed && (prefix === "vehicle-docs" || prefix === "business-docs")) {
+    // ownerId segment is the page (agency) id for vehicle + business documents.
+    // The whole page team (owner or staff) may view them.
+    allowed = await canActOnAgency(service, user.id, ownerId);
   }
 
   if (!allowed && prefix === "kyc") {
-    // A Rental Page owner viewing a renter's documents: requires a booking
-    // between them with consent granted, still inside the access window.
-    // Same rule as the documents viewer page; this route is the backstop.
-    const { data: grant } = await service
-      .from("bookings")
-      .select("id, agencies!inner(owner_id)")
-      .eq("renter_id", ownerId)
-      .eq("agencies.owner_id", user.id)
-      .not("doc_share_consent_at", "is", null)
-      .in("status", DOC_STATUSES)
-      .limit(1)
-      .maybeSingle();
-    allowed = Boolean(grant);
+    // A Rental Page team member viewing a renter's documents: requires a
+    // booking between the renter and one of the viewer's pages with consent
+    // granted, still inside the access window. Same rule as the documents
+    // viewer page; this route is the backstop.
+    const actingIds = await getActingAgencyIds(service, user.id);
+    if (actingIds.length) {
+      const { data: grant } = await service
+        .from("bookings")
+        .select("id")
+        .eq("renter_id", ownerId)
+        .in("agency_id", actingIds)
+        .not("doc_share_consent_at", "is", null)
+        .in("status", DOC_STATUSES)
+        .limit(1)
+        .maybeSingle();
+      allowed = Boolean(grant);
+    }
   }
 
   if (!allowed) return NextResponse.json({ error: "Not found" }, { status: 404 });
@@ -76,11 +84,33 @@ export async function GET(_req: NextRequest, { params }: { params: Promise<{ key
   const obj = await getObject(key);
   if (!obj) return NextResponse.json({ error: "Not found" }, { status: 404 });
 
-  return new NextResponse(obj.body, {
-    headers: {
-      "Content-Type": obj.contentType,
-      // Session-scoped documents: never cache shared, never persist.
-      "Cache-Control": "private, no-store",
-    },
-  });
+  // SEC-010: pin to a safe type, forbid MIME sniffing, serve inline — so an
+  // uploaded .html/.svg can never execute in the app origin.
+  const safeType = SAFE_SERVE_TYPES.has(obj.contentType) ? obj.contentType : "application/octet-stream";
+  const baseHeaders = {
+    "X-Content-Type-Options": "nosniff",
+    "Content-Disposition":    "inline",
+    "Cache-Control":          "private, no-store",
+  };
+
+  // Decision 11: when someone views a document that isn't their own (a page
+  // owner via consent, or an admin), bake a watermark into the served image so
+  // the raw original is never handed out. The document's own user sees it clean.
+  if (!isOwnDoc && WATERMARKABLE_TYPES.has(safeType)) {
+    const bytes = new Uint8Array(await new Response(obj.body).arrayBuffer());
+    const stamp = new Date().toISOString().slice(0, 16).replace("T", " ");
+    const svg = watermarkedSvg(bytes, safeType, `DriveLink · ${viewerLabel} · ${stamp} UTC`);
+    if (svg) {
+      return new NextResponse(svg, { headers: { ...baseHeaders, "Content-Type": "image/svg+xml" } });
+    }
+    // Couldn't watermark (format/dimensions) — serve the raw bytes we buffered.
+    return new NextResponse(bytes, { headers: { ...baseHeaders, "Content-Type": safeType } });
+  }
+
+  return new NextResponse(obj.body, { headers: { ...baseHeaders, "Content-Type": safeType } });
 }
+
+const SAFE_SERVE_TYPES = new Set([
+  "image/jpeg", "image/png", "image/webp", "image/gif", "image/heic", "application/pdf",
+]);
+const WATERMARKABLE_TYPES = new Set(["image/jpeg", "image/png", "image/webp"]);

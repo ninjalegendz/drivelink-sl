@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { cookies } from "next/headers";
-import { createClient } from "@/lib/supabase/server";
+import { createClient, createServiceClient } from "@/lib/supabase/server";
 import { ACTIVE_PAGE_COOKIE } from "@/lib/pages/active-page";
 import { isValidSLPhone, toInternationalSL } from "@/lib/auth/phone-format";
 import { isEmailLike } from "@/lib/auth/identifier";
@@ -93,14 +93,25 @@ export async function POST(req: NextRequest) {
 
   const intlPhone = toInternationalSL(whatsappIn)!;
 
+  // Page creation runs on the service client: is_verified is a protected
+  // column (browsers can no longer INSERT agencies at all), and owner_id is
+  // pinned to the authenticated user here so a caller can't create a page
+  // owned by someone else.
+  const service = await createServiceClient();
+
+  // Public /pages/<slug> address (PAGE-008): slugify the name + a short random
+  // suffix so two same-named pages don't collide.
+  const slug = `${name.toLowerCase().trim().replace(/[^a-z0-9]+/g, "-").replace(/^-+|-+$/g, "") || "page"}-${crypto.randomUUID().slice(0, 6)}`;
+
   // is_verified: personal pages are auto-approved to operate once the
   // owner's KYC is verified (already true, checked above). Business pages
   // wait for an admin to review the registration certificate.
-  const { data: page, error: insertError } = await supabase
+  const { data: page, error: insertError } = await service
     .from("agencies")
     .insert({
       owner_id:        user.id,
       name,
+      slug,
       page_type:       pageType,
       city,
       whatsapp_number: intlPhone,
@@ -118,9 +129,10 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "Couldn't create Rental Page." }, { status: 500 });
   }
 
-  // Legacy compatibility signal used by navbar/redirects, do not touch admin roles.
+  // Legacy compatibility signal used by navbar/redirects, do not touch admin
+  // roles. role is a protected column (service-role only).
   if (profile.role === "renter") {
-    await supabase.from("profiles").update({ role: "agency_owner" }).eq("id", user.id);
+    await service.from("profiles").update({ role: "agency_owner" }).eq("id", user.id);
   }
 
   const pageRow = page as unknown as RentalPageRow;

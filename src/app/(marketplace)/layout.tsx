@@ -11,14 +11,21 @@ export default async function MarketplaceLayout({ children }: { children: React.
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
 
-  let role: string | null = null;
+  // Decision 9: bottom-bar slots follow page operation (owned OR staffed —
+  // PAGE-005), not a flipped role.
+  let ownsPages = false;
   if (user) {
-    const { data } = await supabase.from("profiles").select("role").eq("id", user.id).single();
-    role = (data as { role?: string } | null)?.role ?? null;
+    const [{ count: owned }, { count: member }] = await Promise.all([
+      supabase.from("agencies").select("id", { count: "exact", head: true })
+        .eq("owner_id", user.id).is("deleted_at", null),
+      supabase.from("agency_members").select("id", { count: "exact", head: true })
+        .eq("user_id", user.id),
+    ]);
+    ownsPages = (owned ?? 0) > 0 || (member ?? 0) > 0;
   }
 
   const primary: MobileNavItem[] =
-    role === "agency_owner"
+    ownsPages
       ? [
           { href: "/vehicles",  label: "Browse",    icon: "browse" },
           { href: "/dashboard", label: "Dashboard", icon: "dashboard" },

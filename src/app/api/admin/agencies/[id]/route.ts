@@ -32,9 +32,15 @@ export async function PATCH(req: NextRequest, ctx: RouteContext) {
     address:         string | null;
     whatsapp_number: string;
     description:     string | null;
+    is_verified:     boolean;
+    is_blocked:      boolean;
   }>;
 
   const update: Record<string, unknown> = {};
+
+  // Moderation fields — protected columns no browser session may write.
+  if (typeof body.is_verified === "boolean") update.is_verified = body.is_verified;
+  if (typeof body.is_blocked  === "boolean") update.is_blocked  = body.is_blocked;
 
   if (typeof body.name === "string") {
     if (body.name.trim().length < 2) {
@@ -69,6 +75,18 @@ export async function PATCH(req: NextRequest, ctx: RouteContext) {
   const { error } = await service.from("agencies").update(update).eq("id", id);
   if (error) {
     return NextResponse.json({ error: error.message }, { status: 500 });
+  }
+
+  // Blocking a page cascades: unlist its currently-available vehicles so the
+  // public marketplace stops surfacing them. (Runs on the service client;
+  // vehicles.status is a protected column.)
+  if (update.is_blocked === true) {
+    const { error: cascadeError } = await service
+      .from("vehicles")
+      .update({ status: "unlisted" })
+      .eq("agency_id", id)
+      .eq("status", "available");
+    if (cascadeError) console.error("[admin agency block] vehicle cascade", cascadeError);
   }
 
   await logEvent(service, {

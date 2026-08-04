@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { createClient } from "@/lib/supabase/server";
+import { createClient, createServiceClient } from "@/lib/supabase/server";
 
 // Handles Supabase auth redirects.
 // Two flows land here:
@@ -39,7 +39,9 @@ export async function GET(req: NextRequest) {
   if (searchParams.get("verify_email") === "1") {
     const { data: { user } } = await supabase.auth.getUser();
     if (user) {
-      await supabase
+      // email_verified_at is a protected column (service-role only).
+      const service = await createServiceClient();
+      await service
         .from("profiles")
         .update({ email_verified_at: new Date().toISOString() })
         .eq("id", user.id);

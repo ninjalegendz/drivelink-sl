@@ -26,6 +26,10 @@ const ACTIVE_BOOKING_STATUSES = [
   "confirmed",
   "payment_pending",
   "active",
+  // PRIV-001: an open dispute must block deletion — a party can't scrub their
+  // identity/evidence mid-investigation. (An overdue rental is still 'active',
+  // already covered above.)
+  "disputed",
 ] as const;
 
 /**
@@ -197,7 +201,7 @@ export async function softDeleteUser(userId: string): Promise<void> {
   // confirmation/undelete email.
   const { data: profileRow } = await service
     .from("profiles")
-    .select("full_name, email, nic_url, selfie_url, avatar_url, role")
+    .select("full_name, email, nic_url, selfie_url, avatar_url, license_front_url, license_back_url, role")
     .eq("id", userId)
     .single();
   const profile = profileRow as {
@@ -206,6 +210,8 @@ export async function softDeleteUser(userId: string): Promise<void> {
     nic_url: string | null;
     selfie_url: string | null;
     avatar_url: string | null;
+    license_front_url: string | null;
+    license_back_url: string | null;
     role: string;
   } | null;
 
@@ -227,18 +233,22 @@ export async function softDeleteUser(userId: string): Promise<void> {
       await sendEmail({
         to:      realEmail,
         subject: "Your DriveLink account was deleted",
-        text:    `Hi ${profile.full_name},\n\nYour DriveLink account was just deleted. We've removed your name, contact info, and identity documents from the platform. Booking history remains visible (anonymised) to the agencies / renters you transacted with.\n\nIf you DID delete the account: no action needed.\n\nIf you DIDN'T delete the account, someone may have access to your phone or email. Click the link below within 7 days to restore the account, and then tighten your login security (change your email password, enable 2FA on your email provider, watch for unauthorised access to your phone number):\n\n${undeleteUrl}\n\nLink expires after 7 days.\n\nDriveLink Support`,
-        html:    `<p>Hi ${profile.full_name},</p><p>Your DriveLink account was just deleted. We've removed your name, contact info, and identity documents from the platform. Booking history remains visible (anonymised) to the agencies / renters you transacted with.</p><p><strong>If you DID delete the account:</strong> no action needed.</p><p><strong>If you DIDN'T:</strong> someone may have access to your phone or email. Click below within 7 days to restore the account.</p><p><a href="${undeleteUrl}" style="background:#f59e0b;color:#0f172a;padding:12px 18px;border-radius:8px;text-decoration:none;font-weight:600;display:inline-block">Restore my account</a></p><div style="margin-top:20px;padding:12px;background:#fef3c7;border-left:3px solid #f59e0b;color:#92400e;font-size:13px"><strong>⚠ Tighten your account security:</strong><br>• Change your email password and don't reuse it elsewhere<br>• Enable 2FA on your email provider<br>• Watch for unauthorised SIM-swap activity on your phone number<br>• If you suspect compromise, contact us at support@drivelink.lk</div><p style="color:#64748b;font-size:12px;margin-top:20px">Link expires in 7 days. After that the deletion becomes permanent and the account can't be restored.</p>`,
+        text:    `Hi ${profile.full_name},\n\nYour DriveLink account was just deleted. We've removed your name, contact info, and identity documents from the platform. Booking history remains visible (anonymised) to the agencies / renters you transacted with.\n\nIf you DID delete the account: no action needed.\n\nIf you DIDN'T delete the account, someone may have access to your phone or email. Click the link below within 30 days to restore the account, and then tighten your login security (change your email password, enable 2FA on your email provider, watch for unauthorised access to your phone number):\n\n${undeleteUrl}\n\nLink expires after 30 days.\n\nDriveLink Support`,
+        html:    `<p>Hi ${profile.full_name},</p><p>Your DriveLink account was just deleted. We've removed your name, contact info, and identity documents from the platform. Booking history remains visible (anonymised) to the agencies / renters you transacted with.</p><p><strong>If you DID delete the account:</strong> no action needed.</p><p><strong>If you DIDN'T:</strong> someone may have access to your phone or email. Click below within 30 days to restore the account.</p><p><a href="${undeleteUrl}" style="background:#f59e0b;color:#0f172a;padding:12px 18px;border-radius:8px;text-decoration:none;font-weight:600;display:inline-block">Restore my account</a></p><div style="margin-top:20px;padding:12px;background:#fef3c7;border-left:3px solid #f59e0b;color:#92400e;font-size:13px"><strong>⚠ Tighten your account security:</strong><br>• Change your email password and don't reuse it elsewhere<br>• Enable 2FA on your email provider<br>• Watch for unauthorised SIM-swap activity on your phone number<br>• If you suspect compromise, contact us at support@drivelink.lk</div><p style="color:#64748b;font-size:12px;margin-top:20px">Link expires in 30 days. After that the deletion becomes permanent and the account can't be restored.</p>`,
       });
     } catch (err) {
       console.error("[deletion] email send failed (continuing with delete)", err);
     }
   }
 
-  // Storage cleanup, best-effort, before nulling the URLs
-  if (profile.nic_url)    await deleteStorageObjectByUrl(profile.nic_url);
-  if (profile.selfie_url) await deleteStorageObjectByUrl(profile.selfie_url);
-  if (profile.avatar_url) await deleteStorageObjectByUrl(profile.avatar_url);
+  // Storage cleanup, best-effort, before nulling the URLs. Includes BOTH
+  // driving-licence images — the confirmation email promises identity
+  // documents were removed, so leaving licences in R2 would break that.
+  if (profile.nic_url)           await deleteStorageObjectByUrl(profile.nic_url);
+  if (profile.selfie_url)        await deleteStorageObjectByUrl(profile.selfie_url);
+  if (profile.avatar_url)        await deleteStorageObjectByUrl(profile.avatar_url);
+  if (profile.license_front_url) await deleteStorageObjectByUrl(profile.license_front_url);
+  if (profile.license_back_url)  await deleteStorageObjectByUrl(profile.license_back_url);
 
   // Scrub profile
   await service
@@ -250,6 +260,8 @@ export async function softDeleteUser(userId: string): Promise<void> {
       nic_url:              null,
       selfie_url:           null,
       avatar_url:           null,
+      license_front_url:    null,
+      license_back_url:     null,
       didit_session_id:     null,
       phone_otp_hash:       null,
       phone_otp_expires_at: null,
@@ -262,12 +274,11 @@ export async function softDeleteUser(userId: string): Promise<void> {
     })
     .eq("id", userId);
 
-  // If they're a Rental Page owner, soft-delete every page they own
-  // (an account can own up to 5).
-  if (profile.role === "agency_owner") {
-    const ownedPages = await getOwnedPages(service, userId);
-    for (const p of ownedPages) await softDeleteAgency(p.id);
-  }
+  // Soft-delete every page they own. Query ownership directly rather than
+  // gating on profile.role — a stale/changed role would otherwise skip
+  // active page cleanup and leave a page live after its owner is deleted.
+  const ownedPages = await getOwnedPages(service, userId);
+  for (const p of ownedPages) await softDeleteAgency(p.id);
 
   // Scramble auth.users.email + password so login lookup fails entirely
   const admin = createPlainClient(

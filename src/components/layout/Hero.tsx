@@ -13,7 +13,7 @@ interface HeroProps {
 /**
  * Dark image hero matching the marketplace theme, slate-900 panel with the
  * Sri Lanka coastline photo dimmed behind a left-to-right gradient, a blue
- * badge pill, a Space Grotesk headline, and an optional action row.
+ * badge pill, a display-weight headline, and an optional action row.
  */
 export function Hero({ badge, title, subtitle, children, className = "" }: HeroProps) {
   return (

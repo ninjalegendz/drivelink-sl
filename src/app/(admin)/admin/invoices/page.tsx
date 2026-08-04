@@ -19,7 +19,13 @@ function thisMonthIso(): string {
 
 export default async function AdminInvoicesPage({ searchParams }: Props) {
   const { month: monthParam } = await searchParams;
-  const month = monthParam ?? thisMonthIso();
+  // Validate strictly: a malformed ?month=abc must not produce an Invalid
+  // Date (which throws on .toISOString() and 500s the page). Fall back to
+  // the current month for anything that isn't a real YYYY-MM.
+  const isValidMonth =
+    !!monthParam && /^\d{4}-\d{2}$/.test(monthParam) &&
+    Number(monthParam.slice(5)) >= 1 && Number(monthParam.slice(5)) <= 12;
+  const month = isValidMonth ? monthParam! : thisMonthIso();
   const [year, mm] = month.split("-").map(Number);
   const monthStart = new Date(Date.UTC(year, mm - 1, 1)).toISOString();
   const monthEnd   = new Date(Date.UTC(year, mm,     1)).toISOString();

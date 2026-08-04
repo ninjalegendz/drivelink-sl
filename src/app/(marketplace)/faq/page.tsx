@@ -16,10 +16,11 @@ const RENTER_FAQS: QA[] = [
     q: "How does booking work?",
     a: (
       <>
-        Pick a vehicle, choose your dates, and send a free request. We verify your details
-        (including your licence for self-drive), and the provider confirms availability. Once
-        approved, the provider&apos;s contact details unlock so you can call or WhatsApp them to
-        arrange the handover. You pay the rental directly to the provider on pickup.
+        First verify your identity once with a quick ID check (and upload your licence if you
+        want self-drive). Then pick a vehicle, choose your dates, and send a free request — the
+        provider sees you&apos;re already verified and confirms availability. Once approved, the
+        provider&apos;s contact details unlock so you can call or WhatsApp them to arrange the
+        handover. You pay the rental directly to the provider on pickup.
       </>
     ),
   },

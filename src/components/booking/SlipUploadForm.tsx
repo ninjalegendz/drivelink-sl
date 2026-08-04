@@ -1,7 +1,6 @@
 "use client";
 
 import { useState } from "react";
-import { createClient } from "@/lib/supabase/client";
 import { uploadToR2 } from "@/lib/storage/upload";
 import { Button } from "@/components/ui/Button";
 
@@ -28,16 +27,17 @@ export function SlipUploadForm({ bookingId }: { bookingId: string }) {
       return;
     }
 
-    const supabase = createClient();
-    const { error: updateError } = await supabase
-      .from("bookings")
-      .update({ slip_url: publicUrl, status: "payment_pending" })
-      .eq("id", bookingId);
+    const res = await fetch(`/api/bookings/${bookingId}/slip`, {
+      method:  "POST",
+      headers: { "Content-Type": "application/json" },
+      body:    JSON.stringify({ slipUrl: publicUrl }),
+    });
 
     setLoading(false);
 
-    if (updateError) {
-      setError("Could not update booking. Contact support.");
+    if (!res.ok) {
+      const payload = await res.json().catch(() => ({}));
+      setError(payload.error ?? "Could not update booking. Contact support.");
       return;
     }
 

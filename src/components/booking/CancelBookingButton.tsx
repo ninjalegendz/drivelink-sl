@@ -2,7 +2,6 @@
 
 import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
-import { createClient } from "@/lib/supabase/client";
 
 interface Props {
   bookingId: string;
@@ -20,21 +19,13 @@ export function CancelBookingButton({ bookingId }: Props) {
     setLoading(true);
     setError(null);
 
-    const supabase = createClient();
-    const { error: updateError } = await supabase
-      .from("bookings")
-      .update({
-        status:              "cancelled",
-        cancelled_at:        new Date().toISOString(),
-        cancellation_reason: "Cancelled by renter",
-        cancelled_by:        "renter",
-      })
-      .eq("id", bookingId);
+    const res = await fetch(`/api/bookings/${bookingId}/cancel`, { method: "POST" });
 
     setLoading(false);
 
-    if (updateError) {
-      setError(updateError.message);
+    if (!res.ok) {
+      const payload = await res.json().catch(() => ({}));
+      setError(payload.error ?? "Could not cancel. Please try again.");
       return;
     }
 

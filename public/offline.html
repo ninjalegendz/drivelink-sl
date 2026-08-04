@@ -5,6 +5,26 @@
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>You're offline · DriveLink</title>
   <style>
+    /* Poppins is the only brand typeface. Self-hosted + precached by the
+       service worker so this page still renders in Poppins with no network. */
+    @font-face {
+      font-family: "Poppins";
+      src: url("/fonts/Poppins-Regular.woff2") format("woff2");
+      font-weight: 400;
+      font-display: swap;
+    }
+    @font-face {
+      font-family: "Poppins";
+      src: url("/fonts/Poppins-Bold.woff2") format("woff2");
+      font-weight: 700;
+      font-display: swap;
+    }
+    @font-face {
+      font-family: "Poppins";
+      src: url("/fonts/Poppins-ExtraBold.woff2") format("woff2");
+      font-weight: 800;
+      font-display: swap;
+    }
     :root { color-scheme: light; }
     * { box-sizing: border-box; }
     body {
@@ -14,7 +34,7 @@
       align-items: center;
       justify-content: center;
       padding: 24px;
-      font-family: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+      font-family: "Poppins", ui-sans-serif, system-ui, sans-serif;
       background: #f8fafc;
       color: #0f172a;
     }

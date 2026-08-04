@@ -2,7 +2,6 @@
 
 import { useState } from "react";
 import { ShieldCheck, Check } from "lucide-react";
-import { createClient } from "@/lib/supabase/client";
 import { ALL_BADGES, BADGE_DESCRIPTIONS } from "@/data/vehicles";
 
 interface Props {
@@ -34,10 +33,17 @@ export function VehicleBadgeEditor({ vehicleId, initialBadges }: Props) {
   async function save() {
     setSaving(true);
     setError(null);
-    const supabase = createClient();
-    const { error: updateError } = await supabase.from("vehicles").update({ badges: selected }).eq("id", vehicleId);
+    const res = await fetch(`/api/admin/vehicles/${vehicleId}`, {
+      method:  "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body:    JSON.stringify({ badges: selected }),
+    });
     setSaving(false);
-    if (updateError) { setError(updateError.message); return; }
+    if (!res.ok) {
+      const payload = await res.json().catch(() => ({}));
+      setError(payload.error ?? "Save failed.");
+      return;
+    }
     setSaved(true);
   }
 

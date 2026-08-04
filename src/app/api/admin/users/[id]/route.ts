@@ -32,10 +32,14 @@ export async function PATCH(req: NextRequest, ctx: RouteContext) {
 
   const { id } = await ctx.params;
   const body = (await req.json().catch(() => ({}))) as Partial<{
-    full_name: string;
-    phone:     string;
-    email:     string | null;
-    role:      "renter" | "agency_owner" | "admin";
+    full_name:               string;
+    phone:                   string;
+    email:                   string | null;
+    role:                    "renter" | "agency_owner" | "admin";
+    kyc_status:              "unverified" | "pending" | "verified" | "rejected";
+    is_blacklisted:          boolean;
+    blacklist_reason:        string | null;
+    blacklist_reason_public: string | null;
   }>;
 
   const profileUpdate: Record<string, unknown> = {};
@@ -64,6 +68,31 @@ export async function PATCH(req: NextRequest, ctx: RouteContext) {
 
   if (body.role && ["renter", "agency_owner", "admin"].includes(body.role)) {
     profileUpdate.role = body.role;
+  }
+
+  // Moderation fields — protected columns the browser can no longer write
+  // directly (KYC approve/reject, blacklist/unblock now come through here).
+  if (body.kyc_status) {
+    if (!["unverified", "pending", "verified", "rejected"].includes(body.kyc_status)) {
+      return NextResponse.json({ error: "Invalid kyc_status." }, { status: 400 });
+    }
+    profileUpdate.kyc_status = body.kyc_status;
+  }
+
+  if (typeof body.is_blacklisted === "boolean") {
+    profileUpdate.is_blacklisted = body.is_blacklisted;
+    if (body.is_blacklisted) {
+      const reason = body.blacklist_reason?.trim();
+      if (!reason) {
+        return NextResponse.json({ error: "An admin reason is required to blacklist." }, { status: 400 });
+      }
+      profileUpdate.blacklist_reason        = reason;
+      profileUpdate.blacklist_reason_public = body.blacklist_reason_public?.trim() || null;
+    } else {
+      // Unblock clears both reasons.
+      profileUpdate.blacklist_reason        = null;
+      profileUpdate.blacklist_reason_public = null;
+    }
   }
 
   if (Object.keys(profileUpdate).length === 0) {

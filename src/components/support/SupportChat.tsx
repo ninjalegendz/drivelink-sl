@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
-import { Send, Headphones, Building2 } from "lucide-react";
+import { Send, Headphones, Building2, User } from "lucide-react";
 import { createClient, realtimeReady } from "@/lib/supabase/client";
 import { Button } from "@/components/ui/Button";
 
@@ -10,7 +10,7 @@ export interface SupportMessage {
   id:           string;
   thread_id:    string;
   sender_id:    string;
-  sender_role:  "admin" | "agency_owner";
+  sender_role:  "admin" | "agency_owner" | "renter";
   body:         string;
   created_at:   string;
 }
@@ -18,10 +18,10 @@ export interface SupportMessage {
 interface Props {
   threadId:     string;
   initial:      SupportMessage[];
-  currentRole:  "admin" | "agency_owner";
+  currentRole:  "admin" | "agency_owner" | "renter";
   currentUserId: string;
   // The audience opening the chat. We mark THEIR has_unread flag false on mount.
-  audience:     "admin" | "agency";
+  audience:     "admin" | "agency" | "renter";
 }
 
 function formatTime(iso: string): string {
@@ -43,7 +43,9 @@ export function SupportChat({ threadId, initial, currentRole, currentUserId, aud
     const supabase = createClient();
     const update = audience === "admin"
       ? { has_unread_admin: false }
-      : { has_unread_agency: false };
+      : audience === "renter"
+        ? { has_unread_renter: false }
+        : { has_unread_agency: false };
     supabase.from("support_threads").update(update).eq("id", threadId).then(() => {
       // Refresh the layout so unread badges in the sidebar update
       router.refresh();
@@ -132,21 +134,22 @@ export function SupportChat({ threadId, initial, currentRole, currentUserId, aud
         ) : (
           messages.map((m) => {
             const mine = m.sender_id === currentUserId;
-            const isAdmin = m.sender_role === "admin";
             return (
               <div key={m.id} className={`flex ${mine ? "justify-end" : "justify-start"}`}>
                 <div className="max-w-[85%]">
                   {!mine && (
                     <p className="text-[10px] text-slate-500 mb-0.5 inline-flex items-center gap-1">
-                      {isAdmin
+                      {m.sender_role === "admin"
                         ? <><Headphones size={10} /> DriveLink Support</>
-                        : <><Building2 size={10} /> Agency</>}
+                        : m.sender_role === "renter"
+                          ? <><User size={10} /> Renter</>
+                          : <><Building2 size={10} /> Agency</>}
                     </p>
                   )}
                   <div className={`px-3 py-2 rounded-2xl text-sm leading-snug whitespace-pre-wrap break-words ${
                     mine
                       ? "bg-blue-600 text-white rounded-br-md"
-                      : "bg-slate-100 text-slate-100 rounded-bl-md"
+                      : "bg-slate-100 text-slate-900 rounded-bl-md"
                   }`}>
                     {m.body}
                   </div>

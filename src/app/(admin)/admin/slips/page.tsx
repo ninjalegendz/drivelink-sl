@@ -1,11 +1,14 @@
-import { createClient } from "@/lib/supabase/server";
+import { createServiceClient } from "@/lib/supabase/server";
 import Image from "next/image";
 import { CheckCircle2 } from "lucide-react";
 import { SlipActions } from "@/components/admin/SlipActions";
 import { formatLKR } from "@/lib/vehicles/format";
 
 export default async function AdminSlipsPage() {
-  const supabase = await createClient();
+  // Service client: these admin dashboards read protected profile columns
+  // (phone, email, KYC docs, blacklist state) that browser sessions can no
+  // longer SELECT. The (admin) layout enforces the admin role upstream.
+  const supabase = await createServiceClient();
 
   const { data } = await supabase
     .from("bookings")

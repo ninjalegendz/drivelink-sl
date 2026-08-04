@@ -3,7 +3,6 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { Check, X, RefreshCw } from "lucide-react";
-import { createClient } from "@/lib/supabase/client";
 import { Button } from "@/components/ui/Button";
 
 interface Props {
@@ -21,13 +20,17 @@ export function KycActions({ userId, hasDiditSession }: Props) {
   async function update(status: "verified" | "rejected") {
     setLoading(status === "verified" ? "approve" : "reject");
     setError(null); setInfo(null);
-    const supabase = createClient();
-    const { error: updateError } = await supabase
-      .from("profiles")
-      .update({ kyc_status: status })
-      .eq("id", userId);
+    const res = await fetch(`/api/admin/users/${userId}`, {
+      method:  "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body:    JSON.stringify({ kyc_status: status }),
+    });
     setLoading(null);
-    if (updateError) { setError(updateError.message); return; }
+    if (!res.ok) {
+      const payload = await res.json().catch(() => ({}));
+      setError(payload.error ?? "Update failed.");
+      return;
+    }
     router.refresh();
   }
 

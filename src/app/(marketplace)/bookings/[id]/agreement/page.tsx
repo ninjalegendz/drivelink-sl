@@ -8,7 +8,9 @@ import {
   PrintAgreementButton,
 } from "@/components/booking/AgreementControls";
 import { AGREEMENT_SELECT, type BookingAgreementRow, type AgreementTerms } from "@/lib/booking/agreement";
+import { shortHash } from "@/lib/booking/agreement-hash";
 import { formatLKR } from "@/lib/vehicles/format";
+import { canActOnAgency } from "@/lib/pages/access";
 
 // The digital rental agreement, rendered from the STORED terms snapshot
 // (booking_agreements.terms), never live vehicle/booking data — what both
@@ -50,10 +52,10 @@ export default async function AgreementPage({ params }: Props) {
   const b = bookingRow as unknown as Joined | null;
   if (!b) notFound();
 
-  // Party check: renter, page owner, or admin (profiles.role).
-  const isRenter = b.renter_id === user.id;
-  const isOwner  = b.agencies?.owner_id === user.id;
-  if (!isRenter && !isOwner) {
+  // Party check: renter, the page team (owner or staff), or admin (profiles.role).
+  const isRenter   = b.renter_id === user.id;
+  const isPageSide = !isRenter && (await canActOnAgency(service, user.id, b.agency_id));
+  if (!isRenter && !isPageSide) {
     const { data: prof } = await supabase
       .from("profiles")
       .select("role")
@@ -61,7 +63,7 @@ export default async function AgreementPage({ params }: Props) {
       .single();
     if ((prof as { role?: string } | null)?.role !== "admin") notFound();
   }
-  const viewerSide: "renter" | "owner" | null = isRenter ? "renter" : isOwner ? "owner" : null;
+  const viewerSide: "renter" | "owner" | null = isRenter ? "renter" : isPageSide ? "owner" : null;
 
   const { data: agreementRow } = await service
     .from("booking_agreements")
@@ -150,7 +152,15 @@ export default async function AgreementPage({ params }: Props) {
                 Booking {bookingRef} · Template {agreement.template_version} · Generated {fmtDateTime(agreement.created_at)}
               </p>
             </div>
-            <PrintAgreementButton />
+            <div className="flex items-center gap-2 no-print print:hidden">
+              <a
+                href={`/api/bookings/${b.id}/agreement/pdf`}
+                className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold border bg-slate-100 text-slate-700 border-slate-200 hover:bg-slate-200 transition-colors"
+              >
+                Download PDF
+              </a>
+              <PrintAgreementButton />
+            </div>
           </div>
         </header>
 
@@ -278,6 +288,9 @@ export default async function AgreementPage({ params }: Props) {
             )}
             <Clause text={t.liability.breach_full_liability} />
             <Clause label="If there is an accident" text={t.liability.accident_protocol} />
+            {t.liability.platform_disclaimer && (
+              <Clause label="DriveLink's role" text={t.liability.platform_disclaimer} />
+            )}
           </Section>
 
           {/* Fines & tolls */}
@@ -290,7 +303,7 @@ export default async function AgreementPage({ params }: Props) {
           <Section title="14. Late return">
             <Row label="Grace period" value={t.late_return.grace} />
             <Row label="After the grace period" value={t.late_return.hourly_fee_label} />
-            <Clause text={t.late_return.after_6h} />
+            <Clause text={t.late_return.cap ?? t.late_return.after_6h ?? ""} />
             <Clause text={t.late_return.after_24h} />
           </Section>
 
@@ -323,6 +336,16 @@ export default async function AgreementPage({ params }: Props) {
               needsEmail={viewerNeedsEmail}
             />
           </div>
+          {agreement.terms_hash && (
+            <div className="mt-4 rounded-lg bg-slate-50 border border-slate-200 px-3 py-2">
+              <p className="text-slate-600 text-[11px] uppercase tracking-wider font-semibold">Document fingerprint (SHA-256)</p>
+              <p className="font-mono text-[11px] text-slate-800 break-all mt-0.5">{shortHash(agreement.terms_hash)}…</p>
+              <p className="text-slate-400 text-[10px] mt-1">
+                A tamper-evident hash of the exact terms both parties accepted. If the document is
+                altered, this fingerprint changes — proving what was signed.
+              </p>
+            </div>
+          )}
           <p className="text-slate-400 text-[11px] mt-4">
             Recorded by DriveLink (drivelink.lk) as the venue and record-keeper. Booking {bookingRef}.
           </p>

@@ -4,7 +4,6 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { Ban, Undo2, Trash2, Pencil, Star, Activity } from "lucide-react";
-import { createClient } from "@/lib/supabase/client";
 import { Button } from "@/components/ui/Button";
 import { EditAgencyModal } from "@/components/admin/EditAgencyModal";
 import { RatingAdjustModal } from "@/components/admin/RatingAdjustModal";
@@ -32,25 +31,20 @@ export function AgencyActions({ agencyId, name, city, address, whatsapp_number, 
     setLoading("block");
     setError(null);
 
-    const supabase = createClient();
-
-    // Block the agency
-    const { error: blockError } = await supabase
-      .from("agencies")
-      .update({ is_blocked: true })
-      .eq("id", agencyId);
-
-    if (blockError) { setError(blockError.message); setLoading(null); return; }
-
-    // Cascade: unlist all the agency's currently-available vehicles so the
-    // public marketplace doesn't surface them while they're blocked.
-    await supabase
-      .from("vehicles")
-      .update({ status: "unlisted" })
-      .eq("agency_id", agencyId)
-      .eq("status", "available");
+    // The server route sets is_blocked AND cascades the vehicle unlisting
+    // (both are protected columns, so this can't happen from the browser).
+    const res = await fetch(`/api/admin/agencies/${agencyId}`, {
+      method:  "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body:    JSON.stringify({ is_blocked: true }),
+    });
 
     setLoading(null);
+    if (!res.ok) {
+      const payload = await res.json().catch(() => ({}));
+      setError(payload.error ?? "Block failed.");
+      return;
+    }
     router.refresh();
   }
 
@@ -58,14 +52,18 @@ export function AgencyActions({ agencyId, name, city, address, whatsapp_number, 
     setLoading("unblock");
     setError(null);
 
-    const supabase = createClient();
-    const { error: updateError } = await supabase
-      .from("agencies")
-      .update({ is_blocked: false })
-      .eq("id", agencyId);
+    const res = await fetch(`/api/admin/agencies/${agencyId}`, {
+      method:  "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body:    JSON.stringify({ is_blocked: false }),
+    });
 
     setLoading(null);
-    if (updateError) { setError(updateError.message); return; }
+    if (!res.ok) {
+      const payload = await res.json().catch(() => ({}));
+      setError(payload.error ?? "Unblock failed.");
+      return;
+    }
     router.refresh();
   }
 

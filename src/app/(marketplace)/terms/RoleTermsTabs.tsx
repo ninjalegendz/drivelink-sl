@@ -58,9 +58,10 @@ export function RoleTermsTabs() {
                 claim at that moment, they must provide a written estimate within 48 hours. You
                 can request a second estimate. Deposits are held maximum 7 days.</li>
             <li><strong>Late return ladder:</strong> late return is free for the first 2 hours.
-                After 2 hours, hourly late fees apply. After 6 hours late, it counts as a full
-                extra rental day. If you are unreachable for 24 hours, this may be treated as
-                misappropriation and your account will be frozen pending investigation.</li>
+                After that, an hourly late fee applies, capped at one day&apos;s rental rate — a
+                late return never costs more than one extra day. If you are unreachable for 24
+                hours, this may be treated as misappropriation and your account will be frozen
+                pending investigation.</li>
             <li><strong>Fines and tolls:</strong> traffic fines and toll charges incurred during
                 your rental are your responsibility within the rental window. The Owner can file
                 a claim for 30 days after the rental ends.</li>
@@ -70,7 +71,8 @@ export function RoleTermsTabs() {
             <li><strong>Identity verification:</strong> you must complete ID verification (Didit)
                 before booking. False identity information is grounds for account termination.</li>
             <li><strong>Disputes:</strong> if a problem arises, report it through the platform.
-                DriveLink will gather evidence and offer mediation. See{" "}
+                DriveLink keeps the record (messages, inspection photos, documents) both sides can
+                rely on. We don&apos;t award damages or decide who pays. See{" "}
                 <Link href="/terms" className="text-blue-700 hover:text-blue-700 font-medium">
                   section 6
                 </Link>{" "}

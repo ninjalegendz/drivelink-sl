@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient, createServiceClient } from "@/lib/supabase/server";
+import { canActOnAgency } from "@/lib/pages/access";
 
 // /api/bookings/[id]/messages — booking-scoped chat (migration 054).
 //
@@ -49,8 +50,8 @@ async function resolveParty(bookingId: string, userId: string): Promise<PartyRes
   }
 
   const isRenter = booking.renter_id === userId;
-  const isOwner  = booking.agencies?.owner_id === userId;
-  if (!isRenter && !isOwner) {
+  const isPageSide = !isRenter && await canActOnAgency(service, userId, booking.agency_id);
+  if (!isRenter && !isPageSide) {
     return { error: NextResponse.json({ error: "Not your booking" }, { status: 403 }) };
   }
   return { booking, isRenter };
@@ -127,19 +128,23 @@ export async function GET(_req: NextRequest, { params }: { params: Promise<{ id:
   if ("error" in party) return party.error;
   const { booking, isRenter } = party;
 
+  // MSG-002: fetch the NEWEST 500 (descending), then reverse to ascending for
+  // display. Ordering ascending + limit dropped the latest messages once a
+  // thread passed 500 — exactly the messages that matter in a live dispute.
   const { data: rows, error } = await supabase
     .from("booking_messages")
     .select("id, booking_id, sender_id, body, created_at")
     .eq("booking_id", booking.id)
-    .order("created_at", { ascending: true })
+    .order("created_at", { ascending: false })
     .limit(500);
 
   if (error) {
     return NextResponse.json({ error: "Couldn't load messages." }, { status: 500 });
   }
+  const messages = (rows ?? []).slice().reverse();
 
   // Opening the thread marks the caller's side as read.
   await stampReadCursor(booking.id, isRenter);
 
-  return NextResponse.json({ ok: true, messages: rows ?? [] });
+  return NextResponse.json({ ok: true, messages });
 }

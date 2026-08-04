@@ -2,7 +2,6 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { createClient } from "@/lib/supabase/client";
 import { Button } from "@/components/ui/Button";
 
 export function AgencyVerifyAction({ agencyId, isVerified }: { agencyId: string; isVerified: boolean }) {
@@ -11,8 +10,11 @@ export function AgencyVerifyAction({ agencyId, isVerified }: { agencyId: string;
 
   async function toggle() {
     setLoading(true);
-    const supabase = createClient();
-    await supabase.from("agencies").update({ is_verified: !isVerified }).eq("id", agencyId);
+    await fetch(`/api/admin/agencies/${agencyId}`, {
+      method:  "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body:    JSON.stringify({ is_verified: !isVerified }),
+    });
     setLoading(false);
     router.refresh();
   }

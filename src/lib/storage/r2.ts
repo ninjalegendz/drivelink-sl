@@ -17,7 +17,7 @@
 import { S3Client, DeleteObjectCommand, GetObjectCommand, ListObjectsV2Command, PutObjectCommand } from "@aws-sdk/client-s3";
 import { getSignedUrl } from "@aws-sdk/s3-request-presigner";
 
-export type StoragePrefix = "vehicle-photos" | "vehicle-docs" | "kyc" | "avatars" | "booking-slips" | "booking-photos";
+export type StoragePrefix = "vehicle-photos" | "vehicle-docs" | "kyc" | "avatars" | "booking-slips" | "booking-photos" | "business-docs";
 
 // Sensitive prefixes live in a separate PRIVATE bucket (no public reads at
 // the storage layer) and are served exclusively through the authenticated
@@ -26,7 +26,7 @@ export type StoragePrefix = "vehicle-photos" | "vehicle-docs" | "kyc" | "avatars
 // stays on the public bucket + CDN. Booking slips/photos remain public-by-
 // unguessable-URL for now; flipping them means teaching the proxy about
 // booking-party authorization for keys that don't encode the booking id.
-const PRIVATE_PREFIXES = new Set<StoragePrefix>(["kyc", "vehicle-docs"]);
+const PRIVATE_PREFIXES = new Set<StoragePrefix>(["kyc", "vehicle-docs", "business-docs"]);
 
 export function isPrivateKey(key: string): boolean {
   const prefix = key.split("/")[0] as StoragePrefix;

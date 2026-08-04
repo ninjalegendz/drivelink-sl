@@ -2,8 +2,12 @@ import type { SupabaseClient } from "@supabase/supabase-js";
 import { listPrefix, deleteObjects, extractKeyFromUrl } from "./r2";
 
 /**
- * Walks an R2 prefix and deletes blobs that no profile references via
- * avatar_url / nic_url / selfie_url. Cheap to run daily, even a thousand
+ * Walks an R2 prefix and deletes blobs that no profile references. For the
+ * `kyc` prefix that means avatar_url / nic_url / selfie_url AND the two
+ * driving-licence columns (license_front_url / license_back_url) — licences
+ * are stored under the same `kyc` prefix (see LicenseUploadForm), so leaving
+ * them out of the referenced set would mark every valid licence image as an
+ * orphan and delete it on the next run. Cheap to run daily, even a thousand
  * users adds up to a few hundred file lookups.
  *
  * The key layout is `<prefix>/<userId>/<uuid>.<ext>`. We list every key
@@ -26,16 +30,26 @@ export async function sweepOrphanStorage(
       if (key) referencedKeys.add(key);
     }
   } else {
-    // kyc prefix: nic_url + selfie_url
+    // kyc prefix: nic_url + selfie_url + both driving-licence images. ALL of
+    // these live under `kyc/`; every column that can point here must be
+    // treated as a live reference or the sweep will delete valid documents.
     const { data: rows } = await service
       .from("profiles")
-      .select("nic_url, selfie_url")
-      .or("nic_url.not.is.null,selfie_url.not.is.null");
-    for (const r of (rows ?? []) as { nic_url: string | null; selfie_url: string | null }[]) {
-      const nicKey    = extractKeyFromUrl(r.nic_url);
-      const selfieKey = extractKeyFromUrl(r.selfie_url);
-      if (nicKey)    referencedKeys.add(nicKey);
-      if (selfieKey) referencedKeys.add(selfieKey);
+      .select("nic_url, selfie_url, license_front_url, license_back_url")
+      .or(
+        "nic_url.not.is.null,selfie_url.not.is.null," +
+        "license_front_url.not.is.null,license_back_url.not.is.null"
+      );
+    for (const r of (rows ?? []) as {
+      nic_url: string | null;
+      selfie_url: string | null;
+      license_front_url: string | null;
+      license_back_url: string | null;
+    }[]) {
+      for (const url of [r.nic_url, r.selfie_url, r.license_front_url, r.license_back_url]) {
+        const key = extractKeyFromUrl(url);
+        if (key) referencedKeys.add(key);
+      }
     }
   }
 

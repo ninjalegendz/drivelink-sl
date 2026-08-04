@@ -2,7 +2,7 @@ import { notFound, redirect } from "next/navigation";
 import Link from "next/link";
 import { ArrowLeft, ShieldCheck } from "lucide-react";
 import { createClient, createServiceClient } from "@/lib/supabase/server";
-import { getOwnedPages } from "@/lib/pages/active-page";
+import { getActingPages } from "@/lib/pages/active-page";
 import { WatermarkedImage } from "@/components/documents/WatermarkedImage";
 
 interface Props {
@@ -30,11 +30,11 @@ export default async function BookingDocumentsPage({ params }: Props) {
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) redirect(`/login?next=/dashboard/bookings/${bookingId}/documents`);
 
-  // Owned-pages guard: the caller must own the Rental Page this booking
-  // belongs to — any page they own, not just the currently "active" one
-  // the dashboard cookie happens to be scoped to.
-  const ownedPages = await getOwnedPages(supabase, user.id);
-  const ownedIds   = new Set(ownedPages.map((p) => p.id));
+  // Page-team guard: the caller must operate the Rental Page this booking
+  // belongs to — any page they own or staff, not just the currently "active"
+  // one the dashboard cookie happens to be scoped to.
+  const actingPages = await getActingPages(supabase, user.id);
+  const actingIds   = new Set(actingPages.map((p) => p.id));
 
   const service = await createServiceClient();
   const { data: bookingRow } = await service
@@ -53,7 +53,7 @@ export default async function BookingDocumentsPage({ params }: Props) {
   };
   const booking = bookingRow as unknown as Joined | null;
   if (!booking) notFound();
-  if (!ownedIds.has(booking.agency_id)) notFound();
+  if (!actingIds.has(booking.agency_id)) notFound();
 
   const pageName = booking.agencies?.name ?? "your page";
   const ref      = booking.id.slice(0, 8).toUpperCase();
@@ -129,8 +129,9 @@ export default async function BookingDocumentsPage({ params }: Props) {
       <div className="p-3 bg-blue-50 border border-blue-200 rounded-xl text-xs text-blue-700 flex items-start gap-2">
         <ShieldCheck size={14} className="mt-0.5 shrink-0" />
         <p>
-          Shared with consent for this booking only. Viewable here, not downloadable. Every view
-          is logged and visible to the renter in their sharing history.
+          Shared with consent for this booking only, in a watermarked view-only viewer (no
+          download button; please don&apos;t screenshot or photograph these). Every view is
+          logged and visible to the renter in their sharing history.
         </p>
       </div>
 

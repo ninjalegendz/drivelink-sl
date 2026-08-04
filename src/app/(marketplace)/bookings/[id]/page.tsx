@@ -6,6 +6,7 @@ import { Badge } from "@/components/ui/Badge";
 import { SlipUploadForm } from "@/components/booking/SlipUploadForm";
 import { ReviewForm } from "@/components/booking/ReviewForm";
 import { InspectionFlow } from "@/components/booking/InspectionFlow";
+import { ChargeLedger } from "@/components/booking/ChargeLedger";
 import { ReturnButton } from "@/components/booking/ReturnButton";
 import { WhatsAppIcon } from "@/components/icons/WhatsAppIcon";
 import { CancelBookingButton } from "@/components/booking/CancelBookingButton";
@@ -93,17 +94,17 @@ export default async function BookingDetailPage({ params, searchParams }: Props)
     .select("bank_account_name, bank_name, bank_account_number, bank_branch")
     .eq("id", true)
     .single();
-  const bank = (settingsRow ?? {
-    bank_account_name:   "DriveLink SL",
-    bank_name:           "Commercial Bank",
-    bank_account_number: "8001234567",
-    bank_branch:         null,
-  }) as {
+  // Fail closed: never fall back to hardcoded account details. If settings
+  // are missing/unreadable, the pay panel shows "temporarily unavailable"
+  // rather than risking a real transfer to the wrong (placeholder) account.
+  const bank = (
+    settingsRow?.bank_account_number ? settingsRow : null
+  ) as {
     bank_account_name:   string;
     bank_name:           string;
     bank_account_number: string;
     bank_branch:         string | null;
-  };
+  } | null;
 
   let booking = data as unknown as BookingWithRelations;
 
@@ -119,7 +120,9 @@ export default async function BookingDetailPage({ params, searchParams }: Props)
     !booking.slip_url &&
     new Date(booking.confirmed_at).getTime() + 12 * 3600_000 < Date.now()
   ) {
-    await supabase
+    // Service client: bookings is locked to server-side writes only.
+    const svc = await createServiceClient();
+    await svc
       .from("bookings")
       .update({
         status:              "cancelled",
@@ -135,28 +138,12 @@ export default async function BookingDetailPage({ params, searchParams }: Props)
     };
   }
 
-  // Inline self-heal: auto-complete an 'active' booking whose return date passed
-  // (+24h grace). Backstop for an agency that forgot to "Mark complete", so a
-  // booking never sits "active" forever. Flips the status so the renter sees the
-  // review prompt right away; the nightly cron sends the completion messages for
-  // bookings nobody opens. Service client because renter RLS can't reach 'completed'.
-  if (
-    booking.status === "active" &&
-    booking.end_at &&
-    new Date(booking.end_at).getTime() + 24 * 3600_000 < Date.now()
-  ) {
-    const svc = await createServiceClient();
-    await svc
-      .from("bookings")
-      .update({ status: "completed", completed_at: new Date().toISOString() })
-      .eq("id", booking.id)
-      .eq("status", "active");
-    booking = {
-      ...booking,
-      status:       "completed",
-      completed_at: new Date().toISOString(),
-    };
-  }
+  // BOOK-003 + BUILD 1: a read page must NOT mutate booking lifecycle, and
+  // completion now requires a return inspection (mandatory evidence). Auto-
+  // completion is handled solely by the cron backstop, which only closes a
+  // booking once a return inspection exists — so the renter simply opening
+  // this page can no longer complete a rental (which previously destroyed the
+  // non-return / misappropriation trail for a car that was never brought back).
 
   const vehicle = booking.vehicles!;
   const agency  = booking.agencies!;
@@ -287,6 +274,22 @@ export default async function BookingDetailPage({ params, searchParams }: Props)
         </div>
       </div>
 
+      {/* BUILD 3: return settlement ledger — appears once the rental is under way. */}
+      {(status === "active" || status === "completed" || status === "disputed") && (() => {
+        const sb = booking as unknown as { deposit_received_at: string | null; settlement_ack_at: string | null };
+        return (
+          <div className="mb-4">
+            <ChargeLedger
+              bookingId={booking.id}
+              mode="renter"
+              rentalSubtotalLkr={booking.subtotal_lkr}
+              depositHeldLkr={sb.deposit_received_at ? (booking.deposit_lkr ?? 0) : 0}
+              settlementAckAt={sb.settlement_ack_at}
+            />
+          </div>
+        );
+      })()}
+
       {/* Progress tracker, why the contact is locked + what to do next */}
       {showTracker && (
         <div className="bg-white rounded-2xl border border-slate-100 p-4 mb-4">
@@ -344,19 +347,25 @@ export default async function BookingDetailPage({ params, searchParams }: Props)
             <PaymentExpiryCountdown confirmedAt={booking.confirmed_at} windowHours={12} />
           )}
 
-          <div className="bg-slate-100 rounded-xl p-3 text-sm space-y-1">
-            <p className="text-slate-600 text-xs uppercase tracking-widest font-semibold mb-2">Bank transfer details</p>
-            <p className="text-slate-900">Account: <span className="font-mono">{bank.bank_account_name}</span></p>
-            <p className="text-slate-900">Bank: <span className="font-mono">{bank.bank_name}</span></p>
-            <p className="text-slate-900">Account No: <span className="font-mono">{bank.bank_account_number}</span></p>
-            {bank.bank_branch && (
-              <p className="text-slate-900">Branch: <span className="font-mono">{bank.bank_branch}</span></p>
-            )}
-            <p className="text-slate-900">Amount: <span className="font-mono text-blue-600">{formatLKR(booking.booking_fee_lkr)}</span></p>
-            <p className="text-slate-900">Reference: <span className="font-mono">{booking.id.slice(0, 8).toUpperCase()}</span></p>
-          </div>
+          {bank ? (
+            <div className="bg-slate-100 rounded-xl p-3 text-sm space-y-1">
+              <p className="text-slate-600 text-xs uppercase tracking-widest font-semibold mb-2">Bank transfer details</p>
+              <p className="text-slate-900">Account: <span className="font-mono">{bank.bank_account_name}</span></p>
+              <p className="text-slate-900">Bank: <span className="font-mono">{bank.bank_name}</span></p>
+              <p className="text-slate-900">Account No: <span className="font-mono">{bank.bank_account_number}</span></p>
+              {bank.bank_branch && (
+                <p className="text-slate-900">Branch: <span className="font-mono">{bank.bank_branch}</span></p>
+              )}
+              <p className="text-slate-900">Amount: <span className="font-mono text-blue-600">{formatLKR(booking.booking_fee_lkr)}</span></p>
+              <p className="text-slate-900">Reference: <span className="font-mono">{booking.id.slice(0, 8).toUpperCase()}</span></p>
+            </div>
+          ) : (
+            <div className="bg-amber-50 border border-amber-200 rounded-xl p-3 text-sm text-amber-800">
+              Payment is temporarily unavailable. Please try again shortly or contact support — do not transfer to any account until these details load.
+            </div>
+          )}
 
-          <SlipUploadForm bookingId={booking.id} />
+          {bank && <SlipUploadForm bookingId={booking.id} />}
 
           <div className="pt-2 border-t border-slate-100">
             <CancelBookingButton bookingId={booking.id} />

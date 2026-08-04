@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient, createServiceClient } from "@/lib/supabase/server";
 import { logEvent } from "@/lib/activity/log";
+import { canActOnAgency } from "@/lib/pages/access";
 
 // POST /api/bookings/[id]/report-renter
 // body: { reason: string }
@@ -57,8 +58,8 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
   const b = bookingRow as unknown as Joined | null;
   if (!b) return NextResponse.json({ error: "Booking not found" }, { status: 404 });
 
-  // Party check: only the owner of the page the booking belongs to.
-  if (b.agencies?.owner_id !== user.id) {
+  // Party check: the page team (owner or staff) the booking belongs to.
+  if (!(await canActOnAgency(service, user.id, b.agency_id))) {
     return NextResponse.json({ error: "Not your booking" }, { status: 403 });
   }
 

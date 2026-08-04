@@ -3,7 +3,9 @@ import { createClient, createServiceClient } from "@/lib/supabase/server";
 import { notifyCascade } from "@/lib/notify";
 import { sendEmail } from "@/lib/email/send";
 import { runAfterResponse } from "@/lib/after-response";
+import { agreementTermsHash } from "@/lib/booking/agreement-hash";
 import type { AcceptMeta } from "@/lib/booking/agreement";
+import { canActOnAgency } from "@/lib/pages/access";
 
 // POST /api/bookings/[id]/agreement/accept
 // body: {} — the caller's session decides which side is accepting.
@@ -44,22 +46,26 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
   const b = bookingRow as unknown as Joined | null;
   if (!b) return NextResponse.json({ error: "Booking not found" }, { status: 404 });
 
-  // Party check: renter, or owner of the Rental Page the booking belongs to.
+  // Party check: renter, or the page team (owner or staff). When the page side
+  // accepts it stamps owner_accepted_at regardless of which staffer clicked —
+  // it's the page's acceptance.
   const isRenter = b.renter_id === user.id;
-  const isOwner  = b.agencies?.owner_id === user.id;
-  if (!isRenter && !isOwner) {
+  const isPageSide = !isRenter && await canActOnAgency(service, user.id, b.agency_id);
+  if (!isRenter && !isPageSide) {
     return NextResponse.json({ error: "Not your booking" }, { status: 403 });
   }
 
   const { data: agreementRow } = await service
     .from("booking_agreements")
-    .select("id, renter_accepted_at, owner_accepted_at")
+    .select("id, renter_accepted_at, owner_accepted_at, terms, terms_hash")
     .eq("booking_id", bookingId)
     .maybeSingle();
   const agreement = agreementRow as {
     id:                 string;
     renter_accepted_at: string | null;
     owner_accepted_at:  string | null;
+    terms:              unknown;
+    terms_hash:         string | null;
   } | null;
   if (!agreement) {
     return NextResponse.json(
@@ -110,6 +116,17 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
   }
   if (!updatedRows || updatedRows.length === 0) {
     return NextResponse.json({ error: "You've already accepted this agreement." }, { status: 409 });
+  }
+
+  // TRUST-007: freeze the tamper-evident fingerprint at first acceptance. Once
+  // set it's never recomputed, so it always reflects the exact terms signed.
+  if (!agreement.terms_hash && agreement.terms) {
+    try {
+      const hash = await agreementTermsHash(agreement.terms);
+      await service.from("booking_agreements").update({ terms_hash: hash }).eq("id", agreement.id).is("terms_hash", null);
+    } catch (err) {
+      console.error("[agreement accept] hash", bookingId, err);
+    }
   }
 
   // Did this acceptance complete the pair?

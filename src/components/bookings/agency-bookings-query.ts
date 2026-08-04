@@ -30,6 +30,12 @@ export interface AgencyBookingRow {
   renter_returned_at: string | null;
   completed_at: string | null;
   deposit_lkr:  number | null;
+  /** Deposit actually collected at pickup (migration 051) + renter's settlement sign-off (068). */
+  deposit_received_at: string | null;
+  settlement_ack_at:   string | null;
+  /** Chosen drive mode + foreign self-drive permit flag (migration 072). */
+  rental_mode:       "self_drive" | "with_driver" | null;
+  is_foreign_renter: boolean;
   /** Set once the renter has granted document-sharing consent (migration 051). */
   doc_share_consent_at: string | null;
   /** Set by the overdue cron ladder once a return is 24h+ overdue (migration 051/052); gates page-side renter reporting. */
@@ -64,7 +70,7 @@ export interface AgencyBookingRow {
 }
 
 export const AGENCY_BOOKINGS_SELECT =
-  "id, renter_id, status, start_date, end_date, start_time, end_time, start_at, total_days, subtotal_lkr, created_at, renter_returned_at, completed_at, deposit_lkr, doc_share_consent_at, overdue_critical_at, page_msgs_read_at, " +
+  "id, renter_id, status, start_date, end_date, start_time, end_time, start_at, total_days, subtotal_lkr, created_at, renter_returned_at, completed_at, deposit_lkr, deposit_received_at, settlement_ack_at, rental_mode, is_foreign_renter, doc_share_consent_at, overdue_critical_at, page_msgs_read_at, " +
   "vehicles(make, model, year, plate_number, deposit_lkr), " +
   "profiles(full_name, rating_avg, rating_count, reliability_pct, kyc_status, is_blacklisted, blacklist_reason_public), " +
   `booking_inspections(${INSPECTIONS_SELECT}), ` +

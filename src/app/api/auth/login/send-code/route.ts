@@ -111,7 +111,7 @@ export async function POST(req: NextRequest) {
       to:      identity.email!,
       subject: "Your DriveLink login code",
       text:    `Your DriveLink login code is ${code}. It expires in 10 minutes. If you didn't request this, you can ignore the email.`,
-      html:    `<p>Your DriveLink login code is:</p><p style="font-size:28px;letter-spacing:6px;font-weight:700;font-family:monospace;color:#f59e0b">${code}</p><p>It expires in 10 minutes. If you didn't request this, you can ignore the email.</p>`,
+      html:    `<p>Your DriveLink login code is:</p><p style="font-size:28px;letter-spacing:6px;font-weight:700;font-variant-numeric:tabular-nums;color:#f59e0b">${code}</p><p>It expires in 10 minutes. If you didn't request this, you can ignore the email.</p>`,
     });
     return NextResponse.json({
       ok:               true,

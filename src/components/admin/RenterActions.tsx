@@ -4,7 +4,6 @@ import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { Ban, Undo2, Trash2, X, Pencil, Star, Activity } from "lucide-react";
-import { createClient } from "@/lib/supabase/client";
 import { Button } from "@/components/ui/Button";
 import { EditRenterModal } from "@/components/admin/EditRenterModal";
 import { RatingAdjustModal } from "@/components/admin/RatingAdjustModal";
@@ -56,18 +55,22 @@ export function RenterActions({ userId, fullName, phone, email, role, isBlacklis
     setLoading("block");
     setError(null);
 
-    const supabase = createClient();
-    const { error: updateError } = await supabase
-      .from("profiles")
-      .update({
+    const res = await fetch(`/api/admin/users/${userId}`, {
+      method:  "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body:    JSON.stringify({
         is_blacklisted:          true,
         blacklist_reason:        adminReason.trim(),
         blacklist_reason_public: publicReason.trim() || null,
-      })
-      .eq("id", userId);
+      }),
+    });
 
     setLoading(null);
-    if (updateError) { setError(updateError.message); return; }
+    if (!res.ok) {
+      const payload = await res.json().catch(() => ({}));
+      setError(payload.error ?? "Block failed.");
+      return;
+    }
 
     setModalOpen(false);
     setAdminReason("");
@@ -79,18 +82,18 @@ export function RenterActions({ userId, fullName, phone, email, role, isBlacklis
     setLoading("unblock");
     setError(null);
 
-    const supabase = createClient();
-    const { error: updateError } = await supabase
-      .from("profiles")
-      .update({
-        is_blacklisted:          false,
-        blacklist_reason:        null,
-        blacklist_reason_public: null,
-      })
-      .eq("id", userId);
+    const res = await fetch(`/api/admin/users/${userId}`, {
+      method:  "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body:    JSON.stringify({ is_blacklisted: false }),
+    });
 
     setLoading(null);
-    if (updateError) { setError(updateError.message); return; }
+    if (!res.ok) {
+      const payload = await res.json().catch(() => ({}));
+      setError(payload.error ?? "Unblock failed.");
+      return;
+    }
     router.refresh();
   }
 

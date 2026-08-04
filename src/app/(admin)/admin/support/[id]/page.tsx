@@ -18,15 +18,18 @@ export default async function AdminSupportThreadPage({ params }: Props) {
 
   const { data: threadData } = await supabase
     .from("support_threads")
-    .select("id, agency_id, agencies(name, city, whatsapp_number, is_verified)")
+    .select("id, agency_id, renter_id, agencies(name, city, whatsapp_number, is_verified), profiles:renter_id(full_name, kyc_status)")
     .eq("id", id)
     .single();
   const thread = threadData as unknown as {
     id: string;
-    agency_id: string;
+    agency_id: string | null;
+    renter_id: string | null;
     agencies: { name: string; city: string; whatsapp_number: string; is_verified: boolean } | null;
+    profiles: { full_name: string; kyc_status: string } | null;
   } | null;
   if (!thread) notFound();
+  const isRenterThread = !!thread.renter_id;
 
   const { data: messagesData } = await supabase
     .from("support_messages")
@@ -49,18 +52,20 @@ export default async function AdminSupportThreadPage({ params }: Props) {
           <div>
             <div className="flex items-center gap-2 flex-wrap">
               <Building2 size={18} className="text-blue-600" />
-              <p className="font-semibold text-slate-900">{thread.agencies?.name ?? "Unknown"}</p>
-              {thread.agencies?.is_verified && <Badge variant="green">Verified</Badge>}
+              <p className="font-semibold text-slate-900">{isRenterThread ? (thread.profiles?.full_name ?? "Renter") : (thread.agencies?.name ?? "Unknown")}</p>
+              <Badge variant="slate">{isRenterThread ? "Renter" : "Agency"}</Badge>
+              {!isRenterThread && thread.agencies?.is_verified && <Badge variant="green">Verified</Badge>}
+              {isRenterThread && thread.profiles?.kyc_status === "verified" && <Badge variant="green">ID Verified</Badge>}
             </div>
             <p className="text-slate-600 text-sm mt-0.5">
-              {thread.agencies?.city}{thread.agencies?.whatsapp_number ? ` · ${thread.agencies.whatsapp_number}` : ""}
+              {isRenterThread ? "Renter support" : `${thread.agencies?.city ?? ""}${thread.agencies?.whatsapp_number ? ` · ${thread.agencies.whatsapp_number}` : ""}`}
             </p>
           </div>
           <Link
-            href={`/admin/agencies`}
+            href={isRenterThread ? "/admin/users" : "/admin/agencies"}
             className="text-xs text-slate-500 hover:text-blue-600"
           >
-            View agency →
+            {isRenterThread ? "View renters →" : "View agency →"}
           </Link>
         </div>
       </div>

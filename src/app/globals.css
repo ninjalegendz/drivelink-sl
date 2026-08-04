@@ -16,13 +16,18 @@
 
 /* ─── DriveLink theme — cool slate + blue, standard Tailwind scale ───
    The marketplace theme uses the STANDARD slate scale (slate-50 page,
-   white cards, slate-900 dark surfaces) with a blue-600 primary accent
-   and Inter / Space Grotesk fonts. Fonts are injected by next/font in
-   layout.tsx and surfaced here as the --font-sans / --font-display
-   tokens so `font-sans` and `font-display` utilities resolve to them. */
+   white cards, slate-900 dark surfaces) with a blue-600 primary accent.
+
+   TYPOGRAPHY: Poppins is the single brand typeface — no other font may
+   appear anywhere in the product. It's injected by next/font in layout.tsx
+   and surfaced here so EVERY font utility resolves to it: `font-sans`,
+   `font-display` and `font-mono` all point at Poppins, which means the
+   existing `font-mono` usages (booking refs, slugs, plate numbers) stay
+   on-brand instead of falling back to the system monospace stack. */
 @theme {
-  --font-sans: var(--font-inter), ui-sans-serif, system-ui, sans-serif;
-  --font-display: var(--font-space-grotesk), "Space Grotesk", ui-sans-serif, sans-serif;
+  --font-sans: var(--font-poppins), ui-sans-serif, system-ui, sans-serif;
+  --font-display: var(--font-poppins), ui-sans-serif, system-ui, sans-serif;
+  --font-mono: var(--font-poppins), ui-sans-serif, system-ui, sans-serif;
 
   /* ─── Bouncy easing tokens ────────────────────────────────
      Snappy is the everyday transition (most hovers, dropdowns).
@@ -34,6 +39,15 @@
 @layer base {
   /* Smooth-scroll for in-page anchor jumps. */
   html { scroll-behavior: smooth; }
+
+  /* `font-mono` now resolves to Poppins like everything else, so it no longer
+     brings monospaced columns with it. Booking refs, NICs, plate numbers and
+     invoice IDs still need their digits to line up, so keep that one benefit
+     via Poppins' tabular figures plus a touch of tracking. */
+  .font-mono {
+    font-variant-numeric: tabular-nums;
+    letter-spacing: 0.02em;
+  }
 
   /* Snappier default for every Tailwind transition utility.
      Components opt into the bouncy spring via the .spring-* classes. */
