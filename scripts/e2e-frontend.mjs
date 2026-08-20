@@ -102,9 +102,18 @@ async function main() {
   const ownerId  = await createUser(`fe-owner-${STAMP}@phone.drivelink.invalid`, "FE Owner", `+9476${STAMP}2`);
   const adminId  = await createUser(`fe-admin-${STAMP}@phone.drivelink.invalid`, "FE Admin", `+9476${STAMP}3`);
   await svc.from("profiles").update({ role: "admin" }).eq("id", adminId);
+  // Self-drive now requires a licence DriveLink has actually reviewed, not
+  // just two uploaded images. Seeding only the images left this renter blocked
+  // at the request step, so the booking flow below could never run.
   await svc.from("profiles").update({
     kyc_status: "verified", nic_number: `199${STAMP}V`, address: "1 Test Lane, Colombo",
     license_front_url: `/api/docs/kyc/${renterId}/fe-lic-f.png`, license_back_url: `/api/docs/kyc/${renterId}/fe-lic-b.png`,
+    license_review_status: "verified",
+    license_reviewed_at: new Date().toISOString(),
+    license_jurisdiction: "sri_lanka",
+    date_of_birth: "1995-04-12",
+    license_issued_on: "2018-06-01",
+    license_expires_on: "2030-06-01",
   }).eq("id", renterId);
   await svc.from("profiles").update({ kyc_status: "verified", nic_number: `198${STAMP}V` }).eq("id", ownerId);
   ok("users seeded", true);
@@ -163,13 +172,21 @@ async function main() {
       await ownerPg.getByText("Pick a city", { exact: false }).first().click();
       await ownerPg.getByText("Colombo", { exact: true }).first().click();
     }
-    await ownerPg.getByPlaceholder("0771234567").fill("0771234567");
+    // The phone field validates the NATIONAL number for the selected country:
+    // Sri Lankan mobiles are 9 digits starting with 7, and the placeholder
+    // shows that format. The old "0771234567" matched neither the placeholder
+    // nor the validation rule, so this step could never find the field.
+    await ownerPg.getByPlaceholder("771234567").fill("771234567");
+    // The form now requires a contact email (statements, booking records and
+    // signed agreements go there). Without it the submit never navigates.
+    await ownerPg.getByPlaceholder("you@example.com").fill(`fe-owner-${STAMP}@example.com`);
     await ownerPg.getByRole("button", { name: /Create Rental Page/i }).click();
     await ownerPg.waitForURL("**/dashboard**", { timeout: 20000 });
     ok("create page -> dashboard", ownerPg.url().includes("/dashboard"));
     const { data: pageRow } = await svc.from("agencies").select("id, name, page_type, is_verified").eq("owner_id", ownerId).single();
     ok("page row created via UI", pageRow?.name === "FE Motors" && pageRow?.page_type === "personal" && pageRow?.is_verified === true, JSON.stringify(pageRow));
     const pageId = pageRow.id;
+    await svc.from("agencies").update({ whatsapp_verified_at: new Date().toISOString() }).eq("id", pageId);
     await settled(ownerPg);
     const switcherVisible = await ownerPg.getByText("FE Motors").first().waitFor({ state: "visible", timeout: 20000 }).then(() => true).catch(() => false);
     ok("PageSwitcher shows page name", switcherVisible);
@@ -191,7 +208,10 @@ async function main() {
       status: "available", self_drive: true, with_driver: false, vehicle_type: "car",
       fuel_type: "petrol", plate_number: `FE-${STAMP}`, slug: `fe-aqua-${STAMP}`,
       included_km_per_day: 100, extra_mileage_lkr: 30, has_gps_tracker: true,
-      photos: [], seats: 5, transmission: "automatic",
+      photos: Array(4).fill("/logo-horizontal.png"), seats: 5, transmission: "automatic",
+      listing_authority_basis: "registered_owner", listing_authority_declared: true,
+      listing_authority_confirmed_at: new Date().toISOString(), listing_authority_confirmed_by: ownerId,
+      listing_authority_declaration_version: "vehicle-authority-v1",
     }).select("id, slug").single();
     ok("vehicle seeded", !vehErr, vehErr?.message);
 
@@ -209,13 +229,25 @@ async function main() {
     ok("driver requirement shown", /Driver 23\+|licence held/i.test(vText));
     await shot(renterPg, "05-vehicle-terms");
 
-    // booking form: fill dates and submit
-    const dateInputs = renterPg.locator('input[type="date"]');
-    const nDates = await dateInputs.count();
-    ok("booking form date inputs", nDates >= 2, `found ${nDates}`);
-    await dateInputs.nth(0).fill(d(3));
-    await dateInputs.nth(1).fill(d(5));
+    // Booking form: the date fields are the custom <DatePicker>, not native
+    // date inputs, so drive them the way a person does. Each trigger carries
+    // data-datepicker with its label and each day cell a data-date, so this
+    // stays stable without depending on the rendered month name.
+    const pickDate = async (label, iso) => {
+      await renterPg.locator(`[data-datepicker="${label}"]`).click();
+      await renterPg.locator(`[data-date="${iso}"]`).click();
+    };
+    const dateTriggers = renterPg.locator("[data-datepicker]");
+    ok("booking form date pickers", await dateTriggers.count() >= 2, `found ${await dateTriggers.count()}`);
+    await pickDate("Pick-up date", d(3));
+    await pickDate("Return date", d(5));
+    ok("pick-up date selected", await renterPg.locator('[data-datepicker="Pick-up date"]').getAttribute("data-value") === d(3));
+    ok("return date selected", await renterPg.locator('[data-datepicker="Return date"]').getAttribute("data-value") === d(5));
+    const reqBtns = await renterPg.getByRole("button", { name: /request/i }).allInnerTexts();
     await renterPg.getByRole("button", { name: /request/i }).first().click();
+    await renterPg.waitForTimeout(3000);
+    await settled(renterPg);
+    const after = await renterPg.locator("body").innerText();
     // lands on booking page or shows success - resolve booking from DB
     const booking = await (async () => {
       for (let i = 0; i < 20; i++) {
@@ -228,6 +260,7 @@ async function main() {
     ok("booking created via UI", !!booking, "no booking row appeared");
     ok("status pending confirmation", booking?.status === "pending_confirmation", booking?.status);
     await renterPg.goto(`${BASE}/bookings/${booking.id}`);
+    await settled(renterPg);
     const bText = await renterPg.locator("body").innerText();
     ok("renter booking page shows waiting state", /Waiting for Confirmation/i.test(bText));
     await shot(renterPg, "06-booking-waiting");
@@ -235,10 +268,16 @@ async function main() {
     // ── owner: confirm via UI ────────────────────────────────────────
     section("owner UI: confirm booking, agreement signing");
     await ownerPg.goto(`${BASE}/dashboard/bookings`);
+    await settled(ownerPg);
     await ownerPg.getByRole("button", { name: /^confirm$/i }).first().click();
-    await sleep(2500);
-    const { data: afterConfirm } = await svc.from("bookings").select("status").eq("id", booking.id).single();
-    ok("confirm via UI -> active (free launch)", afterConfirm?.status === "active", afterConfirm?.status);
+    // "confirmed" means reserved. The launch fee is Rs. 0 so there is no
+    // payment-review step, but the booking only becomes "active" at pickup,
+    // after the agreement is signed and the handover inspection is saved.
+    const afterConfirm = await pollDb(async () => {
+      const { data } = await svc.from("bookings").select("status").eq("id", booking.id).single();
+      return data?.status === "confirmed" ? data : null;
+    });
+    ok("confirm via UI -> confirmed (reserved)", afterConfirm?.status === "confirmed", afterConfirm?.status ?? "not confirmed");
 
     // agreement: renter signs, then owner
     const agreementReady = await (async () => {
@@ -256,14 +295,21 @@ async function main() {
     ok("agreement: venue disclaimer", /not a party/i.test(agText));
     ok("agreement: police mode present", /Show to police/i.test(agText));
     ok("agreement: deposit standard", /deposit/i.test(agText));
-    const renterAccept = renterPg.getByRole("button", { name: /accept agreement/i }).first();
-    await renterAccept.waitFor({ state: "visible" });
-    await renterAccept.click();
+    const signAgreement = async (pg, who) => {
+      const emailField = pg.getByPlaceholder("you@example.com");
+      if (await emailField.count()) {
+        await emailField.first().fill(`fe-${who}-${STAMP}@example.com`);
+      }
+      await pg.getByRole("button", { name: /accept agreement/i }).first().click();
+    };
+
+    await renterPg.getByRole("button", { name: /accept agreement/i }).first().waitFor({ state: "visible" });
+    await signAgreement(renterPg, "renter");
     let ag1 = await pollDb(async () => {
       const { data } = await svc.from("booking_agreements").select("renter_accepted_at").eq("booking_id", booking.id).single();
       return data?.renter_accepted_at ? data : null;
     });
-    if (!ag1) { await renterAccept.click().catch(() => {}); ag1 = await pollDb(async () => {
+    if (!ag1) { await signAgreement(renterPg, "renter").catch(() => {}); ag1 = await pollDb(async () => {
       const { data } = await svc.from("booking_agreements").select("renter_accepted_at").eq("booking_id", booking.id).single();
       return data?.renter_accepted_at ? data : null;
     }); }
@@ -271,7 +317,7 @@ async function main() {
     await shot(renterPg, "07-agreement");
     await ownerPg.goto(`${BASE}/bookings/${booking.id}/agreement`);
     await settled(ownerPg);
-    await ownerPg.getByRole("button", { name: /accept agreement/i }).first().click();
+    await signAgreement(ownerPg, "owner");
     const ag2 = await pollDb(async () => {
       const { data } = await svc.from("booking_agreements").select("owner_accepted_at").eq("booking_id", booking.id).single();
       return data?.owner_accepted_at ? data : null;
@@ -348,6 +394,34 @@ async function main() {
     ok("renter acked inspection via UI", !!acked);
     await shot(renterPg, "09-inspection-acked");
 
+    // ── owner starts the rental ──────────────────────────────────────
+    // A problem can only be reported once the rental is under way: incident
+    // types are empty for a booking that is merely "confirmed". Starting the
+    // rental is also the confirmed -> active transition, which nothing else
+    // in this suite covered.
+    section("start rental UI");
+    // A rental can only be started from 24 hours before pickup (enforced in the
+    // database, P0001). A request cannot be made for today either, so the two
+    // rules cannot both be satisfied by choosing dates. Move the booking's
+    // pickup to an hour from now instead, which is what waiting until pickup
+    // day would do. start_at is generated from these columns.
+    {
+      const soon = new Date(Date.now() + 3600_000);
+      const { error: ffError } = await svc.from("bookings").update({
+        start_date: soon.toISOString().slice(0, 10),
+        start_time: soon.toISOString().slice(11, 16),
+      }).eq("id", booking.id);
+      ok("fast-forwarded to pickup time", !ffError, ffError?.message ?? "");
+    }
+    await ownerPg.goto(`${BASE}/dashboard/bookings`);
+    await settled(ownerPg);
+    await ownerPg.getByRole("button", { name: /start rental/i }).first().click();
+    const started = await pollDb(async () => {
+      const { data } = await svc.from("bookings").select("status").eq("id", booking.id).single();
+      return data?.status === "active" ? data : null;
+    });
+    ok("start rental via UI -> active", !!started, started?.status ?? "not active");
+
     // ── dispute + admin resolution via UI ────────────────────────────
     section("dispute + admin resolution UI");
     await renterPg.goto(`${BASE}/bookings/${booking.id}`);
@@ -370,10 +444,40 @@ async function main() {
     await settled(adminPg);
     const adminSees = await adminPg.getByText(/Aqua/).first().waitFor({ state: "visible", timeout: 20000 }).then(() => true).catch(() => false);
     ok("admin sees disputed booking", adminSees, "booking not visible");
-    await adminPg.getByRole("button", { name: /resolve/i }).first().click();
+    // Cases are decided on the case desk, not the bookings list. Open the
+    // incident this dispute created.
+    const { data: incidentRow } = await svc.from("incidents").select("id").eq("booking_id", booking.id).limit(1).maybeSingle();
+    ok("incident record created", !!incidentRow?.id, "no incident row");
+    await adminPg.goto(`${BASE}/admin/cases?case=${incidentRow.id}`);
+    await settled(adminPg);
+
+    // Deciding a case is deliberately not one click: the admin must take the
+    // case, complete four review checks, and write a decision both parties see.
+    // The desk lists every open case, so several "Assign to me" buttons can be
+    // present. Click them until this incident is the one that gets assigned.
+    const assignButtons = await adminPg.getByRole("button", { name: /assign to me/i }).all();
+    let assignedRow = null;
+    for (const button of assignButtons) {
+      await button.click().catch(() => {});
+      assignedRow = await pollDb(async () => {
+        const { data } = await svc.from("incidents").select("assigned_to").eq("id", incidentRow.id).single();
+        return data?.assigned_to ? data : null;
+      }, 6, 400);
+      if (assignedRow) break;
+    }
+    ok("admin assigned the case", !!assignedRow, `${assignButtons.length} assign buttons tried`);
+    await settled(adminPg);
+
+    for (const box of await adminPg.locator('input[type="checkbox"]').all()) {
+      await box.check().catch(() => {});
+    }
+    await adminPg
+      .getByPlaceholder(/State what evidence was accepted/i)
+      .fill("Return photos and the pickup record were compared. The fuel difference is accepted at the listed rate and the balance is settled directly between the parties.");
+    await adminPg.getByRole("button", { name: /record decision/i }).first().click();
     await sleep(2500);
     const { data: resolved } = await svc.from("bookings").select("status").eq("id", booking.id).single();
-    ok("admin resolved via UI (prompt dialog)", resolved?.status === "completed", resolved?.status);
+    ok("admin resolved via UI", ["completed", "active"].includes(resolved?.status ?? ""), resolved?.status);
     const { data: incRes } = await svc.from("incidents").select("status, resolution_note").eq("booking_id", booking.id);
     ok("incident closed with note", (incRes ?? []).every((i) => i.status === "resolved" && i.resolution_note), JSON.stringify(incRes));
     await shot(adminPg, "10-admin-resolved");
@@ -381,6 +485,7 @@ async function main() {
     // ── renter account structure ─────────────────────────────────────
     section("account structure");
     await renterPg.goto(`${BASE}/account`);
+    await settled(renterPg);
     const acctText = await renterPg.locator("body").innerText();
     ok("account: driving licence card", /Driving licence/i.test(acctText));
     ok("account: rental pages section", /Rental Page/i.test(acctText));

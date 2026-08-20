@@ -67,5 +67,16 @@ if (!whoOut.includes(EXPECTED_ACCOUNT)) {
 }
 console.log(`[deploy] account verified: ${EXPECTED_ACCOUNT}`);
 
-const res = run("npx wrangler deploy", { env, stdio: "inherit" });
-process.exit(res.status ?? 1);
+const app = run("npx wrangler deploy", { env, stdio: "inherit" });
+if ((app.status ?? 1) !== 0) process.exit(app.status ?? 1);
+
+// OpenNext exposes an HTTP fetch handler, so scheduled triggers live in a tiny
+// companion Worker. Ship it with every release; CRON_SECRET remains a
+// Cloudflare secret and is not replaced here.
+const cron = run("npx wrangler deploy --config cron-worker/wrangler.jsonc", { env, stdio: "inherit" });
+if ((cron.status ?? 1) !== 0) process.exit(cron.status ?? 1);
+
+// Operational alerts are intentionally a separate Worker. Keep it deployed
+// with every release so it monitors the current production topology.
+const monitor = run("node monitor-worker/deploy.mjs", { env, stdio: "inherit" });
+process.exit(monitor.status ?? 1);

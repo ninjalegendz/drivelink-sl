@@ -312,6 +312,7 @@ async function seed() {
       whatsapp_number: `+9477${phoneSeq - 1}`,
       description: o.desc, address: o.address, business_hours: o.hours,
       business_reg_no: o.reg, is_verified: true, logo_url: logoUrl,
+      whatsapp_verified_at: new Date().toISOString(),
       // seed phones are fake, never fire SMS/WhatsApp at them
       sms_notifications_enabled: false, whatsapp_notifications_enabled: false,
     }).select("id").single();
@@ -325,7 +326,7 @@ async function seed() {
   for (const [i, v] of VEHICLES.entries()) {
     const pg = pagesByKey[v.owner];
     const shots = [];
-    for (const shotLabel of ["Exterior", "Side profile", "Interior"]) {
+    for (const shotLabel of ["Front", "Rear", "Side profile", "Interior"]) {
       const png = await renderPng(vehicleShotHtml({
         title: `${v.make} ${v.model}`, sub: `${v.year} · ${v.color ?? ""}`,
         emoji: v.emoji, hue: v.hue, angle: 120 + shots.length * 40, shotLabel,
@@ -349,7 +350,7 @@ async function seed() {
       extra_mileage_lkr: v.extraKm, refuel_fee_lkr: 1000,
       cleaning_fee_lkr: v.type === "van" ? 7500 : 5000,
       min_rental_days: 1, smoking_allowed: false, pets_allowed: false,
-      ride_hail_allowed: false, second_driver_allowed: !withDriver,
+      ride_hail_allowed: false, second_driver_allowed: false,
       min_renter_age: v.minAge ?? 23, min_license_years: v.minLic ?? 2,
       restricted_use: v.restricted ?? [],
       has_gps_tracker: !!v.gps, has_etc_tag: !!v.etc,
@@ -357,6 +358,9 @@ async function seed() {
       driver_bata_lkr: v.bata ?? null,
       verified_vehicle: !!v.verified, is_featured: !!v.featured,
       badges: v.verified ? ["Documents verified"] : [],
+      listing_authority_basis: "registered_owner", listing_authority_declared: true,
+      listing_authority_confirmed_at: new Date().toISOString(), listing_authority_confirmed_by: pg.ownerId,
+      listing_authority_declaration_version: "vehicle-authority-v1",
       rules: withDriver ? ["No smoking", "Driver rest stop every 3 hours on long trips"] : ["No smoking", "Return with the same fuel level", "Only named drivers"],
       luggage: v.type === "van" ? 8 : v.type === "bike" || v.type === "tuktuk" ? 1 : 2,
     }).select("id").single();

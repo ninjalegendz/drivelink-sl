@@ -7,7 +7,7 @@
 // signing, messaging (+closed after completion), consent + private-doc
 // proxy (+revoke), pickup/return inspections + deposit trail, disputes
 // (renter-raised + admin resolution), late-return ladder via the cron
-// (stage 1 + stage 2 freeze + auto-unfreeze), page-cancel strikes,
+// (grace notice + 24h review prompt + evidence-based admin freeze), page-cancel strikes,
 // blacklist reporting, page switcher authorization, and key SSR pages.
 //
 // Run:  node scripts/e2e-walkthrough.mjs   (dev server must be up; start it
@@ -192,6 +192,8 @@ async function main() {
     daily_rate_lkr: 9000, deposit_lkr: 20000, city: "Colombo", status: "pending_review",
     self_drive: true, with_driver: false, vehicle_type: "car", fuel_type: "petrol",
     plate_number: `E2E-${STAMP}`, included_km_per_day: 100, extra_mileage_lkr: 30,
+    photos: Array(4).fill("/logo-horizontal.png"),
+    listing_authority_basis: "registered_owner", listing_authority_declared: true,
   };
   let v1, v2;
   {
@@ -216,7 +218,7 @@ async function main() {
     }).eq("id", renterId);
     await svc.from("profiles").update({ booking_frozen: true }).eq("id", renterId);
     const frozen = await api(renter, "POST", "/api/bookings", { vehicle_id: v1, ...dates(2, 2) });
-    ok("frozen account blocked (403)", frozen.status === 403 && /frozen/i.test(frozen.json?.error ?? ""), `got ${frozen.status}`);
+    ok("paused account blocked (403)", frozen.status === 403 && /(paused|reviewed|frozen)/i.test(frozen.json?.error ?? ""), `got ${frozen.status}`);
     await svc.from("profiles").update({ booking_frozen: false }).eq("id", renterId);
   }
 
@@ -355,13 +357,12 @@ async function main() {
     const shift = await svc.from("bookings").update({ start_date: d(-4), end_date: d(-2), end_time: "08:00" }).eq("id", b3).select("id");
     if (shift.error) console.log(`  (stage-2 date update error: ${shift.error.message})`);
     await fetch(`${BASE}/api/cron/expire-bookings`, { headers: { Authorization: `Bearer ${env.CRON_SECRET}` } });
-    const s2 = await bookingRow(b3, "overdue_critical_at, status");
-    ok("stage 2: critical stamped", !!s2?.overdue_critical_at);
+    const s2 = await bookingRow(b3, "overdue_review_prompted_at, overdue_critical_at, status");
+    ok("stage 2: admin review prompted", !!s2?.overdue_review_prompted_at);
+    ok("stage 2: cron does not declare a critical case", !s2?.overdue_critical_at);
     ok("still not auto-completed", s2?.status === "active", s2?.status);
     const frozen = (await svc.from("profiles").select("booking_frozen").eq("id", renterId).single()).data;
-    ok("renter frozen platform-wide", frozen?.booking_frozen === true);
-    const blockedBooking = await api(renter, "POST", "/api/bookings", { vehicle_id: v2, ...dates(10, 1) });
-    ok("frozen renter can't book (403)", blockedBooking.status === 403, `got ${blockedBooking.status}`);
+    ok("cron leaves the renter unpaused before admin review", frozen?.booking_frozen === false);
     const complete = await api(owner, "POST", "/api/bookings/transition", { bookingId: b3, to: "completed" });
     ok("owner completes overdue booking", complete.status === 200, `got ${complete.status}`);
     const unfrozen = await pollFor(async () => {
