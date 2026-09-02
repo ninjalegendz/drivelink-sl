@@ -1,38 +1,20 @@
 import { createServiceClient } from "@/lib/supabase/server";
-import { PageTeamManager, type TeamMember } from "./PageTeamManager";
+import { PageTeamManager, type PendingTeamInvitation, type TeamMember } from "./PageTeamManager";
+import { STAFF_ROLE_DETAILS } from "@/lib/pages/access";
 
-// PAGE-005: owner-only "Team" section on page settings. Lists staff who can
-// operate this page and lets the owner add/remove them. Reads through the
-// service client because member names/emails live on profiles, which browser
-// sessions can no longer SELECT after the security lockdown.
 export async function PageTeamSection({ agencyId }: { agencyId: string }) {
   const service = await createServiceClient();
-  const { data } = await service
-    .from("agency_members")
-    .select("user_id, invited_email, created_at, profiles:user_id(full_name, email)")
-    .eq("agency_id", agencyId)
-    .order("created_at", { ascending: true });
-
-  const members: TeamMember[] = (data ?? []).map((r) => {
-    const row = r as unknown as {
-      user_id: string;
-      invited_email: string | null;
-      profiles: { full_name: string | null; email: string | null } | null;
-    };
-    return {
-      userId: row.user_id,
-      name:   row.profiles?.full_name ?? null,
-      email:  row.profiles?.email ?? row.invited_email ?? null,
-    };
+  const [membersResult, invitationsResult] = await Promise.all([
+    service.from("agency_members").select("user_id, role, invited_email, created_at, can_view_renter_documents, document_permission_granted_at, profiles:user_id(full_name, email)").eq("agency_id", agencyId).order("created_at", { ascending: true }),
+    service.from("agency_member_invitations").select("id, invited_email, expires_at, profiles:invitee_id(full_name, email)").eq("agency_id", agencyId).eq("status", "pending").gt("expires_at", new Date().toISOString()).order("created_at", { ascending: true }),
+  ]);
+  const members: TeamMember[] = (membersResult.data ?? []).map((value) => {
+    const row = value as unknown as { user_id: string; invited_email: string | null; profiles: { full_name: string | null; email: string | null } | null; role: string; can_view_renter_documents: boolean; document_permission_granted_at: string | null };
+    return { userId: row.user_id, name: row.profiles?.full_name ?? null, email: row.profiles?.email ?? row.invited_email ?? null, role: row.role, canViewRenterDocuments: row.can_view_renter_documents, documentPermissionGrantedAt: row.document_permission_granted_at };
   });
-
-  return (
-    <div className="mt-4 bg-white border border-slate-200 rounded-2xl shadow-sm p-5">
-      <p className="text-slate-900 font-semibold text-sm">Team</p>
-      <p className="text-slate-500 text-xs mt-0.5 mb-3">
-        Add staff who help run this page. They can handle bookings, messages, vehicles and inspections, but can&apos;t add or remove staff, delete the page, or change its verification.
-      </p>
-      <PageTeamManager agencyId={agencyId} initial={members} />
-    </div>
-  );
+  const pending: PendingTeamInvitation[] = (invitationsResult.data ?? []).map((value) => {
+    const row = value as unknown as { id: string; invited_email: string; expires_at: string; profiles: { full_name: string | null; email: string | null } | null };
+    return { id: row.id, name: row.profiles?.full_name ?? null, email: row.profiles?.email ?? row.invited_email, expiresAt: row.expires_at };
+  });
+  return <section className="mt-6 border-t border-slate-200 pt-6"><p className="text-sm font-semibold text-slate-900">Team</p><p className="mb-3 mt-0.5 text-xs text-slate-500">Choose a role that matches the work. Renter identity documents stay blocked unless you grant that separate permission to an eligible active staff member.</p><div className="mb-4 grid gap-2 border-y border-slate-100 py-3 text-xs text-slate-600 sm:grid-cols-2">{Object.entries(STAFF_ROLE_DETAILS).map(([role, detail]) => <p key={role}><span className="font-medium text-slate-800">{detail.label}:</span> {detail.description}</p>)}</div><PageTeamManager agencyId={agencyId} initial={members} pending={pending} /></section>;
 }

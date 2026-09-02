@@ -1,8 +1,8 @@
 import { redirect } from "next/navigation";
-import Link from "next/link";
-import { BarChart3, TrendingUp, Wallet, Receipt, AlertTriangle } from "lucide-react";
+import { BarChart3, TrendingUp, Wallet, Receipt } from "lucide-react";
 import { createClient } from "@/lib/supabase/server";
 import { getActivePage } from "@/lib/pages/active-page";
+import { getPageAccess } from "@/lib/pages/access";
 import { Sparkline } from "@/components/analytics/Sparkline";
 import { formatLKR } from "@/lib/vehicles/format";
 import {
@@ -12,6 +12,10 @@ import {
   conversionFunnel,
   rangeForKey,
 } from "@/lib/analytics/queries";
+import { RangeTabs } from "@/components/analytics/RangeTabs";
+
+// Always re-query: these numbers are the reason someone opened the page.
+export const dynamic = "force-dynamic";
 
 interface Props {
   searchParams: Promise<{ range?: string }>;
@@ -36,6 +40,8 @@ export default async function AgencyAnalyticsPage({ searchParams }: Props) {
   const { page } = await getActivePage(supabase, user.id);
   if (!page) redirect("/account/pages/new");
   const agency = page;
+  const pageAccess = await getPageAccess(supabase, user.id, agency.id);
+  if (!pageAccess.capabilities.includes("view_analytics")) redirect("/dashboard");
 
   const [byStatus, trend, money, funnel] = await Promise.all([
     bookingCountsByStatus(supabase, range, agency.id),
@@ -46,11 +52,11 @@ export default async function AgencyAnalyticsPage({ searchParams }: Props) {
 
   const trendValues = trend.map((d) => d.count);
   const totalRequests = funnel.requested;
-  const confRate = totalRequests > 0 ? Math.round((funnel.confirmed / totalRequests) * 100) : 0;
+  const confRate = totalRequests > 0 ? Math.round((funnel.reserved / totalRequests) * 100) : 0;
   const cancelRate = totalRequests > 0
     ? Math.round((((byStatus.cancelled ?? 0) + (byStatus.declined ?? 0)) / totalRequests) * 100)
     : 0;
-  const compRate = funnel.paid > 0 ? Math.round((funnel.completed / funnel.paid) * 100) : 0;
+  const compRate = funnel.started > 0 ? Math.round((funnel.completed / funnel.started) * 100) : 0;
 
   return (
     <div>
@@ -60,25 +66,13 @@ export default async function AgencyAnalyticsPage({ searchParams }: Props) {
       </div>
       <p className="text-slate-600 text-sm mb-5">{agency.name} · {agency.city}</p>
 
-      {/* Range tabs */}
-      <div className="flex gap-1 mb-6 bg-white rounded-xl p-1 w-fit flex-wrap">
-        {RANGE_TABS.map((t) => (
-          <Link
-            key={t.key}
-            href={`/dashboard/analytics?range=${t.key}`}
-            className={`px-3 py-1.5 rounded-lg text-sm transition-colors ${
-              rangeKey === t.key ? "bg-slate-200 text-slate-900 font-medium" : "text-slate-600 hover:text-slate-900"
-            }`}
-          >
-            {t.label}
-          </Link>
-        ))}
-      </div>
+      {/* Range tabs: switching one re-queries immediately. */}
+      <RangeTabs tabs={RANGE_TABS} active={rangeKey} basePath="/dashboard/analytics" />
 
       {/* Top-line cards */}
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-6">
         <Stat label="Booking requests"   value={totalRequests} />
-        <Stat label="Conversion to booking" value={`${confRate}%`} subtitle={`${funnel.confirmed} confirmed`} />
+        <Stat label="Conversion to booking" value={`${confRate}%`} subtitle={`${funnel.reserved} confirmed`} />
         <Stat label="Cancellation rate"  value={`${cancelRate}%`} tone={cancelRate > 30 ? "red" : "slate"} subtitle={`${(byStatus.cancelled ?? 0) + (byStatus.declined ?? 0)} cancelled/declined`} />
         <Stat label="Completion rate"    value={`${compRate}%`} subtitle={`${funnel.completed} completed`} />
       </div>
@@ -105,38 +99,23 @@ export default async function AgencyAnalyticsPage({ searchParams }: Props) {
           </div>
         </Card>
 
-        <Card title="Platform fees" Icon={Receipt}>
-          <p className="text-3xl font-bold text-slate-900">{formatLKR(money.platform_fees)}</p>
+        <Card title="DriveLink charges to your page" Icon={Receipt}>
+          <p className="text-3xl font-bold text-slate-900">Rs. 0</p>
           <p className="text-slate-500 text-xs mt-1">
-            Rs. 200 × {money.completed} completed = what you owe DriveLink for this range
+            No listing fee, monthly subscription, or commission is charged to your Rental Page.
           </p>
-          <div className="mt-4 pt-4 border-t border-slate-100 space-y-1.5">
-            <div className="flex justify-between text-xs">
-              <span className="text-slate-600">Already paid</span>
-              <span className="text-emerald-400">{formatLKR(money.collected_fees)}</span>
-            </div>
-            <div className="flex justify-between text-xs">
-              <span className="text-slate-600">Outstanding</span>
-              <span className={money.outstanding_fees > 0 ? "text-blue-600" : "text-slate-500"}>
-                {formatLKR(money.outstanding_fees)}
-              </span>
-            </div>
+          <div className="mt-4 pt-4 border-t border-slate-100 text-xs text-slate-600">
+            Renters pay the agreed rental and deposit directly to you. DriveLink does not deduct from that amount.
           </div>
-          {money.outstanding_fees > 0 && (
-            <div className="mt-3 flex items-start gap-2 p-2 bg-blue-500/5 border border-blue-500/20 rounded-lg text-[11px] text-blue-500">
-              <AlertTriangle size={12} className="mt-0.5 shrink-0" />
-              <span>You have {formatLKR(money.outstanding_fees)} due. We invoice monthly, pay via bank transfer to the DriveLink account.</span>
-            </div>
-          )}
         </Card>
       </div>
 
       {/* Status breakdown */}
       <Card title="Bookings by status" subtitle="Within selected range">
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-          {(["pending_confirmation", "confirmed", "payment_pending", "active", "completed", "declined", "cancelled", "disputed"] as const).map((s) => (
+          {(["pending_confirmation", "confirmed", "active", "completed", "declined", "cancelled", "disputed"] as const).map((s) => (
             <div key={s} className="bg-slate-100/60 border border-slate-200/60 rounded-lg px-3 py-2">
-              <p className="text-slate-500 text-[10px] uppercase tracking-wider">{s.replace(/_/g, " ")}</p>
+              <p className="text-slate-500 text-xs uppercase tracking-wider">{s.replace(/_/g, " ")}</p>
               <p className="text-slate-900 text-lg font-semibold mt-0.5">{byStatus[s] ?? 0}</p>
             </div>
           ))}
@@ -147,7 +126,7 @@ export default async function AgencyAnalyticsPage({ searchParams }: Props) {
 }
 
 function Stat({ label, value, subtitle, tone }: { label: string; value: string | number; subtitle?: string; tone?: "red" | "slate" }) {
-  const colourClass = tone === "red" ? "text-red-400" : "text-slate-900";
+  const colourClass = tone === "red" ? "text-rose-600" : "text-slate-900";
   return (
     <div className="bg-white border border-slate-200 rounded-2xl shadow-sm p-4">
       <p className="text-slate-500 text-xs uppercase tracking-wider mb-1">{label}</p>

@@ -85,7 +85,7 @@ export function AvatarUploader({ userId, initialAvatarUrl, fullName }: Props) {
           </div>
         )}
         {loading && (
-          <div className="absolute inset-0 bg-stone-900/70 flex items-center justify-center">
+          <div className="absolute inset-0 bg-slate-900/70 flex items-center justify-center">
             <Loader2 size={20} className="text-blue-500 animate-spin" />
           </div>
         )}
@@ -111,7 +111,7 @@ export function AvatarUploader({ userId, initialAvatarUrl, fullName }: Props) {
           <Camera size={14} /> {avatarUrl ? "Change photo" : "Upload photo"}
         </label>
         <p className="text-slate-500 text-xs mt-1.5">JPG or PNG, up to 5 MB.</p>
-        {error && <p className="text-red-400 text-xs mt-1">{error}</p>}
+        {error && <p className="text-rose-600 text-xs mt-1">{error}</p>}
       </div>
     </div>
   );

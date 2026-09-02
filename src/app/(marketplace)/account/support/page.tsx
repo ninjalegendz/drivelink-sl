@@ -4,6 +4,7 @@ import { Headphones, ArrowLeft } from "lucide-react";
 import { createClient } from "@/lib/supabase/server";
 import { getOrCreateThreadForRenter } from "@/lib/support/thread";
 import { SupportChat, type SupportMessage } from "@/components/support/SupportChat";
+import { pageShellClass } from "@/components/ui/PageShell";
 
 export const metadata = { title: "Support" };
 
@@ -15,7 +16,7 @@ export default async function RenterSupportPage() {
 
   const thread = await getOrCreateThreadForRenter(supabase, user.id);
   if (!thread) {
-    return <div className="max-w-2xl mx-auto px-4 py-8 text-slate-500 text-sm">Couldn&apos;t open a support thread. Try again later.</div>;
+    return <div className={pageShellClass("narrow", "text-sm text-slate-600")}>Couldn&apos;t open a support thread. Try again later.</div>;
   }
 
   const { data: messagesData } = await supabase
@@ -26,7 +27,7 @@ export default async function RenterSupportPage() {
   const messages = (messagesData ?? []) as unknown as SupportMessage[];
 
   return (
-    <div className="max-w-2xl mx-auto px-4 py-8">
+    <div className={pageShellClass("narrow")}>
       <Link href="/account" className="inline-flex items-center gap-1.5 text-slate-600 hover:text-slate-900 text-sm mb-4">
         <ArrowLeft size={14} /> Account
       </Link>

@@ -4,6 +4,9 @@ import { getActivePage } from "@/lib/pages/active-page";
 import { AgencyBookingsList } from "@/components/bookings/AgencyBookingsList";
 import { AGENCY_BOOKINGS_SELECT, type AgencyBookingRow } from "@/components/bookings/agency-bookings-query";
 import type { BookingStatus } from "@/types/database";
+import { getAgencyDocumentAccess, getPageAccess } from "@/lib/pages/access";
+import { PageHeader } from "@/components/ui/PageHeader";
+import { ChipLink } from "@/components/ui/Chip";
 
 const FILTER_TABS = [
   { label: "All",       value: "" },
@@ -27,6 +30,8 @@ export default async function AgencyBookingsPage({ searchParams }: Props) {
   const { page } = await getActivePage(supabase, user.id);
   if (!page) redirect("/account/pages/new");
   const agency = page;
+  const pageAccess = await getPageAccess(supabase, user.id, agency.id);
+  if (!pageAccess.capabilities.includes("view_bookings")) redirect("/dashboard");
 
   // Service client: the renter trust embed (is_blacklisted /
   // blacklist_reason_public) reads protected profile columns that browser
@@ -44,30 +49,37 @@ export default async function AgencyBookingsPage({ searchParams }: Props) {
   const { data } = await query.limit(50);
   const bookings = (data ?? []) as unknown as AgencyBookingRow[];
 
-  // Which of these the agency has already reviewed the renter for.
-  const { data: myReviews } = await supabase
-    .from("reviews")
-    .select("booking_id")
-    .eq("reviewer_id", user.id);
-  const reviewedBookingIds = (myReviews ?? []).map((r) => (r as { booking_id: string }).booking_id);
+  const documentAccess = await getAgencyDocumentAccess(service, user.id, agency.id);
+
+  // A count on each filter is what turns a row of tabs into a work list: the
+  // owner can see where the waiting work is without opening each one.
+  const { data: statusRows } = await service
+    .from("bookings")
+    .select("status")
+    .eq("agency_id", agency.id);
+  const counts = new Map<string, number>();
+  for (const row of (statusRows ?? []) as { status: string }[]) {
+    counts.set(row.status, (counts.get(row.status) ?? 0) + 1);
+  }
+  const totalBookings = (statusRows ?? []).length;
 
   return (
     <div>
-      <h1 className="text-2xl font-bold text-slate-900 mb-6">Bookings</h1>
+      <PageHeader
+        title="Bookings"
+        description="Every request and rental for this Rental Page, newest first."
+      />
 
-      <div className="flex flex-wrap gap-1 mb-6 bg-white rounded-xl p-1 w-fit max-w-full">
+      <div className="my-6 flex flex-wrap gap-2">
         {FILTER_TABS.map(({ label, value }) => (
-          <a
+          <ChipLink
             key={value}
             href={value ? `/dashboard/bookings?status=${value}` : "/dashboard/bookings"}
-            className={`px-3 py-1.5 rounded-lg text-sm transition-colors ${
-              filterStatus === value || (!filterStatus && !value)
-                ? "bg-slate-200 text-slate-900 font-medium"
-                : "text-slate-600 hover:text-slate-900"
-            }`}
+            active={filterStatus === value || (!filterStatus && !value)}
+            count={value ? counts.get(value) ?? 0 : totalBookings}
           >
             {label}
-          </a>
+          </ChipLink>
         ))}
       </div>
 
@@ -76,7 +88,13 @@ export default async function AgencyBookingsPage({ searchParams }: Props) {
         agencyId={agency.id}
         currentUserId={user.id}
         filterStatus={(filterStatus ?? "") as BookingStatus | ""}
-        reviewedBookingIds={reviewedBookingIds}
+        canExportSummary={documentAccess.allowed}
+        isPageOwner={documentAccess.isOwner}
+        canManageBooking={pageAccess.capabilities.includes("manage_booking")}
+        canManageHandover={pageAccess.capabilities.includes("manage_handover")}
+        canCommunicate={pageAccess.capabilities.includes("communicate")}
+        canManageCases={pageAccess.capabilities.includes("manage_cases")}
+        canManageFinancial={pageAccess.capabilities.includes("manage_financial")}
       />
     </div>
   );

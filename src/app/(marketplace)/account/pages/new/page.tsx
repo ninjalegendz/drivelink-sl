@@ -4,6 +4,7 @@ import { ArrowLeft, ShieldCheck } from "lucide-react";
 import { createClient } from "@/lib/supabase/server";
 import { DiditVerifyButton } from "@/components/account/DiditVerifyButton";
 import { PageCreateForm } from "@/components/account/PageCreateForm";
+import { pageShellClass } from "@/components/ui/PageShell";
 
 export const metadata = {
   title: "Create Rental Page | DriveLink",
@@ -25,7 +26,7 @@ export default async function NewRentalPagePage() {
   const isVerified = profile.kyc_status === "verified";
 
   return (
-    <div className="max-w-lg mx-auto px-4 py-8">
+    <div className={pageShellClass("narrow")}>
       <Link
         href="/account"
         className="inline-flex items-center gap-1.5 text-slate-600 hover:text-slate-900 text-sm mb-4"
@@ -48,7 +49,7 @@ export default async function NewRentalPagePage() {
         <>
           <h1 className="text-2xl font-bold text-slate-900 mb-1">Create your Rental Page</h1>
           <p className="text-slate-600 text-sm mb-6">
-            Your page is what renters see. You can create up to 5.
+            Your page is what renters see. There is no lifetime page limit; use a separate page for a distinct rental brand, location, or service.
           </p>
           <div className="bg-white border border-slate-200 rounded-2xl shadow-sm p-5">
             <PageCreateForm />

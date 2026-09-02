@@ -63,7 +63,7 @@ export function BusinessCertUpload({
           value={regNo}
           onChange={(e) => { setRegNo(e.target.value); setDone(false); }}
           placeholder="e.g. PV 00123456"
-          className="w-full px-3 py-2 border border-slate-200 rounded-xl text-sm text-slate-900 focus:border-blue-500 focus:outline-none"
+          className="w-full px-3 py-2 border border-slate-200 rounded-xl text-sm text-slate-900 focus:border-blue-500"
         />
       </label>
 
@@ -84,7 +84,7 @@ export function BusinessCertUpload({
       {canSave && (
         <Button size="sm" loading={busy} onClick={submit}><Upload size={13} /> Save business details</Button>
       )}
-      {error && <p className="text-red-500 text-xs">{error}</p>}
+      {error && <p className="text-rose-700 text-xs">{error}</p>}
     </div>
   );
 }

@@ -33,22 +33,26 @@ export function VehiclesBrowser({
   const [vehicles, setVehicles] = useState<VehicleWithAgency[]>(initial);
   const [selected, setSelected] = useState<VehicleWithAgency | null>(null);
   const [loading, setLoading]   = useState(false);
+  const [loadError, setLoadError] = useState<string | null>(null);
   const [hasMore, setHasMore]   = useState(loadMore ? initial.length >= loadMore.pageSize : false);
 
   // Re-seed when the server hands a fresh set (filters changed → new initial).
   useEffect(() => {
     setVehicles(initial);
     setHasMore(loadMore ? initial.length >= loadMore.pageSize : false);
+    setLoadError(null);
   }, [initial, loadMore]);
 
   const onLoadMore = useCallback(async () => {
     if (!loadMore || loading) return;
     setLoading(true);
+    setLoadError(null);
     try {
       const qs = new URLSearchParams(loadMore.params);
       qs.set("offset", String(vehicles.length));
       qs.set("limit", String(loadMore.pageSize));
       const res = await fetch(`/api/vehicles/search?${qs.toString()}`);
+      if (!res.ok) throw new Error(`Vehicle search returned HTTP ${res.status}`);
       const data = (await res.json().catch(() => ({}))) as { vehicles?: VehicleWithAgency[] };
       const next = data.vehicles ?? [];
       // Guard against duplicates if the underlying set shifted between pages.
@@ -58,7 +62,7 @@ export function VehiclesBrowser({
       });
       setHasMore(next.length >= loadMore.pageSize);
     } catch {
-      setHasMore(false);
+      setLoadError("We couldn't load more vehicles. Check your connection and try again.");
     } finally {
       setLoading(false);
     }
@@ -73,15 +77,16 @@ export function VehiclesBrowser({
       </div>
 
       {loadMore && hasMore && (
-        <div className="flex justify-center pt-2">
+        <div className="flex flex-col items-center gap-2 pt-2">
           <button
             type="button"
             onClick={onLoadMore}
             disabled={loading}
             className="px-5 py-2.5 rounded-xl text-sm font-semibold bg-white border border-slate-200 text-slate-700 hover:bg-slate-50 hover:border-blue-300 disabled:opacity-60 transition-colors shadow-sm"
           >
-            {loading ? "Loading…" : "Load more vehicles"}
+            {loading ? "Loading..." : loadError ? "Try loading again" : "Load more vehicles"}
           </button>
+          {loadError && <p role="alert" className="text-sm text-rose-700 text-center">{loadError}</p>}
         </div>
       )}
 

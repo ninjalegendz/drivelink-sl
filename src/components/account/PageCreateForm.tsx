@@ -4,16 +4,18 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { Building2, User, Sparkles } from "lucide-react";
 import { Button } from "@/components/ui/Button";
+import { startNavigationProgress } from "@/components/layout/NavigationProgress";
 import { Select } from "@/components/ui/Select";
 import { PhoneInput } from "@/components/ui/PhoneInput";
 import { SL_CITIES } from "@/data/cities";
+import { containsPublicContactDetails, PUBLIC_CONTACT_ERROR } from "@/lib/content/public-contact";
 
 const CITY_OPTIONS = SL_CITIES.map((c) => ({ value: c, label: c }));
 
 type PageType = "personal" | "business";
 
 const inputClass =
-  "w-full px-4 py-2.5 bg-slate-100 border border-slate-200 rounded-xl text-slate-900 placeholder-slate-400 text-sm focus:outline-none focus:border-blue-500";
+  "w-full min-h-11 px-4 py-2.5 bg-slate-100 border border-slate-200 rounded-xl text-base text-slate-900 placeholder-slate-400 focus:border-blue-500";
 
 export function PageCreateForm() {
   const router = useRouter();
@@ -37,6 +39,9 @@ export function PageCreateForm() {
     if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim())) {
       setError("Enter a valid email: statements and booking records go there."); return;
     }
+    if (containsPublicContactDetails(name, description)) {
+      setError(PUBLIC_CONTACT_ERROR); return;
+    }
 
     setLoading(true);
 
@@ -54,21 +59,24 @@ export function PageCreateForm() {
       }),
     });
     const payload = await res.json().catch(() => ({}));
-    setLoading(false);
 
     if (!res.ok) {
+      setLoading(false);
       setError(payload.error ?? "Couldn't create the page.");
       return;
     }
 
+    // Stay in the loading state through the navigation: dropping it here left
+    // the button idle while the dashboard was still being fetched.
+    startNavigationProgress();
     router.push("/dashboard");
     router.refresh();
   }
 
   return (
-    <form onSubmit={handleSubmit} className="space-y-5">
+    <form onSubmit={handleSubmit} noValidate className="space-y-5">
       <div>
-        <label className="text-slate-600 text-xs mb-2 block">Page type</label>
+        <span className="text-slate-600 text-sm mb-2 block">Page type</span>
         <div className="grid grid-cols-2 gap-3">
           <button
             type="button"
@@ -97,10 +105,11 @@ export function PageCreateForm() {
 
       {pageType === "business" && (
         <div>
-          <label className="text-slate-600 text-xs mb-1 block">
+          <label htmlFor="page-reg-no" className="text-slate-600 text-sm mb-1 block">
             Business registration number <span className="text-slate-400 font-normal">(optional for now)</span>
           </label>
           <input
+            id="page-reg-no"
             type="text"
             value={businessRegNo}
             onChange={(e) => setBusinessRegNo(e.target.value)}
@@ -109,14 +118,15 @@ export function PageCreateForm() {
           />
           <p className="text-slate-400 text-xs mt-1 flex items-start gap-1.5">
             <Sparkles size={12} className="text-blue-500 mt-0.5 shrink-0" />
-            We&apos;ll ask for your registration certificate during admin review before this page goes live.
+            Add your certificate when you are ready to apply for the Verified Business badge.
           </p>
         </div>
       )}
 
       <div>
-        <label className="text-slate-600 text-xs mb-1 block">Page name</label>
+        <label htmlFor="page-name" className="text-slate-600 text-sm mb-1 block">Page name</label>
         <input
+          id="page-name"
           type="text"
           value={name}
           onChange={(e) => setName(e.target.value)}
@@ -127,19 +137,20 @@ export function PageCreateForm() {
       </div>
 
       <div>
-        <label className="text-slate-600 text-xs mb-1 block">City</label>
-        <Select value={city} onChange={setCity} options={CITY_OPTIONS} placeholder="Pick a city" />
+        <span className="text-slate-600 text-sm mb-1 block">City</span>
+        <Select value={city} onChange={setCity} options={CITY_OPTIONS} placeholder="Pick a city" label="City" />
       </div>
 
       <div>
-        <label className="text-slate-600 text-xs mb-1 block">WhatsApp number</label>
+        <span className="text-slate-600 text-sm mb-1 block">WhatsApp number</span>
         <PhoneInput value={whatsapp} onChange={setWhatsapp} required />
         <p className="text-slate-400 text-xs mt-1">Booking alerts arrive here as an SMS.</p>
       </div>
 
       <div>
-        <label className="text-slate-600 text-xs mb-1 block">Email</label>
+        <label htmlFor="page-email" className="text-slate-600 text-sm mb-1 block">Email</label>
         <input
+          id="page-email"
           type="email"
           value={email}
           onChange={(e) => setEmail(e.target.value)}
@@ -149,15 +160,16 @@ export function PageCreateForm() {
           className={inputClass}
         />
         <p className="text-slate-400 text-xs mt-1">
-          Monthly statements, booking records and signed agreements are sent here.
+          Booking records and DriveLink notices are sent here.
         </p>
       </div>
 
       <div>
-        <label className="text-slate-600 text-xs mb-1 block">
+        <label htmlFor="page-description" className="text-slate-600 text-sm mb-1 block">
           Description <span className="text-slate-400 font-normal">(optional)</span>
         </label>
         <textarea
+          id="page-description"
           value={description}
           onChange={(e) => setDescription(e.target.value)}
           rows={3}
@@ -167,7 +179,7 @@ export function PageCreateForm() {
         />
       </div>
 
-      {error && <p className="text-red-400 text-sm">{error}</p>}
+      {error && <p role="alert" className="text-rose-600 text-sm font-medium">{error}</p>}
 
       <Button type="submit" loading={loading} className="w-full" size="lg">
         Create Rental Page

@@ -1,8 +1,8 @@
-import { createClient } from "@/lib/supabase/server";
 import { Search } from "lucide-react";
 import { VehicleCard } from "@/components/vehicles/VehicleCard";
 import { parseRentQuery } from "@/lib/vehicles/slug";
-import { toPublicVehicle } from "@/lib/vehicles/format";
+import { searchVehiclePageCached, VEHICLES_PAGE_SIZE } from "@/lib/vehicles/search";
+import { pageShellClass } from "@/components/ui/PageShell";
 import Link from "next/link";
 import type { VehicleWithAgency } from "@/types/queries";
 import type { Metadata } from "next";
@@ -29,7 +29,6 @@ export default async function RentQueryPage({ params }: Props) {
   const { query } = await params;
   const parsed = parseRentQuery(query);
 
-  const supabase = await createClient();
   let vehicles: VehicleWithAgency[] = [];
   let model = "";
   let city = "";
@@ -43,16 +42,12 @@ export default async function RentQueryPage({ params }: Props) {
     const safeCity  = city.replace(/[%_,():*.\\]/g, "").trim();
 
     if (safeModel && safeCity) {
-      const { data } = await supabase
-        .from("vehicles")
-        .select("*, agencies(id, name, city, is_verified, reliability_pct, cancellation_count, profiles!owner_id(rating_avg, rating_count))")
-        .eq("status", "available")
-        .or(`make.ilike.%${safeModel}%,model.ilike.%${safeModel}%`)
-        .ilike("city", `%${safeCity}%`)
-        .order("created_at", { ascending: false })
-        .limit(24);
-
-      vehicles = ((data ?? []) as VehicleWithAgency[]).map(toPublicVehicle);
+      vehicles = await searchVehiclePageCached({
+        q: safeModel,
+        city: safeCity,
+        limit: VEHICLES_PAGE_SIZE,
+        offset: 0,
+      });
     }
   }
 
@@ -60,7 +55,7 @@ export default async function RentQueryPage({ params }: Props) {
   const displayCity  = city.replace(/\b\w/g, (c) => c.toUpperCase());
 
   return (
-    <div className="max-w-6xl mx-auto px-4 py-8">
+    <div className={pageShellClass("wide")}>
       <div className="mb-8">
         <nav className="text-slate-500 text-sm mb-3 flex items-center gap-1">
           <Link href="/" className="hover:text-slate-900 transition-colors">Home</Link>
@@ -75,7 +70,7 @@ export default async function RentQueryPage({ params }: Props) {
         </h1>
         <p className="text-slate-600 mt-2">
           Compare verified {displayModel} rentals in {displayCity}, Sri Lanka. Check photos, deposit and
-          rules, then send a free booking request, no booking fee, no down payment.
+          rules, then send a booking request. DriveLink&apos;s confirmation fee is Rs. 0, with no deposit paid to DriveLink.
         </p>
       </div>
 

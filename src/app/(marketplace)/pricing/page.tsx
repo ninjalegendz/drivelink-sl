@@ -1,23 +1,29 @@
 import Link from "next/link";
 import { Check, Car, Building2, Sparkles } from "lucide-react";
 import type { Metadata } from "next";
+import { createClient } from "@/lib/supabase/server";
+import { PageShell } from "@/components/ui/PageShell";
 
 export const metadata: Metadata = {
   title: "Pricing",
-  description: "Zero platform fees during our launch period. Renters pay providers directly; providers list for free with no commission.",
+  description: "Listings are always free. The DriveLink booking confirmation fee is Rs. 0, and rental payments go directly to providers.",
 };
 
-export default function PricingPage() {
+export default async function PricingPage() {
+  const supabase = await createClient();
+  const { data: { user } } = await supabase.auth.getUser();
+  const createPageHref = user ? "/account/pages/new" : "/signup?intent=provider";
+
   return (
-    <div className="max-w-4xl mx-auto px-4 py-12">
+    <PageShell width="prose" flush>
       <header className="text-center mb-12">
         <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-blue-50 text-blue-700 text-xs font-semibold border border-blue-100 mb-4">
-          <Sparkles size={12} /> Launch period, zero platform fees
+          <Sparkles size={12} /> Booking confirmation fee: Rs. 0
         </span>
-        <h1 className="font-display text-3xl sm:text-4xl font-extrabold text-slate-900">Free during our launch</h1>
+        <h1 className="font-display text-3xl sm:text-4xl font-extrabold text-slate-900">Simple, separate charges</h1>
         <p className="text-slate-600 mt-3 max-w-2xl mx-auto">
-          We&apos;re building Sri Lanka&apos;s verified vehicle rental network. Right now there are no platform fees,
-          renters pay providers directly, and providers list with zero commission.
+          DriveLink&apos;s fee is separate from the rental price and deposit. It is Rs. 0.
+          Renters pay rental money directly to the provider, and providers list without commission.
         </p>
       </header>
 
@@ -29,19 +35,19 @@ export default function PricingPage() {
             <h2 className="text-lg font-semibold text-slate-900">For renters</h2>
           </div>
           <p className="text-3xl font-extrabold text-slate-900 mt-2">
-            No booking fee
+            Rs. 0
           </p>
           <p className="text-slate-600 text-sm mt-1">
-            Browse, request, and book without paying anything to DriveLink.
+            DriveLink booking confirmation fee.
           </p>
 
           <ul className="space-y-2 mt-5">
             {[
               "Free to browse and request any vehicle",
-              "No down payment and no booking fee to DriveLink",
-              "Verified providers with clear deposit and handover rules",
+              "No DriveLink payment is required",
+              "Provider, deposit and handover details shown on each listing",
               "You pay the rental directly to the provider on handover",
-              "Self-drive, with-driver, or airport pickup, your choice",
+              "Self-drive or with-driver, with airport handover where listed",
             ].map((line) => (
               <li key={line} className="flex items-start gap-2 text-sm text-slate-700">
                 <Check size={14} className="text-emerald-600 mt-0.5 shrink-0" />
@@ -60,7 +66,7 @@ export default function PricingPage() {
 
         {/* Provider card */}
         <div className="bg-white border border-slate-200 rounded-2xl shadow-sm p-6 relative overflow-hidden">
-          <div className="absolute top-3 right-3 px-2 py-0.5 bg-blue-50 text-blue-700 text-[10px] font-semibold rounded-full border border-blue-100">
+          <div className="absolute top-3 right-3 px-2 py-0.5 bg-blue-50 text-blue-700 text-xs font-semibold rounded-full border border-blue-100">
             0% COMMISSION
           </div>
           <div className="flex items-center gap-2 mb-2">
@@ -71,13 +77,13 @@ export default function PricingPage() {
             List for free
           </p>
           <p className="text-slate-600 text-sm mt-1">
-            Listing is free forever. No monthly fee and no commission during launch.
+            Listing is free forever, with no monthly fee or provider commission.
           </p>
 
           <ul className="space-y-2 mt-5">
             {[
               "Free to list, unlimited vehicles",
-              "Free booking requests, no commission on bookings",
+              "No commission deducted from the rental amount",
               "Verification badges that build renter trust",
               "Better visibility for verified, fast-responding providers",
               "Direct alerts the moment a request comes in",
@@ -90,25 +96,21 @@ export default function PricingPage() {
           </ul>
 
           <Link
-            href="/signup?intent=provider"
+            href={createPageHref}
             className="mt-6 inline-flex items-center justify-center w-full py-2.5 bg-slate-100 hover:bg-slate-200 border border-slate-200 text-slate-900 font-semibold rounded-xl text-sm transition-colors"
           >
-            List your vehicle
+            Create a Rental Page
           </Link>
         </div>
       </div>
 
-      {/* Why free */}
+      {/* Payment boundary */}
       <section className="mt-12 bg-slate-900 text-white rounded-2xl p-6 md:p-8">
-        <h2 className="font-display text-xl font-extrabold mb-3">What about fees in the future?</h2>
+        <h2 className="font-display text-xl font-extrabold mb-3">Clear payment boundaries</h2>
         <p className="text-slate-300 text-sm leading-relaxed max-w-2xl">
-          Listing vehicles is free forever. During our launch phase, bookings are also commission-free.
-          When we introduce a per-Rental-Page success fee in future, it will only apply to completed bookings
-          after a free trial period. Early verified partners will get preferential rates, and we will announce
-          any change well in advance on our{" "}
-          <Link href="/pricing" className="text-blue-400 hover:text-blue-300 font-medium">
-            pricing page
-          </Link>.
+          Listing is free, with no monthly fee or provider commission. Rental money and any refundable
+          deposit are agreed and paid directly to the provider under the vehicle&apos;s listed terms.
+          DriveLink does not collect or hold those funds.
         </p>
       </section>
 
@@ -116,6 +118,6 @@ export default function PricingPage() {
         Have a question we haven&apos;t answered? Check the{" "}
         <Link href="/faq" className="text-blue-600 hover:text-blue-700">FAQ</Link>.
       </p>
-    </div>
+    </PageShell>
   );
 }

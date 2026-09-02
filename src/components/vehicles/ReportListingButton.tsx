@@ -67,7 +67,7 @@ export function ReportListingButton({ vehicleId }: { vehicleId: string }) {
                   placeholder="Any details (optional)"
                   className="w-full px-3 py-2 bg-slate-100 border border-slate-200 rounded-lg text-slate-900 text-sm"
                 />
-                {error && <p className="text-red-500 text-xs">{error}</p>}
+                {error && <p className="text-rose-700 text-xs">{error}</p>}
                 <button
                   onClick={submit} disabled={busy}
                   className="w-full py-2 rounded-xl bg-slate-900 text-white text-sm font-semibold hover:bg-slate-800 disabled:opacity-50"

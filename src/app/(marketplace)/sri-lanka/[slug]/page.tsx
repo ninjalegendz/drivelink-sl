@@ -1,14 +1,12 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { ArrowRight, Search } from "lucide-react";
-import { createClient } from "@/lib/supabase/server";
 import { Hero } from "@/components/layout/Hero";
 import { VehiclesBrowser } from "@/components/vehicles/VehiclesBrowser";
 import { LANDINGS, getLanding } from "@/data/landings";
-import { rankVehicles } from "@/data/vehicles";
-import { toPublicVehicle } from "@/lib/vehicles/format";
-import type { VehicleWithAgency } from "@/types/queries";
+import { searchVehiclePageCached, VEHICLES_PAGE_SIZE } from "@/lib/vehicles/search";
 import type { Metadata } from "next";
+import { pageShellClass } from "@/components/ui/PageShell";
 
 interface Props {
   params: Promise<{ slug: string }>;
@@ -36,21 +34,14 @@ export default async function LandingPage({ params }: Props) {
   const landing = getLanding(slug);
   if (!landing) notFound();
 
-  const supabase = await createClient();
-  let query = supabase
-    .from("vehicles")
-    .select("*, agencies(id, owner_id, name, city, is_verified, reliability_pct, cancellation_count, avg_response_minutes, profiles!owner_id(rating_avg, rating_count))")
-    .eq("status", "available");
-
   const { type, option, city } = landing.filters;
-  if (type) query = query.eq("vehicle_type", type);
-  if (option === "self-drive")     query = query.eq("self_drive", true);
-  if (option === "with-driver")    query = query.eq("with_driver", true);
-  if (option === "airport-pickup") query = query.eq("airport_pickup", true);
-  if (city) query = query.ilike("city", city);
-
-  const { data } = await query.limit(24);
-  const vehicles = rankVehicles((data ?? []) as VehicleWithAgency[]).map(toPublicVehicle);
+  const vehicles = await searchVehiclePageCached({
+    type: type ?? null,
+    option: option ?? null,
+    city: city ?? null,
+    limit: VEHICLES_PAGE_SIZE,
+    offset: 0,
+  });
 
   // A few related landing pages for internal linking (SEO).
   const related = LANDINGS.filter((l) => l.slug !== slug).slice(0, 6);
@@ -63,7 +54,7 @@ export default async function LandingPage({ params }: Props) {
   const allHref = `/vehicles${params2.toString() ? `?${params2}` : ""}`;
 
   return (
-    <div className="max-w-7xl mx-auto px-4 py-8 space-y-8">
+    <div className={pageShellClass("wide", "space-y-8")}>
       <Hero
         badge="Sri Lanka's Verified Rental Network"
         title={landing.h1}
@@ -95,7 +86,7 @@ export default async function LandingPage({ params }: Props) {
             </div>
             <div>
               <h3 className="font-semibold text-slate-700">No listings here yet</h3>
-              <p className="text-xs text-slate-400 max-w-sm mt-1">New verified vehicles are added often, check back soon or browse everything.</p>
+              <p className="text-xs text-slate-400 max-w-sm mt-1">New listings are added often. Check back soon or browse everything.</p>
             </div>
             <Link href="/vehicles" className="px-4 py-2 text-xs font-semibold bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors">Browse all vehicles</Link>
           </div>

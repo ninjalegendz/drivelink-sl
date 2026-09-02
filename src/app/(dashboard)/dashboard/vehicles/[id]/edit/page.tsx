@@ -1,8 +1,9 @@
-import { createClient } from "@/lib/supabase/server";
+import { createClient, createServiceClient } from "@/lib/supabase/server";
 import { notFound, redirect } from "next/navigation";
 import Link from "next/link";
 import { ArrowLeft } from "lucide-react";
 import { getActivePage } from "@/lib/pages/active-page";
+import { getPageAccess } from "@/lib/pages/access";
 import { VehicleForm } from "@/components/dashboard/VehicleForm";
 import { AgencyVerificationGate } from "@/components/dashboard/AgencyVerificationGate";
 import type { Database } from "@/types/database";
@@ -20,18 +21,18 @@ export default async function EditVehiclePage({ params }: Props) {
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) redirect(`/login?next=/dashboard/vehicles/${id}/edit`);
 
-  const [{ page, pages }, { data: profileData }] = await Promise.all([
-    getActivePage(supabase, user.id),
-    supabase.from("profiles").select("kyc_status").eq("id", user.id).single(),
-  ]);
+  const { page, pages } = await getActivePage(supabase, user.id);
 
   if (!page) redirect("/account/pages/new");
   const agency  = page;
+  const pageAccess = await getPageAccess(supabase, user.id, agency.id);
+  if (!pageAccess.capabilities.includes("manage_fleet")) redirect("/dashboard");
+  const service = await createServiceClient();
+  const { data: profileData } = await service.from("profiles").select("kyc_status").eq("id", agency.owner_id).single();
   const profile = profileData as { kyc_status: string } | null;
 
   const ownerKycVerified = profile?.kyc_status === "verified";
-  const agencyApproved   = agency.is_verified;
-  const canEdit          = ownerKycVerified && agencyApproved;
+  const canEdit          = ownerKycVerified;
 
   const { data: vehicleData } = await supabase
     .from("vehicles")
@@ -51,10 +52,10 @@ export default async function EditVehiclePage({ params }: Props) {
 
   const { data: docData } = await supabase
     .from("vehicle_documents")
-    .select("cr_url, insurance_url")
+    .select("cr_url, insurance_url, revenue_license_url")
     .eq("vehicle_id", id)
     .maybeSingle();
-  const documents = (docData ?? null) as { cr_url: string | null; insurance_url: string | null } | null;
+  const documents = (docData ?? null) as { cr_url: string | null; insurance_url: string | null; revenue_license_url: string | null } | null;
 
   return (
     <div>
@@ -69,12 +70,18 @@ export default async function EditVehiclePage({ params }: Props) {
         Edit {vehicle.year} {vehicle.make} {vehicle.model}
       </h1>
       <p className="text-slate-600 text-sm mb-8">
-        Changes go live immediately on the public listing.
+        Important listing changes may need a new DriveLink review before renters see them.
       </p>
 
       {canEdit
-        ? <VehicleForm agencyId={agency.id} agencyCity={agency.city} vehicle={vehicle} documents={documents} />
-        : <AgencyVerificationGate ownerKycVerified={ownerKycVerified} agencyApproved={agencyApproved} />}
+        ? <VehicleForm
+            agencyId={agency.id}
+            agencyCity={agency.city}
+            vehicle={vehicle}
+            documents={documents}
+            canDeclareListingAuthority={pageAccess.capabilities.includes("declare_listing_authority")}
+          />
+        : <AgencyVerificationGate ownerKycVerified={ownerKycVerified} />}
     </div>
   );
 }

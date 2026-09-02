@@ -51,7 +51,7 @@ export function PresetPicker({ presets, value, onChange, addLabel = "Add your ow
               type="button"
               onClick={() => toggle(label)}
               aria-pressed={on}
-              className={`spring-press inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full border text-xs font-medium transition-all ${
+              className={`spring-press inline-flex min-h-11 items-center gap-1.5 px-3.5 rounded-full border text-sm font-medium transition-all ${
                 on
                   ? "bg-blue-50 border-blue-500 text-blue-700"
                   : "bg-white border-slate-200 text-slate-500 hover:border-slate-300 hover:bg-slate-50"
@@ -65,13 +65,13 @@ export function PresetPicker({ presets, value, onChange, addLabel = "Add your ow
         {customs.map((label) => (
           <span
             key={label}
-            className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full border bg-blue-50 border-blue-500 text-blue-700 text-xs font-medium"
+            className="inline-flex min-h-11 items-center gap-1.5 px-3.5 rounded-full border bg-blue-50 border-blue-500 text-blue-700 text-sm font-medium"
           >
             {label}
             <button
               type="button"
               onClick={() => toggle(label)}
-              className="text-blue-400 hover:text-rose-600 transition-colors"
+              className="grid h-8 w-8 -mr-1.5 place-items-center rounded-full text-blue-500 hover:bg-blue-100 hover:text-rose-600 transition-colors"
               aria-label={`Remove ${label}`}
             >
               <X size={12} />
@@ -91,13 +91,13 @@ export function PresetPicker({ presets, value, onChange, addLabel = "Add your ow
           placeholder={addPlaceholder}
           aria-label={addLabel}
           maxLength={120}
-          className="flex-1 px-3 py-1.5 bg-slate-100 border border-slate-200 rounded-full text-slate-900 placeholder-slate-400 text-xs focus:outline-none focus:border-blue-500"
+          className="min-h-11 flex-1 px-4 bg-slate-100 border border-slate-200 rounded-full text-base text-slate-900 placeholder-slate-400 focus:border-blue-500"
         />
         <button
           type="button"
           onClick={addCustom}
           disabled={!customText.trim()}
-          className="inline-flex items-center gap-1 px-3 py-1.5 rounded-full border border-slate-200 bg-white text-xs font-semibold text-slate-600 hover:border-blue-500 hover:text-blue-600 disabled:opacity-40 transition-colors"
+          className="inline-flex min-h-11 shrink-0 items-center gap-1 px-4 rounded-full border border-slate-200 bg-white text-sm font-semibold text-slate-600 hover:border-blue-500 hover:text-blue-600 disabled:opacity-40 transition-colors"
         >
           <Plus size={12} /> Add
         </button>

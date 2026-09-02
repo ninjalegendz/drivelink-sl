@@ -1,10 +1,10 @@
 "use client";
 
 import { useState } from "react";
-import Link from "next/link";
 import { HelpCircle, Plus } from "lucide-react";
 import { WhatsAppIcon } from "@/components/icons/WhatsAppIcon";
 import { siteConfig, whatsappLink } from "@/lib/site-config";
+import { PageShell } from "@/components/ui/PageShell";
 
 interface QA {
   q: string;
@@ -28,9 +28,9 @@ const RENTER_FAQS: QA[] = [
     q: "Is there any fee to book?",
     a: (
       <>
-        No. During our launch period there are no DriveLink booking fees and no down payment.
-        You pay the rental cost, plus any refundable deposit, directly to the provider on
-        handover, at the listed local price.
+        DriveLink&apos;s booking confirmation fee is <strong>Rs. 0</strong>. You pay
+        no money to DriveLink. The rental cost and any refundable deposit are separate
+        and are paid directly to the provider under the terms shown for the vehicle.
       </>
     ),
   },
@@ -41,7 +41,7 @@ const RENTER_FAQS: QA[] = [
         For <strong>self-drive</strong>, foreign visitors generally need an{" "}
         <strong>International Driving Permit (IDP)</strong> validated locally (a recognition
         permit from the AA of Sri Lanka or the Department of Motor Traffic). Many providers help
-        arrange this. Look for the <strong>Tourist Friendly</strong> badge. If you&apos;d rather
+        arrange this. Check the listing terms and ask the Rental Page in booking chat. If you&apos;d rather
         not deal with permits, choose a <strong>with-driver</strong> listing instead.
       </>
     ),
@@ -51,9 +51,10 @@ const RENTER_FAQS: QA[] = [
     a: (
       <>
         <strong>Self-drive</strong> means you drive yourself, so you&apos;ll usually need an IDP with
-        a Sri Lankan endorsement. <strong>With-driver</strong> means a professional local driver
-        takes you around, which is ideal for tours, groups, and travellers who&apos;d rather not
-        drive. Many listings offer both, plus airport pickup.
+        a Sri Lankan recognition permit. <strong>With-driver</strong> means the Rental Page supplies
+        a driver, so confirm that person&apos;s identity, licence, language, working hours and charges
+        before handover. Many listings offer both. Airport handover is a separate option showing that the
+        vehicle can be collected or returned at the airport.
       </>
     ),
   },
@@ -85,8 +86,7 @@ const RENTER_FAQS: QA[] = [
     a: (
       <>
         You pay the <strong>provider directly</strong>, typically in cash or by bank transfer on
-        the day of pickup, per the terms you agree. DriveLink doesn&apos;t take payment during the
-        launch period, so there&apos;s nothing to pay us.
+        the day of pickup, per the terms you agree. DriveLink&apos;s confirmation fee is Rs. 0.
       </>
     ),
   },
@@ -94,9 +94,10 @@ const RENTER_FAQS: QA[] = [
     q: "Can I get a vehicle at the airport?",
     a: (
       <>
-        Yes. Filter for <strong>Airport Pickup</strong> to see providers who collect you at
-        Bandaranaike International (CMB) or drop you off there. Add your flight details in the
-        request notes so the provider can plan around your arrival time.
+        Yes. Filter for <strong>Airport Handover</strong> to see vehicles that can be handed over
+        or collected at Bandaranaike International (CMB). It does not mean the listing includes a
+        chauffeur trip. Send your flight details in the booking chat after sending the request so
+        the Rental Page can confirm timing and any delivery charge.
       </>
     ),
   },
@@ -128,8 +129,8 @@ const AGENCY_FAQS: QA[] = [
     a: (
       <>
         Nothing, listing is free forever. Listing vehicles, receiving requests, and using the
-        dashboard cost nothing. During launch there is also <strong>zero commission</strong> on
-        bookings. No monthly fee, no per-listing fee, no surprises.
+        dashboard cost nothing. DriveLink does not deduct commission from your rental income.
+        There is no monthly fee or per-listing fee.
       </>
     ),
   },
@@ -158,10 +159,11 @@ const AGENCY_FAQS: QA[] = [
     q: "What are verification badges and how do I get them?",
     a: (
       <>
-        Badges like <strong>Verified Owner</strong>, <strong>Documents Checked</strong>, and{" "}
-        <strong>Tourist Friendly</strong> are assigned by our admin team after we review your ID
-        and vehicle documents. Verified, fast-responding Rental Pages rank higher and get more
-        bookings. Submit clear photos, accurate info, and a valid insurance certificate to qualify.
+        A verified Rental Page has passed the page-level checks shown on its profile. A
+        <strong> Verified Vehicle</strong> has current registration, hire-insurance and revenue
+        licence records reviewed by DriveLink. Other labels describe a specific service or admin
+        observation; they are not a blanket guarantee. Open the badge explanation and confirm the
+        exact terms before relying on it.
       </>
     ),
   },
@@ -169,8 +171,7 @@ const AGENCY_FAQS: QA[] = [
     q: "What documents do I need to list a vehicle?",
     a: (
       <>
-        Have your vehicle <strong>registration (CR)</strong> and a valid <strong>insurance
-        certificate</strong> ready. Take clear photos of the vehicle&apos;s exterior, interior,
+        Start with clear photos of the vehicle&apos;s exterior, interior,
         odometer, and any distinguishing features. Hire-insured vehicles get stronger trust badges
         and better visibility. We also verify your ID via Didit.
       </>
@@ -180,9 +181,10 @@ const AGENCY_FAQS: QA[] = [
     q: "How do I get booking requests?",
     a: (
       <>
-        The moment a renter sends a request, we alert you via SMS on the number you registered
-        with. The SMS includes the vehicle, dates, renter name, and a link to your dashboard.
-        Confirm or decline from there. Everything works from your dashboard; no separate app needed.
+        When a renter sends a request, DriveLink queues an alert through the available SMS,
+        WhatsApp, or email channels and retries failed delivery. The alert includes the vehicle,
+        dates, renter name, and a dashboard link. The dashboard remains the source of truth, so
+        check it when a phone network or messaging service is delayed.
       </>
     ),
   },
@@ -192,8 +194,8 @@ const AGENCY_FAQS: QA[] = [
       <>
         Offering both widens your reach and bookings. Tourists who can&apos;t arrange an
         International Driving Permit will book <strong>with-driver</strong>; confident drivers and
-        longer trips prefer <strong>self-drive</strong>. Adding <strong>airport pickup</strong>{" "}
-        captures arriving travellers. You choose which options each vehicle supports when you list it.
+        longer trips prefer <strong>self-drive</strong>. Airport handover can be added to either
+        mode when you can deliver or collect the vehicle there.
       </>
     ),
   },
@@ -202,8 +204,9 @@ const AGENCY_FAQS: QA[] = [
     a: (
       <>
         New listings go through a quick admin review. Common reasons for rejection: unclear photos,
-        missing information, or unrealistic pricing. We email you the specific feedback so you can
-        fix it and resubmit. Most approvals take 1-2 days.
+        missing information, expired records, or details that do not match the photos. DriveLink
+        sends the decision and feedback through the available alert channels, and the same reason
+        stays visible in Fleet so you can fix it and resubmit.
       </>
     ),
   },
@@ -256,7 +259,7 @@ export default function FAQPage() {
   const items = tab === "renters" ? RENTER_FAQS : AGENCY_FAQS;
 
   return (
-    <div className="max-w-3xl mx-auto px-4 py-12">
+    <PageShell width="prose" flush>
       <header className="text-center mb-10">
         <div className="inline-flex items-center gap-2 mb-3">
           <HelpCircle size={20} className="text-blue-600" />
@@ -297,7 +300,7 @@ export default function FAQPage() {
       <div className="text-center mt-12 p-6 bg-slate-900 text-white rounded-2xl">
         <p className="font-display text-lg font-extrabold">Still have a question?</p>
         <p className="text-slate-300 text-sm mt-1 mb-4">
-          Message our team on WhatsApp. We usually reply within minutes.
+          Message our team on WhatsApp. We will reply as soon as a support person is available.
         </p>
         <a
           href={whatsappLink("Hi DriveLink, I have a question about ")}
@@ -308,6 +311,6 @@ export default function FAQPage() {
           <WhatsAppIcon size={16} /> WhatsApp {siteConfig.whatsappDisplay}
         </a>
       </div>
-    </div>
+    </PageShell>
   );
 }

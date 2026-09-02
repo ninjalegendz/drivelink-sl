@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/Button";
 import { Select } from "@/components/ui/Select";
 import { PhoneInput } from "@/components/ui/PhoneInput";
 import { SL_CITIES } from "@/data/cities";
+import { containsPublicContactDetails, PUBLIC_CONTACT_ERROR } from "@/lib/content/public-contact";
 import type { RentalPageRow } from "@/types/queries";
 
 const CITY_OPTIONS = SL_CITIES.map((c) => ({ value: c, label: c }));
@@ -26,7 +27,7 @@ export function PageDetailsForm({ page }: Props) {
   const [name, setName]                   = useState(page.name);
   const [city, setCity]                   = useState(page.city);
   const [address, setAddress]             = useState(page.address ?? "");
-  const [whatsapp, setWhatsapp]           = useState(page.whatsapp_number);
+  const [whatsapp, setWhatsapp]           = useState(page.whatsapp_number ?? "");
   const [email, setEmail]                 = useState(page.email ?? "");
   const [description, setDescription]     = useState(page.description ?? "");
   const [businessHours, setBusinessHours] = useState(page.business_hours ?? "");
@@ -42,12 +43,13 @@ export function PageDetailsForm({ page }: Props) {
     name.trim()          !== page.name.trim() ||
     city                 !== page.city ||
     address.trim()       !== (page.address ?? "").trim() ||
-    whatsapp.trim()       !== page.whatsapp_number.trim() ||
+    whatsapp.trim()       !== (page.whatsapp_number ?? "").trim() ||
     email.trim()          !== (page.email ?? "").trim() ||
     description.trim()    !== (page.description ?? "").trim() ||
     businessHours.trim()  !== (page.business_hours ?? "").trim() ||
     smsAlerts             !== page.sms_notifications_enabled ||
     waAlerts              !== page.whatsapp_notifications_enabled;
+  const phoneChanged = whatsapp.trim() !== (page.whatsapp_number ?? "").trim();
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -56,6 +58,10 @@ export function PageDetailsForm({ page }: Props) {
 
     if (!name.trim() || !city || !whatsapp.trim()) {
       setError("Name, city and mobile number are required.");
+      return;
+    }
+    if (containsPublicContactDetails(name, description, businessHours)) {
+      setError(PUBLIC_CONTACT_ERROR);
       return;
     }
 
@@ -94,7 +100,7 @@ export function PageDetailsForm({ page }: Props) {
         <input
           type="text" value={name} onChange={(e) => { setName(e.target.value); setSuccess(false); }}
           required
-          className="w-full px-4 py-2.5 bg-slate-100 border border-slate-200 rounded-xl text-slate-900 text-sm focus:outline-none focus:border-blue-500"
+          className="w-full px-4 py-2.5 bg-slate-100 border border-slate-200 rounded-xl text-slate-900 text-sm focus:border-blue-500"
         />
       </div>
 
@@ -105,6 +111,7 @@ export function PageDetailsForm({ page }: Props) {
           onChange={(v) => { setCity(v); setSuccess(false); }}
           options={CITY_OPTIONS}
           placeholder="Select city..."
+          label="City"
         />
       </div>
 
@@ -113,7 +120,7 @@ export function PageDetailsForm({ page }: Props) {
         <input
           type="text" value={address} onChange={(e) => { setAddress(e.target.value); setSuccess(false); }}
           placeholder="No. 12, Main Street, Colombo 3"
-          className="w-full px-4 py-2.5 bg-slate-100 border border-slate-200 rounded-xl text-slate-900 text-sm focus:outline-none focus:border-blue-500"
+          className="w-full px-4 py-2.5 bg-slate-100 border border-slate-200 rounded-xl text-slate-900 text-sm focus:border-blue-500"
         />
       </div>
 
@@ -125,6 +132,7 @@ export function PageDetailsForm({ page }: Props) {
           required
         />
         <p className="text-slate-500 text-xs mt-1">Booking alerts arrive here as an SMS, tap the link to confirm in your dashboard.</p>
+        {phoneChanged && <p className="text-amber-700 text-xs mt-1">Saving a new number means you will need to verify it again.</p>}
       </div>
 
       <div>
@@ -134,7 +142,7 @@ export function PageDetailsForm({ page }: Props) {
         <input
           type="email" value={email} onChange={(e) => { setEmail(e.target.value); setSuccess(false); }}
           placeholder="you@example.com"
-          className="w-full px-4 py-2.5 bg-slate-100 border border-slate-200 rounded-xl text-slate-900 placeholder-slate-400 text-sm focus:outline-none focus:border-blue-500"
+          className="w-full px-4 py-2.5 bg-slate-100 border border-slate-200 rounded-xl text-slate-900 placeholder-slate-400 text-sm focus:border-blue-500"
         />
       </div>
 
@@ -145,7 +153,7 @@ export function PageDetailsForm({ page }: Props) {
         <input
           type="text" value={businessHours} onChange={(e) => { setBusinessHours(e.target.value); setSuccess(false); }}
           placeholder="e.g. Mon-Sat, 8am-6pm"
-          className="w-full px-4 py-2.5 bg-slate-100 border border-slate-200 rounded-xl text-slate-900 placeholder-slate-400 text-sm focus:outline-none focus:border-blue-500"
+          className="w-full px-4 py-2.5 bg-slate-100 border border-slate-200 rounded-xl text-slate-900 placeholder-slate-400 text-sm focus:border-blue-500"
         />
       </div>
 
@@ -155,7 +163,7 @@ export function PageDetailsForm({ page }: Props) {
           value={description} onChange={(e) => { setDescription(e.target.value); setSuccess(false); }}
           rows={3} maxLength={500}
           placeholder="Tell renters about your fleet..."
-          className="w-full px-4 py-2.5 bg-slate-100 border border-slate-200 rounded-xl text-slate-900 placeholder-slate-400 text-sm focus:outline-none focus:border-blue-500 resize-none"
+          className="w-full px-4 py-2.5 bg-slate-100 border border-slate-200 rounded-xl text-slate-900 placeholder-slate-400 text-sm focus:border-blue-500 resize-none"
         />
         <span className="text-slate-400 text-xs mt-1 block">{description.length}/500</span>
       </div>
@@ -182,8 +190,8 @@ export function PageDetailsForm({ page }: Props) {
         </label>
       </div>
 
-      {error   && <p className="text-red-400 text-sm">{error}</p>}
-      {success && <p className="text-emerald-400 text-sm">Saved.</p>}
+      {error   && <p className="text-rose-600 text-sm">{error}</p>}
+      {success && <p className="text-emerald-700 text-sm">{phoneChanged ? "Saved. Verify the new number below." : "Saved."}</p>}
 
       <Button type="submit" loading={loading} disabled={!dirty}>
         Save changes

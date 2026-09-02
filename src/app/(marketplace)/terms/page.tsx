@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { RoleTermsTabs } from "./RoleTermsTabs";
 import { siteConfig, whatsappLink } from "@/lib/site-config";
+import { PageShell } from "@/components/ui/PageShell";
 
 export const metadata: Metadata = {
   title: "Terms of Service",
@@ -10,11 +11,11 @@ export const metadata: Metadata = {
 
 export default function TermsPage() {
   return (
-    <div className="max-w-3xl mx-auto px-4 py-12">
+    <PageShell width="prose" flush>
       <header className="mb-10">
         <p className="text-blue-600 text-xs font-semibold uppercase tracking-wider">Legal</p>
         <h1 className="text-3xl sm:text-4xl font-bold text-slate-900 mt-2">Terms of Service</h1>
-        <p className="text-slate-500 text-sm mt-2">Last updated: 11 May 2026</p>
+        <p className="text-slate-500 text-sm mt-2">Last updated: 31 August 2026</p>
       </header>
 
       <article className="space-y-8 text-slate-600 text-sm leading-relaxed">
@@ -33,12 +34,13 @@ export default function TermsPage() {
         <section>
           <h2 className="text-xl font-semibold text-slate-900 mb-2">2. What DriveLink is</h2>
           <p>
-            DriveLink is a marketplace connecting individuals and businesses who wish to rent vehicles
-            (&quot;Renters&quot;) with vehicle owners and businesses who create Rental Pages to offer their
-            vehicles (&quot;Owners&quot;). DriveLink does not own vehicles, employ drivers, or provide rental
-            services directly. We are a venue and record-keeper only. The actual rental contract, payment,
-            deposit, and every dispute is between the Renter and the Owner. DriveLink is never a party to
-            the rental.
+            DriveLink is an introduction service. It connects individuals and businesses who wish to rent
+            vehicles (&quot;Renters&quot;) with vehicle owners and businesses who create Rental Pages to offer
+            their vehicles (&quot;Owners&quot;). DriveLink does not own vehicles, employ drivers, inspect
+            vehicles, or provide rental services. We verify identity, publish listings, and record what
+            each side asked for and agreed to. Everything after the introduction, the rental itself, the
+            handover, the payment, the deposit and any disagreement, is between the Renter and the Owner.
+            DriveLink is never a party to the rental.
           </p>
         </section>
 
@@ -51,8 +53,8 @@ export default function TermsPage() {
             <li>You are responsible for keeping your account credentials secure.</li>
             <li>Renters must complete ID verification (via Didit, our third-party verifier)
                 before booking.</li>
-            <li>Owners must complete admin verification and provide vehicle documents (registration,
-                insurance) before vehicles are listed publicly.</li>
+            <li>Owners must complete identity verification before submitting a vehicle. Vehicle documents
+                support the Verified Vehicle badge and may be requested during review.</li>
           </ul>
         </section>
 
@@ -68,12 +70,18 @@ export default function TermsPage() {
           </p>
           <ul className="list-disc pl-5 space-y-1 mt-2">
             <li><strong>Listing vehicles is free forever.</strong> No listing fee, no monthly fee.</li>
-            <li><strong>During our launch period, DriveLink charges no platform fees:</strong>
-                no booking fee for Renters and no commission for Owners.</li>
-            <li>The rental price and security deposit are set by the Owner and paid by the Renter
-                directly to the Owner. DriveLink does not collect or hold rental funds or deposits.</li>
-            <li>In future, we will introduce a per-Rental-Page success fee (after a free launch period),
-                charged only on completed bookings. This change will be announced in advance.</li>
+            <li><strong>The booking confirmation fee is the only money DriveLink ever charges.</strong>{" "}
+                It is paid by the Renter to confirm a booking. Nothing else passes through DriveLink.</li>
+            <li><strong>That fee is currently Rs. 0</strong>, so no payment to DriveLink is required to
+                confirm a booking today.</li>
+            <li><strong>The confirmation fee is not refundable if the Renter cancels.</strong> It is
+                refunded only where the booking fails through the Owner&apos;s action or absence, or where
+                DriveLink cancels. See the{" "}
+                <Link href="/refunds" className="text-blue-700 font-medium">Refund Policy</Link>.</li>
+            <li><strong>DriveLink charges Owners no listing fee, monthly fee, or booking commission.</strong></li>
+            <li>The rental price and the security deposit are set by the Owner and paid by the Renter
+                directly to the Owner, in person, when they meet. DriveLink does not collect, hold,
+                transfer or settle those amounts, and cannot refund them.</li>
             <li>All amounts are in Sri Lankan Rupees (LKR).</li>
           </ul>
         </section>
@@ -81,8 +89,8 @@ export default function TermsPage() {
         <section>
           <h2 className="text-xl font-semibold text-slate-900 mb-2">6. Liability and disputes</h2>
           <p>
-            DriveLink provides the platform, booking records, and digital rental agreements
-            &quot;as is&quot;. We are not a party to any rental and do not accept liability for:
+            DriveLink provides the platform and the booking record &quot;as is&quot;. We are not a
+            party to any rental and do not accept liability for:
           </p>
           <ul className="list-disc pl-5 space-y-1 mt-2">
             <li>Vehicle defects, breakdowns, or accidents during the rental period.</li>
@@ -92,11 +100,15 @@ export default function TermsPage() {
             <li>Insurance claims or legal liability of the Owner.</li>
           </ul>
           <p className="mt-3">
-            <strong>Mediation-first disputes:</strong> If a problem arises, report it through
-            the platform. DriveLink will gather evidence (messages, inspection photos, documents)
-            and offer a written resolution. We do not make money judgments or award damages.
-            Actions include: written resolution guidance, reliability score adjustments, or
-            account suspension / blacklisting if fraud or abuse is found.
+            <strong>Disagreements are between the two parties.</strong> DriveLink does not mediate,
+            does not gather evidence, does not decide who is right, and does not award or withhold
+            money. If a rental goes wrong, it is settled between the Renter and the Owner, and
+            failing that through the ordinary courts of Sri Lanka.
+          </p>
+          <p className="mt-3">
+            What we will do is act on the platform itself. Report a problem and we record it against
+            the account concerned. Fraud, abuse, or a pattern of complaints can cost an account its
+            reliability score, its listings, or its access, at our discretion.
           </p>
         </section>
 
@@ -111,8 +123,10 @@ export default function TermsPage() {
           <p className="mt-3">
             You may delete your own account at any time from your{" "}
             <Link href="/account" className="text-blue-700 hover:text-blue-700 font-medium">account page</Link>.
-            Deletion is irreversible. Bookings already in progress will continue until completion or
-            cancellation.
+            Accounts with unresolved bookings cannot be deleted. When deletion is allowed, personal
+            documents are removed and booking records are anonymised. An account with a usable email
+            receives a recovery link that lasts 30 days; recovery restores access to the account shell,
+            but it does not restore deleted identity or licence files.
           </p>
         </section>
 
@@ -137,13 +151,15 @@ export default function TermsPage() {
 
         <section className="pt-8 border-t border-slate-200">
           <p className="text-slate-500 text-xs">
-            Questions about these Terms? Contact us via{" "}
-            <Link href="/dashboard/support" className="text-blue-700 hover:text-blue-700 font-medium">in-app support</Link>{" "}
-            (for agencies), email <span className="font-mono">{siteConfig.supportEmail}</span>, or{" "}
-            <a href={whatsappLink()} target="_blank" rel="noopener noreferrer" className="text-blue-700 hover:text-blue-700 font-medium">WhatsApp us</a>.
+            Questions about these Terms? There are three ways to reach DriveLink, and no others:{" "}
+            call <a href={`tel:${siteConfig.phoneNumber}`} className="font-mono text-blue-700">{siteConfig.phoneDisplay}</a>,{" "}
+            <a href={whatsappLink()} target="_blank" rel="noopener noreferrer" className="font-mono text-blue-700">{siteConfig.whatsappDisplay}</a>{" "}
+            on WhatsApp, or email{" "}
+            <a href={`mailto:${siteConfig.supportEmail}`} className="font-mono text-blue-700">{siteConfig.supportEmail}</a>.
+            Rental Pages can also use in-app support, which reaches the same team.
           </p>
         </section>
       </article>
-    </div>
+    </PageShell>
   );
 }

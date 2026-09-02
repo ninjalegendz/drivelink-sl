@@ -42,8 +42,8 @@ export function RoleTermsTabs() {
             <li><strong>Booking is a request, not a reservation:</strong> sending a request
                 does not guarantee availability. The Owner confirms first, then contact details
                 are unlocked for handover arrangement.</li>
-            <li><strong>No booking fee or down payment to DriveLink:</strong> during launch,
-                there is no cost to place a request.</li>
+            <li><strong>Booking confirmation fee is Rs. 0:</strong> there is no payment to
+                DriveLink to place or confirm a booking.</li>
             <li><strong>Direct payment to the Owner:</strong> the rental cost and any security
                 deposit are paid directly to the Owner on the terms you agree with them.
                 DriveLink does not hold your funds.</li>
@@ -57,11 +57,11 @@ export function RoleTermsTabs() {
                 immediately at vehicle return in the same condition. If the Owner files a damage
                 claim at that moment, they must provide a written estimate within 48 hours. You
                 can request a second estimate. Deposits are held maximum 7 days.</li>
-            <li><strong>Late return ladder:</strong> late return is free for the first 2 hours.
-                After that, an hourly late fee applies, capped at one day&apos;s rental rate. A
-                late return never costs more than one extra day. If you are unreachable for 24
-                hours, this may be treated as misappropriation and your account will be frozen
-                pending investigation.</li>
+            <li><strong>Late return ladder:</strong> the first 2 hours are the standard grace period.
+                After that, any hourly fee shown in the listing applies and is capped at one day&apos;s rental rate. If no fee was listed, no automatic amount is invented. At 24 hours, the Rental Page
+                can request a DriveLink review after recording a call and written contact attempt.
+                No accusation or account freeze happens from the clock alone; an admin reviews
+                the agreed return time and contact record first.</li>
             <li><strong>Fines and tolls:</strong> traffic fines and toll charges incurred during
                 your rental are your responsibility within the rental window. The Owner can file
                 a claim for 30 days after the rental ends.</li>
@@ -70,9 +70,9 @@ export function RoleTermsTabs() {
                 or blacklisting.</li>
             <li><strong>Identity verification:</strong> you must complete ID verification (Didit)
                 before booking. False identity information is grounds for account termination.</li>
-            <li><strong>Disputes:</strong> if a problem arises, report it through the platform.
-                DriveLink keeps the record (messages, inspection photos, documents) both sides can
-                rely on. We don&apos;t award damages or decide who pays. See{" "}
+            <li><strong>Disagreements:</strong> the rental, the money and the vehicle are between
+                you and the Owner. DriveLink does not mediate or decide who pays. Reporting a
+                problem records it against that account and can affect their standing. See{" "}
                 <Link href="/terms" className="text-blue-700 hover:text-blue-700 font-medium">
                   section 6
                 </Link>{" "}
@@ -81,17 +81,17 @@ export function RoleTermsTabs() {
         ) : (
           <ul className="list-disc pl-5 space-y-2 text-sm">
             <li><strong>Vehicle ownership and legality:</strong> all vehicles listed must legally
-                belong to you or be under your operational control. You warrant that the vehicle's
-                registration is valid, insurance is current and covers rental use (Hire or Private
-                as listed), and emission standards are met for the entire rental period. You are
-                solely responsible if a vehicle is unlicensed, uninsured, or unfit for rental.</li>
+                belong to you or be under your operational control. You warrant that the vehicle&apos;s
+                registration and insurance details are current, accurately listed, and suitable for
+                the rental offered. Do not describe private insurance as covering self-drive rental
+                use. You are solely responsible if a vehicle is unlicensed, uninsured, or unfit for rental.</li>
             <li><strong>Accurate listings:</strong> listings must contain true photos, correct
                 specifications, and honest pricing. Misleading or fraudulent listings will be
                 delisted and may result in account suspension.</li>
             <li><strong>Banned securities:</strong> you may not take passports, original NICs,
                 original driving licences, blank cheques, or any valuables as security. Doing so
                 is grounds for immediate account termination and potential legal action.</li>
-            <li><strong>Deposit standard:</strong> security deposits must be unlisted and held by
+            <li><strong>Deposit standard:</strong> security deposits must be listed and held by
                 you. You may collect a deposit amount listed on the vehicle page. At vehicle return,
                 if there are no damages, return the deposit immediately. If you claim damage, file
                 the claim at that handover moment, photograph the damage, and provide a written
@@ -111,7 +111,7 @@ export function RoleTermsTabs() {
                 <Link href="/guides/accident-protocol" className="text-blue-700 hover:text-blue-700 font-medium">
                   accident protocol guide
                 </Link>.
-                Get the Renter's insurance details, take photos, and file a damage claim immediately
+                Get the Renter&apos;s insurance details, take photos, and file a damage claim immediately
                 at handover with evidence.</li>
             <li><strong>Terms Engine:</strong> any rental terms you list (fuel policy, mileage
                 limits, permitted use, deposit amount, etc.) are part of the booking agreement.
@@ -120,25 +120,23 @@ export function RoleTermsTabs() {
                 a reasonable timeframe. Requests pending too long auto-cancel. Once confirmed, you
                 may not cancel without genuine cause (e.g., mechanical breakdown). Repeated
                 cancellations harm your reliability score and ranking, and may result in penalties.</li>
-            <li><strong>Admin verification:</strong> you must complete ID verification and vehicle
-                document review (registration, insurance) before your first vehicle is listed. Admin
-                may request additional documents at any time.</li>
+            <li><strong>Admin verification:</strong> you must complete ID verification before you submit
+                your first vehicle. Registration and insurance documents support a Verified Vehicle
+                badge; DriveLink may request additional documents at any time.</li>
             <li><strong>Reliability score and blacklisting:</strong> your score is based on
-                confirmation speed, cancellation rate, and Renter ratings. Low scores reduce
-                visibility. Evidence-based blacklisting (fraud, abuse, policy violations) is
-                admin-reviewed and appealable via support.</li>
-            <li><strong>Mediation-first disputes:</strong> if a Renter reports a problem, we gather
-                evidence (messages, photos, documents) and offer a written resolution. We do not
-                award damages or make money judgments. Actions are: guidance, score adjustments,
-                or account suspension.</li>
-            <li><strong>Platform fees:</strong> listing is free forever. During launch, bookings
-                are commission-free. Future fees (per-Rental-Page success fee after a free launch)
-                will be announced in advance.</li>
+                confirmation speed, cancellation rate, and completed bookings. Low scores reduce
+                visibility. Blacklisting (fraud, abuse, policy violations) is admin-reviewed and
+                appealable via support.</li>
+            <li><strong>Disagreements:</strong> DriveLink does not mediate rentals or judge what
+                happened to a vehicle. A reported problem is recorded against the account concerned
+                and can cost it visibility, listings, or access.</li>
+            <li><strong>DriveLink charges to Owners:</strong> listing is free, with no monthly
+                subscription or commission deducted from rental payments.</li>
             <li><strong>Data and privacy:</strong> see our{" "}
                 <Link href="/privacy" className="text-blue-700 hover:text-blue-700 font-medium">
                   privacy policy
                 </Link>{" "}
-                for PDPA compliance, data sharing, and your rights under Sri Lanka's Personal Data
+                for PDPA compliance, data sharing, and your rights under Sri Lanka&apos;s Personal Data
                 Protection Act.</li>
           </ul>
         )}

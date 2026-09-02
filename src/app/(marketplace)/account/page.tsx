@@ -9,6 +9,11 @@ import { PhoneVerifyForm } from "@/components/account/PhoneVerifyForm";
 import { SignOutButton } from "@/components/account/SignOutButton";
 import { RentalPageList } from "@/components/account/RentalPageList";
 import { LicenseUploadForm } from "@/components/account/LicenseUploadForm";
+import { Explanation } from "@/components/ui/Explanation";
+import { TeamInvitations, type TeamInvitation } from "@/components/account/TeamInvitations";
+import { PageTransferInvitations, type PageTransferInvitation } from "@/components/account/PageTransferInvitations";
+import { TutorialCallout } from "@/components/tutorials/TutorialCallout";
+import { pageShellClass } from "@/components/ui/PageShell";
 
 interface Props {
   searchParams: Promise<{ didit?: string; welcome?: string }>;
@@ -50,13 +55,25 @@ export default async function AccountPage({ searchParams }: Props) {
   // are protected columns browser-session SELECT can no longer reach. The
   // auth.getUser() check above pins the row to the caller.
   const service = await createServiceClient();
-  const [{ data: profile }, pages] = await Promise.all([
+  const [{ data: profile }, pages, invitationsResult, transfersResult] = await Promise.all([
     service
       .from("profiles")
-      .select("full_name, phone, phone_verified, email, email_verified_at, role, kyc_status, rating_avg, rating_count, created_at, license_front_url, license_back_url")
+      .select("full_name, phone, phone_verified, email, email_verified_at, role, kyc_status, created_at, license_front_url, license_back_url, date_of_birth, license_issued_on, license_expires_on, license_jurisdiction, license_review_status, license_review_note")
       .eq("id", user.id)
       .single(),
     getOwnedPages(supabase, user.id),
+    service.from("agency_member_invitations")
+      .select("id, role, expires_at, agencies(name), profiles:invited_by(full_name, email)")
+      .eq("invitee_id", user.id)
+      .eq("status", "pending")
+      .gt("expires_at", new Date().toISOString())
+      .order("created_at", { ascending: false }),
+    service.from("rental_page_transfers")
+      .select("id, expires_at, agencies(name), profiles:from_owner_id(full_name, email)")
+      .eq("to_owner_id", user.id)
+      .eq("status", "awaiting_recipient")
+      .gt("expires_at", new Date().toISOString())
+      .order("created_at", { ascending: false }),
   ]);
 
   if (!profile) redirect("/login");
@@ -70,9 +87,17 @@ export default async function AccountPage({ searchParams }: Props) {
   // query param is redundant (and was actively misleading when the
   // Didit webhook never arrived).
   const isPending  = profile.kyc_status === "pending";
+  const teamInvitations: TeamInvitation[] = (invitationsResult.data ?? []).map((value) => {
+    const row = value as unknown as { id: string; role: string; expires_at: string; agencies: { name: string } | null; profiles: { full_name: string | null; email: string | null } | null };
+    return { id: row.id, pageName: row.agencies?.name ?? "Rental Page", invitedBy: row.profiles?.full_name ?? row.profiles?.email ?? null, role: row.role, expiresAt: row.expires_at };
+  });
+  const pageTransferInvitations: PageTransferInvitation[] = (transfersResult.data ?? []).map((value) => {
+    const row = value as unknown as { id: string; expires_at: string; agencies: { name: string } | null; profiles: { full_name: string | null; email: string | null } | null };
+    return { id: row.id, pageName: row.agencies?.name ?? "Rental Page", fromOwner: row.profiles?.full_name ?? row.profiles?.email ?? null, expiresAt: row.expires_at };
+  });
 
   return (
-    <div className="max-w-2xl mx-auto px-4 py-8 space-y-5">
+    <div className={pageShellClass("narrow", "space-y-6")}>
 
       {/* Header */}
       <div className="flex items-start justify-between">
@@ -101,7 +126,7 @@ export default async function AccountPage({ searchParams }: Props) {
 
       {/* Welcome banner, first sight after passwordless signup */}
       {welcome && (
-        <div className="p-4 bg-blue-500/10 border border-blue-500/20 rounded-2xl text-sm">
+        <div className="p-4 bg-blue-50 border border-blue-200 rounded-2xl text-sm">
           <p className="text-blue-700 font-semibold mb-1">Welcome to DriveLink!</p>
           <p className="text-slate-600 text-xs leading-relaxed">
             Your account is live. Verify your ID below to unlock booking, Rental Page owners confirm verified
@@ -110,31 +135,35 @@ export default async function AccountPage({ searchParams }: Props) {
         </div>
       )}
 
+      {profile.role !== "admin" && <TutorialCallout audience="renter" />}
+
       {/* Email-verification nudge, only when an email exists and isn't verified yet */}
       {profile.email && !profile.email_verified_at && (
         <div className="p-3 bg-white border border-slate-200 rounded-2xl shadow-sm flex items-start gap-3 text-xs">
           <span className="w-7 h-7 rounded-full bg-slate-100 text-blue-600 flex items-center justify-center shrink-0">@</span>
           <div className="flex-1">
-            <p className="text-slate-700 font-medium">Verify your email for a trust badge</p>
+            <p className="text-slate-700 font-medium">Verify your email for recovery and notices</p>
             <p className="text-slate-500 mt-0.5">
               We&apos;ve sent a link to <span className="font-mono">{profile.email}</span>. Clicking it
-              adds a verified badge to your profile that helps Rental Page owners confirm bookings faster. Optional.
+              gives DriveLink a second way to send important booking and account notices. Optional.
             </p>
           </div>
         </div>
       )}
 
-      {/* Stats */}
+      {/* Personal trust checks. Public reviews belong to Rental Pages, not people. */}
       <div className="grid grid-cols-3 gap-3">
         <div className="bg-white border border-slate-200 rounded-2xl shadow-sm p-4 text-center">
-          <p className="text-slate-900 font-bold text-xl">
-            {(profile.rating_count ?? 0) > 0 ? profile.rating_avg?.toFixed(1) : "-"}
-          </p>
-          <p className="text-slate-500 text-xs mt-1">Rating</p>
+          <Badge variant={profile.phone_verified ? "green" : "yellow"}>
+            {profile.phone_verified ? "Verified" : "Action needed"}
+          </Badge>
+          <p className="text-slate-500 text-xs mt-2">Phone</p>
         </div>
         <div className="bg-white border border-slate-200 rounded-2xl shadow-sm p-4 text-center">
-          <p className="text-slate-900 font-bold text-xl">{profile.rating_count ?? 0}</p>
-          <p className="text-slate-500 text-xs mt-1">Reviews</p>
+          <Badge variant={profile.license_review_status === "verified" ? "green" : profile.license_review_status === "pending" ? "yellow" : "slate"}>
+            {profile.license_review_status === "verified" ? "Reviewed" : profile.license_review_status === "pending" ? "Under review" : "Not ready"}
+          </Badge>
+          <p className="text-slate-500 text-xs mt-2">Driving licence</p>
         </div>
         <div className="bg-white border border-slate-200 rounded-2xl shadow-sm p-4 text-center">
           <Badge variant={kycVariant[profile.kyc_status ?? "unverified"]}>
@@ -146,6 +175,9 @@ export default async function AccountPage({ searchParams }: Props) {
 
       {/* My Rental Pages (every signed-in account can host now) */}
       <RentalPageList pages={pages} />
+
+      <TeamInvitations invitations={teamInvitations} />
+      <PageTransferInvitations invitations={pageTransferInvitations} />
 
       {/* My bookings: everyone rents (decision 9: one identity, page owners
           keep their personal renter screens). Admins use the admin console. */}
@@ -231,7 +263,7 @@ export default async function AccountPage({ searchParams }: Props) {
 
         {/* Status panel */}
         {isVerified && (
-          <div className="p-4 bg-emerald-500/10 border border-emerald-500/20 rounded-xl text-sm text-emerald-700">
+          <div className="p-4 bg-emerald-50 border border-emerald-500/20 rounded-xl text-sm text-emerald-700">
             <p className="font-semibold mb-0.5">Identity verified by Didit</p>
             <p className="text-emerald-700/90 text-xs">
               Your ID and face have been confirmed. You can book any vehicle on DriveLink.
@@ -240,7 +272,7 @@ export default async function AccountPage({ searchParams }: Props) {
         )}
 
         {isPending && !isVerified && (
-          <div className="p-4 bg-blue-500/10 border border-blue-500/20 rounded-xl text-sm text-blue-600">
+          <div className="p-4 bg-blue-50 border border-blue-200 rounded-xl text-sm text-blue-600">
             <p className="font-semibold mb-0.5">Verification in progress</p>
             <p className="text-slate-600 text-xs">
               Didit is reviewing your documents. This usually takes a few minutes.
@@ -250,7 +282,7 @@ export default async function AccountPage({ searchParams }: Props) {
         )}
 
         {profile.kyc_status === "rejected" && !didit && (
-          <div className="mb-4 p-4 bg-red-500/10 border border-red-500/20 rounded-xl text-sm text-red-700">
+          <div className="mb-4 p-4 bg-rose-50 border border-rose-200 rounded-xl text-sm text-red-700">
             <p className="font-semibold mb-0.5">Verification failed</p>
             <p className="text-red-700/90 text-xs">
               Didit could not verify your identity. Common reasons: blurry photo, glare on ID,
@@ -272,8 +304,7 @@ export default async function AccountPage({ searchParams }: Props) {
 
         {/* Trust note */}
         <p className="text-slate-400 text-xs mt-4 text-center">
-          DriveLink never sees or stores your ID documents.
-          All verification is handled end-to-end by{" "}
+          Didit performs the identity and liveness check. After approval, DriveLink keeps a protected front/back copy of the approved government ID for confirmed-booking handover. It is never public, and the liveness selfie is not shared with Rental Pages. Verification is provided by{" "}
           <a
             href="https://didit.me"
             target="_blank"
@@ -289,17 +320,23 @@ export default async function AccountPage({ searchParams }: Props) {
       <div className="bg-white border border-slate-200 rounded-2xl shadow-sm p-5">
         <div className="flex items-center justify-between mb-4">
           <h2 className="text-slate-900 font-semibold">Driving licence</h2>
-          <Badge variant={profile.license_front_url && profile.license_back_url ? "green" : "slate"}>
-            {profile.license_front_url && profile.license_back_url ? "On file" : "Not uploaded"}
+          <Badge variant={profile.license_review_status === "verified" ? "green" : profile.license_review_status === "pending" ? "yellow" : profile.license_review_status === "rejected" ? "red" : "slate"}>
+            {profile.license_review_status === "verified" ? "Reviewed" : profile.license_review_status === "pending" ? "Under review" : profile.license_review_status === "rejected" ? "Update needed" : "Not submitted"}
           </Badge>
         </div>
         <p className="text-slate-600 text-xs mb-4">
-          Needed for self-drive rentals. Shared with the Rental Page only after you consent, per booking.
+          Required for self-drive rentals. DriveLink reviews your submission first; the Rental Page still checks your original licence and any declared permit at pickup.
         </p>
+        <Explanation explanation="selfDriveLicence" className="mb-4" />
         <LicenseUploadForm
-          userId={user.id}
           existingFrontUrl={profile.license_front_url}
           existingBackUrl={profile.license_back_url}
+          initialDateOfBirth={profile.date_of_birth}
+          initialIssuedOn={profile.license_issued_on}
+          initialExpiresOn={profile.license_expires_on}
+          initialJurisdiction={profile.license_jurisdiction}
+          reviewStatus={profile.license_review_status ?? "not_submitted"}
+          reviewNote={profile.license_review_note}
         />
       </div>
 

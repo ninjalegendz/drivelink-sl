@@ -1,9 +1,10 @@
 import { redirect } from "next/navigation";
-import { Headphones } from "lucide-react";
 import { createClient } from "@/lib/supabase/server";
 import { getActivePage } from "@/lib/pages/active-page";
+import { getPageAccess } from "@/lib/pages/access";
 import { getOrCreateThreadForAgency } from "@/lib/support/thread";
 import { SupportChat, type SupportMessage } from "@/components/support/SupportChat";
+import { PageHeader } from "@/components/ui/PageHeader";
 
 export default async function AgencySupportPage() {
   const supabase = await createClient();
@@ -12,6 +13,8 @@ export default async function AgencySupportPage() {
 
   const { page } = await getActivePage(supabase, user.id);
   if (!page) redirect("/account/pages/new");
+  const pageAccess = await getPageAccess(supabase, user.id, page.id);
+  if (!pageAccess.capabilities.includes("manage_support")) redirect("/dashboard");
 
   const thread = await getOrCreateThreadForAgency(supabase, page.id);
   if (!thread) {
@@ -29,13 +32,12 @@ export default async function AgencySupportPage() {
 
   return (
     <div>
-      <div className="flex items-center gap-2 mb-1">
-        <Headphones size={22} className="text-blue-600" strokeWidth={1.75} />
-        <h1 className="text-2xl font-bold text-slate-900">Support</h1>
+      <div className="mb-5">
+        <PageHeader
+          title="Support"
+          description="Direct line to the DriveLink admin team for booking issues, safety concerns and listing review questions."
+        />
       </div>
-      <p className="text-slate-600 text-sm mb-5">
-        Direct line to the DriveLink admin team, booking issues, payouts, listing review questions, anything.
-      </p>
 
       <SupportChat
         threadId={thread.id}

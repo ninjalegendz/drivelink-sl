@@ -5,12 +5,16 @@ import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { ArrowLeft, Mail, Phone } from "lucide-react";
 import { Button } from "@/components/ui/Button";
+import { Card } from "@/components/ui/Card";
+import { Field } from "@/components/ui/Field";
+import { Input } from "@/components/ui/Input";
 import { PhoneInput } from "@/components/ui/PhoneInput";
 import { toLocalSL } from "@/lib/auth/phone-format";
+import { startNavigationProgress } from "@/components/layout/NavigationProgress";
 import { isValidInternationalPhone } from "@/data/country-codes";
 import { isEmailLike } from "@/lib/auth/identifier";
 
-type Stage   = "identifier" | "code" | "verify_link_sent";
+type Stage   = "identifier" | "code";
 type Channel = "email" | "phone";
 
 function maskIdentifier(value: string, channel: Channel): string {
@@ -36,18 +40,17 @@ function LoginForm() {
   // The renter picks which credential to use; phone gets the country-code
   // picker, email gets a plain field. Whichever is active becomes the
   // `identifier` the backend resolves (it accepts either).
-  const [method,     setMethod]     = useState<Channel>("phone");
-  const [phone,      setPhone]      = useState("");
-  const [email,      setEmail]      = useState("");
+  const [method,     setMethod]     = useState<Channel>(() => searchParams.get("email") ? "email" : "phone");
+  const [phone,      setPhone]      = useState(() => searchParams.get("phone") ?? "");
+  const [email,      setEmail]      = useState(() => searchParams.get("email") ?? "");
   const [code,       setCode]       = useState("");
   const [channel,    setChannel]    = useState<Channel>("phone");
-  const [deliveredVia, setDeliveredVia] = useState<string | null>(null);
 
   const identifier = method === "phone" ? phone : email.trim();
   const [loading,    setLoading]    = useState(false);
   const [error,      setError]      = useState<string | null>(null);
-  const [accountMissing, setAccountMissing] = useState(false);
   const [info,       setInfo]       = useState<string | null>(null);
+  const [accountMissing, setAccountMissing] = useState(false);
   const [cooldown,   setCooldown]   = useState(0); // seconds until resend allowed
   const codeRef = useRef<HTMLInputElement>(null);
 
@@ -90,7 +93,7 @@ function LoginForm() {
       return;
     }
 
-    setLoading(true); setError(null); setInfo(null); setAccountMissing(false);
+    setLoading(true); setError(null); setInfo(null);
     setChannel(method);
 
     const res = await fetch("/api/auth/login/send-code", {
@@ -101,30 +104,21 @@ function LoginForm() {
     const payload = await res.json().catch(() => ({}));
     setLoading(false);
 
-    // No account with this number/email → prompt to create one instead of
-    // parking them at a code screen that never fills.
-    if (payload.accountNotFound) {
-      setAccountMissing(true);
-      return;
-    }
-
     if (!res.ok) {
+      // No account for this number or email. Don't strand them on a code screen
+      // waiting for a code that can never arrive: say so, and offer sign-up
+      // with what they already typed carried across.
+      if ((payload as { accountNotFound?: boolean }).accountNotFound) {
+        setAccountMissing(true);
+        return;
+      }
       setError(payload.error ?? "Couldn't send the code.");
       if (payload.waitSec) setCooldown(payload.waitSec);
       return;
     }
 
-    if (payload.emailUnverified) {
-      setStage("verify_link_sent");
-      return;
-    }
-
     setStage("code");
-    setDeliveredVia(payload.deliveredVia ?? null);
-    if (payload.nextCooldownSec) setCooldown(payload.nextCooldownSec);
-    if (payload.devOnly && payload.devCode) {
-      setInfo(`Dev mode: code is ${payload.devCode}`);
-    }
+    setCooldown(60);
   }
 
   async function verifyCode(e: React.FormEvent) {
@@ -142,48 +136,53 @@ function LoginForm() {
     if (!res.ok) { setError(payload.error ?? "Verification failed."); return; }
 
     const dest = next || payload.dest || "/";
+    startNavigationProgress();
     router.push(dest);
     router.refresh();
   }
 
   return (
-    <div className="bg-white rounded-2xl border border-slate-100 p-6">
-      <h1 className="text-slate-900 font-bold text-xl mb-1">Sign in</h1>
-      <p className="text-slate-600 text-sm mb-6">
-        New here?{" "}
-        <Link href="/signup" className="text-blue-600 hover:text-blue-500">Create an account</Link>
-      </p>
+    <Card padding="lg" className="space-y-6">
+      <div className="space-y-1">
+        <h1 className="text-xl font-bold text-slate-950">Sign in</h1>
+        <p className="text-sm text-slate-600">
+          New here?{" "}
+          <Link href="/signup" className="font-medium text-blue-700 hover:text-blue-800">Create an account</Link>
+        </p>
+      </div>
 
       {/* Stage 1, identifier */}
       {stage === "identifier" && (
-        <form onSubmit={sendCode} className="space-y-4">
+        <form onSubmit={sendCode} className="space-y-5">
           {/* Phone vs email chooser, phone first (the primary SL channel). */}
-          <div className="grid grid-cols-2 gap-1 p-1 bg-slate-100 rounded-xl">
+          <div className="grid grid-cols-2 gap-1 rounded-lg bg-slate-100 p-1">
             {(["phone", "email"] as const).map((m) => (
               <button
                 key={m}
                 type="button"
+                aria-pressed={method === m}
                 onClick={() => { setMethod(m); setError(null); setAccountMissing(false); }}
-                className={`spring-press flex items-center justify-center gap-1.5 py-2 rounded-lg text-sm font-medium transition-colors ${
-                  method === m ? "bg-white text-slate-900 shadow-sm" : "text-slate-500 hover:text-slate-700"
+                className={`spring-press flex min-h-10 items-center justify-center gap-1.5 rounded-lg text-sm font-medium transition-colors ${
+                  method === m ? "bg-white text-slate-900 shadow-sm" : "text-slate-600 hover:text-slate-800"
                 }`}
               >
-                {m === "phone" ? <Phone size={14} /> : <Mail size={14} />}
+                {m === "phone" ? <Phone size={15} /> : <Mail size={15} />}
                 {m === "phone" ? "Phone" : "Email"}
               </button>
             ))}
           </div>
 
-          <div>
-            {method === "phone" ? (
-              <>
-                <label className="text-slate-600 text-xs mb-1 block">Phone number</label>
+          <Field
+            label={method === "phone" ? "Phone number" : "Email address"}
+            required
+            hint="We'll send you a 6-digit code. No password required."
+          >
+            {(field) =>
+              method === "phone" ? (
                 <PhoneInput value={phone} onChange={(v) => { setPhone(v); setAccountMissing(false); }} autoFocus required />
-              </>
-            ) : (
-              <>
-                <label className="text-slate-600 text-xs mb-1 block">Email address</label>
-                <input
+              ) : (
+                <Input
+                  {...field}
                   type="email"
                   value={email}
                   onChange={(e) => { setEmail(e.target.value); setAccountMissing(false); }}
@@ -191,84 +190,76 @@ function LoginForm() {
                   autoFocus
                   autoComplete="email"
                   placeholder="you@example.com"
-                  className="w-full px-4 py-2.5 bg-slate-100 border border-slate-200 rounded-xl text-slate-900 placeholder-slate-400 text-sm focus:outline-none focus:border-blue-500"
                 />
-              </>
-            )}
-            <p className="text-slate-400 text-xs mt-1.5">
-              We&apos;ll send you a 6-digit code. No password required.
-            </p>
-          </div>
+              )
+            }
+          </Field>
 
-          {error && <p className="text-red-400 text-sm">{error}</p>}
+          {error && <p role="alert" className="text-sm font-medium text-rose-600">{error}</p>}
 
-          {accountMissing ? (
-            <div className="p-4 bg-blue-50 border border-blue-200 rounded-xl space-y-3">
-              <p className="text-slate-700 text-sm">
-                No DriveLink account uses that {method === "email" ? "email" : "number"}. Create one to continue:
-                it takes about a minute.
+          {accountMissing && (
+            <div role="alert" className="rounded-lg border border-blue-200 bg-blue-50 p-3.5">
+              <p className="text-sm font-semibold text-blue-900">
+                No DriveLink account uses {method === "phone" ? "that number" : "that email"} yet.
               </p>
-              <Link href={signupHref} className="block">
-                <Button type="button" className="w-full" size="lg">Create an account</Button>
-              </Link>
-              <button
-                type="button"
-                onClick={() => setAccountMissing(false)}
-                className="text-slate-500 hover:text-slate-700 text-xs w-full text-center"
+              <p className="mt-1 text-sm leading-5 text-blue-900/90">
+                Create one and you can send booking requests straight away. It takes about a minute.
+              </p>
+              <Link
+                href={signupHref}
+                className="mt-3 inline-flex min-h-11 items-center gap-1.5 rounded-lg bg-blue-600 px-4 text-sm font-semibold text-white hover:bg-blue-700"
               >
-                Try a different {method === "email" ? "email" : "number"}
-              </button>
+                Create your account
+              </Link>
             </div>
-          ) : (
-            <Button type="submit" loading={loading} className="w-full" size="lg">
-              Send code
-            </Button>
           )}
+
+          <Button type="submit" loading={loading} className="w-full" size="lg">
+            Send code
+          </Button>
         </form>
       )}
 
       {/* Stage 2, code entry */}
       {stage === "code" && (
-        <form onSubmit={verifyCode} className="space-y-4">
+        <form onSubmit={verifyCode} className="space-y-5">
           <button
             type="button"
             onClick={() => { setStage("identifier"); setCode(""); setError(null); setInfo(null); }}
-            className="inline-flex items-center gap-1 text-slate-500 hover:text-slate-900 text-xs"
+            className="inline-flex min-h-10 items-center gap-1.5 text-sm text-slate-600 hover:text-slate-900"
           >
-            <ArrowLeft size={12} /> Change {channel === "email" ? "email" : "phone"}
+            <ArrowLeft size={14} /> Change {channel === "email" ? "email" : "phone"}
           </button>
 
-          <div className="flex items-start gap-3 p-3 bg-slate-100 rounded-xl">
-            {channel === "email" ? <Mail size={18} className="text-blue-600 mt-0.5 shrink-0" /> : <Phone size={18} className="text-blue-600 mt-0.5 shrink-0" />}
-            <div className="text-xs">
-              <p className="text-slate-700">
-                Code sent to <span className="text-slate-900 font-mono">{maskIdentifier(identifier, channel)}</span>
-                {deliveredVia === "whatsapp" && <> on <span className="font-semibold text-emerald-600">WhatsApp</span>, check your WhatsApp messages</>}
-                {deliveredVia === "email" && channel !== "email" && <>, we sent it to your <span className="font-semibold">email</span> instead</>}
-              </p>
-              <p className="text-slate-500 mt-0.5">
-                Expires in 10 minutes.
+          <div className="flex items-start gap-3 rounded-lg bg-slate-100 p-3.5">
+            {channel === "email" ? <Mail size={18} className="mt-0.5 shrink-0 text-blue-600" /> : <Phone size={18} className="mt-0.5 shrink-0 text-blue-600" />}
+            <div className="space-y-0.5">
+              <p className="text-sm font-medium text-slate-800">Check your messages</p>
+              <p className="text-xs leading-5 text-slate-600">
+                If a code can be sent to <span className="font-mono text-slate-800">{maskIdentifier(identifier, channel)}</span>, it will arrive shortly and expires in 10 minutes.
               </p>
             </div>
           </div>
 
-          <div>
-            <label className="text-slate-600 text-xs mb-1 block">6-digit code</label>
-            <input
-              ref={codeRef}
-              type="text"
-              inputMode="numeric"
-              pattern="\d{6}"
-              maxLength={6}
-              value={code}
-              onChange={(e) => setCode(e.target.value.replace(/\D/g, ""))}
-              required
-              className="w-full px-4 py-3 bg-slate-100 border border-slate-200 rounded-xl text-slate-900 text-center font-mono text-2xl tracking-[0.5em] focus:outline-none focus:border-blue-500"
-            />
-          </div>
+          <Field label="6-digit code" required>
+            {(field) => (
+              <input
+                {...field}
+                ref={codeRef}
+                type="text"
+                inputMode="numeric"
+                pattern="\d{6}"
+                maxLength={6}
+                value={code}
+                onChange={(e) => setCode(e.target.value.replace(/\D/g, ""))}
+                required
+                className="w-full rounded-lg border border-slate-300 bg-white px-4 py-3 text-center font-mono text-2xl tracking-[0.4em] text-slate-950 focus:border-blue-500"
+              />
+            )}
+          </Field>
 
-          {info  && <p className="text-blue-600 text-xs">{info}</p>}
-          {error && <p className="text-red-400 text-sm">{error}</p>}
+          {info  && <p className="text-sm text-blue-700">{info}</p>}
+          {error && <p role="alert" className="text-sm font-medium text-rose-600">{error}</p>}
 
           <Button type="submit" loading={loading} disabled={code.length !== 6} className="w-full" size="lg">
             Verify and sign in
@@ -278,41 +269,16 @@ function LoginForm() {
             type="button"
             onClick={() => sendCode()}
             disabled={loading || cooldown > 0}
-            className="text-xs text-slate-500 hover:text-blue-600 disabled:opacity-50 disabled:hover:text-slate-500 w-full text-center"
+            className="min-h-10 w-full text-center text-sm text-slate-600 hover:text-blue-700 disabled:opacity-50 disabled:hover:text-slate-600"
           >
             {cooldown > 0 ? `Resend code in ${cooldown}s` : "Resend code"}
           </button>
+          <p className="text-center text-xs text-slate-500">
+            New to DriveLink? <Link href={signupHref} className="font-medium text-blue-700 hover:text-blue-800">Create an account</Link>
+          </p>
         </form>
       )}
-
-      {/* Stage, email exists but unverified */}
-      {stage === "verify_link_sent" && (
-        <div className="space-y-4">
-          <div className="flex items-start gap-3 p-3 bg-blue-500/10 border border-blue-500/20 rounded-xl">
-            <Mail size={18} className="text-blue-600 mt-0.5 shrink-0" />
-            <div className="text-sm">
-              <p className="text-blue-700 font-medium">Verify your email first</p>
-              <p className="text-slate-600 text-xs mt-1">
-                Your email <span className="font-mono">{identifier}</span> isn&apos;t verified yet. We&apos;ve sent a verification link to your inbox, click it to confirm and you&apos;ll be logged in automatically.
-              </p>
-            </div>
-          </div>
-
-          <p className="text-slate-500 text-xs">
-            Don&apos;t want to wait for the email? Sign in with your phone number instead.
-          </p>
-
-          <Button
-            type="button"
-            variant="secondary"
-            className="w-full"
-            onClick={() => { setMethod("phone"); setStage("identifier"); setEmail(""); setError(null); }}
-          >
-            <Phone size={14} /> Use phone number
-          </Button>
-        </div>
-      )}
-    </div>
+    </Card>
   );
 }
 

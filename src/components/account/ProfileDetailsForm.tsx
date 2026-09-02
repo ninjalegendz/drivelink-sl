@@ -75,7 +75,7 @@ export function ProfileDetailsForm({ userId, initialFullName, initialPhone, emai
           type="email" value={email} disabled
           className="w-full px-4 py-2.5 bg-slate-100/70 border border-slate-100 rounded-xl text-slate-500 text-sm cursor-not-allowed"
         />
-        <p className="text-slate-500 text-xs mt-1">Email changes aren't supported yet, contact support if you need to update yours.</p>
+        <p className="text-slate-500 text-xs mt-1">Email changes aren&apos;t supported yet, contact support if you need to update yours.</p>
       </div>
 
       <div>
@@ -83,7 +83,7 @@ export function ProfileDetailsForm({ userId, initialFullName, initialPhone, emai
         <input
           type="text" value={fullName} onChange={(e) => { setFullName(e.target.value); setSuccess(false); }}
           required
-          className="w-full px-4 py-2.5 bg-slate-100 border border-slate-200 rounded-xl text-slate-900 text-sm focus:outline-none focus:border-blue-500"
+          className="w-full px-4 py-2.5 bg-slate-100 border border-slate-200 rounded-xl text-slate-900 text-sm focus:border-blue-500"
         />
       </div>
 
@@ -96,8 +96,8 @@ export function ProfileDetailsForm({ userId, initialFullName, initialPhone, emai
         />
       </div>
 
-      {error   && <p className="text-red-400 text-sm">{error}</p>}
-      {success && <p className="text-emerald-400 text-sm">Saved.</p>}
+      {error   && <p className="text-rose-600 text-sm">{error}</p>}
+      {success && <p className="text-emerald-700 text-sm">Saved.</p>}
 
       <Button type="submit" loading={loading} disabled={!dirty}>
         Save changes

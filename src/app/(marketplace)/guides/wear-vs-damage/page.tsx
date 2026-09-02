@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { ShieldCheck, Wrench, AlertTriangle } from "lucide-react";
+import { pageShellClass } from "@/components/ui/PageShell";
 
 export const metadata: Metadata = {
   title: "Wear vs Damage, who pays for what | DriveLink",
@@ -28,7 +29,7 @@ const DAMAGE = [
 
 export default function WearVsDamagePage() {
   return (
-    <div className="max-w-3xl mx-auto px-4 py-10 space-y-8">
+    <div className={pageShellClass("prose", "space-y-8")}>
       <header className="space-y-3">
         <p className="inline-flex items-center gap-2 text-blue-600 text-sm font-semibold">
           <ShieldCheck size={16} /> DriveLink standard

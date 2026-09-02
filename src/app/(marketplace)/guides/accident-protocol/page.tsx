@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { Siren, Phone, Camera, ShieldAlert, FileText, HandCoins } from "lucide-react";
+import { pageShellClass } from "@/components/ui/PageShell";
 
 export const metadata: Metadata = {
   title: "Accident or breakdown? Do this | DriveLink",
@@ -46,7 +47,7 @@ const STEPS: { icon: React.ReactNode; title: string; body: string }[] = [
 
 export default function AccidentProtocolPage() {
   return (
-    <div className="max-w-3xl mx-auto px-4 py-10 space-y-8 print:py-4">
+    <div className={pageShellClass("prose", "space-y-8 print:py-4")}>
       <header className="space-y-3">
         <p className="inline-flex items-center gap-2 text-red-600 text-sm font-semibold">
           <ShieldAlert size={16} /> Keep this handy on every trip
@@ -73,14 +74,15 @@ export default function AccidentProtocolPage() {
       <section className="rounded-2xl border border-slate-200 bg-slate-50 p-5 space-y-3 text-sm text-slate-600 leading-relaxed">
         <h2 className="font-semibold text-slate-900 text-base">Breakdowns (not your fault)</h2>
         <p>
-          Mechanical failure that isn&apos;t caused by the renter is the <strong>owner&apos;s</strong>{" "}
-          responsibility: repair, a replacement vehicle, or a refund for the lost days. Report it through
-          the booking and give the owner a chance to respond, but{" "}
+          If a mechanical failure was not caused by the renter, the Rental Page should arrange the remedy
+          stated in the booking agreement, such as repair, recovery, a replacement vehicle, or an agreed
+          refund for unusable days. DriveLink does not guarantee that every provider has replacement or
+          roadside capacity. Report it through the booking and give the provider a chance to respond, but{" "}
           <strong>never authorise repairs yourself without the owner&apos;s written OK</strong> in the
-          conversation, or the cost may not be reimbursed. Towing for a mechanical failure is the
-          owner&apos;s cost.
+          conversation, or the cost may not be reimbursed. Record who authorised and paid any towing;
+          responsibility ultimately depends on the agreement, cause, and insurance position.
         </p>
-        <h2 className="font-semibold text-slate-900 text-base pt-2">What you're liable for</h2>
+        <h2 className="font-semibold text-slate-900 text-base pt-2">What you&apos;re liable for</h2>
         <p>
           With a properly hire-insured vehicle, your exposure in an at-fault accident is normally the
           insurance excess plus anything the insurer excludes, as written in your rental agreement.{" "}

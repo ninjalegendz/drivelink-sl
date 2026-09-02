@@ -3,6 +3,7 @@ import { notFound, redirect } from "next/navigation";
 import Link from "next/link";
 import { ArrowLeft } from "lucide-react";
 import { getActivePage } from "@/lib/pages/active-page";
+import { getPageAccess } from "@/lib/pages/access";
 import { AvailabilityManager } from "@/components/dashboard/AvailabilityManager";
 
 interface Props {
@@ -19,6 +20,8 @@ export default async function VehicleAvailabilityPage({ params }: Props) {
   const { page, pages } = await getActivePage(supabase, user.id);
   if (!page) redirect("/account/pages/new");
   const agency = page;
+  const pageAccess = await getPageAccess(supabase, user.id, agency.id);
+  if (!pageAccess.capabilities.includes("manage_fleet")) redirect("/dashboard");
 
   // Confirm this vehicle belongs to one of this account's own Rental Pages.
   const { data: vehicleData } = await supabase
@@ -52,6 +55,18 @@ export default async function VehicleAvailabilityPage({ params }: Props) {
     created_at: string;
   }[];
 
+  // Dates a renter already holds. Blocking over one of these does not cancel
+  // it, so the manager warns before the owner commits rather than leaving the
+  // calendar and the bookings list disagreeing.
+  const { data: bookingRows } = await supabase
+    .from("bookings")
+    .select("start_date, end_date")
+    .eq("vehicle_id", id)
+    .in("status", ["confirmed", "payment_pending", "active"])
+    .gte("end_date", todayIso);
+
+  const booked = (bookingRows ?? []) as { start_date: string; end_date: string }[];
+
   return (
     <div className="max-w-2xl">
       <Link
@@ -70,7 +85,7 @@ export default async function VehicleAvailabilityPage({ params }: Props) {
         dates as bookable.
       </p>
 
-      <AvailabilityManager vehicleId={vehicle.id} agencyId={agency.id} initial={blocks} />
+      <AvailabilityManager vehicleId={vehicle.id} agencyId={agency.id} initial={blocks} booked={booked} />
     </div>
   );
 }

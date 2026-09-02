@@ -6,6 +6,7 @@ import { AvatarUploader } from "@/components/account/AvatarUploader";
 import { ProfileDetailsForm } from "@/components/account/ProfileDetailsForm";
 import { DeleteAccountSection } from "@/components/account/DeleteAccountSection";
 import type { Database } from "@/types/database";
+import { pageShellClass } from "@/components/ui/PageShell";
 
 type ProfileRow = Database["public"]["Tables"]["profiles"]["Row"];
 
@@ -38,7 +39,7 @@ export default async function AccountSettingsPage() {
                                       "/account";
 
   return (
-    <div className="max-w-2xl mx-auto px-4 py-8">
+    <div className={pageShellClass("narrow")}>
       <Link
         href={backHref}
         className="inline-flex items-center gap-1.5 text-slate-600 hover:text-slate-900 text-sm mb-4"
@@ -48,7 +49,7 @@ export default async function AccountSettingsPage() {
 
       <h1 className="text-2xl font-bold text-slate-900 mb-1">Account settings</h1>
       <p className="text-slate-600 text-sm mb-8">
-        Update your profile, password, and personal details.
+        Update your contact and personal details.
       </p>
 
       <div className="space-y-6">

@@ -50,7 +50,7 @@ export function DiditVerifyButton({
         </div>
       </div>
 
-      {error && <p className="text-red-400 text-sm">{error}</p>}
+      {error && <p className="text-rose-600 text-sm">{error}</p>}
 
       <Button onClick={start} loading={loading} className="w-full">
         {label}

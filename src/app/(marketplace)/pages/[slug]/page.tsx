@@ -3,9 +3,10 @@ import Link from "next/link";
 import Image from "next/image";
 import type { Metadata } from "next";
 import { ShieldCheck, Star, MapPin, Clock } from "lucide-react";
-import { createServiceClient } from "@/lib/supabase/server";
+import { createPublicClient } from "@/lib/supabase/server";
 import { formatLKR } from "@/lib/vehicles/format";
 import { providerNounCap } from "@/lib/providers/label";
+import { pageShellClass } from "@/components/ui/PageShell";
 
 interface Props { params: Promise<{ slug: string }> }
 
@@ -25,14 +26,11 @@ interface PageProfile {
 }
 
 async function loadPage(slug: string): Promise<PageProfile | null> {
-  const service = await createServiceClient();
-  const { data } = await service
+  const publicClient = createPublicClient();
+  const { data } = await publicClient
     .from("agencies")
     .select(PAGE_SELECT)
     .eq("slug", slug)
-    .eq("is_blocked", false)
-    .is("deleted_at", null)
-    .is("deactivated_at", null)
     .maybeSingle();
   return (data as unknown as PageProfile) ?? null;
 }
@@ -40,7 +38,10 @@ async function loadPage(slug: string): Promise<PageProfile | null> {
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const { slug } = await params;
   const page = await loadPage(slug);
-  if (!page) return { title: "Rental Page" };
+  // Resolve the trust gate before the streamed page starts so a hidden page
+  // returns a real HTTP 404, rather than a 200 response containing a late
+  // not-found boundary.
+  if (!page) notFound();
   return {
     title: `${page.name as string} | DriveLink`,
     description: (page.description as string) || `Rent vehicles from ${page.name} on DriveLink.`,
@@ -52,7 +53,7 @@ export default async function RentalPageProfile({ params }: Props) {
   const page = await loadPage(slug);
   if (!page) notFound();
 
-  const service = await createServiceClient();
+  const service = createPublicClient();
   const agencyId = page.id as string;
 
   const [{ data: vehiclesData }, { data: reviewsData }] = await Promise.all([
@@ -75,18 +76,18 @@ export default async function RentalPageProfile({ params }: Props) {
       {/* Cover */}
       <div className="relative h-40 sm:h-56 bg-slate-200">
         {page.cover_url ? (
-          <Image src={page.cover_url as string} alt="" fill className="object-cover" unoptimized />
+          <Image src={page.cover_url as string} alt="" fill sizes="100vw" className="object-cover" />
         ) : (
           <div className="absolute inset-0 bg-gradient-to-br from-blue-100 to-slate-200" />
         )}
       </div>
 
-      <div className="max-w-5xl mx-auto px-4">
+      <div className={pageShellClass("standard")}>
         {/* Header */}
         <div className="flex items-end gap-4 -mt-10 relative">
           <div className="w-20 h-20 rounded-2xl bg-white border border-slate-200 shadow-sm overflow-hidden shrink-0 flex items-center justify-center">
             {page.logo_url ? (
-              <Image src={page.logo_url as string} alt={page.name as string} width={80} height={80} className="object-cover w-full h-full" unoptimized />
+              <Image src={page.logo_url as string} alt={page.name as string} width={80} height={80} className="object-cover w-full h-full" />
             ) : (
               <span className="text-2xl font-bold text-slate-400">{(page.name as string).slice(0, 1)}</span>
             )}
@@ -125,7 +126,7 @@ export default async function RentalPageProfile({ params }: Props) {
             {vehicles.map((v) => (
               <Link key={v.id} href={`/vehicles/${v.slug}`} className="block bg-white border border-slate-200 rounded-2xl overflow-hidden shadow-sm hover:border-blue-300 transition-colors">
                 <div className="relative aspect-[4/3] bg-slate-100">
-                  {v.photos?.[0] && <Image src={v.photos[0]} alt={`${v.make} ${v.model}`} fill className="object-cover" unoptimized />}
+                  {v.photos?.[0] && <Image src={v.photos[0]} alt={`${v.make} ${v.model}`} fill sizes="(min-width: 640px) 33vw, 100vw" className="object-cover" />}
                 </div>
                 <div className="p-3">
                   <p className="font-semibold text-slate-900 text-sm truncate">{v.year} {v.make} {v.model}</p>

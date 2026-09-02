@@ -1,10 +1,10 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState, useTransition } from "react";
 import Link from "next/link";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
-import { ChevronDown, Plus, ArrowLeftRight } from "lucide-react";
+import { ChevronDown, Plus } from "lucide-react";
 
 export interface PageSwitcherEntry {
   id:        string;
@@ -26,7 +26,6 @@ function Avatar({ page, size = 28 }: { page: PageSwitcherEntry; size?: number })
         alt={page.name}
         width={size}
         height={size}
-        unoptimized
         className="rounded-lg object-cover shrink-0"
         style={{ width: size, height: size }}
       />
@@ -47,19 +46,30 @@ export function PageSwitcher({ activePage, pages }: Props) {
   const router = useRouter();
   const [open, setOpen] = useState(false);
   const [switching, setSwitching] = useState<string | null>(null);
+  const [refreshing, startTransition] = useTransition();
+
+  // The refresh has landed, so the switch is done.
+  useEffect(() => { if (!refreshing) setSwitching(null); }, [refreshing]);
 
   const others = pages.filter((p) => p.id !== activePage.id);
 
+  // The refresh re-renders the whole dashboard for the new page, which is the
+  // slow part. Clearing `switching` before it meant the menu looked idle for
+  // the entire wait, so the busy state is held until the refresh settles.
   async function switchTo(pageId: string) {
+    if (switching) return;
     setSwitching(pageId);
-    await fetch("/api/pages/switch", {
-      method:  "POST",
-      headers: { "Content-Type": "application/json" },
-      body:    JSON.stringify({ page_id: pageId }),
-    });
-    setSwitching(null);
-    setOpen(false);
-    router.refresh();
+    try {
+      await fetch("/api/pages/switch", {
+        method:  "POST",
+        headers: { "Content-Type": "application/json" },
+        body:    JSON.stringify({ page_id: pageId }),
+      });
+      setOpen(false);
+      startTransition(() => router.refresh());
+    } catch {
+      setSwitching(null);
+    }
   }
 
   return (
@@ -72,7 +82,7 @@ export function PageSwitcher({ activePage, pages }: Props) {
         <Avatar page={activePage} />
         <span className="flex-1 min-w-0">
           <span className="block text-sm font-semibold text-slate-900 truncate">{activePage.name}</span>
-          <span className="block text-[11px] text-slate-500">
+          <span className="block text-xs text-slate-500">
             {activePage.page_type === "business" ? "Business" : "Personal"}
           </span>
         </span>
@@ -101,7 +111,7 @@ export function PageSwitcher({ activePage, pages }: Props) {
                     <Avatar page={p} size={22} />
                     <span className="flex-1 min-w-0 truncate text-slate-700">{p.name}</span>
                     {switching === p.id && (
-                      <ArrowLeftRight size={12} className="text-slate-400 animate-pulse shrink-0" />
+                      <span aria-hidden="true" className="h-3.5 w-3.5 shrink-0 animate-spin rounded-full border-2 border-blue-200 border-t-blue-600" />
                     )}
                   </button>
                 ))}

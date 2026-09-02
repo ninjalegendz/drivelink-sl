@@ -6,6 +6,7 @@ import Image from "next/image";
 import { useRouter } from "next/navigation";
 import { ChevronRight, Plus, Car } from "lucide-react";
 import { Button } from "@/components/ui/Button";
+import { startNavigationProgress } from "@/components/layout/NavigationProgress";
 
 export interface RentalPageListEntry {
   id:          string;
@@ -20,8 +21,6 @@ interface Props {
   pages: RentalPageListEntry[];
 }
 
-const MAX_PAGES = 5;
-
 function Avatar({ page }: { page: RentalPageListEntry }) {
   if (page.logo_url) {
     return (
@@ -30,7 +29,6 @@ function Avatar({ page }: { page: RentalPageListEntry }) {
         alt={page.name}
         width={40}
         height={40}
-        unoptimized
         className="rounded-xl object-cover shrink-0 w-10 h-10"
       />
     );
@@ -47,14 +45,22 @@ export function RentalPageList({ pages }: Props) {
   const router = useRouter();
   const [switching, setSwitching] = useState<string | null>(null);
 
+  // `switching` stays set through the navigation, so the row keeps showing it
+  // is the one being opened until the dashboard actually appears.
   async function openPage(pageId: string) {
+    if (switching) return;
     setSwitching(pageId);
-    await fetch("/api/pages/switch", {
-      method:  "POST",
-      headers: { "Content-Type": "application/json" },
-      body:    JSON.stringify({ page_id: pageId }),
-    });
-    router.push("/dashboard");
+    try {
+      await fetch("/api/pages/switch", {
+        method:  "POST",
+        headers: { "Content-Type": "application/json" },
+        body:    JSON.stringify({ page_id: pageId }),
+      });
+      startNavigationProgress();
+      router.push("/dashboard");
+    } catch {
+      setSwitching(null);
+    }
   }
 
   if (pages.length === 0) {
@@ -87,15 +93,17 @@ export function RentalPageList({ pages }: Props) {
             disabled={switching !== null}
             className="spring-press w-full flex items-center gap-3 p-3 rounded-xl border border-slate-100 hover:border-blue-200 hover:bg-blue-50/40 transition-colors disabled:opacity-50 text-left"
           >
-            <Avatar page={page} />
+            {switching === page.id
+              ? <span aria-hidden="true" className="h-9 w-9 shrink-0 rounded-lg border-2 border-blue-200 border-t-blue-600 animate-spin" />
+              : <Avatar page={page} />}
             <span className="flex-1 min-w-0">
               <span className="flex items-center gap-1.5 flex-wrap">
                 <span className="text-slate-900 font-medium text-sm truncate">{page.name}</span>
-                <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-slate-100 text-slate-600 border border-slate-200 shrink-0">
+                <span className="text-xs px-1.5 py-0.5 rounded-full bg-slate-100 text-slate-600 border border-slate-200 shrink-0">
                   {page.page_type === "business" ? "Business" : "Personal"}
                 </span>
                 {page.page_type === "business" && !page.is_verified && (
-                  <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-amber-50 text-amber-700 border border-amber-200 shrink-0">
+                  <span className="text-xs px-1.5 py-0.5 rounded-full bg-amber-50 text-amber-700 border border-amber-200 shrink-0">
                     Pending review
                   </span>
                 )}
@@ -107,16 +115,13 @@ export function RentalPageList({ pages }: Props) {
         ))}
       </div>
 
-      {pages.length >= MAX_PAGES ? (
-        <p className="text-slate-400 text-xs mt-3 text-center">{pages.length} of {MAX_PAGES} pages</p>
-      ) : (
-        <Link
-          href="/account/pages/new"
-          className="mt-3 inline-flex items-center gap-1.5 text-blue-600 hover:text-blue-500 text-sm"
-        >
-          <Plus size={14} /> Create Rental Page
-        </Link>
-      )}
+      <Link
+        href="/account/pages/new"
+        className="mt-3 inline-flex items-center gap-1.5 text-blue-600 hover:text-blue-500 text-sm"
+      >
+        <Plus size={14} /> Create Rental Page
+      </Link>
+      <p className="mt-1 text-xs text-slate-500">No lifetime page limit. Create a separate page only for a distinct rental brand, location, or service.</p>
     </div>
   );
 }

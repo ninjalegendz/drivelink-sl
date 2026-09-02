@@ -27,8 +27,8 @@ export function PhoneVerifyForm({ phone, verified }: Props) {
 
   if (verified) {
     return (
-      <div className="flex items-center gap-2 px-3 py-2 bg-emerald-500/10 border border-emerald-500/20 rounded-lg text-sm">
-        <Check size={14} className="text-emerald-400 shrink-0" />
+      <div className="flex items-center gap-2 px-3 py-2 bg-emerald-50 border border-emerald-500/20 rounded-lg text-sm">
+        <Check size={14} className="text-emerald-700 shrink-0" />
         <span className="text-emerald-300">Phone verified</span>
       </div>
     );
@@ -92,7 +92,7 @@ export function PhoneVerifyForm({ phone, verified }: Props) {
               placeholder="123456"
               required
               autoFocus
-              className="w-32 px-3 py-2 bg-slate-100 border border-slate-200 rounded-lg text-slate-900 text-sm tracking-[0.3em] font-mono text-center focus:outline-none focus:border-blue-500"
+              className="w-32 px-3 py-2 bg-slate-100 border border-slate-200 rounded-lg text-slate-900 text-sm tracking-[0.3em] font-mono text-center focus:border-blue-500"
             />
             <Button type="submit" size="sm" loading={loading} disabled={code.length !== 6}>
               Verify
@@ -110,7 +110,7 @@ export function PhoneVerifyForm({ phone, verified }: Props) {
       )}
 
       {info  && <p className="text-slate-500 text-xs">{info}</p>}
-      {error && <p className="text-red-400 text-xs">{error}</p>}
+      {error && <p className="text-rose-600 text-xs">{error}</p>}
     </div>
   );
 }

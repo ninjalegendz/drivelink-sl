@@ -2,14 +2,21 @@ import { createClient } from "@/lib/supabase/server";
 import { redirect } from "next/navigation";
 import Link from "next/link";
 import Image from "next/image";
-import { AlertTriangle, Plus, Car, Bell, Zap, CheckCircle2, ArrowRight, Clock } from "lucide-react";
+import { AlertTriangle, Plus, Car, Zap, CheckCircle2, ArrowRight, Clock } from "lucide-react";
 import { AgencyBookingActions } from "@/components/booking/AgencyBookingActions";
 import { formatLKR, responseTimeLabel } from "@/lib/vehicles/format";
 import { getActivePage } from "@/lib/pages/active-page";
+import { getPageAccess } from "@/lib/pages/access";
+import { TutorialCallout } from "@/components/tutorials/TutorialCallout";
+import { Card } from "@/components/ui/Card";
+import { Section } from "@/components/ui/Section";
+import { EmptyState } from "@/components/ui/EmptyState";
+import { Stat } from "@/components/ui/Stat";
+import { formatTimeLeft, isResponseOverdue } from "@/lib/booking/response-window";
 import type { BookingStatus } from "@/types/database";
 
 type BookingLite = {
-  id: string; status: string; start_date: string; end_date: string;
+  id: string; status: string; created_at: string; start_date: string; end_date: string;
   start_time: string; end_time: string; total_days: number; subtotal_lkr: number;
   vehicles: { make: string; model: string; year: number } | null;
   profiles: { full_name: string; kyc_status: string } | null;
@@ -35,14 +42,21 @@ export default async function DashboardPage() {
   const { page } = await getActivePage(supabase, user.id);
   if (!page) redirect("/account/pages/new");
   const agency = page;
+  const pageAccess = await getPageAccess(supabase, user.id, agency.id);
+  const canViewBookings = pageAccess.capabilities.includes("view_bookings");
+  const canManageBooking = pageAccess.capabilities.includes("manage_booking");
+  const canManageHandover = pageAccess.capabilities.includes("manage_handover");
+  const canManageCases = pageAccess.capabilities.includes("manage_cases");
+  const canManageFleet = pageAccess.capabilities.includes("manage_fleet");
+  const canViewAnalytics = pageAccess.capabilities.includes("view_analytics");
 
-  const bookingSelect = "id, status, start_date, end_date, start_time, end_time, total_days, subtotal_lkr, vehicles(make, model, year), profiles!renter_id(full_name, kyc_status)";
+  const bookingSelect = "id, status, created_at, start_date, end_date, start_time, end_time, total_days, subtotal_lkr, vehicles(make, model, year), profiles!renter_id(full_name, kyc_status)";
 
   const [{ data: pendingData }, { data: activeData }, { data: fleetData }, { count: monthCount }, { data: statsRow }] = await Promise.all([
-    supabase.from("bookings").select(bookingSelect).eq("agency_id", agency.id).eq("status", "pending_confirmation").order("created_at", { ascending: true }).limit(20),
-    supabase.from("bookings").select(bookingSelect).eq("agency_id", agency.id).eq("status", "active").order("start_date", { ascending: true }).limit(20),
-    supabase.from("vehicles").select("id, make, model, year, status, slug, daily_rate_lkr, photos, is_featured").eq("agency_id", agency.id).order("created_at", { ascending: false }).limit(24),
-    supabase.from("bookings").select("*", { count: "exact", head: true }).eq("agency_id", agency.id).gte("created_at", new Date(Date.now() - 30 * 86400000).toISOString()),
+    canViewBookings ? supabase.from("bookings").select(bookingSelect).eq("agency_id", agency.id).eq("status", "pending_confirmation").order("created_at", { ascending: true }).limit(20) : Promise.resolve({ data: [] }),
+    canViewBookings ? supabase.from("bookings").select(bookingSelect).eq("agency_id", agency.id).eq("status", "active").order("start_date", { ascending: true }).limit(20) : Promise.resolve({ data: [] }),
+    canManageFleet ? supabase.from("vehicles").select("id, make, model, year, status, slug, daily_rate_lkr, photos, is_featured").eq("agency_id", agency.id).order("created_at", { ascending: false }).limit(24) : Promise.resolve({ data: [] }),
+    canViewAnalytics ? supabase.from("bookings").select("*", { count: "exact", head: true }).eq("agency_id", agency.id).gte("created_at", new Date(Date.now() - 30 * 86400000).toISOString()) : Promise.resolve({ count: 0 }),
     supabase.from("agencies").select("avg_response_minutes").eq("id", agency.id).single(),
   ]);
 
@@ -65,10 +79,15 @@ export default async function DashboardPage() {
             {responseLabel && <span className="inline-flex items-center gap-0.5 text-blue-600">· <Zap size={11} /> Replies {responseLabel}</span>}
           </div>
         </div>
-        <Link href="/dashboard/vehicles/new" className="inline-flex items-center gap-1.5 px-4 py-2.5 bg-blue-600 hover:bg-blue-700 text-white font-bold rounded-xl text-sm shadow-sm transition-colors shrink-0">
+        {canManageFleet && <Link href="/dashboard/vehicles/new" className="inline-flex items-center gap-1.5 px-4 py-2.5 bg-blue-600 hover:bg-blue-700 text-white font-bold rounded-xl text-sm shadow-sm transition-colors shrink-0">
           <Plus size={16} /> List a vehicle
-        </Link>
+        </Link>}
       </div>
+
+      <TutorialCallout
+        audience={pageAccess.isOwner ? "owner" : "staff"}
+        tutorialSlug={pageAccess.isOwner ? "run-a-rental-from-request-to-return" : "work-safely-as-rental-page-staff"}
+      />
 
       {agency.reliability_pct !== null && agency.reliability_pct < 80 && (
         <div className="flex gap-3 p-4 bg-amber-50 border border-amber-200 rounded-2xl">
@@ -81,24 +100,30 @@ export default async function DashboardPage() {
       )}
 
       {/* ── Needs you now ── */}
-      <section>
-        <h2 className="flex items-center gap-2 text-sm font-bold text-slate-800 mb-3">
-          <Bell size={16} className="text-blue-600" /> Needs you now
-          {pending.length > 0 && <span className="text-[11px] font-bold bg-blue-600 text-white px-1.5 py-0.5 rounded-full">{pending.length}</span>}
-        </h2>
+      {canViewBookings && <Section
+        title="Needs you now"
+        description="Requests waiting on your answer. A renter is watching this one."
+      >
         {pending.length === 0 ? (
-          <div className="bg-white border border-slate-200 rounded-2xl shadow-sm p-8 text-center">
-            <CheckCircle2 size={32} className="mx-auto mb-2 text-emerald-500" strokeWidth={1.5} />
-            <p className="text-slate-700 font-semibold text-sm">All caught up</p>
-            <p className="text-slate-500 text-xs mt-0.5">No booking requests waiting. New ones appear here instantly.</p>
-          </div>
+          <EmptyState
+            icon={<CheckCircle2 size={22} className="text-emerald-500" strokeWidth={1.5} />}
+            title="All caught up"
+            description="No booking requests waiting. New ones appear here as they arrive."
+          />
         ) : (
           <div className="space-y-3">
             {pending.map((b) => (
-              <div key={b.id} className="bg-white border border-blue-200 rounded-2xl shadow-sm p-4">
+              <Card key={b.id} className={isResponseOverdue(b.created_at) ? "border-amber-300" : "border-blue-200"}>
                 <div className="flex items-start justify-between gap-3">
                   <div className="min-w-0">
-                    <p className="font-semibold text-slate-900 text-sm">{b.vehicles?.year} {b.vehicles?.make} {b.vehicles?.model}</p>
+                    <div className="flex flex-wrap items-center gap-x-2 gap-y-1">
+                      <p className="font-semibold text-slate-900 text-sm">{b.vehicles?.year} {b.vehicles?.make} {b.vehicles?.model}</p>
+                      {/* The renter is being shown this same deadline. Without
+                          it here, a slow reply costs the host nothing. */}
+                      <span className={`text-xs font-semibold ${isResponseOverdue(b.created_at) ? "text-amber-700" : "text-blue-700"}`}>
+                        {formatTimeLeft(b.created_at)}
+                      </span>
+                    </div>
                     <p className="text-slate-500 text-xs mt-0.5">
                       {b.profiles?.full_name ?? "Renter"}
                       {b.profiles?.kyc_status === "verified"
@@ -109,48 +134,48 @@ export default async function DashboardPage() {
                       <Clock size={11} /> {b.start_date} {b.start_time?.slice(0, 5)} → {b.end_date} {b.end_time?.slice(0, 5)} · {b.total_days}d · {formatLKR(b.subtotal_lkr)}
                     </p>
                   </div>
-                  <AgencyBookingActions bookingId={b.id} status={b.status as BookingStatus} />
+                  <AgencyBookingActions bookingId={b.id} status={b.status as BookingStatus} canManageBooking={canManageBooking} canManageHandover={canManageHandover} canManageCases={canManageCases} />
                 </div>
-              </div>
+              </Card>
             ))}
           </div>
         )}
-      </section>
+      </Section>}
 
       {/* ── Active rentals ── */}
-      {active.length > 0 && (
-        <section>
-          <h2 className="text-sm font-bold text-slate-800 mb-3">On the road now ({active.length})</h2>
+      {canViewBookings && active.length > 0 && (
+        <Section title={`On the road now (${active.length})`}>
           <div className="space-y-3">
             {active.map((b) => (
-              <div key={b.id} className="bg-white border border-slate-200 rounded-2xl shadow-sm p-4 flex items-start justify-between gap-3">
+              <Card key={b.id} className="flex items-start justify-between gap-3">
                 <div className="min-w-0">
                   <p className="font-semibold text-slate-900 text-sm">{b.vehicles?.year} {b.vehicles?.make} {b.vehicles?.model}</p>
                   <p className="text-slate-500 text-xs mt-0.5">{b.profiles?.full_name ?? "Renter"}</p>
                   <p className="text-slate-600 text-xs mt-1 inline-flex items-center gap-1"><Clock size={11} /> back {b.end_date} {b.end_time?.slice(0, 5)}</p>
                 </div>
-                <AgencyBookingActions bookingId={b.id} status={b.status as BookingStatus} />
-              </div>
+                <AgencyBookingActions bookingId={b.id} status={b.status as BookingStatus} canManageBooking={canManageBooking} canManageHandover={canManageHandover} canManageCases={canManageCases} />
+              </Card>
             ))}
           </div>
-        </section>
+        </Section>
       )}
 
       {/* ── Fleet ── */}
-      <section>
-        <div className="flex items-center justify-between mb-3">
-          <h2 className="text-sm font-bold text-slate-800">Your fleet ({fleet.length})</h2>
-          <Link href="/dashboard/vehicles" className="text-blue-600 hover:text-blue-700 text-xs font-semibold">Manage all →</Link>
-        </div>
+      {canManageFleet && <Section
+        title={`Your fleet (${fleet.length})`}
+        action={<Link href="/dashboard/vehicles" className="text-sm font-semibold text-blue-700 hover:text-blue-800">Manage all</Link>}
+      >
         {fleet.length === 0 ? (
-          <div className="bg-white border border-slate-200 rounded-2xl shadow-sm p-8 text-center">
-            <Car size={32} className="mx-auto mb-2 text-slate-300" strokeWidth={1.5} />
-            <p className="text-slate-700 font-semibold text-sm">No vehicles yet</p>
-            <p className="text-slate-500 text-xs mt-0.5 mb-4">List your first vehicle, it&apos;s free during launch.</p>
-            <Link href="/dashboard/vehicles/new" className="inline-flex items-center gap-1.5 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white text-sm font-semibold rounded-xl transition-colors">
-              <Plus size={15} /> List a vehicle
-            </Link>
-          </div>
+          <EmptyState
+            icon={<Car size={22} className="text-slate-400" strokeWidth={1.5} />}
+            title="No vehicles yet"
+            description="List your first vehicle. Listing is free and there is no monthly fee."
+            action={
+              <Link href="/dashboard/vehicles/new" className="inline-flex min-h-11 items-center gap-1.5 rounded-lg bg-blue-600 px-4 text-sm font-semibold text-white hover:bg-blue-700">
+                <Plus size={15} /> List a vehicle
+              </Link>
+            }
+          />
         ) : (
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             {fleet.map((v) => {
@@ -165,36 +190,27 @@ export default async function DashboardPage() {
                     <p className="font-semibold text-slate-900 text-sm truncate group-hover:text-blue-600 transition-colors">{v.year} {v.make} {v.model}</p>
                     <p className="text-slate-500 text-xs">{formatLKR(v.daily_rate_lkr)}/day</p>
                   </div>
-                  <span className={`text-[10px] font-semibold px-2 py-0.5 rounded-full border shrink-0 ${meta.cls}`}>{meta.label}</span>
+                  <span className={`text-xs font-semibold px-2 py-0.5 rounded-full border shrink-0 ${meta.cls}`}>{meta.label}</span>
                 </Link>
               );
             })}
           </div>
         )}
-      </section>
+      </Section>}
 
       {/* ── Stats strip (secondary) ── */}
-      <section className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+      {canViewAnalytics && <section className="grid grid-cols-2 sm:grid-cols-4 gap-3">
         <Stat label="Live listings" value={String(liveCount)} />
         <Stat label="Active rentals" value={String(active.length)} />
         <Stat label="Bookings · 30d" value={String(monthCount ?? 0)} />
         <Stat label="Reliability" value={agency.reliability_pct == null ? "-" : `${agency.reliability_pct}%`} />
-      </section>
+      </section>}
 
-      <div className="flex justify-end">
+      {canViewBookings && <div className="flex justify-end">
         <Link href="/dashboard/bookings" className="inline-flex items-center gap-1.5 text-blue-600 hover:text-blue-700 text-sm font-semibold">
           View all bookings <ArrowRight size={15} />
         </Link>
-      </div>
-    </div>
-  );
-}
-
-function Stat({ label, value }: { label: string; value: string }) {
-  return (
-    <div className="bg-white border border-slate-200 rounded-2xl shadow-sm p-4">
-      <p className="text-2xl font-extrabold text-slate-900">{value}</p>
-      <p className="text-slate-500 text-xs mt-0.5">{label}</p>
+      </div>}
     </div>
   );
 }
