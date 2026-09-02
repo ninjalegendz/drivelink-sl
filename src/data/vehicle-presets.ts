@@ -71,6 +71,34 @@ export const BODY_TYPES = [
   "Sedan", "Hatchback", "SUV", "Crossover", "Wagon", "Coupe", "Pickup", "Mini", "Van", "Other",
 ];
 
+// Body type only means something for a car-shaped vehicle. Asking a tuk-tuk or
+// a motorbike owner to choose between "Sedan" and "Coupe" is nonsense, so those
+// types get no body-type field at all, and the ones that do get a list that
+// suits them rather than the full catalogue.
+const BODY_TYPES_BY_VEHICLE_TYPE: Record<string, string[]> = {
+  car:    ["Sedan", "Hatchback", "Coupe", "Wagon", "Mini", "Other"],
+  suv:    ["SUV", "Crossover", "Pickup", "Wagon", "Other"],
+  van:    ["Van", "Wagon", "Other"],
+  bike:   [],
+  tuktuk: [],
+};
+
+/**
+ * Body types offered for a vehicle type. `current` keeps a value that was
+ * already saved on the listing in the list even if it is not a natural choice
+ * for that type, so editing an older row never silently blanks the field.
+ */
+export function bodyTypesFor(vehicleType: string, current?: string | null): string[] {
+  const list = BODY_TYPES_BY_VEHICLE_TYPE[vehicleType] ?? BODY_TYPES;
+  if (list.length === 0) return [];
+  return current && !list.includes(current) ? [current, ...list] : list;
+}
+
+/** Whether the body-type question applies to this vehicle type at all. */
+export function hasBodyType(vehicleType: string): boolean {
+  return (BODY_TYPES_BY_VEHICLE_TYPE[vehicleType] ?? BODY_TYPES).length > 0;
+}
+
 // restricted_use fixed vocabulary (DB text[] column) → human labels shown as
 // "Not allowed" chips on provider forms and the public listing.
 export const RESTRICTED_USE_OPTIONS: { value: string; label: string }[] = [
@@ -93,3 +121,22 @@ export const SL_MAKES = [
   "BMW", "Mercedes-Benz", "Audi",
   "Bajaj", "TVS", "Yamaha", "Hero", "Piaggio",
 ];
+
+// ─── Example make and model, per vehicle type ────────
+//
+// The listing form suggested "Toyota / Aqua" no matter which tile was picked,
+// so choosing Tuk-Tuk still hinted at a hatchback. A placeholder is meant to
+// show the shape of the answer, and one that contradicts the choice directly
+// above it reads as a bug. These are vehicles people actually rent out here.
+
+const MAKE_MODEL_HINTS: Record<string, { make: string; model: string }> = {
+  car:    { make: "Toyota",     model: "Aqua" },
+  suv:    { make: "Mitsubishi", model: "Montero" },
+  van:    { make: "Toyota",     model: "Hiace" },
+  bike:   { make: "Honda",      model: "Dio" },
+  tuktuk: { make: "Bajaj",      model: "RE" },
+};
+
+export function makeModelHint(vehicleType: string): { make: string; model: string } {
+  return MAKE_MODEL_HINTS[vehicleType] ?? MAKE_MODEL_HINTS.car;
+}
