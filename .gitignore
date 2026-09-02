@@ -29,4 +29,18 @@ android/capacitor-cordova-android-plugins/build/
 # OpenNext + wrangler build artefacts
 .open-next/
 .wrangler/
+.wrangler-dry-run/
 e2e-shots/
+ui-shots/
+DriveLink-translation-review.pdf
+translations/review.html
+DriveLink-terminology-decisions.pdf
+translations/terminology.html
+
+# Generated media and test output. deliverables/ alone is ~427 MB of rendered
+# video, audio and stills; git history is permanent, so build output like this
+# must never enter it.
+deliverables/
+artifacts/
+tmp/
+_*.png
