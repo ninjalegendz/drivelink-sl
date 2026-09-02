@@ -1,0 +1,1854 @@
+[
+  {
+    "term": "booking",
+    "si": [
+      {
+        "word": "වෙන් කිරීම",
+        "means": "act of reserving or setting aside",
+        "recommended": true
+      },
+      {
+        "word": "බුකින්",
+        "means": "English loanword 'booking' widely used in spoken Sinhala",
+        "recommended": false
+      },
+      {
+        "word": "වෙන්කරවා ගැනීම",
+        "means": "formal reservation for oneself (often too long for buttons)",
+        "recommended": false
+      }
+    ],
+    "ta": [
+      {
+        "word": "முன்பதிவு",
+        "means": "advance registration or booking",
+        "recommended": true
+      },
+      {
+        "word": "புக்கிங்",
+        "means": "English loanword 'booking' common in urban talk",
+        "recommended": false
+      }
+    ],
+    "uses": 142
+  },
+  {
+    "term": "rental",
+    "si": [
+      {
+        "word": "කුලියට ගැනීම",
+        "means": "act of taking something on rent",
+        "recommended": true
+      },
+      {
+        "word": "කුලී",
+        "means": "rent/hired (adjective form)",
+        "recommended": false
+      },
+      {
+        "word": "රෙන්ටල්",
+        "means": "English loanword 'rental' common in vehicle hiring",
+        "recommended": false
+      }
+    ],
+    "ta": [
+      {
+        "word": "வாடகை",
+        "means": "rent or hire fee/service",
+        "recommended": true
+      },
+      {
+        "word": "ரெண்டல்",
+        "means": "English loanword 'rental'",
+        "recommended": false
+      }
+    ],
+    "uses": 134
+  },
+  {
+    "term": "page",
+    "si": [
+      {
+        "word": "පිටුව",
+        "means": "page of a book, document, or mobile screen",
+        "recommended": true
+      },
+      {
+        "word": "පේජ් එක",
+        "means": "English code-switch 'the page'",
+        "recommended": false
+      }
+    ],
+    "ta": [
+      {
+        "word": "பக்கம்",
+        "means": "page or side",
+        "recommended": true
+      },
+      {
+        "word": "பேஜ்",
+        "means": "English code-switch 'page'",
+        "recommended": false
+      }
+    ],
+    "uses": 105
+  },
+  {
+    "term": "vehicle",
+    "si": [
+      {
+        "word": "වාහනය",
+        "means": "motor vehicle",
+        "recommended": true
+      },
+      {
+        "word": "රථය",
+        "means": "chariot or formal carriage (overly literary)",
+        "recommended": false
+      }
+    ],
+    "ta": [
+      {
+        "word": "வாகனம்",
+        "means": "vehicle or motor transport",
+        "recommended": true
+      },
+      {
+        "word": "வண்டி",
+        "means": "vehicle/car/cart (slightly informal)",
+        "recommended": false
+      }
+    ],
+    "uses": 100
+  },
+  {
+    "term": "renter",
+    "si": [
+      {
+        "word": "කුලියට ගන්නා",
+        "means": "the person renting/taking on rent",
+        "recommended": true
+      },
+      {
+        "word": "කුලීකරු",
+        "means": "tenant or hired laborer (often implies house tenant)",
+        "recommended": false
+      },
+      {
+        "word": "රෙන්ටර්",
+        "means": "English transliteration 'renter'",
+        "recommended": false
+      }
+    ],
+    "ta": [
+      {
+        "word": "வாடகைக்கு எடுப்பவர்",
+        "means": "person taking on rent",
+        "recommended": true
+      },
+      {
+        "word": "வாடகைதாரர்",
+        "means": "tenant (frequently connotes house tenant)",
+        "recommended": false
+      }
+    ],
+    "uses": 73
+  },
+  {
+    "term": "confirm",
+    "si": [
+      {
+        "word": "තහවුරු කරන්න",
+        "means": "make firm, establish, or confirm (standard UI verb)",
+        "recommended": true
+      },
+      {
+        "word": "කන්ෆර්ම් කරන්න",
+        "means": "English loanword 'confirm'",
+        "recommended": false
+      }
+    ],
+    "ta": [
+      {
+        "word": "உறுதிப்படுத்துக",
+        "means": "make certain or confirm (standard Sri Lankan UI verb)",
+        "recommended": true
+      },
+      {
+        "word": "உறுதிசெய்",
+        "means": "make firm / ensure (shorter imperative)",
+        "recommended": false
+      }
+    ],
+    "uses": 72
+  },
+  {
+    "term": "account",
+    "si": [
+      {
+        "word": "ගිණුම",
+        "means": "user profile account or bank ledger account",
+        "recommended": true
+      },
+      {
+        "word": "එකවුන්ට් එක",
+        "means": "spoken Sinhala code-switch 'the account'",
+        "recommended": false
+      }
+    ],
+    "ta": [
+      {
+        "word": "கணக்கு",
+        "means": "account / ledger (universally used in Tamil mobile UI for login accounts despite arithmetic roots)",
+        "recommended": true
+      },
+      {
+        "word": "அக்கவுண்ட்",
+        "means": "English code-switch 'account'",
+        "recommended": false
+      }
+    ],
+    "uses": 69
+  },
+  {
+    "term": "request",
+    "si": [
+      {
+        "word": "ඉල්ලීම",
+        "means": "a request or application",
+        "recommended": true
+      },
+      {
+        "word": "ඉල්ලුම් කරන්න",
+        "means": "verb: make a request / apply",
+        "recommended": false
+      },
+      {
+        "word": "රික්වෙස්ට්",
+        "means": "English code-switch 'request'",
+        "recommended": false
+      }
+    ],
+    "ta": [
+      {
+        "word": "கோரிக்கை",
+        "means": "formal request or demand",
+        "recommended": true
+      },
+      {
+        "word": "வேண்டுகோள்",
+        "means": "humble plea / earnest appeal (too emotional for UI)",
+        "recommended": false
+      },
+      {
+        "word": "ரிக்வஸ்ட்",
+        "means": "English transliteration 'request'",
+        "recommended": false
+      }
+    ],
+    "uses": 62
+  },
+  {
+    "term": "document",
+    "si": [
+      {
+        "word": "ලේඛනය",
+        "means": "written legal document or file",
+        "recommended": true
+      },
+      {
+        "word": "ලියකියවිලි",
+        "means": "papers/paperwork (plural, informal)",
+        "recommended": false
+      },
+      {
+        "word": "ඩොකියුමන්ට්",
+        "means": "English transliteration 'document'",
+        "recommended": false
+      }
+    ],
+    "ta": [
+      {
+        "word": "ஆவணம்",
+        "means": "legal record or digital document",
+        "recommended": true
+      },
+      {
+        "word": "சான்றிதழ்",
+        "means": "certificate / attested paper",
+        "recommended": false
+      },
+      {
+        "word": "டொக்கியுமெண்ட்",
+        "means": "English transliteration 'document'",
+        "recommended": false
+      }
+    ],
+    "uses": 54
+  },
+  {
+    "term": "review",
+    "si": [
+      {
+        "word": "සමාලෝචනය",
+        "means": "formal review / evaluation",
+        "recommended": false
+      },
+      {
+        "word": "අදහස්",
+        "means": "opinions / feedback (natural for user reviews)",
+        "recommended": true
+      },
+      {
+        "word": "රිවීව්",
+        "means": "spoken English loanword 'review'",
+        "recommended": false
+      }
+    ],
+    "ta": [
+      {
+        "word": "மதிப்பாய்வு",
+        "means": "evaluation or rating review",
+        "recommended": true
+      },
+      {
+        "word": "கருத்து",
+        "means": "opinion / comment",
+        "recommended": false
+      },
+      {
+        "word": "ரிவ்யூ",
+        "means": "English code-switch 'review'",
+        "recommended": false
+      }
+    ],
+    "uses": 53
+  },
+  {
+    "term": "licence",
+    "si": [
+      {
+        "word": "රියදුරු බලපත්‍රය",
+        "means": "driving licence (exact official term)",
+        "recommended": true
+      },
+      {
+        "word": "බලපත්‍රය",
+        "means": "licence / permit in general",
+        "recommended": false
+      },
+      {
+        "word": "ලයිසන් එක",
+        "means": "spoken Sinhala code-switch 'the licence'",
+        "recommended": false
+      }
+    ],
+    "ta": [
+      {
+        "word": "சாரதி அனுமதிப்பத்திரம்",
+        "means": "driving licence (standard official Sri Lankan Tamil)",
+        "recommended": true
+      },
+      {
+        "word": "ஓட்டுநர் உரிமம்",
+        "means": "driving licence (Indian Tamil standard, less common in SL official forms)",
+        "recommended": false
+      },
+      {
+        "word": "லைசென்ஸ்",
+        "means": "English code-switch 'licence'",
+        "recommended": false
+      }
+    ],
+    "uses": 51
+  },
+  {
+    "term": "owner",
+    "si": [
+      {
+        "word": "හිමිකරු",
+        "means": "legal owner / proprietor",
+        "recommended": true
+      },
+      {
+        "word": "අයිතිකරු",
+        "means": "owner / rightful possessor (common synonym)",
+        "recommended": false
+      },
+      {
+        "word": "ඕනර්",
+        "means": "spoken English loanword 'owner'",
+        "recommended": false
+      }
+    ],
+    "ta": [
+      {
+        "word": "உரிமையாளர்",
+        "means": "legal owner or holder",
+        "recommended": true
+      },
+      {
+        "word": "சொந்தக்காரர்",
+        "means": "owner (conversational/colloquial)",
+        "recommended": false
+      }
+    ],
+    "uses": 48
+  },
+  {
+    "term": "code",
+    "si": [
+      {
+        "word": "කේතය",
+        "means": "symbolic code / digital PIN code",
+        "recommended": true
+      },
+      {
+        "word": "කෝඩ් එක",
+        "means": "spoken English code-switch 'the code'",
+        "recommended": false
+      }
+    ],
+    "ta": [
+      {
+        "word": "குறியீடு",
+        "means": "secret code / digital code / symbol",
+        "recommended": true
+      },
+      {
+        "word": "கோட்",
+        "means": "English code-switch 'code'",
+        "recommended": false
+      }
+    ],
+    "uses": 45
+  },
+  {
+    "term": "listing",
+    "si": [
+      {
+        "word": "ලැයිස්තුගත කිරීම",
+        "means": "item put up in a list or catalog",
+        "recommended": false
+      },
+      {
+        "word": "ලැයිස්තුව",
+        "means": "the list / catalog entry (concise for mobile)",
+        "recommended": true
+      },
+      {
+        "word": "ලිස්ටිං",
+        "means": "English loanword 'listing'",
+        "recommended": false
+      }
+    ],
+    "ta": [
+      {
+        "word": "பட்டியல்",
+        "means": "the list entry / catalog item",
+        "recommended": true
+      },
+      {
+        "word": "பட்டியலிடல்",
+        "means": "action of cataloging/listing",
+        "recommended": false
+      }
+    ],
+    "uses": 44
+  },
+  {
+    "term": "verification",
+    "si": [
+      {
+        "word": "තහවුරු කිරීම",
+        "means": "action of confirming identity or validity",
+        "recommended": true
+      },
+      {
+        "word": "සත්‍යාපනය",
+        "means": "formal verification of truth (overly academic)",
+        "recommended": false
+      },
+      {
+        "word": "වෙරිෆිකේෂන්",
+        "means": "English code-switch 'verification'",
+        "recommended": false
+      }
+    ],
+    "ta": [
+      {
+        "word": "சரிபார்ப்பு",
+        "means": "inspection and verification check",
+        "recommended": true
+      },
+      {
+        "word": "உறுதிப்படுத்தல்",
+        "means": "formal act of confirming",
+        "recommended": false
+      }
+    ],
+    "uses": 41
+  },
+  {
+    "term": "identity",
+    "si": [
+      {
+        "word": "අනන්‍යතාව",
+        "means": "personal identity / identification",
+        "recommended": true
+      },
+      {
+        "word": "හැඳුනුම්පත",
+        "means": "national identity card (refers specifically to physical NIC)",
+        "recommended": false
+      }
+    ],
+    "ta": [
+      {
+        "word": "அடையாளம்",
+        "means": "identity or distinguishing mark",
+        "recommended": true
+      },
+      {
+        "word": "அடையாள அட்டை",
+        "means": "identity card (NIC specifically)",
+        "recommended": false
+      }
+    ],
+    "uses": 34
+  },
+  {
+    "term": "payment",
+    "si": [
+      {
+        "word": "ගෙවීම",
+        "means": "payment of money",
+        "recommended": true
+      },
+      {
+        "word": "මුදල් ගෙවීම",
+        "means": "cash/monetary payout",
+        "recommended": false
+      },
+      {
+        "word": "පේමන්ට්",
+        "means": "spoken English loanword 'payment'",
+        "recommended": false
+      }
+    ],
+    "ta": [
+      {
+        "word": "கட்டணம்",
+        "means": "fee or money payment",
+        "recommended": true
+      },
+      {
+        "word": "செலுத்துகை",
+        "means": "formal Sri Lankan term for remittance / payment",
+        "recommended": false
+      },
+      {
+        "word": "பேமெண்ட்",
+        "means": "English loanword 'payment'",
+        "recommended": false
+      }
+    ],
+    "uses": 33
+  },
+  {
+    "term": "photo",
+    "si": [
+      {
+        "word": "ඡායාරූපය",
+        "means": "photograph (standard UI term)",
+        "recommended": true
+      },
+      {
+        "word": "පින්තූරය",
+        "means": "picture / drawing / visual image",
+        "recommended": false
+      },
+      {
+        "word": "ෆොටෝ",
+        "means": "spoken English code-switch 'photo'",
+        "recommended": false
+      }
+    ],
+    "ta": [
+      {
+        "word": "புகைப்படம்",
+        "means": "photograph (standard)",
+        "recommended": true
+      },
+      {
+        "word": "படம்",
+        "means": "picture, movie, or image",
+        "recommended": false
+      },
+      {
+        "word": "போட்டோ",
+        "means": "English code-switch 'photo'",
+        "recommended": false
+      }
+    ],
+    "uses": 32
+  },
+  {
+    "term": "verify",
+    "si": [
+      {
+        "word": "තහවුරු කරන්න",
+        "means": "verify or confirm (imperative verb)",
+        "recommended": true
+      },
+      {
+        "word": "පරීක්ෂා කරන්න",
+        "means": "examine / inspect / test",
+        "recommended": false
+      }
+    ],
+    "ta": [
+      {
+        "word": "சரிபார்க்கவும்",
+        "means": "check and verify (polite imperative)",
+        "recommended": true
+      },
+      {
+        "word": "உறுதிப்படுத்தவும்",
+        "means": "confirm / make sure",
+        "recommended": false
+      }
+    ],
+    "uses": 31
+  },
+  {
+    "term": "admin",
+    "si": [
+      {
+        "word": "පරිපාලක",
+        "means": "system administrator or manager",
+        "recommended": true
+      },
+      {
+        "word": "ඇඩ්මින්",
+        "means": "English loanword 'admin'",
+        "recommended": false
+      }
+    ],
+    "ta": [
+      {
+        "word": "நிர்வாகி",
+        "means": "administrator or manager",
+        "recommended": true
+      },
+      {
+        "word": "அட்மின்",
+        "means": "English loanword 'admin'",
+        "recommended": false
+      }
+    ],
+    "uses": 29
+  },
+  {
+    "term": "available",
+    "si": [
+      {
+        "word": "ලබාගත හැක",
+        "means": "obtainable / can be acquired",
+        "recommended": true
+      },
+      {
+        "word": "ඇත",
+        "means": "is present / exists",
+        "recommended": false
+      }
+    ],
+    "ta": [
+      {
+        "word": "கிடைக்கிறது",
+        "means": "is available / obtainable",
+        "recommended": true
+      },
+      {
+        "word": "உள்ளது",
+        "means": "exists / is there",
+        "recommended": false
+      }
+    ],
+    "uses": 28
+  },
+  {
+    "term": "upload",
+    "si": [
+      {
+        "word": "උඩුගත කරන්න",
+        "means": "technical neologism for upload",
+        "recommended": false
+      },
+      {
+        "word": "ඇතුළත් කරන්න",
+        "means": "insert / upload / submit files",
+        "recommended": true
+      },
+      {
+        "word": "අප්ලෝඩ් කරන්න",
+        "means": "spoken English loanword 'upload'",
+        "recommended": false
+      }
+    ],
+    "ta": [
+      {
+        "word": "பதிவேற்றவும்",
+        "means": "upload digital files (standard UI term)",
+        "recommended": true
+      },
+      {
+        "word": "அப்லோட் செய்யவும்",
+        "means": "English loanword 'upload'",
+        "recommended": false
+      }
+    ],
+    "uses": 28
+  },
+  {
+    "term": "return",
+    "si": [
+      {
+        "word": "ආපසු භාරදීම",
+        "means": "handing back the item / vehicle return",
+        "recommended": true
+      },
+      {
+        "word": "ආපසු පැමිණීම",
+        "means": "returning or coming back of a person",
+        "recommended": false
+      },
+      {
+        "word": "රිටන්",
+        "means": "English code-switch 'return'",
+        "recommended": false
+      }
+    ],
+    "ta": [
+      {
+        "word": "திருப்பி ஒப்படைத்தல்",
+        "means": "handing back / returning the vehicle",
+        "recommended": true
+      },
+      {
+        "word": "திரும்புதல்",
+        "means": "coming back / turning back",
+        "recommended": false
+      }
+    ],
+    "uses": 27
+  },
+  {
+    "term": "verified",
+    "si": [
+      {
+        "word": "තහවුරු කරන ලදි",
+        "means": "confirmed / validated status",
+        "recommended": true
+      },
+      {
+        "word": "සත්‍යාපිත",
+        "means": "formally verified (archaic/scholarly)",
+        "recommended": false
+      }
+    ],
+    "ta": [
+      {
+        "word": "சரிபார்க்கப்பட்டது",
+        "means": "checked and verified status",
+        "recommended": true
+      },
+      {
+        "word": "உறுதிசெய்யப்பட்டது",
+        "means": "confirmed / established status",
+        "recommended": false
+      }
+    ],
+    "uses": 26
+  },
+  {
+    "term": "support",
+    "si": [
+      {
+        "word": "සහාය",
+        "means": "help, assistance, or customer support",
+        "recommended": true
+      },
+      {
+        "word": "උපකාර",
+        "means": "favor, benevolence, or charity",
+        "recommended": false
+      },
+      {
+        "word": "සපෝර්ට්",
+        "means": "spoken English loanword 'support'",
+        "recommended": false
+      }
+    ],
+    "ta": [
+      {
+        "word": "உதவி",
+        "means": "help or customer assistance",
+        "recommended": true
+      },
+      {
+        "word": "ஆதரவு",
+        "means": "political or emotional backing (connotes alliance)",
+        "recommended": false
+      },
+      {
+        "word": "சப்போர்ட்",
+        "means": "English code-switch 'support'",
+        "recommended": false
+      }
+    ],
+    "uses": 26
+  },
+  {
+    "term": "handover",
+    "si": [
+      {
+        "word": "භාරදීම",
+        "means": "handing over vehicle/keys into another's custody",
+        "recommended": true
+      },
+      {
+        "word": "හුවමාරුව",
+        "means": "exchange / swap",
+        "recommended": false
+      }
+    ],
+    "ta": [
+      {
+        "word": "ஒப்படைப்பு",
+        "means": "formal handover of physical object/responsibility",
+        "recommended": true
+      },
+      {
+        "word": "கைமாற்றம்",
+        "means": "change of hands or ownership transfer",
+        "recommended": false
+      }
+    ],
+    "uses": 25
+  },
+  {
+    "term": "deposit",
+    "si": [
+      {
+        "word": "තැන්පතුව",
+        "means": "security deposit or financial pledge",
+        "recommended": true
+      },
+      {
+        "word": "ඇප මුදල",
+        "means": "bail money or security bond",
+        "recommended": false
+      },
+      {
+        "word": "ඩිපොසිට්",
+        "means": "spoken English loanword 'deposit'",
+        "recommended": false
+      }
+    ],
+    "ta": [
+      {
+        "word": "வைப்புத்தொகை",
+        "means": "refundable security deposit",
+        "recommended": true
+      },
+      {
+        "word": "முன்பணம்",
+        "means": "advance payment / initial installment",
+        "recommended": false
+      },
+      {
+        "word": "டெபாசிட்",
+        "means": "English loanword 'deposit'",
+        "recommended": false
+      }
+    ],
+    "uses": 22
+  },
+  {
+    "term": "confirmed",
+    "si": [
+      {
+        "word": "තහවුරු කරන ලදි",
+        "means": "status: confirmed/validated",
+        "recommended": true
+      },
+      {
+        "word": "ස්ථිරයි",
+        "means": "status: definite / permanent",
+        "recommended": false
+      }
+    ],
+    "ta": [
+      {
+        "word": "உறுதிசெய்யப்பட்டது",
+        "means": "status: confirmed / finalized",
+        "recommended": true
+      },
+      {
+        "word": "உறுதியானது",
+        "means": "became certain",
+        "recommended": false
+      }
+    ],
+    "uses": 20
+  },
+  {
+    "term": "cancel",
+    "si": [
+      {
+        "word": "අවලංගු කරන්න",
+        "means": "nullify, invalidate, or cancel",
+        "recommended": true
+      },
+      {
+        "word": "කැන්සල් කරන්න",
+        "means": "spoken English loanword 'cancel'",
+        "recommended": false
+      }
+    ],
+    "ta": [
+      {
+        "word": "ரத்து செய்",
+        "means": "cancel / revoke",
+        "recommended": true
+      },
+      {
+        "word": "கேன்சல் செய்",
+        "means": "spoken English code-switch 'cancel'",
+        "recommended": false
+      }
+    ],
+    "uses": 20
+  },
+  {
+    "term": "evidence",
+    "si": [
+      {
+        "word": "සාක්ෂි",
+        "means": "proof, witness, or supporting photos/evidence",
+        "recommended": true
+      },
+      {
+        "word": "තොරතුරු සාක්ෂි",
+        "means": "informational proof",
+        "recommended": false
+      }
+    ],
+    "ta": [
+      {
+        "word": "ஆதாரம்",
+        "means": "proof, evidence, or supporting documentation",
+        "recommended": true
+      },
+      {
+        "word": "சான்று",
+        "means": "testimony or certificate",
+        "recommended": false
+      }
+    ],
+    "uses": 20
+  },
+  {
+    "term": "message",
+    "si": [
+      {
+        "word": "පණිවිඩය",
+        "means": "text message or communication",
+        "recommended": true
+      },
+      {
+        "word": "මැසේජ් එක",
+        "means": "spoken English loanword 'the message'",
+        "recommended": false
+      }
+    ],
+    "ta": [
+      {
+        "word": "செய்தி",
+        "means": "message or news item",
+        "recommended": true
+      },
+      {
+        "word": "தகவல்",
+        "means": "information / detail",
+        "recommended": false
+      },
+      {
+        "word": "மெசேஜ்",
+        "means": "English code-switch 'message'",
+        "recommended": false
+      }
+    ],
+    "uses": 19
+  },
+  {
+    "term": "agreement",
+    "si": [
+      {
+        "word": "ගිවිසුම",
+        "means": "contract or binding agreement",
+        "recommended": true
+      },
+      {
+        "word": "එකඟතාව",
+        "means": "mutual consent or consensus",
+        "recommended": false
+      }
+    ],
+    "ta": [
+      {
+        "word": "ஒப்பந்தம்",
+        "means": "legal contract or rental agreement",
+        "recommended": true
+      },
+      {
+        "word": "உடன்படிக்கை",
+        "means": "solemn covenant / treaty (overly formal)",
+        "recommended": false
+      }
+    ],
+    "uses": 19
+  },
+  {
+    "term": "pickup",
+    "si": [
+      {
+        "word": "ලබා ගැනීම",
+        "means": "receiving / collecting the vehicle",
+        "recommended": true
+      },
+      {
+        "word": "පිකප්",
+        "means": "spoken English loanword 'pickup'",
+        "recommended": false
+      }
+    ],
+    "ta": [
+      {
+        "word": "பெற்றுக்கொள்ளல்",
+        "means": "taking receipt of the vehicle",
+        "recommended": true
+      },
+      {
+        "word": "பிக்கப்",
+        "means": "English loanword 'pickup'",
+        "recommended": false
+      }
+    ],
+    "uses": 19
+  },
+  {
+    "term": "fee",
+    "si": [
+      {
+        "word": "ගාස්තුව",
+        "means": "service fee or charge rate",
+        "recommended": true
+      },
+      {
+        "word": "අය කිරීම",
+        "means": "action of charging or billing",
+        "recommended": false
+      }
+    ],
+    "ta": [
+      {
+        "word": "கட்டணம்",
+        "means": "monetary fee or tariff",
+        "recommended": true
+      },
+      {
+        "word": "வரி",
+        "means": "tax / tribute (wrong connotation)",
+        "recommended": false
+      }
+    ],
+    "uses": 18
+  },
+  {
+    "term": "dispute",
+    "si": [
+      {
+        "word": "ආරවුල",
+        "means": "dispute, discord, or contested claim",
+        "recommended": true
+      },
+      {
+        "word": "ගැටලුව",
+        "means": "problem, issue, or puzzle",
+        "recommended": false
+      }
+    ],
+    "ta": [
+      {
+        "word": "பிணக்கு",
+        "means": "dispute or conflict (standard Sri Lankan legal/formal Tamil)",
+        "recommended": true
+      },
+      {
+        "word": "சர்ச்சை",
+        "means": "public controversy / media dispute",
+        "recommended": false
+      },
+      {
+        "word": "பிரச்சினை",
+        "means": "problem / trouble",
+        "recommended": false
+      }
+    ],
+    "uses": 17
+  },
+  {
+    "term": "self-drive",
+    "si": [
+      {
+        "word": "ස්වයං ධාවනය",
+        "means": "self-driving (official vehicle rental term)",
+        "recommended": true
+      },
+      {
+        "word": "තමන්ම පදවන",
+        "means": "driving by oneself (conversational description)",
+        "recommended": false
+      },
+      {
+        "word": "සෙල්ෆ් ඩ්‍රයිව්",
+        "means": "English loanword 'self drive'",
+        "recommended": false
+      }
+    ],
+    "ta": [
+      {
+        "word": "சுய-ஓட்டுநர்",
+        "means": "self-driving (driving oneself without hired chauffeur)",
+        "recommended": true
+      },
+      {
+        "word": "சாரதி இன்றி",
+        "means": "without driver",
+        "recommended": false
+      },
+      {
+        "word": "செல்ப் டிரைவ்",
+        "means": "English loanword 'self drive'",
+        "recommended": false
+      }
+    ],
+    "uses": 17
+  },
+  {
+    "term": "rate",
+    "si": [
+      {
+        "word": "මිල ගණන්",
+        "means": "price rates / tariff schedule",
+        "recommended": true
+      },
+      {
+        "word": "අනුපාතිකය",
+        "means": "mathematical ratio or proportion (wrong for rental price)",
+        "recommended": false
+      },
+      {
+        "word": "රේට් එක",
+        "means": "spoken English code-switch 'the rate'",
+        "recommended": false
+      }
+    ],
+    "ta": [
+      {
+        "word": "கட்டண வீதம்",
+        "means": "rate or tariff schedule",
+        "recommended": true
+      },
+      {
+        "word": "வீதம்",
+        "means": "mathematical ratio / percentage",
+        "recommended": false
+      },
+      {
+        "word": "விலை",
+        "means": "flat price",
+        "recommended": false
+      }
+    ],
+    "uses": 17
+  },
+  {
+    "term": "submit",
+    "si": [
+      {
+        "word": "යොමු කරන්න",
+        "means": "direct, forward, or submit form",
+        "recommended": true
+      },
+      {
+        "word": "ඉදිරිපත් කරන්න",
+        "means": "present or exhibit before someone",
+        "recommended": false
+      },
+      {
+        "word": "සබ්මිට් කරන්න",
+        "means": "English code-switch 'submit'",
+        "recommended": false
+      }
+    ],
+    "ta": [
+      {
+        "word": "சமர்ப்பிக்கவும்",
+        "means": "submit or present for approval",
+        "recommended": true
+      },
+      {
+        "word": "அனுப்பவும்",
+        "means": "send / dispatch",
+        "recommended": false
+      }
+    ],
+    "uses": 16
+  },
+  {
+    "term": "terms",
+    "si": [
+      {
+        "word": "කොන්දේසි",
+        "means": "terms and conditions of service",
+        "recommended": true
+      },
+      {
+        "word": "නියමයන්",
+        "means": "stipulations / rules",
+        "recommended": false
+      }
+    ],
+    "ta": [
+      {
+        "word": "நிபந்தனைகள்",
+        "means": "terms and legal conditions",
+        "recommended": true
+      },
+      {
+        "word": "விதிகள்",
+        "means": "statutory rules / laws",
+        "recommended": false
+      }
+    ],
+    "uses": 16
+  },
+  {
+    "term": "insurance",
+    "si": [
+      {
+        "word": "රක්ෂණය",
+        "means": "insurance coverage",
+        "recommended": true
+      },
+      {
+        "word": "ඉන්ෂුවරන්ස්",
+        "means": "spoken English loanword 'insurance'",
+        "recommended": false
+      }
+    ],
+    "ta": [
+      {
+        "word": "காப்புறுதி",
+        "means": "insurance (standard Sri Lankan Tamil legal/commercial term)",
+        "recommended": true
+      },
+      {
+        "word": "காப்பீடு",
+        "means": "insurance (standard Indian Tamil, rare in Sri Lankan official signage)",
+        "recommended": false
+      },
+      {
+        "word": "இன்சூரன்ஸ்",
+        "means": "English loanword 'insurance'",
+        "recommended": false
+      }
+    ],
+    "uses": 14
+  },
+  {
+    "term": "inspection",
+    "si": [
+      {
+        "word": "පරීක්ෂාව",
+        "means": "vehicle check, survey, or examination",
+        "recommended": true
+      },
+      {
+        "word": "විමර්ශනය",
+        "means": "criminal investigation or judicial inquiry",
+        "recommended": false
+      }
+    ],
+    "ta": [
+      {
+        "word": "பரிசோதனை",
+        "means": "inspection, examination, or physical check",
+        "recommended": true
+      },
+      {
+        "word": "ஆய்வு",
+        "means": "academic research or in-depth review",
+        "recommended": false
+      }
+    ],
+    "uses": 14
+  },
+  {
+    "term": "charge",
+    "si": [
+      {
+        "word": "අය කිරීම",
+        "means": "levying a financial charge",
+        "recommended": true
+      },
+      {
+        "word": "ගාස්තුව",
+        "means": "fee or rate amount",
+        "recommended": false
+      }
+    ],
+    "ta": [
+      {
+        "word": "அறவீடு",
+        "means": "monetary levy or charge (standard Sri Lankan financial term)",
+        "recommended": true
+      },
+      {
+        "word": "கட்டணம்",
+        "means": "fee or payment",
+        "recommended": false
+      }
+    ],
+    "uses": 14
+  },
+  {
+    "term": "staff",
+    "si": [
+      {
+        "word": "කාර්ය මණ්ඩලය",
+        "means": "app/company staff or personnel",
+        "recommended": true
+      },
+      {
+        "word": "සේවකයින්",
+        "means": "workers or laborers",
+        "recommended": false
+      },
+      {
+        "word": "ස්ටාෆ්",
+        "means": "spoken English loanword 'staff'",
+        "recommended": false
+      }
+    ],
+    "ta": [
+      {
+        "word": "பணியாளர்கள்",
+        "means": "staff or service personnel",
+        "recommended": true
+      },
+      {
+        "word": "ஊழியர்கள்",
+        "means": "employees / corporate workforce",
+        "recommended": false
+      },
+      {
+        "word": "ஸ்டாஃப்",
+        "means": "English code-switch 'staff'",
+        "recommended": false
+      }
+    ],
+    "uses": 13
+  },
+  {
+    "term": "damage",
+    "si": [
+      {
+        "word": "හානිය",
+        "means": "physical damage to vehicle or property",
+        "recommended": true
+      },
+      {
+        "word": "අලාභය",
+        "means": "financial loss or forfeiture",
+        "recommended": false
+      },
+      {
+        "word": "ඩැමේජ්",
+        "means": "English loanword 'damage'",
+        "recommended": false
+      }
+    ],
+    "ta": [
+      {
+        "word": "சேதம்",
+        "means": "physical breakage or damage",
+        "recommended": true
+      },
+      {
+        "word": "பாதிப்பு",
+        "means": "adverse effect or impairment",
+        "recommended": false
+      }
+    ],
+    "uses": 12
+  },
+  {
+    "term": "expired",
+    "si": [
+      {
+        "word": "කල් ඉකුත් වූ",
+        "means": "validity period ended / expired",
+        "recommended": true
+      },
+      {
+        "word": "අවලංගු වූ",
+        "means": "nullified or became void",
+        "recommended": false
+      }
+    ],
+    "ta": [
+      {
+        "word": "காலாவதியானது",
+        "means": "validity date expired",
+        "recommended": true
+      },
+      {
+        "word": "காலம் முடிந்தது",
+        "means": "time has ended",
+        "recommended": false
+      }
+    ],
+    "uses": 9
+  },
+  {
+    "term": "claim",
+    "si": [
+      {
+        "word": "හිමිකම් පෑම",
+        "means": "insurance or compensation claim",
+        "recommended": true
+      },
+      {
+        "word": "ක්ලේම්",
+        "means": "insurance industry spoken loanword 'claim'",
+        "recommended": false
+      }
+    ],
+    "ta": [
+      {
+        "word": "கோரிக்கை",
+        "means": "insurance or damage claim / entitlement",
+        "recommended": true
+      },
+      {
+        "word": "இழப்பீட்டுக் கோரிக்கை",
+        "means": "compensation claim (often too long for mobile buttons)",
+        "recommended": false
+      }
+    ],
+    "uses": 8
+  },
+  {
+    "term": "condition",
+    "si": [
+      {
+        "word": "තත්ත්වය",
+        "means": "physical state/condition of the vehicle",
+        "recommended": true
+      },
+      {
+        "word": "කොන්දේසිය",
+        "means": "legal contractual condition (not vehicle state)",
+        "recommended": false
+      }
+    ],
+    "ta": [
+      {
+        "word": "நிலைமை",
+        "means": "physical state or working condition",
+        "recommended": true
+      },
+      {
+        "word": "நிபந்தனை",
+        "means": "legal rule / stipulation (not vehicle condition)",
+        "recommended": false
+      }
+    ],
+    "uses": 8
+  },
+  {
+    "term": "with driver",
+    "si": [
+      {
+        "word": "රියදුරු සමඟ",
+        "means": "accompanied by a driver",
+        "recommended": true
+      },
+      {
+        "word": "ඩ්‍රයිවර් එක්ක",
+        "means": "spoken colloquial 'with driver'",
+        "recommended": false
+      }
+    ],
+    "ta": [
+      {
+        "word": "சாரதியுடன்",
+        "means": "with driver (standard Sri Lankan Tamil terminology)",
+        "recommended": true
+      },
+      {
+        "word": "ஓட்டுநருடன்",
+        "means": "with driver (Indian Tamil convention)",
+        "recommended": false
+      }
+    ],
+    "uses": 8
+  },
+  {
+    "term": "profile",
+    "si": [
+      {
+        "word": "පැතිකඩ",
+        "means": "literal user profile (formal Sinhala)",
+        "recommended": false
+      },
+      {
+        "word": "ගිණුම් විස්තර",
+        "means": "account details / profile overview (practical Sinhala UI)",
+        "recommended": true
+      },
+      {
+        "word": "ප්‍රොෆයිල්",
+        "means": "spoken English loanword 'profile'",
+        "recommended": false
+      }
+    ],
+    "ta": [
+      {
+        "word": "சுயவிவரம்",
+        "means": "personal profile / bio details",
+        "recommended": true
+      },
+      {
+        "word": "ப்ரொஃபைல்",
+        "means": "English loanword 'profile'",
+        "recommended": false
+      }
+    ],
+    "uses": 7
+  },
+  {
+    "term": "settings",
+    "si": [
+      {
+        "word": "සැකසීම්",
+        "means": "app configurations / settings",
+        "recommended": true
+      },
+      {
+        "word": "සෙටින්ග්ස්",
+        "means": "spoken English loanword 'settings'",
+        "recommended": false
+      }
+    ],
+    "ta": [
+      {
+        "word": "அமைப்புகள்",
+        "means": "configurations / app settings",
+        "recommended": true
+      },
+      {
+        "word": "செட்டிங்ஸ்",
+        "means": "English loanword 'settings'",
+        "recommended": false
+      }
+    ],
+    "uses": 7
+  },
+  {
+    "term": "pending",
+    "si": [
+      {
+        "word": "පොරොත්තුවේ",
+        "means": "in waiting / awaiting decision",
+        "recommended": true
+      },
+      {
+        "word": "තීරණය වනතුරු",
+        "means": "pending outcome / until decided",
+        "recommended": false
+      }
+    ],
+    "ta": [
+      {
+        "word": "நிலுவையில்",
+        "means": "pending / unresolved / in queue",
+        "recommended": true
+      },
+      {
+        "word": "காத்திருக்கிறது",
+        "means": "is waiting / pending action",
+        "recommended": false
+      }
+    ],
+    "uses": 6
+  },
+  {
+    "term": "price",
+    "si": [
+      {
+        "word": "මිල",
+        "means": "cost or price of goods/service",
+        "recommended": true
+      },
+      {
+        "word": "ගණන",
+        "means": "numerical count or price amount (colloquial)",
+        "recommended": false
+      }
+    ],
+    "ta": [
+      {
+        "word": "விலை",
+        "means": "price or cost",
+        "recommended": true
+      },
+      {
+        "word": "தொகை",
+        "means": "total sum / amount of money",
+        "recommended": false
+      }
+    ],
+    "uses": 6
+  },
+  {
+    "term": "blocked",
+    "si": [
+      {
+        "word": "අවහිර කර ඇත",
+        "means": "obstructed, suspended, or blocked access",
+        "recommended": true
+      },
+      {
+        "word": "බ්ලොක් කර ඇත",
+        "means": "spoken English code-switch 'has been blocked'",
+        "recommended": false
+      }
+    ],
+    "ta": [
+      {
+        "word": "முடக்கப்பட்டது",
+        "means": "account or item has been disabled / blocked",
+        "recommended": true
+      },
+      {
+        "word": "தடைசெய்யப்பட்டது",
+        "means": "prohibited or banned by law",
+        "recommended": false
+      }
+    ],
+    "uses": 5
+  },
+  {
+    "term": "host",
+    "si": [
+      {
+        "word": "වාහන හිමිකරු",
+        "means": "vehicle owner/host (clear contextual meaning in car sharing)",
+        "recommended": true
+      },
+      {
+        "word": "සත්කාරක",
+        "means": "ceremonial hospitality host (too abstract for car rental)",
+        "recommended": false
+      },
+      {
+        "word": "හෝස්ට්",
+        "means": "English loanword 'host'",
+        "recommended": false
+      }
+    ],
+    "ta": [
+      {
+        "word": "வாகன உரிமையாளர்",
+        "means": "vehicle owner / host (clear in rental context)",
+        "recommended": true
+      },
+      {
+        "word": "விருந்தோம்புநர்",
+        "means": "dinner/hospitality host (archaic/awkward for car app)",
+        "recommended": false
+      },
+      {
+        "word": "ஹோஸ்ட்",
+        "means": "English loanword 'host'",
+        "recommended": false
+      }
+    ],
+    "uses": 5
+  },
+  {
+    "term": "sign in",
+    "si": [
+      {
+        "word": "ඇතුල් වන්න",
+        "means": "enter or log in",
+        "recommended": true
+      },
+      {
+        "word": "සයින් ඉන් වන්න",
+        "means": "spoken English code-switch 'sign in'",
+        "recommended": false
+      }
+    ],
+    "ta": [
+      {
+        "word": "உள்நுழைக",
+        "means": "enter inside / log into account",
+        "recommended": true
+      },
+      {
+        "word": "சைன் இன்",
+        "means": "English code-switch 'sign in'",
+        "recommended": false
+      }
+    ],
+    "uses": 4
+  },
+  {
+    "term": "completed",
+    "si": [
+      {
+        "word": "සම්පූර්ණයි",
+        "means": "finished / completed status",
+        "recommended": true
+      },
+      {
+        "word": "නිම කරන ලදි",
+        "means": "was brought to conclusion",
+        "recommended": false
+      }
+    ],
+    "ta": [
+      {
+        "word": "முடிவடைந்தது",
+        "means": "has ended / successfully completed",
+        "recommended": true
+      },
+      {
+        "word": "பூர்த்தியானது",
+        "means": "was fulfilled / completed",
+        "recommended": false
+      }
+    ],
+    "uses": 3
+  },
+  {
+    "term": "consent",
+    "si": [
+      {
+        "word": "කැමැත්ත",
+        "means": "explicit willingness or agreement to terms",
+        "recommended": true
+      },
+      {
+        "word": "එකඟතාව",
+        "means": "concurrence or consensus",
+        "recommended": false
+      }
+    ],
+    "ta": [
+      {
+        "word": "சம்மதம்",
+        "means": "willingness or user consent",
+        "recommended": true
+      },
+      {
+        "word": "ஒப்புதல்",
+        "means": "approval or endorsement",
+        "recommended": false
+      }
+    ],
+    "uses": 3
+  },
+  {
+    "term": "search",
+    "si": [
+      {
+        "word": "සොයන්න",
+        "means": "look for or search (standard action verb)",
+        "recommended": true
+      },
+      {
+        "word": "සර්ච් කරන්න",
+        "means": "spoken English loanword 'search'",
+        "recommended": false
+      }
+    ],
+    "ta": [
+      {
+        "word": "தேடுக",
+        "means": "search / look for (standard action verb)",
+        "recommended": true
+      },
+      {
+        "word": "தேடல்",
+        "means": "search (noun form)",
+        "recommended": false
+      }
+    ],
+    "uses": 3
+  },
+  {
+    "term": "filter",
+    "si": [
+      {
+        "word": "පෙරහන",
+        "means": "filter / sieve mechanism",
+        "recommended": true
+      },
+      {
+        "word": "තෝරන්න",
+        "means": "select / filter down options",
+        "recommended": false
+      },
+      {
+        "word": "ෆිල්ටර්",
+        "means": "spoken English loanword 'filter'",
+        "recommended": false
+      }
+    ],
+    "ta": [
+      {
+        "word": "வடிகட்டி",
+        "means": "filter tool / strainer",
+        "recommended": true
+      },
+      {
+        "word": "வடிகட்டு",
+        "means": "filter (imperative action)",
+        "recommended": false
+      },
+      {
+        "word": "பில்டர்",
+        "means": "English loanword 'filter'",
+        "recommended": false
+      }
+    ],
+    "uses": 3
+  }
+]

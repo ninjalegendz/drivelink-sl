@@ -29,6 +29,54 @@
   --font-display: var(--font-poppins), ui-sans-serif, system-ui, sans-serif;
   --font-mono: var(--font-poppins), ui-sans-serif, system-ui, sans-serif;
 
+  /* ─── Type scale ──────────────────────────────────────────
+     DriveLink is read on a phone, often outdoors, often by someone who
+     is nervous about the money involved. The product had drifted to a
+     near-uniform 12-14px, which removes hierarchy and makes every screen
+     feel dense: 1,293 usages sat at 12px or below.
+
+     Every step is lifted one notch and given a line-height, so the whole
+     product gains air without editing a thousand call sites. Anything
+     that needs to be smaller than `text-xs` does not belong on screen,
+     which is why 13px is the floor.
+
+     Poppins runs optically small for its point size, so these sit a
+     touch above the Tailwind defaults they replace. */
+  --text-xs: 0.8125rem;          /* 13px, metadata floor */
+  --text-xs--line-height: 1.125rem;
+  --text-sm: 0.9375rem;          /* 15px, secondary body */
+  --text-sm--line-height: 1.375rem;
+  --text-base: 1.0625rem;        /* 17px, default body */
+  --text-base--line-height: 1.625rem;
+  --text-lg: 1.1875rem;          /* 19px, card titles */
+  --text-lg--line-height: 1.75rem;
+  --text-xl: 1.375rem;           /* 22px, section titles */
+  --text-xl--line-height: 1.875rem;
+  --text-2xl: 1.625rem;          /* 26px, page titles on mobile */
+  --text-2xl--line-height: 2.125rem;
+  --text-3xl: 2rem;              /* 32px, page titles on desktop */
+  --text-3xl--line-height: 2.375rem;
+
+  /* ─── Corner radius ───────────────────────────────────────
+     Six different radii were in use across the product (lg, xl, 2xl, md,
+     3xl, sm), which reads as six different design languages. They collapse
+     to two: 12px for controls and small surfaces, 16px for cards and
+     sheets. Existing markup keeps its class names and simply converges. */
+  --radius-md: 0.75rem;
+  --radius-lg: 0.75rem;
+  --radius-xl: 1rem;
+  --radius-2xl: 1rem;
+  --radius-3xl: 1rem;
+
+  /* ─── Semantic surfaces ───────────────────────────────────
+     134 distinct hand-rolled white-card class strings existed before
+     these. New work names the role instead of re-deriving the recipe. */
+  --color-surface: #ffffff;
+  --color-surface-muted: #f8fafc;   /* slate-50, the page ground */
+  --color-surface-tinted: #eff6ff;  /* blue-50, call-out blocks */
+  --color-line: #e2e8f0;            /* slate-200, real separation */
+  --color-line-soft: #f1f5f9;       /* slate-100, quiet card edge */
+
   /* ─── Bouncy easing tokens ────────────────────────────────
      Snappy is the everyday transition (most hovers, dropdowns).
      Bouncy overshoots a touch, for click-presses, modal opens. */
@@ -53,6 +101,11 @@
      Components opt into the bouncy spring via the .spring-* classes. */
   *, *::before, *::after {
     transition-timing-function: var(--ease-snappy);
+  }
+
+  :focus-visible {
+    outline: 3px solid #2563eb;
+    outline-offset: 3px;
   }
 
   /* Fallback chevron for any native <select> - most are replaced by
@@ -120,10 +173,7 @@
    so it doesn't scroll out. */
 @layer base {
   body {
-    background:
-      radial-gradient(ellipse 900px 600px at 50% -10%, rgba(37, 99, 235, 0.05), transparent 60%),
-      #f8fafc;
-    background-attachment: fixed;
+    background: #f8fafc;
     min-height: 100vh;
   }
 }
@@ -141,9 +191,7 @@
     box-shadow: 0 1px 2px 0 rgba(15, 23, 42, 0.05);
   }
   .glass-strong {
-    background: rgba(255, 255, 255, 0.85);
-    backdrop-filter: blur(14px) saturate(160%);
-    -webkit-backdrop-filter: blur(14px) saturate(160%);
+    background: #ffffff;
     border: 1px solid #e2e8f0; /* slate-200 */
     box-shadow: 0 10px 30px -12px rgba(15, 23, 42, 0.12);
   }
@@ -161,24 +209,21 @@
    .animate-bounce-in for entrance; badges/chips use .animate-pop-in. */
 @layer utilities {
   .spring-press {
-    transition: transform 0.16s var(--ease-bouncy), box-shadow 0.16s var(--ease-snappy);
+    transition: background-color 0.16s var(--ease-snappy), border-color 0.16s var(--ease-snappy), box-shadow 0.16s var(--ease-snappy);
   }
-  .spring-press:hover:not(:disabled) { transform: scale(1.02); }
-  .spring-press:active:not(:disabled) { transform: scale(0.96); }
+  .spring-press:active:not(:disabled) { box-shadow: inset 0 0 0 999px rgba(15, 23, 42, 0.06); }
 
   .spring-hover {
-    transition: transform 0.22s var(--ease-bouncy),
-                box-shadow 0.22s var(--ease-snappy),
+    transition: box-shadow 0.22s var(--ease-snappy),
                 border-color 0.2s var(--ease-snappy);
   }
   .spring-hover:hover {
-    transform: translateY(-4px);
-    box-shadow: 0 12px 28px -12px rgba(15, 23, 42, 0.18);
+    box-shadow: 0 4px 12px -6px rgba(15, 23, 42, 0.16);
   }
 
   @keyframes bounce-in {
     0%   { opacity: 0; transform: scale(0.92) translateY(8px); }
-    60%  { opacity: 1; transform: scale(1.02) translateY(-2px); }
+    60%  { opacity: 1; transform: scale(1) translateY(0); }
     100% { opacity: 1; transform: scale(1)    translateY(0); }
   }
   .animate-bounce-in { animation: bounce-in 0.32s var(--ease-bouncy) both; }
@@ -219,5 +264,14 @@
     51%  { stroke-dashoffset: 0; }
     80%  { stroke-dashoffset: -22; }
     100% { stroke-dashoffset: -22; }
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    scroll-behavior: auto !important;
+    transition-duration: 0.01ms !important;
   }
 }

@@ -5,7 +5,7 @@
   "compatibility_date": "2025-11-01",
 
   // Two cadences (OPS-001): every 15 minutes for the time-sensitive booking
-  // lifecycle (payment expiry, auto-complete, overdue alerts), plus daily at
+  // lifecycle (overdue alerts and closure visibility), plus daily at
   // 3 AM UTC for the heavy R2 orphan-storage sweep. worker.ts maps the cron
   // string that fired to ?task=frequent | ?task=daily.
   "triggers": {

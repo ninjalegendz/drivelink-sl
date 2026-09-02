@@ -27,6 +27,10 @@ export type Database = {
           phone_verified: boolean;
           kyc_status: KycStatus;
           nic_url: string | null;
+          identity_back_url: string | null;
+          identity_document_type: string | null;
+          identity_document_source: string | null;
+          identity_document_session_id: string | null;
           selfie_url: string | null;
           is_blacklisted: boolean;
           blacklist_reason: string | null;
@@ -55,6 +59,10 @@ export type Database = {
           phone_verified?: boolean;
           kyc_status?: KycStatus;
           nic_url?: string | null;
+          identity_back_url?: string | null;
+          identity_document_type?: string | null;
+          identity_document_source?: string | null;
+          identity_document_session_id?: string | null;
           selfie_url?: string | null;
           is_blacklisted?: boolean;
           blacklist_reason?: string | null;
@@ -71,6 +79,10 @@ export type Database = {
           phone_verified?: boolean;
           kyc_status?: KycStatus;
           nic_url?: string | null;
+          identity_back_url?: string | null;
+          identity_document_type?: string | null;
+          identity_document_source?: string | null;
+          identity_document_session_id?: string | null;
           selfie_url?: string | null;
           is_blacklisted?: boolean;
           blacklist_reason?: string | null;
@@ -90,12 +102,15 @@ export type Database = {
           description: string | null;
           address: string | null;
           city: string;
-          whatsapp_number: string;
+          whatsapp_number: string | null;
           is_verified: boolean;
           is_blocked: boolean;
           cancellation_count: number;
           confirmed_count: number;
           strike_count: number;
+          deleted_at: string | null;
+          deletion_source: "account" | "admin" | null;
+          blocked_before_deletion: boolean | null;
           created_at: string;
           updated_at: string;
         };
@@ -112,6 +127,9 @@ export type Database = {
           cancellation_count?: number;
           confirmed_count?: number;
           strike_count?: number;
+          deleted_at?: string | null;
+          deletion_source?: "account" | "admin" | null;
+          blocked_before_deletion?: boolean | null;
         };
         Update: {
           owner_id?: string;
@@ -119,12 +137,15 @@ export type Database = {
           description?: string | null;
           address?: string | null;
           city?: string;
-          whatsapp_number?: string;
+          whatsapp_number?: string | null;
           is_verified?: boolean;
           is_blocked?: boolean;
           cancellation_count?: number;
           confirmed_count?: number;
           strike_count?: number;
+          deleted_at?: string | null;
+          deletion_source?: "account" | "admin" | null;
+          blocked_before_deletion?: boolean | null;
         };
         Relationships: [];
       };
@@ -137,6 +158,11 @@ export type Database = {
           year: number;
           color: string | null;
           plate_number: string | null;
+          listing_authority_basis: "registered_owner" | "authorized_operator" | null;
+          listing_authority_declared: boolean;
+          listing_authority_confirmed_at: string | null;
+          listing_authority_confirmed_by: string | null;
+          listing_authority_declaration_version: string | null;
           insurance_type: InsuranceType;
           fuel_policy: FuelPolicy;
           daily_rate_lkr: number;
@@ -207,6 +233,11 @@ export type Database = {
           year: number;
           color?: string | null;
           plate_number?: string | null;
+          listing_authority_basis?: "registered_owner" | "authorized_operator" | null;
+          listing_authority_declared?: boolean;
+          listing_authority_confirmed_at?: string | null;
+          listing_authority_confirmed_by?: string | null;
+          listing_authority_declaration_version?: string | null;
           insurance_type: InsuranceType;
           fuel_policy?: FuelPolicy;
           daily_rate_lkr: number;
@@ -273,6 +304,11 @@ export type Database = {
           year?: number;
           color?: string | null;
           plate_number?: string | null;
+          listing_authority_basis?: "registered_owner" | "authorized_operator" | null;
+          listing_authority_declared?: boolean;
+          listing_authority_confirmed_at?: string | null;
+          listing_authority_confirmed_by?: string | null;
+          listing_authority_declaration_version?: string | null;
           insurance_type?: InsuranceType;
           fuel_policy?: FuelPolicy;
           daily_rate_lkr?: number;
@@ -339,16 +375,19 @@ export type Database = {
           vehicle_id: string;
           cr_url: string | null;
           insurance_url: string | null;
+          revenue_license_url: string | null;
           updated_at: string;
         };
         Insert: {
           vehicle_id: string;
           cr_url?: string | null;
           insurance_url?: string | null;
+          revenue_license_url?: string | null;
         };
         Update: {
           cr_url?: string | null;
           insurance_url?: string | null;
+          revenue_license_url?: string | null;
         };
         Relationships: [];
       };

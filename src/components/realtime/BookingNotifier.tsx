@@ -132,7 +132,7 @@ export function BookingNotifier({ agencyId, viewHref }: Props) {
           className="bg-blue-600 border-2 border-blue-600 rounded-2xl shadow-2xl p-4 animate-bounce-in ring-4 ring-blue-500/30"
         >
           <div className="flex items-start gap-3">
-            <span className="w-10 h-10 rounded-full bg-stone-900 text-blue-500 flex items-center justify-center shrink-0 animate-pulse">
+            <span className="w-10 h-10 rounded-full bg-slate-900 text-blue-500 flex items-center justify-center shrink-0 animate-pulse">
               <Bell size={18} />
             </span>
             <div className="flex-1 min-w-0">
@@ -140,7 +140,7 @@ export function BookingNotifier({ agencyId, viewHref }: Props) {
               <p className="text-slate-900 text-sm mt-0.5">{t.start_date} → {t.end_date}</p>
               <a
                 href={viewHref}
-                className="inline-flex items-center gap-1 mt-2 px-3 py-1.5 bg-stone-900 hover:bg-stone-800 text-blue-500 rounded-lg text-xs font-semibold transition-colors"
+                className="inline-flex items-center gap-1 mt-2 px-3 py-1.5 bg-slate-900 hover:bg-stone-800 text-blue-500 rounded-lg text-xs font-semibold transition-colors"
               >
                 Open booking <ExternalLink size={12} />
               </a>

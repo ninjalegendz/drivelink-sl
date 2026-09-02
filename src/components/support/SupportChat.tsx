@@ -128,7 +128,7 @@ export function SupportChat({ threadId, initial, currentRole, currentUserId, aud
             <Headphones size={32} strokeWidth={1.5} className="mb-2 text-slate-400" />
             <p>{audience === "admin" ? "No messages yet." : "Tell us how we can help."}</p>
             <p className="text-xs text-slate-400 mt-1">
-              {audience === "admin" ? "Wait for the agency to start the thread." : "An admin will respond as soon as possible."}
+              {audience === "admin" ? "Wait for the Rental Page to start the thread." : "An admin will respond as soon as possible."}
             </p>
           </div>
         ) : (
@@ -138,12 +138,12 @@ export function SupportChat({ threadId, initial, currentRole, currentUserId, aud
               <div key={m.id} className={`flex ${mine ? "justify-end" : "justify-start"}`}>
                 <div className="max-w-[85%]">
                   {!mine && (
-                    <p className="text-[10px] text-slate-500 mb-0.5 inline-flex items-center gap-1">
+                    <p className="text-xs text-slate-500 mb-0.5 inline-flex items-center gap-1">
                       {m.sender_role === "admin"
                         ? <><Headphones size={10} /> DriveLink Support</>
                         : m.sender_role === "renter"
                           ? <><User size={10} /> Renter</>
-                          : <><Building2 size={10} /> Agency</>}
+                          : <><Building2 size={10} /> Rental Page</>}
                     </p>
                   )}
                   <div className={`px-3 py-2 rounded-2xl text-sm leading-snug whitespace-pre-wrap break-words ${
@@ -153,7 +153,7 @@ export function SupportChat({ threadId, initial, currentRole, currentUserId, aud
                   }`}>
                     {m.body}
                   </div>
-                  <p className={`text-[10px] mt-0.5 text-slate-400 ${mine ? "text-right" : ""}`}>
+                  <p className={`text-xs mt-0.5 text-slate-400 ${mine ? "text-right" : ""}`}>
                     {formatTime(m.created_at)}
                   </p>
                 </div>
@@ -165,7 +165,7 @@ export function SupportChat({ threadId, initial, currentRole, currentUserId, aud
 
       {/* Input */}
       <form onSubmit={send} className="border-t border-slate-100 p-3 bg-white/80">
-        {error && <p className="text-red-400 text-xs mb-2">{error}</p>}
+        {error && <p className="text-rose-600 text-xs mb-2">{error}</p>}
         <div className="flex items-end gap-2">
           <textarea
             value={draft}
@@ -179,13 +179,13 @@ export function SupportChat({ threadId, initial, currentRole, currentUserId, aud
             rows={1}
             maxLength={4000}
             placeholder="Type a message…"
-            className="flex-1 px-3 py-2 bg-slate-100 border border-slate-200 rounded-xl text-slate-900 placeholder-slate-400 text-sm focus:outline-none focus:border-blue-500 resize-none max-h-32"
+            className="flex-1 px-3 py-2 bg-slate-100 border border-slate-200 rounded-xl text-slate-900 placeholder-slate-400 text-sm focus:border-blue-500 resize-none max-h-32"
           />
           <Button type="submit" loading={sending} disabled={!draft.trim()}>
             <Send size={14} />
           </Button>
         </div>
-        <p className="text-[10px] text-slate-400 mt-1">Enter to send · Shift+Enter for new line</p>
+        <p className="text-xs text-slate-400 mt-1">Enter to send · Shift+Enter for new line</p>
       </form>
     </div>
   );

@@ -49,8 +49,6 @@ export interface VehicleRow {
   variant: string | null;
   doors: number | null;
   engine_cc: number | null;
-  vin: string | null;
-  engine_number: string | null;
   odometer_km: number | null;
   weekly_rate_lkr: number | null;
   included_km_per_day: number | null;
@@ -80,11 +78,15 @@ export interface VehicleRow {
   emission_expiry: string | null;
   created_at: string;
   updated_at: string;
+  // Set only by search_vehicles(), and only when the search carried a date
+  // range. Absent everywhere else, which is why both are optional: a vehicle
+  // read straight from the table has no range to be unavailable for.
+  booked_in_range?: boolean;
+  blocked_in_range?: boolean;
 }
 
 export interface AgencySnippet {
   id: string;
-  owner_id: string;
   name: string;
   city: string;
   provider_type?: string | null;
@@ -92,11 +94,9 @@ export interface AgencySnippet {
   reliability_pct: number | null;
   cancellation_count: number;
   avg_response_minutes?: number | null;
-  // BUILD 2: the PUBLIC rating is the Rental Page's own (renters review the
-  // page). Kept `profiles` (owner's personal rating) for internal/legacy use.
+  // The public rating belongs to this Rental Page, never the owner personally.
   rating_avg?: number | null;
   rating_count?: number | null;
-  profiles: { rating_avg: number | null; rating_count: number } | null;
   // whatsapp_number deliberately omitted, not exposed to the public marketplace.
   // Available only via agency dashboards and the renter's own /bookings/[id] page.
 }
@@ -114,7 +114,7 @@ export interface AgencyRow {
   description: string | null;
   address: string | null;
   city: string;
-  whatsapp_number: string;
+  whatsapp_number: string | null;
   is_verified: boolean;
   is_blocked: boolean;
   cancellation_count: number;
@@ -197,7 +197,7 @@ export interface VehicleSnippet {
 
 export interface AgencyContact {
   name: string;
-  whatsapp_number: string;
+  whatsapp_number: string | null;
   owner_id: string;
 }
 

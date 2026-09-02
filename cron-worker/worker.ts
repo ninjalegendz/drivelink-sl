@@ -15,20 +15,26 @@ export interface Env {
 }
 
 export default {
-  async scheduled(event: ScheduledEvent, env: Env, ctx: ExecutionContext): Promise<void> {
+  async scheduled(event: ScheduledController, env: Env, ctx: ExecutionContext): Promise<void> {
     ctx.waitUntil((async () => {
       const task = event.cron === "0 3 * * *" ? "daily" : "frequent";
-      const url  = `${env.TARGET_URL.replace(/\/+$/, "")}/api/cron/expire-bookings?task=${task}`;
-      try {
-        const res = await fetch(url, {
-          method:  "GET",
-          headers: { "Authorization": `Bearer ${env.CRON_SECRET}` },
-        });
-        const body = await res.text().catch(() => "");
-        console.log(`[cron ${task}] ${url} -> ${res.status} ${body.slice(0, 200)}`);
-      } catch (err) {
-        console.error(`[cron ${task}] fetch failed:`, err);
-      }
+      const base = env.TARGET_URL.replace(/\/+$/, "");
+      const urls = [
+        `${base}/api/cron/expire-bookings?task=${task}`,
+        `${base}/api/cron/evidence-exports`,
+      ];
+      await Promise.all(urls.map(async (url) => {
+        try {
+          const res = await fetch(url, {
+            method:  "GET",
+            headers: { "Authorization": `Bearer ${env.CRON_SECRET}` },
+          });
+          const body = await res.text().catch(() => "");
+          console.log(`[cron ${task}] ${url} -> ${res.status} ${body.slice(0, 200)}`);
+        } catch (err) {
+          console.error(`[cron ${task}] fetch failed:`, err);
+        }
+      }));
     })());
   },
 } satisfies ExportedHandler<Env>;

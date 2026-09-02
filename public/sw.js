@@ -9,7 +9,7 @@
 // Bump this on any change to precached/cache-first assets (icons, logos) - 
 // `activate` deletes every cache whose key doesn't start with VERSION, so
 // returning visitors drop stale copies instead of keeping them forever.
-const VERSION = "dl-sw-v5";
+const VERSION = "dl-sw-v6";
 const STATIC_CACHE = `${VERSION}-static`;
 // Next strips the .html extension, so the canonical 200 URL is /offline.
 // Precaching /offline.html would 307-redirect and make install fail.
@@ -52,6 +52,14 @@ function isHashedStatic(url) {
   );
 }
 
+function isSensitiveRequest(url) {
+  return (
+    url.pathname.startsWith("/api/docs/")
+    || url.pathname.includes("/evidence-pack")
+    || url.pathname.includes("/agreement/pdf")
+  );
+}
+
 self.addEventListener("fetch", (event) => {
   const req = event.request;
 
@@ -60,6 +68,14 @@ self.addEventListener("fetch", (event) => {
   if (req.method !== "GET") return;
   const url = new URL(req.url);
   if (url.origin !== self.location.origin) return;
+
+  // These responses contain identity, agreement, or booking evidence. Never
+  // let the image-extension cache rule below retain them, even when a protected
+  // URL ends in .jpg or .png. The v6 activation also removes every v5 cache.
+  if (isSensitiveRequest(url)) {
+    event.respondWith(fetch(req, { cache: "no-store" }));
+    return;
+  }
 
   // Network-first for page navigations; offline page as the safety net.
   if (req.mode === "navigate") {

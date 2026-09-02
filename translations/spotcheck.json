@@ -1,0 +1,160 @@
+[
+  {
+    "en": "Yes. We show the provider's name, city, and reliability stats publicly so you can decide, but the contact number unlocks only after your details are verified and the provider confirms the booking. This keeps listings trustworthy for everyone.",
+    "area": "Marketplace",
+    "kind": "body",
+    "file": "app/(marketplace)/faq/page.tsx",
+    "si": "ඔව්. ඔබට තීරණය ගැනීමට හැකි වන පරිදි සේවා සපයන්නාගේ නම, නගරය සහ විශ්වසනීයත්ව තොරතුරු ප්‍රසිද්ධියේ පෙන්වයි. එහෙත් දුරකථන අංකය පෙන්වන්නේ ඔබගේ තොරතුරු verified කළ පසු සහ සේවා සපයන්නා booking request එක තහවුරු කළ පසුව පමණි. මෙය listing සැමටම විශ්වාසදායක එකක් ලෙස තබා ගනී.",
+    "ta": "ஆம். நீங்கள் முடிவெடுக்க வசதியாக சேவை வழங்குநரின் பெயர், நகரம் மற்றும் நம்பகத்தன்மை விபரங்களை வெளிப்படையாகக் காட்டுகிறோம். ஆனால் உங்கள் விபரங்கள் verified செய்யப்பட்டு, சேவை வழங்குநர் முன்பதிவை உறுதிசெய்த பின்னரே தொடர்பு இலக்கம் காட்டப்படும். இது listing-களை அனைவருக்கும் நம்பகமானதாக வைத்திருக்க உதவுகிறது."
+  },
+  {
+    "en": "Before a provider confirms, you can cancel free with no penalty. After confirmation, message the provider as early as possible. Late or repeated cancellations affect your reliability score. Need help? WhatsApp us with your booking reference.",
+    "area": "Marketplace",
+    "kind": "body",
+    "file": "app/(marketplace)/faq/page.tsx",
+    "si": "සපයන්නා තහවුරු කිරීමට පෙර, ඔබට කිසිදු දඩයක් නොමැතිව නොමිලේ අවලංගු කළ හැක. තහවුරු කිරීමෙන් පසු, හැකි ඉක්මනින් සපයන්නාට පණිවිඩයක් එවන්න. ප්‍රමාද වී හෝ නැවත නැවත අවලංගු කිරීම ඔබගේ විශ්වාසනීයත්ව ලකුණට බලපායි. උදව් අවශ්‍යද? ඔබගේ booking reference අංකය සමඟ අපට WhatsApp කරන්න.",
+    "ta": "வழங்குநர் உறுதிப்படுத்துவதற்கு முன், நீங்கள் எந்தக் கட்டணமும் இன்றி இலவசமாக ரத்து செய்யலாம். உறுதிப்படுத்திய பின், வழங்குநருக்கு முடிந்தவரை விரைவாகச் செய்தி அனுப்புங்கள். தாமதமான அல்லது தொடர்ச்சியான ரத்துசெய்தல்கள் உங்களது நம்பகத்தன்மை மதிப்பீட்டைப் பாதிக்கும். உதவி தேவையா? உங்கள் booking reference-உடன் எங்களை WhatsApp-ல் தொடர்பு கொள்ளவும்."
+  },
+  {
+    "en": "Every renter completes ID verification (Didit). Their verification status and reliability score show on each request, so you can spot renters who have cancelled late or ghosted in the past. You can decline any request with no penalty.",
+    "area": "Marketplace",
+    "kind": "body",
+    "file": "app/(marketplace)/faq/page.tsx",
+    "si": "සෑම renter කෙනෙක්ම හැඳුනුම්පත් verification (Didit) සම්පූර්ණ කරයි. එක් එක් ඉල්ලීමේ ඔවුන්ගේ verification තත්ත්වය සහ reliability score පෙන්වන බැවින්, කලින් ප්‍රමාද වී අවලංගු කළ හෝ මඟහැර ගිය අය හඳුනාගත හැක. ඔබට කිසිදු දඩයකින් තොරව ඕනෑම ඉල්ලීමක් ප්‍රතික්ෂේප කළ හැක.",
+    "ta": "ஒவ்வொரு renter-உம் அடையாள verification-ஐ (Didit) முடிக்கிறார்கள். அவர்களின் verification நிலை மற்றும் reliability score ஒவ்வொரு கோரிக்கையிலும் காட்டப்படும், எனவே கடந்த காலத்தில் தாமதமாக ரத்து செய்த அல்லது தொடர்பை துண்டித்தவர்களை நீங்கள் கண்டறியலாம். எந்த அபராதமும் இன்றி நீங்கள் எந்தக் கோரிக்கையையும் நிராகரிக்கலாம்."
+  },
+  {
+    "en": "The Rental Page declared its right to list this vehicle, and DriveLink reviewed the public listing. The vehicle documents have not completed Verified Vehicle review. Confirm the exact vehicle and insurance conditions before handover.",
+    "area": "Vehicles and listings",
+    "kind": "body",
+    "file": "app/(marketplace)/vehicles/[slug]/page.tsx",
+    "component": "VehicleDetailPage",
+    "si": "මෙම Rental Page එක මඟින් මෙම වාහනය ලැයිස්තුගත කිරීමට අයිතිය ඇති බව ප්‍රකාශ කර ඇති අතර, DriveLink මඟින් ප්‍රසිද්ධ listing එක සමාලෝචනය කර ඇත. වාහනයේ ලේඛන තවමත් Verified Vehicle සමාලෝචනය සම්පූර්ණ කර නොමැත. භාරදීමට (handover) පෙර වාහනයේ තත්ත්වය සහ රක්ෂණ කොන්දේසි පරීක්ෂා කර තහවුරු කරගන්න.",
+    "ta": "இந்த Rental Page இந்த வாகனத்தைப் பட்டியலிட உரிமை உள்ளதாகத் தெரிவித்துள்ளது, மேலும் DriveLink பொது listing-ஐ மதிப்பாய்வு செய்துள்ளது. வாகன ஆவணங்கள் இன்னும் Verified Vehicle மதிப்பாய்வை முடிக்கவில்லை. Handover செய்வதற்கு முன் வாகனத்தின் நிலை மற்றும் காப்புறுதி நிபந்தனைகளை உறுதிப்படுத்தவும்."
+  },
+  {
+    "en": "Nothing, listing is free forever. Listing vehicles, receiving requests, and using the dashboard cost nothing. DriveLink does not deduct commission from your rental income. There is no monthly fee or per-listing fee.",
+    "area": "Marketplace",
+    "kind": "body",
+    "file": "app/(marketplace)/faq/page.tsx",
+    "si": "කිසිදු මුදලක් අය නොවේ, වාහන ඇතුළත් කිරීම සැමදා නොමිලේ. වාහන ඇතුළත් කිරීම, ඉල්ලීම් ලබාගැනීම සහ dashboard එක භාවිතය සම්පූර්ණයෙන්ම නොමිලේ. DriveLink මඟින් ඔබේ කුලී ආදායමෙන් කොමිස් මුදලක් අය නොකෙරේ. මාසික ගාස්තු හෝ එක් එක් listing සඳහා ගාස්තු නොමැත.",
+    "ta": "எதுவுமில்லை, listing இடுவது எப்போதும் இலவசம். வாகனங்களை listing செய்ய, கோரிக்கைகளைப் பெற, dashboard பயன்படுத்த எவ்வித கட்டணமும் இல்லை. DriveLink உங்கள் வாடகை வருமானத்திலிருந்து கமிஷன் எதுவும் கழிக்காது. மாதாந்த கட்டணமோ அல்லது listing கட்டணமோ கிடையாது."
+  },
+  {
+    "en": "Start with clear photos of the vehicle's exterior, interior, odometer, and any distinguishing features. Hire-insured vehicles get stronger trust badges and better visibility. We also verify your ID via Didit.",
+    "area": "Marketplace",
+    "kind": "body",
+    "file": "app/(marketplace)/faq/page.tsx",
+    "si": "වාහනයේ පිටත, ඇතුළත, odometer සහ විශේෂිත ලක්ෂණවල පැහැදිලි ඡායාරූපවලින් ආරම්භ කරන්න. Hire-insured වාහන සඳහා ඉහළ විශ්වාසනීයත්ව ලාංඡන සහ වැඩි ප්‍රමුඛතාවක් ලැබේ. Didit හරහා අපි ඔබේ හැඳුනුම්පත ද verify කරන්නෙමු.",
+    "ta": "வாகனத்தின் வெளிப்புறம், உட்புறம், odometer மற்றும் விசேட அம்சங்களின் தெளிவான புகைப்படங்களுடன் தொடங்கவும். Hire-insured வாகனங்கள் அதிக நம்பிக்கை பேட்ஜ்களையும் சிறந்த தெரிவுநிலையையும் பெறும். Didit மூலம் உங்கள் அடையாளத்தையும் verify செய்கிறோம்."
+  },
+  {
+    "en": "These Terms are governed by the laws of the Democratic Socialist Republic of Sri Lanka. Any dispute arising under these Terms is subject to the exclusive jurisdiction of the courts of Colombo.",
+    "area": "Marketplace",
+    "kind": "body",
+    "file": "app/(marketplace)/terms/page.tsx",
+    "component": "TermsPage",
+    "near": "8. Governing law",
+    "si": "මෙම කොන්දේසි ශ්‍රී ලංකා ප්‍රජාතාන්ත්‍රික සමාජවාදී ජනරජයේ නීති මගින් පාලනය වේ. මෙම කොන්දේසි යටතේ පැනනගින ඕනෑම ආරවුලක් කොළඹ අධිකරණ බල ප්‍රදේශයට පමණක් යටත් වේ.",
+    "ta": "இந்த விதிமுறைகள் இலங்கை ஜனநாயக சோசலிசக் குடியரசின் சட்டங்களால் நிர்வகிக்கப்படுகின்றன. இந்த விதிமுறைகளின் கீழ் எழும் எந்தவொரு தகராறும் கொழும்பு நீதிமன்றங்களின் பிரத்தியேக அதிகார வரம்பிற்கு உட்பட்டது."
+  },
+  {
+    "en": "The plain-language guide every DriveLink rental agreement points to: what counts as normal wear (owner's cost) vs damage (renter's cost) on a vehicle rental in Sri Lanka.",
+    "area": "Marketplace",
+    "kind": "body",
+    "file": "app/(marketplace)/guides/wear-vs-damage/page.tsx",
+    "si": "සෑම DriveLink කුලී ගිවිසුමකම අඩංගු සරල මාර්ගෝපදේශය: ශ්‍රී ලංකාවේ වාහන කුලියට දීමේදී සාමාන්‍ය ගෙවී යාම (හිමිකරුගේ වියදම) සහ අලාභහානි (කුලියට ගන්නාගේ වියදම) ලෙස සැලකෙන දේ.",
+    "ta": "ஒவ்வொரு DriveLink வாடகை ஒப்பந்தமும் குறிப்பிடும் எளிய வழிகாட்டி: இலங்கையில் வாகன வாடகையில் எது சாதாரண தேய்மானம் (உரிமையாளரின் செலவு) மற்றும் எது சேதம் (வாடகைக்கு எடுப்பவரின் செலவு) என்பது பற்றிய விபரம்."
+  },
+  {
+    "en": "The rental price and security deposit are set by the Owner and paid by the Renter directly to the Owner. DriveLink does not collect or hold rental funds or deposits.",
+    "area": "Marketplace",
+    "kind": "body",
+    "file": "app/(marketplace)/terms/page.tsx",
+    "component": "TermsPage",
+    "near": "5. Fees and payments",
+    "si": "කුලී මිල සහ ඇප deposit මුදල හිමිකරු විසින් තීරණය කරනු ලබන අතර, කුලියට ගන්නා විසින් සෘජුවම හිමිකරුට ගෙවනු ලැබේ. DriveLink කිසිදු කුලී මුදලක් හෝ deposit මුදලක් එකතු කිරීම හෝ තබා ගැනීම සිදු නොකරයි.",
+    "ta": "வாடகைத் தொகையும் பாதுகாப்பு deposit-உம் உரிமையாளரால் நிர்ணயிக்கப்பட்டு, வாடகைக்கு எடுப்பவரால் நேரடியாக உரிமையாளருக்குச் செலுத்தப்படும். DriveLink வாடகை நிதியையோ deposit தொகையையோ சேகரிப்பதோ வைத்திருப்பதோ இல்லை."
+  },
+  {
+    "en": "Upload your business registration certificate. An admin reviews it before your page is marked a verified business. Private, only you and DriveLink admin can view it.",
+    "area": "Rental Page workspace",
+    "kind": "body",
+    "file": "app/(dashboard)/dashboard/settings/page.tsx",
+    "component": "DashboardSettingsPage",
+    "si": "ඔබේ ව්‍යාපාර ලියාපදිංචි සහතිකය upload කරන්න. ඔබේ පිටුව verified ව්‍යාපාරයක් ලෙස නම් කිරීමට පෙර admin කෙනෙකු එය පරීක්ෂා කරනු ඇත. මෙය පුද්ගලිකයි, ඔබට සහ DriveLink adminට පමණක් දැකිය හැක.",
+    "ta": "உங்கள் வணிகப் பதிவுச் சான்றிதழைப் பதிவேற்றவும். உங்கள் பக்கம் verified வணிகமாகக் குறிக்கப்படுவதற்கு முன் admin அதை மதிப்பாய்வு செய்வார். இது தனிப்பட்டது, நீங்களும் DriveLink admin-உம் மட்டுமே பார்க்க முடியும்."
+  },
+  {
+    "en": "A transfer never happens from one tap. The next owner accepts first, you have 24 hours to cancel, then you confirm with a fresh code to your verified account phone.",
+    "area": "Rental Page workspace",
+    "kind": "body",
+    "file": "components/dashboard/PageLifecycleControls.tsx",
+    "component": "transferAction",
+    "near": "Transfer ownership",
+    "si": "එක tap එකකින් හිමිකාරිත්වය මාරු නොවේ. ඊළඟ හිමිකරු පළමුව එය පිළිගත යුතුය, අවලංගු කිරීමට ඔබට පැය 24ක් ඇත, ඉන්පසු ඔබේ verified ගිණුමේ දුරකථනයට ලැබෙන අලුත් කේතයකින් තහවුරු කළ යුතුය.",
+    "ta": "ஒரே tap-இல் உரிமை மாற்றம் நடைபெறாது. அடுத்த உரிமையாளர் முதலில் ஏற்க வேண்டும், ரத்து செய்ய உங்களுக்கு 24 மணிநேரம் உள்ளது, பின்னர் உங்கள் verified கணக்கின் தொலைபேசிக்கு வரும் புதிய குறியீட்டைக் கொண்டு உறுதிப்படுத்த வேண்டும்."
+  },
+  {
+    "en": "Tell the Rental Page which original document you expect to show. The page must inspect it at pickup. This is information, not legal advice or a DriveLink approval.",
+    "area": "Bookings and handover",
+    "kind": "body",
+    "file": "components/booking/BookingRequestForm.tsx",
+    "component": "verifyThenBook",
+    "si": "ඔබ පෙන්වීමට බලාපොරොත්තු වන මුල් ලියකියවිල්ල කුමක්දැයි Rental Page එකට දන්වන්න. වාහනය භාරගන්නා විට ඔවුන් එය පරීක්ෂා කළ යුතුය. මෙය තොරතුරක් පමණි, නීතිමය උපදෙසක් හෝ DriveLink අනුමැතියක් නොවේ.",
+    "ta": "நீங்கள் காட்ட எதிர்பார்க்கும் அசல் ஆவணம் எதுவென Rental Page-க்கு தெரிவிக்கவும். வாகனத்தைப் பெறும்போது அவர்கள் அதை ஆய்வு செய்ய வேண்டும். இது ஒரு தகவலே தவிர, சட்ட ஆலோசனையோ அல்லது DriveLink-இன் ஒப்புதலோ அல்ல."
+  },
+  {
+    "en": "The step-by-step protocol for an accident or breakdown in a DriveLink rental in Sri Lanka: police report, insurer requirements, and what NOT to do at the roadside.",
+    "area": "Marketplace",
+    "kind": "body",
+    "file": "app/(marketplace)/guides/accident-protocol/page.tsx",
+    "si": "ශ්‍රී ලංකාවේ DriveLink කුලී රථයක අනතුරක් හෝ කාර්මික දෝෂයක් සිදුවූ විට අනුගමනය කළ යුතු පියවරෙන් පියවර ක්‍රියාවලිය: පොලිස් වාර්තාව, රක්ෂණ අවශ්‍යතා සහ මාර්ගයේදී නොකළ යුතු දේවල්.",
+    "ta": "இலங்கையில் DriveLink வாடகை வாகனத்தில் விபத்து அல்லது பழுது ஏற்பட்டால் பின்பற்ற வேண்டிய படிப்படியான நடைமுறை: பொலிஸ் அறிக்கை, காப்பீட்டுத் தேவைகள் மற்றும் வீதியோரத்தில் செய்யக்கூடாதவை."
+  },
+  {
+    "en": "Required for self-drive rentals. DriveLink reviews your submission first; the Rental Page still checks your original licence and any declared permit at pickup.",
+    "area": "Your account",
+    "kind": "body",
+    "file": "app/(marketplace)/account/page.tsx",
+    "component": "AccountPage",
+    "near": "Driving licence",
+    "si": "self-drive කුලී රථ සඳහා අනිවාර්යයි. පළමුව DriveLink මගින් ඔබගේ තොරතුරු පරීක්ෂා කරනු ලැබේ; pickup අවස්ථාවේදී Rental Page මගින් ඔබගේ මුල් බලපත්‍රය සහ අදාළ permit තවදුරටත් පරීක්ෂා කරනු ඇත.",
+    "ta": "self-drive வாடகைகளுக்கு இது கட்டாயமானது. DriveLink முதலில் உங்கள் ஆவணங்களை மதிப்பாய்வு செய்யும்; pickup இன் போது Rental Page உங்கள் அசல் அனுமதிப்பத்திரம் மற்றும் ஏதேனும் permit ஐச் சரிபார்க்கும்."
+  },
+  {
+    "en": "Welcome to DriveLink. Click the button below to verify your email, it adds a trust badge to your profile, which helps agencies confirm your bookings faster:",
+    "area": "Server messages",
+    "kind": "body",
+    "file": "app/api/auth/signup/verify/route.ts",
+    "component": "POST",
+    "si": "DriveLink වෙත සාදරයෙන් පිළිගනිමු. ඔබගේ ඊමේල් ලිපිනය තහවුරු කිරීමට පහත බොත්තම ක්ලික් කරන්න. එමගින් ඔබේ profile එකට trust badge එකක් එකතු වන අතර, ආයතනවලට ඔබේ bookings ඉක්මනින් තහවුරු කිරීමට උපකාරී වේ:",
+    "ta": "DriveLink-க்கு வரவேற்கிறோம். உங்கள் மின்னஞ்சலைச் சரிபார்க்க கீழே உள்ள பட்டனைக் கிளிக் செய்யவும். இது உங்கள் profile-க்கு trust badge சேர்க்கும், இதனால் நிறுவனங்கள் உங்கள் booking-களை விரைவாக உறுதிப்படுத்த உதவும்:"
+  },
+  {
+    "en": "Self-drive cars from reviewed Rental Pages, with visible deposit, mileage, insurance and licence rules. DriveLink's confirmation fee is Rs. 0.",
+    "area": "Shared interface",
+    "kind": "label",
+    "file": "data/landings.ts",
+    "si": "සමාලෝචනය කළ Rental Pages වෙතින් self-drive කාර් - deposit, ධාවන දුර, රක්ෂණ සහ බලපත්‍ර නීති පැහැදිලිව දක්වා ඇත. DriveLink තහවුරු කිරීමේ ගාස්තුව Rs. 0 කි.",
+    "ta": "மதிப்பாய்வு செய்யப்பட்ட Rental Pages-களிலிருந்து self-drive கார்கள்; deposit, mileage, காப்புறுதி மற்றும் சாரதி அனுமதிப்பத்திர விதிகளுடன். DriveLink உறுதிப்படுத்தல் கட்டணம் Rs. 0."
+  },
+  {
+    "en": "What agencies see on bookings from this renter. e.g. 'Returned a vehicle with damage and refused to pay deposit. Decline at your discretion.'",
+    "area": "Admin",
+    "kind": "placeholder",
+    "file": "components/admin/RenterActions.tsx",
+    "component": "remove",
+    "si": "මෙම renter ගේ booking වලදී ආයතන වලට පෙනෙන දේ. උදා: 'හානි සහිතව වාහනය ආපසු භාර දුන් අතර deposit ගෙවීම ප්‍රතික්ෂේප කළේය. ඔබේ තීරණය මත ප්‍රතික්ෂේප කරන්න.'",
+    "ta": "இந்த renter-இன் முன்பதிவுகளில் ஏஜென்சிகள் பார்ப்பது. எ.கா. 'சேதத்துடன் வாகனத்தை திருப்பிக் கொடுத்தார், deposit செலுத்த மறுத்தார். உங்கள் விருப்பப்படி நிராகரிக்கவும்.'"
+  },
+  {
+    "en": "Add an email. SMS doesn't reach non-Sri Lankan numbers, so your verification code and booking documents go there.",
+    "area": "Sign in and sign up",
+    "kind": "error",
+    "file": "app/(auth)/signup/page.tsx",
+    "component": "startSignup",
+    "si": "Email ලිපිනයක් ඇතුළත් කරන්න. ලංකාවෙන් පිට අංකවලට SMS නොලැබෙන බැවින්, ඔබගේ verification කේතය සහ booking ලේඛන ලැබෙන්නේ ඊටයි.",
+    "ta": "Email-ஐச் சேர்க்கவும். இலங்கை அல்லாத எண்களுக்கு SMS வராது என்பதால், உங்கள் verification குறியீடும் booking ஆவணங்களும் அங்கு அனுப்பப்படும்."
+  }
+]
