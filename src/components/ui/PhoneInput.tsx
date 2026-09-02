@@ -180,8 +180,11 @@ export function PhoneInput({
     // panel opens, even before focus lands in the search box.
     <div ref={wrapperRef} className="relative" onKeyDown={handlePanelKeyDown}>
       <div
-        className={`w-full flex items-stretch bg-slate-100 border rounded-xl ${
-          showError ? "border-red-400 focus-within:border-red-500" : "border-slate-200 focus-within:border-blue-500"
+        // Matches <Input>: white ground, slate-300 edge, 44px tall. It used to
+        // be a grey-filled control, which made every form it appeared in look
+        // like it had one disabled field.
+        className={`w-full flex items-stretch min-h-11 bg-white border rounded-lg ${
+          showError ? "border-rose-300 focus-within:border-rose-500" : "border-slate-300 hover:border-slate-400 focus-within:border-blue-500"
         } ${disabled ? "opacity-60" : ""}`}
       >
         {/* Country trigger. Flags use the self-hosted Twemoji font (.flag)
@@ -193,7 +196,7 @@ export function PhoneInput({
           aria-haspopup="listbox"
           aria-expanded={open}
           aria-label={`Country code: ${country.name} +${country.dial}`}
-          className="shrink-0 flex items-center gap-1 pl-3 pr-2 py-2.5 text-sm text-slate-900 border-r border-slate-200 rounded-l-xl hover:bg-slate-200/60 transition-colors disabled:cursor-not-allowed"
+          className="shrink-0 flex items-center gap-1 pl-3 pr-2 py-2.5 text-base text-slate-900 border-r border-slate-200 rounded-l-lg hover:bg-slate-100 transition-colors disabled:cursor-not-allowed"
         >
           <span className="flag">{country.flag}</span>
           <span>+{country.dial}</span>
@@ -212,7 +215,7 @@ export function PhoneInput({
           autoFocus={autoFocus}
           disabled={disabled}
           autoComplete="tel-national"
-          className="flex-1 min-w-0 px-3 py-2.5 bg-transparent text-slate-900 placeholder-slate-400 text-sm rounded-r-xl focus:outline-none disabled:cursor-not-allowed"
+          className="flex-1 min-w-0 px-3 py-2.5 bg-transparent text-slate-950 placeholder-slate-400 text-base rounded-r-lg focus:outline-none disabled:cursor-not-allowed"
         />
       </div>
 
@@ -260,7 +263,7 @@ export function PhoneInput({
       )}
 
       {showError && (
-        <p className="text-red-500 text-xs mt-1">
+        <p className="text-rose-600 text-xs mt-1">
           Enter a valid {country.name} number{rule.example ? ` (e.g. ${rule.example})` : ""}.
         </p>
       )}
