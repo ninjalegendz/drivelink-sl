@@ -1,9 +1,9 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
-import { listPrefix, deleteObjects, extractKeyFromUrl } from "./r2";
+import { listPrefix, listPrefixObjects, deleteObjects, extractKeyFromUrl, displayKeyFor, previewKeyFor } from "./r2";
 
 /**
  * Walks an R2 prefix and deletes blobs that no profile references. For the
- * `kyc` prefix that means avatar_url / nic_url / selfie_url AND the two
+ * `kyc` prefix that means avatar_url / identity document images / selfie_url AND the two
  * driving-licence columns (license_front_url / license_back_url) - licences
  * are stored under the same `kyc` prefix (see LicenseUploadForm), so leaving
  * them out of the referenced set would mark every valid licence image as an
@@ -18,12 +18,25 @@ import { listPrefix, deleteObjects, extractKeyFromUrl } from "./r2";
 export async function sweepOrphanStorage(
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   service: SupabaseClient<any>,
-  prefix: "avatars" | "kyc"
+  prefix: "avatars" | "kyc" | "licences"
 ): Promise<number> {
   // Build the set of all R2 keys currently referenced by a row
   const referencedKeys = new Set<string>();
 
-  if (prefix === "avatars") {
+  if (prefix === "licences") {
+    // Renter-uploaded driving licences. Only the two licence columns can point
+    // here; identity documents never do, so nothing else counts as a reference.
+    const { data: rows } = await service
+      .from("profiles")
+      .select("license_front_url, license_back_url")
+      .or("license_front_url.not.is.null,license_back_url.not.is.null");
+    for (const r of (rows ?? []) as { license_front_url: string | null; license_back_url: string | null }[]) {
+      for (const url of [r.license_front_url, r.license_back_url]) {
+        const key = extractKeyFromUrl(url);
+        if (key) referencedKeys.add(key);
+      }
+    }
+  } else if (prefix === "avatars") {
     const { data: rows } = await service.from("profiles").select("avatar_url").not("avatar_url", "is", null);
     for (const r of (rows ?? []) as { avatar_url: string | null }[]) {
       const key = extractKeyFromUrl(r.avatar_url);
@@ -35,22 +48,32 @@ export async function sweepOrphanStorage(
     // treated as a live reference or the sweep will delete valid documents.
     const { data: rows } = await service
       .from("profiles")
-      .select("nic_url, selfie_url, license_front_url, license_back_url")
+      .select("nic_url, identity_back_url, selfie_url, license_front_url, license_back_url")
       .or(
-        "nic_url.not.is.null,selfie_url.not.is.null," +
+        "nic_url.not.is.null,identity_back_url.not.is.null,selfie_url.not.is.null," +
         "license_front_url.not.is.null,license_back_url.not.is.null"
       );
     for (const r of (rows ?? []) as {
       nic_url: string | null;
+      identity_back_url: string | null;
       selfie_url: string | null;
       license_front_url: string | null;
       license_back_url: string | null;
     }[]) {
-      for (const url of [r.nic_url, r.selfie_url, r.license_front_url, r.license_back_url]) {
+      for (const url of [r.nic_url, r.identity_back_url, r.selfie_url, r.license_front_url, r.license_back_url]) {
         const key = extractKeyFromUrl(url);
         if (key) referencedKeys.add(key);
       }
     }
+  }
+
+  // Derived renders (bounded display copy, admin thumbnail) sit beside their
+  // source object under the same prefix. Nothing references them from a row,
+  // so add them explicitly or the sweep deletes every one of them daily and
+  // pays to decode the originals again the next morning.
+  for (const key of [...referencedKeys]) {
+    referencedKeys.add(displayKeyFor(key));
+    referencedKeys.add(previewKeyFor(key));
   }
 
   // List every object under the prefix and pick the orphans
@@ -61,4 +84,16 @@ export async function sweepOrphanStorage(
 
   await deleteObjects(orphanKeys);
   return orphanKeys.length;
+}
+
+/** Remove quarantine uploads that were never confirmed within 24 hours. */
+export async function sweepAbandonedUploads(now = Date.now()): Promise<number> {
+  const objects = await listPrefixObjects("pending");
+  const cutoff = now - 24 * 60 * 60 * 1000;
+  const stale = objects
+    .filter((object) => object.lastModified && object.lastModified.getTime() < cutoff)
+    .map((object) => object.key);
+  if (stale.length === 0) return 0;
+  await deleteObjects(stale);
+  return stale.length;
 }

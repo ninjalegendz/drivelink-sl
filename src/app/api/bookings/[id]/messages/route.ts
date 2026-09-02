@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient, createServiceClient } from "@/lib/supabase/server";
-import { canActOnAgency } from "@/lib/pages/access";
+import { canPerformPageAction } from "@/lib/pages/access";
+import { containsPublicContactDetails, PUBLIC_CONTACT_ERROR } from "@/lib/content/public-contact";
 
 // /api/bookings/[id]/messages - booking-scoped chat (migration 054).
 //
@@ -8,8 +9,8 @@ import { canActOnAgency } from "@/lib/pages/access";
 // owner of the Rental Page the booking belongs to). The insert goes
 // through the caller's cookie-bound client so RLS enforces both the
 // party membership and sender_id = auth.uid(); the status gate below is
-// the server-side rule RLS deliberately doesn't encode (messaging is
-// open from request through completion, read-only after that).
+// the server-side rule mirrored by RLS (messaging remains available through
+// the post-return records window, then becomes read-only).
 //
 // GET - list the thread (caller's client, RLS scopes it) and advance the
 // CALLER's read cursor, so unread badges clear the moment the chat opens.
@@ -20,12 +21,14 @@ import { canActOnAgency } from "@/lib/pages/access";
 
 const CLOSED_COMPLETE = "This conversation is closed. The booking is complete.";
 const CLOSED_GENERIC  = "This conversation is closed.";
+const POST_COMPLETION_CHAT_MS = 30 * 24 * 60 * 60 * 1000;
 
 interface BookingPartyRow {
   id:        string;
   renter_id: string;
   agency_id: string;
   status:    string;
+  completed_at: string | null;
   agencies:  { owner_id: string } | null;
 }
 
@@ -40,7 +43,7 @@ async function resolveParty(bookingId: string, userId: string): Promise<PartyRes
   const service = await createServiceClient();
   const { data } = await service
     .from("bookings")
-    .select("id, renter_id, agency_id, status, agencies(owner_id)")
+    .select("id, renter_id, agency_id, status, completed_at, agencies(owner_id)")
     .eq("id", bookingId)
     .single();
 
@@ -50,7 +53,7 @@ async function resolveParty(bookingId: string, userId: string): Promise<PartyRes
   }
 
   const isRenter = booking.renter_id === userId;
-  const isPageSide = !isRenter && await canActOnAgency(service, userId, booking.agency_id);
+  const isPageSide = !isRenter && await canPerformPageAction(service, userId, booking.agency_id, "communicate");
   if (!isRenter && !isPageSide) {
     return { error: NextResponse.json({ error: "Not your booking" }, { status: 403 }) };
   }
@@ -89,12 +92,21 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
   if ("error" in party) return party.error;
   const { booking, isRenter } = party;
 
-  // Status gate: open from request through the rental, read-only afterwards.
-  if (booking.status === "completed") {
+  // Keep the record writable through the 30-day records window. This covers
+  // the 72-hour damage window plus later fines and tolls without opening chat forever.
+  const completionChatClosed = booking.status === "completed"
+    && (!booking.completed_at || Date.now() - Date.parse(booking.completed_at) > POST_COMPLETION_CHAT_MS);
+  if (completionChatClosed) {
     return NextResponse.json({ error: CLOSED_COMPLETE }, { status: 400 });
   }
   if (booking.status === "declined" || booking.status === "cancelled") {
     return NextResponse.json({ error: CLOSED_GENERIC }, { status: 400 });
+  }
+  if (
+    (booking.status === "requested" || booking.status === "pending_confirmation")
+    && containsPublicContactDetails(text)
+  ) {
+    return NextResponse.json({ error: PUBLIC_CONTACT_ERROR }, { status: 400 });
   }
 
   // Insert as the caller - RLS re-checks party membership + sender_id.

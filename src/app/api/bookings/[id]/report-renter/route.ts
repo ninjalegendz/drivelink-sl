@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient, createServiceClient } from "@/lib/supabase/server";
 import { logEvent } from "@/lib/activity/log";
-import { canActOnAgency } from "@/lib/pages/access";
+import { canPerformPageAction } from "@/lib/pages/access";
 
 // POST /api/bookings/[id]/report-renter
 // body: { reason: string }
@@ -58,9 +58,9 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
   const b = bookingRow as unknown as Joined | null;
   if (!b) return NextResponse.json({ error: "Booking not found" }, { status: 404 });
 
-  // Party check: the page team (owner or staff) the booking belongs to.
-  if (!(await canActOnAgency(service, user.id, b.agency_id))) {
-    return NextResponse.json({ error: "Not your booking" }, { status: 403 });
+  // A blacklist report is a serious allegation, so it is manager-only.
+  if (!(await canPerformPageAction(service, user.id, b.agency_id, "manage_cases"))) {
+    return NextResponse.json({ error: "Only the page owner or a manager can file a renter report." }, { status: 403 });
   }
 
   // Status check: completed, disputed, or overdue-critical (still 'active'

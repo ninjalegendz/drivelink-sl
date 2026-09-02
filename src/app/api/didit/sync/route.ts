@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { createClient, createServiceClient } from "@/lib/supabase/server";
 import { fetchDiditSession, mapDiditStatus, extractDiditNic } from "@/lib/didit/client";
 import { applyKycVerification } from "@/lib/account/kyc-apply";
+import { importDiditIdentityDocument } from "@/lib/didit/identity-document";
 
 // POST /api/didit/sync  body: { userId }
 //
@@ -64,11 +65,26 @@ export async function POST(req: NextRequest) {
     nic,
   });
 
+  let identityImported = false;
+  if (newStatus === "verified") {
+    try {
+      const result = await importDiditIdentityDocument(service, {
+        userId,
+        sessionId,
+        payload: session as unknown as Record<string, unknown>,
+      });
+      identityImported = result.imported;
+    } catch (error) {
+      console.error("[didit sync] approved identity import", error instanceof Error ? error.message : error);
+    }
+  }
+
   return NextResponse.json({
     ok:               true,
     kyc_status:       newStatus,
     didit_status:     session.status,
     nic_captured:     Boolean(nic),
+    identity_imported: identityImported,
     blacklistInherited,
   });
 }

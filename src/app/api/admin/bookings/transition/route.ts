@@ -1,15 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient, createServiceClient } from "@/lib/supabase/server";
-import { notifyCascade } from "@/lib/notify";
-import { runAfterResponse } from "@/lib/after-response";
-import { ensureAgreementSnapshot } from "@/lib/booking/agreement-snapshot";
-import {
-  buildRenterConfirmedMessage,
-  buildRenterDeclinedMessage,
-  buildRenterCancelledMessage,
-  buildRenterCompletedMessage,
-  buildAgencyCompletedMessage,
-} from "@/lib/sms/messages";
+import { kickNotificationOutbox } from "@/lib/notification-outbox";
 
 // POST /api/admin/bookings/transition
 // body: { bookingId: string, to: "confirmed" | "declined" | "completed" | "cancelled", note?: string, resolution_note?: string }
@@ -30,7 +21,7 @@ import {
 // incident filed against this booking, closing them out alongside the
 // booking transition.
 
-const ALLOWED_TRANSITIONS = new Set(["confirmed", "declined", "completed", "cancelled"] as const);
+const ALLOWED_TRANSITIONS = new Set(["confirmed", "declined", "cancelled"] as const);
 type AllowedStatus = typeof ALLOWED_TRANSITIONS extends Set<infer T> ? T : never;
 
 export async function POST(req: NextRequest) {
@@ -59,9 +50,6 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "Invalid transition target" }, { status: 400 });
   }
   const to = body.to as AllowedStatus;
-  // Capture as a non-optional local, property narrowing on `body` doesn't carry
-  // into the runAfterResponse closure below.
-  const bookingId = body.bookingId;
 
   // Service client bypasses RLS so we can mutate on behalf of the agency.
   const service = await createServiceClient();
@@ -80,61 +68,29 @@ export async function POST(req: NextRequest) {
   } | null;
   if (!prev) return NextResponse.json({ error: "Booking not found" }, { status: 404 });
 
-  // Resolving a dispute (disputed -> completed) requires a resolution note;
-  // it's what closes out the incident report(s) below.
-  const resolvingDispute = prev.status === "disputed" && to === "completed";
-  let resolutionNote: string | null = null;
-  if (resolvingDispute) {
-    resolutionNote = body.resolution_note?.trim() ?? "";
-    if (resolutionNote.length < 5) {
-      return NextResponse.json(
-        { error: "A resolution note (5+ characters) is required to resolve a dispute." },
-        { status: 400 },
-      );
-    }
+  if (prev.status === "disputed") {
+    return NextResponse.json(
+      { error: "Disputed bookings must be decided in the Cases workspace." },
+      { status: 409 },
+    );
   }
 
-  const now = new Date().toISOString();
-  const update: Record<string, unknown> = { status: to };
-  if (to === "confirmed") update.confirmed_at = now;
-  if (to === "declined")  update.declined_at  = now;
-  if (to === "completed") { update.completed_at = now; update.return_confirmed_at = now; }
-  // 'system' so an admin/ops cancellation never ticks the page's
-  // cancellation_count (the 053 trigger only counts cancelled_by='page').
-  if (to === "cancelled") { update.cancelled_at = now; update.cancelled_by = "system"; }
-
-  const { error: updateError } = await service
-    .from("bookings")
-    .update(update)
-    .eq("id", body.bookingId);
+  // The database function limits admin changes to genuine operational and
+  // dispute-resolution paths. Booking status, open incidents, timestamps and
+  // the resolution audit event commit together or not at all.
+  const { error: updateError } = await service.rpc("transition_booking_lifecycle", {
+    p_booking_id:      body.bookingId,
+    p_actor_id:        user.id,
+    p_to:              to,
+    p_resolution_note: body.note?.trim() || null,
+  });
 
   if (updateError) {
     console.error("[admin booking transition]", updateError);
-    return NextResponse.json({ error: updateError.message }, { status: 500 });
-  }
-
-  // Same agreement snapshot as the owner-confirm path (TRUST-006: awaited so it
-  // exists before we return). Admin confirms on the page's behalf and the
-  // renter still needs a signed agreement.
-  if (to === "confirmed") {
-    await ensureAgreementSnapshot(body.bookingId);
-  }
-
-  // Close out the incident report(s) alongside the booking transition.
-  if (resolvingDispute) {
-    const { error: incidentsError } = await service
-      .from("incidents")
-      .update({
-        status:          "resolved",
-        resolved_by:     user.id,
-        resolved_at:     now,
-        resolution_note: resolutionNote,
-      })
-      .eq("booking_id", body.bookingId)
-      .eq("status", "open");
-    if (incidentsError) {
-      console.error("[admin booking transition] incidents resolve", incidentsError);
-    }
+    return NextResponse.json(
+      { error: updateError.message },
+      { status: updateError.code === "42501" ? 403 : 409 },
+    );
   }
 
   // Audit log, admin acted on behalf of the agency.
@@ -150,81 +106,10 @@ export async function POST(req: NextRequest) {
     metadata: {
       previous_status: prev.status,
       note:            body.note ?? null,
-      ...(resolvingDispute ? { resolution_note: resolutionNote } : {}),
     },
   });
 
-  // Renter SMS for confirm / decline / cancel / complete. On completion the
-  // renter gets a thanks + review link, and the agency is nudged to rate the
-  // renter. Same content as the agency-side endpoint, plus the vehicle plate
-  // so two same-named cars are always distinguishable.
-  if (to === "confirmed" || to === "declined" || to === "cancelled" || to === "completed") {
-    runAfterResponse((async () => {
-      const { data: joined } = await service
-        .from("bookings")
-        .select("id, vehicles(make, model, year, plate_number), agencies(name, whatsapp_number)")
-        .eq("id", bookingId)
-        .single();
-      type Joined = {
-        id:       string;
-        vehicles: { make: string; model: string; year: number; plate_number: string | null } | null;
-        agencies: { name: string; whatsapp_number: string | null } | null;
-      };
-      const row = joined as Joined | null;
-
-      const { data: renter } = await service
-        .from("profiles")
-        .select("full_name, phone, email")
-        .eq("id", prev.renter_id)
-        .single();
-      const rt = renter as { full_name?: string | null; phone?: string | null; email?: string | null } | null;
-
-      if (!row?.vehicles || !row.agencies) return;
-
-      const vehicleName  = `${row.vehicles.year} ${row.vehicles.make} ${row.vehicles.model}`;
-      const vehiclePlate = row.vehicles.plate_number ?? undefined;
-      const appUrl       = process.env.NEXT_PUBLIC_APP_URL!;
-      const msgArgs = {
-        bookingId,
-        vehicleName,
-        vehiclePlate,
-        agencyName: row.agencies.name,
-        appUrl,
-      };
-      const message =
-        to === "confirmed" ? buildRenterConfirmedMessage(msgArgs) :
-        to === "declined"  ? buildRenterDeclinedMessage(msgArgs)  :
-        to === "completed" ? buildRenterCompletedMessage(msgArgs) :
-                             buildRenterCancelledMessage(msgArgs);
-
-      const realEmail = rt?.email && !rt.email.endsWith("@phone.drivelink.invalid") ? rt.email : null;
-      const notified = await notifyCascade({
-        phone:        rt?.phone ?? undefined,
-        smsKey:       "admin_booking_status_renter",
-        text:         message,
-        email:        realEmail,
-        emailSubject: `DriveLink booking ${bookingId.slice(0, 8).toUpperCase()}`,
-        emailText:    message,
-      });
-      if (!notified.delivered) console.error("[admin booking transition] all channels failed", body.bookingId);
-
-      // On completion, also nudge the agency to rate the renter.
-      if (to === "completed" && row.agencies.whatsapp_number) {
-        const agencyMsg = buildAgencyCompletedMessage({
-          bookingId,
-          vehicleName,
-          vehiclePlate,
-          renterName: rt?.full_name ?? "your renter",
-          appUrl,
-        });
-        await notifyCascade({
-          phone:  row.agencies.whatsapp_number,
-          smsKey: "new_booking_agency",
-          text:   agencyMsg,
-        });
-      }
-    })());
-  }
+  kickNotificationOutbox(service, 40);
 
   return NextResponse.json({ ok: true, previousStatus: prev.status, newStatus: to });
 }

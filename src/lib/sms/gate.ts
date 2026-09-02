@@ -1,7 +1,7 @@
 // SMS gate, wraps sendSms() with an admin-controlled toggle check.
 //
 // Every SMS endpoint in the app has its own on/off switch in the
-// platform_settings table. The admin "SMS & fees" page in
+// platform_settings table. The admin "SMS" tab in
 // /admin/settings/notifications flips these. Default is true for every
 // toggle, so existing behaviour is unchanged unless someone explicitly
 // mutes a channel.
@@ -27,7 +27,8 @@ export type SmsToggleKey =
   | "booking_status_renter"
   | "admin_booking_status_renter"
   | "expiry_renter"
-  | "expiry_agency";
+  | "expiry_agency"
+  | "listing_moderation";
 
 const COLUMN_BY_KEY: Record<SmsToggleKey, string> = {
   signup_renter:               "sms_signup_renter_enabled",
@@ -37,6 +38,7 @@ const COLUMN_BY_KEY: Record<SmsToggleKey, string> = {
   new_booking_agency:          "sms_new_booking_agency_enabled",
   booking_status_renter:       "sms_booking_status_renter_enabled",
   admin_booking_status_renter: "sms_admin_booking_status_renter_enabled",
+  listing_moderation:          "sms_listing_moderation_enabled",
   expiry_renter:               "sms_expiry_renter_enabled",
   expiry_agency:               "sms_expiry_agency_enabled",
 };

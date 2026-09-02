@@ -4,6 +4,7 @@ import { createClient, createServiceClient } from "@/lib/supabase/server";
 import { ACTIVE_PAGE_COOKIE } from "@/lib/pages/active-page";
 import { isValidSLPhone, toInternationalSL } from "@/lib/auth/phone-format";
 import { isEmailLike } from "@/lib/auth/identifier";
+import { containsPublicContactDetails, PUBLIC_CONTACT_ERROR } from "@/lib/content/public-contact";
 import type { RentalPageRow } from "@/types/queries";
 
 // POST /api/pages
@@ -11,10 +12,9 @@ import type { RentalPageRow } from "@/types/queries";
 //         description?, address?, email?, business_reg_no? }
 //
 // Creates a new Rental Page (a row in `agencies`, the table keeps its
-// internal name) for the signed-in account. One account can own up to
-// MAX_LIVE_PAGES pages. Requires identity verification (KYC) and a clean
-// standing (not blacklisted) first.
-const MAX_LIVE_PAGES = 5;
+// internal name) for the signed-in account. There is no lifetime page limit;
+// the database applies a short, atomic creation-rate guard against fake-page
+// bursts. Requires identity verification (KYC) and a clean standing first.
 const PAGE_TYPES = new Set(["personal", "business"]);
 const ONE_YEAR_SEC = 60 * 60 * 24 * 365;
 
@@ -23,9 +23,13 @@ export async function POST(req: NextRequest) {
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) return NextResponse.json({ error: "Unauthorised" }, { status: 401 });
 
+  // `is_blacklisted` is deliberately not selectable by a browser-session
+  // client. The authenticated user above pins this private eligibility read
+  // to the caller before the service client is used.
+  const service = await createServiceClient();
   // Eligibility gate before we even look at the body, an ineligible account
   // should see the real reason, not a validation error.
-  const { data: profileRow } = await supabase
+  const { data: profileRow } = await service
     .from("profiles")
     .select("kyc_status, is_blacklisted, role")
     .eq("id", user.id)
@@ -72,32 +76,23 @@ export async function POST(req: NextRequest) {
   if (!isValidSLPhone(whatsappIn)) {
     return NextResponse.json({ error: "Enter a valid WhatsApp number." }, { status: 400 });
   }
-  // Email is REQUIRED for Rental Pages: commission statements, penalty
-  // notices and booking records are delivered there. (Renter accounts stay
-  // phone-first; this only gates hosting.)
+  // Email is required for Rental Pages so booking records, safety notices, and
+  // account-recovery messages have a durable delivery channel. Renter accounts
+  // remain phone-first; this only gates hosting.
   if (!emailIn) {
-    return NextResponse.json({ error: "Enter an email for your page. Statements and booking records go there." }, { status: 400 });
+    return NextResponse.json({ error: "Enter an email for your page. Booking records and safety notices go there." }, { status: 400 });
   }
   if (!isEmailLike(emailIn)) {
     return NextResponse.json({ error: "That email doesn't look right." }, { status: 400 });
   }
-
-  const { count } = await supabase
-    .from("agencies")
-    .select("id", { count: "exact", head: true })
-    .eq("owner_id", user.id)
-    .is("deleted_at", null);
-  if ((count ?? 0) >= MAX_LIVE_PAGES) {
-    return NextResponse.json({ error: "You've reached the limit of 5 Rental Pages." }, { status: 400 });
+  if (containsPublicContactDetails(name, description)) {
+    return NextResponse.json({ error: PUBLIC_CONTACT_ERROR }, { status: 400 });
   }
 
   const intlPhone = toInternationalSL(whatsappIn)!;
 
-  // Page creation runs on the service client: is_verified is a protected
-  // column (browsers can no longer INSERT agencies at all), and owner_id is
-  // pinned to the authenticated user here so a caller can't create a page
-  // owned by someone else.
-  const service = await createServiceClient();
+  // Creation runs on the service client: is_verified is a protected column
+  // and the database function pins ownership to this authenticated user.
 
   // Public /pages/<slug> address (PAGE-008): slugify the name + a short random
   // suffix so two same-named pages don't collide.
@@ -106,33 +101,22 @@ export async function POST(req: NextRequest) {
   // is_verified: personal pages are auto-approved to operate once the
   // owner's KYC is verified (already true, checked above). Business pages
   // wait for an admin to review the registration certificate.
-  const { data: page, error: insertError } = await service
-    .from("agencies")
-    .insert({
-      owner_id:        user.id,
-      name,
-      slug,
-      page_type:       pageType,
-      city,
-      whatsapp_number: intlPhone,
-      description,
-      address,
-      email:           emailIn,
-      business_reg_no: pageType === "business" ? businessRegNo : null,
-      is_verified:     pageType === "personal",
-    })
-    .select("*")
-    .single();
+  const { data: page, error: insertError } = await service.rpc("create_rental_page", {
+    p_owner_id: user.id,
+    p_name: name,
+    p_slug: slug,
+    p_page_type: pageType,
+    p_city: city,
+    p_whatsapp_number: intlPhone,
+    p_description: description,
+    p_address: address,
+    p_email: emailIn,
+    p_business_reg_no: businessRegNo,
+  });
 
   if (insertError || !page) {
     console.error("[pages create] insert", insertError);
     return NextResponse.json({ error: "Couldn't create Rental Page." }, { status: 500 });
-  }
-
-  // Legacy compatibility signal used by navbar/redirects, do not touch admin
-  // roles. role is a protected column (service-role only).
-  if (profile.role === "renter") {
-    await service.from("profiles").update({ role: "agency_owner" }).eq("id", user.id);
   }
 
   const pageRow = page as unknown as RentalPageRow;

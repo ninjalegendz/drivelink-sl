@@ -1,7 +1,11 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient, createServiceClient } from "@/lib/supabase/server";
 import { resolveIdentifier } from "@/lib/auth/identifier";
-import { compareOtp, OTP_MAX_ATTEMPTS } from "@/lib/sms/otp";
+import {
+  otpChallengeSubject,
+  otpVerificationError,
+  verifyOtpChallenge,
+} from "@/lib/auth/otp-challenge";
 
 // POST /api/auth/login/verify-code  body: { identifier, code }
 //
@@ -24,44 +28,27 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "Code expired or invalid. Request a new one." }, { status: 400 });
   }
 
-  // Pull stored OTP state
-  const { data: profileRow } = await service
-    .from("profiles")
-    .select("phone_otp_hash, phone_otp_expires_at, phone_otp_attempts")
-    .eq("id", identity.userId)
-    .single();
-  const p = profileRow as {
-    phone_otp_hash:       string | null;
-    phone_otp_expires_at: string | null;
-    phone_otp_attempts:   number;
-  } | null;
-
-  if (!p?.phone_otp_hash || !p.phone_otp_expires_at) {
-    return NextResponse.json({ error: "Request a code first." }, { status: 400 });
-  }
-  if (new Date(p.phone_otp_expires_at).getTime() < Date.now()) {
-    return NextResponse.json({ error: "Code expired. Request a new one." }, { status: 400 });
-  }
-  if (p.phone_otp_attempts >= OTP_MAX_ATTEMPTS) {
-    return NextResponse.json({ error: "Too many failed attempts. Request a new code." }, { status: 429 });
-  }
-
-  if (!(await compareOtp(code, identity.userId, p.phone_otp_hash))) {
-    await service
-      .from("profiles")
-      .update({ phone_otp_attempts: p.phone_otp_attempts + 1 })
-      .eq("id", identity.userId);
-    const remaining = OTP_MAX_ATTEMPTS - p.phone_otp_attempts - 1;
-    return NextResponse.json(
-      { error: remaining > 0 ? `Incorrect code. ${remaining} attempt${remaining === 1 ? "" : "s"} left.` : "Incorrect code. Request a new one." },
-      { status: 400 }
-    );
-  }
-
   // Code is good. Need an email to mint the session via Supabase magic link
   // (Supabase auth always keys on email server-side, even for phone-typed logins).
   if (!identity.email) {
     return NextResponse.json({ error: "This account has no email on file. Contact support." }, { status: 500 });
+  }
+
+  let verification: Awaited<ReturnType<typeof verifyOtpChallenge>>;
+  try {
+    verification = await verifyOtpChallenge(
+      service,
+      otpChallengeSubject("profile", identity.userId),
+      "login",
+      code,
+    );
+  } catch (error) {
+    console.error("[login verify] verify challenge", error);
+    return NextResponse.json({ error: "Couldn't verify that code. Try again shortly." }, { status: 500 });
+  }
+  if (!verification.ok) {
+    const response = otpVerificationError(verification);
+    return NextResponse.json({ error: response.error }, { status: response.status });
   }
 
   // Generate the magic-link hashed_token, then verify it via the SSR client

@@ -5,11 +5,16 @@ import {
   generateOtp,
   hashOtp,
   OTP_TTL_MS,
-  cooldownForSendCount,
-  effectiveSendCount,
 } from "@/lib/sms/otp";
+import {
+  discardUndeliveredOtpChallenge,
+  issueOtpChallenge,
+  otpChallengeSubject,
+} from "@/lib/auth/otp-challenge";
 import { toInternationalSL, isValidSLPhone } from "@/lib/auth/phone-format";
-import { isEmailLike, phoneSuffix } from "@/lib/auth/identifier";
+import { isEmailLike, phoneLookupCandidates } from "@/lib/auth/identifier";
+import { authStartLimitResponse, consumeAuthStartLimit } from "@/lib/auth/request-throttle";
+import { NAME_PROBLEM_MESSAGE, checkPersonName } from "@/lib/auth/person-name";
 
 // POST /api/auth/signup/start
 // body: { full_name, address, phone, email? }
@@ -30,7 +35,8 @@ export async function POST(req: NextRequest) {
   const phoneIn   = body.phone?.trim()      ?? "";
   const emailIn   = body.email?.trim().toLowerCase() || null;
 
-  if (fullName.length < 2)            return NextResponse.json({ error: "Enter your full name." }, { status: 400 });
+  const nameProblem = checkPersonName(fullName);
+  if (nameProblem)                    return NextResponse.json({ error: NAME_PROBLEM_MESSAGE[nameProblem] }, { status: 400 });
   if (addressIn.length < 5)           return NextResponse.json({ error: "Enter your residential address." }, { status: 400 });
   if (!isValidSLPhone(phoneIn))       return NextResponse.json({ error: "Enter a valid mobile number. For a non-Sri-Lankan number, include the country code (e.g. +44 7911 123456)." }, { status: 400 });
   if (emailIn && !isEmailLike(emailIn)) return NextResponse.json({ error: "That email doesn't look right." }, { status: 400 });
@@ -48,61 +54,58 @@ export async function POST(req: NextRequest) {
   }
   const service = await createServiceClient();
 
-  // Phone already registered → tell them to log in instead. Match by suffix
-  // so old "+94 77 ..." and new "0771234567" forms collide cleanly.
-  const suffix = phoneSuffix(intl);
+  try {
+    const rateLimit = await consumeAuthStartLimit(service, req.headers);
+    if (!rateLimit.allowed) {
+      const body = authStartLimitResponse(rateLimit.retryAfterSec);
+      return NextResponse.json(body, {
+        status: 429,
+        headers: { "Retry-After": String(body.waitSec) },
+      });
+    }
+  } catch (error) {
+    console.error("[signup start] request rate limit", error);
+    return NextResponse.json({ error: "Couldn't start signup. Try again shortly." }, { status: 500 });
+  }
+
+  // Match the full canonical number. An exact local-format fallback protects
+  // a legacy record without letting unrelated international numbers collide.
+  const phoneCandidates = phoneLookupCandidates(phoneIn);
   const { data: existingProfile } = await service
     .from("profiles")
     .select("id")
-    .like("phone", `%${suffix}`)
+    .in("phone", phoneCandidates)
     .maybeSingle();
-  if (existingProfile) {
-    return NextResponse.json(
-      { error: "That phone is already registered. Try logging in instead." },
-      { status: 409 }
-    );
-  }
+  if (existingProfile) return NextResponse.json({ ok: true });
 
-  // Email already registered (only if a real email was supplied)
+  // Keep duplicate-account checks private. The client always shows the same
+  // next step and keeps sign-in visible for people who may already have one.
   if (emailIn) {
     const { data: emailRow } = await service
       .from("profiles")
       .select("id")
       .eq("email", emailIn)
       .maybeSingle();
-    if (emailRow) {
-      return NextResponse.json(
-        { error: "That email is already registered. Try logging in instead." },
-        { status: 409 }
-      );
-    }
+    if (emailRow) return NextResponse.json({ ok: true });
   }
 
-  // Cooldown, mirror the login OTP escalation
-  const { data: existingPending } = await service
-    .from("pending_signups")
-    .select("otp_send_count, otp_last_sent")
-    .eq("phone", intl)
-    .maybeSingle();
-
-  const priorRow = existingPending as { otp_send_count: number; otp_last_sent: string } | null;
-  const priorSends   = effectiveSendCount(priorRow?.otp_send_count ?? 0, priorRow?.otp_last_sent ?? null);
-  const requiredGap  = cooldownForSendCount(priorSends);
-
-  if (priorRow?.otp_last_sent && requiredGap > 0) {
-    const elapsed = Date.now() - new Date(priorRow.otp_last_sent).getTime();
-    if (elapsed < requiredGap) {
-      const waitSec = Math.ceil((requiredGap - elapsed) / 1000);
-      return NextResponse.json({ error: `Wait ${waitSec}s before requesting another code.`, waitSec }, { status: 429 });
-    }
+  const code = generateOtp();
+  const subject = otpChallengeSubject("signup", intl);
+  let issued: Awaited<ReturnType<typeof issueOtpChallenge>>;
+  try {
+    issued = await issueOtpChallenge(service, subject, "signup", code);
+  } catch (error) {
+    console.error("[signup start] issue challenge", error);
+    return NextResponse.json({ error: "Couldn't start signup. Try again." }, { status: 500 });
+  }
+  if (!issued.result.ok) {
+    return NextResponse.json({ ok: true });
   }
 
-  const code            = generateOtp();
-  // Salt with phone, the userId doesn't exist yet
-  const otpHash         = await hashOtp(code, intl);
-  const expiresAt       = new Date(Date.now() + OTP_TTL_MS).toISOString();
-  const newSendCount    = priorSends + 1;
-  const nextCooldownSec = Math.ceil(cooldownForSendCount(newSendCount) / 1000);
+  // These legacy pending-signup columns remain populated while older data and
+  // database tooling still expect them. Verification now uses otp_challenges.
+  const otpHash = await hashOtp(code, intl);
+  const expiresAt = new Date(Date.now() + OTP_TTL_MS).toISOString();
 
   const { error: upsertError } = await service.from("pending_signups").upsert({
     phone:           intl,
@@ -116,16 +119,17 @@ export async function POST(req: NextRequest) {
     otp_hash:        otpHash,
     otp_expires_at:  expiresAt,
     otp_attempts:    0,
-    otp_send_count:  newSendCount,
+    otp_send_count:  1,
     otp_last_sent:   new Date().toISOString(),
   }, { onConflict: "phone" });
 
   if (upsertError) {
     console.error("[signup start] upsert", upsertError);
+    await discardUndeliveredOtpChallenge(service, subject, "signup", issued.codeHash);
     return NextResponse.json({ error: "Couldn't start signup. Try again." }, { status: 500 });
   }
 
-  const { channel, devOnly } = await sendOtpCascade({
+  const { channel } = await sendOtpCascade({
     phone:  intl,
     code,
     smsKey: "signup_renter",
@@ -133,25 +137,13 @@ export async function POST(req: NextRequest) {
   });
 
   if (!channel) {
-    return NextResponse.json(
-      {
-        error: emailIn
-          ? "We couldn't send your code right now. Please try again shortly."
-          : "We couldn't reach that number by SMS or WhatsApp. Add an email and we'll send your code there instead.",
-      },
-      { status: 502 },
-    );
+    await discardUndeliveredOtpChallenge(service, subject, "signup", issued.codeHash);
+    return NextResponse.json({ ok: true });
   }
 
   // Remember the channel so /verify knows whether the phone itself was proven
   // (SMS/WhatsApp) or only the email.
   await service.from("pending_signups").update({ otp_channel: channel }).eq("phone", intl);
 
-  return NextResponse.json({
-    ok:              true,
-    nextCooldownSec,
-    channel,
-    devOnly,
-    devCode:         devOnly ? code : undefined,
-  });
+  return NextResponse.json({ ok: true });
 }

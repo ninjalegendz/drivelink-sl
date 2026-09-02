@@ -1,14 +1,13 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient, createServiceClient } from "@/lib/supabase/server";
-import { notifyCascade } from "@/lib/notify";
-import { runAfterResponse } from "@/lib/after-response";
+import { kickNotificationOutbox } from "@/lib/notification-outbox";
 
 // POST /api/bookings/[id]/consent - renter grants document-sharing consent
 // DELETE /api/bookings/[id]/consent - renter revokes it
 //
 // Renter-side consent for migration 051's bookings.doc_share_consent_at,
 // the gate the in-app document viewer (dashboard/bookings/[id]/documents)
-// checks before showing the renter's NIC/selfie/licence photos to the
+// checks before showing the renter's approved identity/licence photos to the
 // page. Service client throughout: the bookings RLS update policies
 // aren't carved out for this column, so this route is the single
 // validated entry point (party check + status check), same idiom as the
@@ -16,10 +15,9 @@ import { runAfterResponse } from "@/lib/after-response";
 //
 // Grant is allowed while confirmed / payment_pending / active - the
 // window where a page still needs to review the renter before or during
-// handover. Revoke is narrower: only while active. Once a booking is
-// completed, the document viewer's own status check already cuts off
-// access regardless of this stamp, so there's nothing meaningful left to
-// revoke, and pre-active statuses haven't had anything viewed yet either.
+// handover. The renter may revoke throughout that same window. Once a booking
+// is completed, disputed, declined or cancelled, the viewer's status check has
+// already ended access and the retained consent record becomes evidence.
 
 async function loadBooking(
   service: Awaited<ReturnType<typeof createServiceClient>>,
@@ -27,7 +25,7 @@ async function loadBooking(
 ) {
   const { data } = await service
     .from("bookings")
-    .select("id, renter_id, agency_id, status, agencies(name, owner_id)")
+    .select("id, renter_id, agency_id, status")
     .eq("id", bookingId)
     .single();
 
@@ -36,11 +34,10 @@ async function loadBooking(
     renter_id:  string;
     agency_id:  string;
     status:     string;
-    agencies:   { name: string; owner_id: string } | null;
   } | null;
 }
 
-export async function POST(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
+export async function POST(_req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   const { id: bookingId } = await params;
 
   const supabase = await createClient();
@@ -59,6 +56,24 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
     );
   }
 
+  const { data: profile } = await service
+    .from("profiles")
+    .select("nic_url, identity_back_url, license_front_url, license_back_url")
+    .eq("id", user.id)
+    .maybeSingle();
+  const documents = profile as {
+    nic_url: string | null;
+    identity_back_url: string | null;
+    license_front_url: string | null;
+    license_back_url: string | null;
+  } | null;
+  if (!documents || ![documents.nic_url, documents.identity_back_url, documents.license_front_url, documents.license_back_url].some(Boolean)) {
+    return NextResponse.json(
+      { error: "Your approved document copy is still being prepared. Wait a moment and try again, or contact DriveLink support if this continues." },
+      { status: 409 },
+    );
+  }
+
   const now = new Date().toISOString();
   const { error } = await service
     .from("bookings")
@@ -70,35 +85,12 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
     return NextResponse.json({ error: "Couldn't share your documents. Try again." }, { status: 500 });
   }
 
-  // Tell the page owner their renter just unlocked document access. Fire
-  // after the response, same pattern as the dispute/inspections routes.
-  runAfterResponse((async () => {
-    const ownerId = b.agencies?.owner_id;
-    if (!ownerId) return;
-
-    const { data: ownerRow } = await service.from("profiles").select("phone, email").eq("id", ownerId).single();
-    const owner = ownerRow as { phone: string | null; email: string | null } | null;
-    const realEmail = owner?.email && !owner.email.endsWith("@phone.drivelink.invalid") ? owner.email : null;
-
-    const ref    = b.id.slice(0, 8).toUpperCase();
-    const appUrl = process.env.NEXT_PUBLIC_APP_URL!;
-    const text   = `DriveLink: the renter shared their documents for booking ${ref}. Review them: ${appUrl}/dashboard/bookings/${b.id}/documents`;
-
-    const notified = await notifyCascade({
-      phone:        owner?.phone ?? undefined,
-      smsKey:       "new_booking_agency",
-      text,
-      email:        realEmail,
-      emailSubject: `Renter shared documents for booking ${ref}`,
-      emailText:    text,
-    });
-    if (!notified.delivered) console.error("[consent] notify owner failed", b.id);
-  })());
+  kickNotificationOutbox(service);
 
   return NextResponse.json({ ok: true, doc_share_consent_at: now });
 }
 
-export async function DELETE(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
+export async function DELETE(_req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   const { id: bookingId } = await params;
 
   const supabase = await createClient();

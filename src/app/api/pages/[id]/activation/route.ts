@@ -29,19 +29,21 @@ export async function POST(req: NextRequest, ctx: RouteContext) {
   }
 
   if (body.active) {
-    // Resume: clear the page flag and re-list exactly the vehicles we paused.
-    await service.from("agencies").update({ deactivated_at: null }).eq("id", agencyId);
-    await service.from("vehicles")
-      .update({ status: "available", paused_at: null })
-      .eq("agency_id", agencyId)
-      .not("paused_at", "is", null);
+    // The database verifies the page, phone and ownership, then resumes the
+    // page and its auto-paused vehicles in one transaction.
+    const { error } = await service.rpc("set_rental_page_active", {
+      p_agency_id: agencyId,
+      p_owner_id: user.id,
+      p_active: true,
+    });
+    if (error) return NextResponse.json({ error: error.message }, { status: 409 });
   } else {
-    // Pause: hide the page and unlist its currently-available vehicles.
-    await service.from("agencies").update({ deactivated_at: new Date().toISOString() }).eq("id", agencyId);
-    await service.from("vehicles")
-      .update({ status: "unlisted", paused_at: new Date().toISOString() })
-      .eq("agency_id", agencyId)
-      .eq("status", "available");
+    const { error } = await service.rpc("set_rental_page_active", {
+      p_agency_id: agencyId,
+      p_owner_id: user.id,
+      p_active: false,
+    });
+    if (error) return NextResponse.json({ error: error.message }, { status: 409 });
   }
 
   // Browse pages cache vehicle rows under this tag.

@@ -1,9 +1,13 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient, createServiceClient } from "@/lib/supabase/server";
-import { compareOtp, OTP_MAX_ATTEMPTS } from "@/lib/sms/otp";
 import { toInternationalSL } from "@/lib/auth/phone-format";
 import { placeholderEmailFor } from "@/lib/auth/placeholder-email";
 import { sendEmail } from "@/lib/email/send";
+import {
+  otpChallengeSubject,
+  otpVerificationError,
+  verifyOtpChallenge,
+} from "@/lib/auth/otp-challenge";
 
 // POST /api/auth/signup/verify
 // body: { phone, code }
@@ -14,7 +18,7 @@ import { sendEmail } from "@/lib/email/send";
 // magic link, and mints a session by verifying a magic-link hashed_token
 // through the SSR client (cookies write back to the response).
 export async function POST(req: NextRequest) {
-  const body = (await req.json().catch(() => ({}))) as { phone?: string; code?: string };
+  const body = (await req.json().catch(() => ({}))) as { phone?: string; code?: string; intent?: string };
   const phoneIn = body.phone?.trim() ?? "";
   const code    = body.code ?? "";
 
@@ -41,25 +45,26 @@ export async function POST(req: NextRequest) {
     // Reused column, holds the residential address collected at /start (see
     // that route's comment). Written to profiles.address below.
     agency_address: string | null;
-    otp_hash:       string;
-    otp_expires_at: string;
-    otp_attempts:   number;
     otp_channel:    string | null;
   } | null;
 
-  if (!p)                                                       return NextResponse.json({ error: "No pending signup. Start over." }, { status: 400 });
-  if (new Date(p.otp_expires_at).getTime() < Date.now())        return NextResponse.json({ error: "Code expired. Request a new one." }, { status: 400 });
-  if (p.otp_attempts >= OTP_MAX_ATTEMPTS)                       return NextResponse.json({ error: "Too many failed attempts. Request a new code." }, { status: 429 });
+  if (!p) return NextResponse.json({ error: "Code expired or invalid. Start over." }, { status: 400 });
 
-  if (!(await compareOtp(code, intl, p.otp_hash))) {
-    await service.from("pending_signups")
-      .update({ otp_attempts: p.otp_attempts + 1 })
-      .eq("phone", intl);
-    const remaining = OTP_MAX_ATTEMPTS - p.otp_attempts - 1;
-    return NextResponse.json(
-      { error: remaining > 0 ? `Incorrect code. ${remaining} attempt${remaining === 1 ? "" : "s"} left.` : "Incorrect code. Request a new one." },
-      { status: 400 }
+  let verification: Awaited<ReturnType<typeof verifyOtpChallenge>>;
+  try {
+    verification = await verifyOtpChallenge(
+      service,
+      otpChallengeSubject("signup", intl),
+      "signup",
+      code,
     );
+  } catch (error) {
+    console.error("[signup verify] verify challenge", error);
+    return NextResponse.json({ error: "Couldn't verify that code. Try again shortly." }, { status: 500 });
+  }
+  if (!verification.ok) {
+    const response = otpVerificationError(verification);
+    return NextResponse.json({ error: response.error }, { status: response.status });
   }
 
   // Create the auth user. We always pass email_confirm=true so we don't
@@ -107,13 +112,13 @@ export async function POST(req: NextRequest) {
     });
     const link = linkData?.properties?.action_link;
     if (link) {
-      await sendEmail({
+      const emailResult = await sendEmail({
         to:      p.email,
         subject: "Verify your email to add a trust badge to your DriveLink profile",
         text:    `Hi ${p.full_name},\n\nWelcome to DriveLink. Click the link below to verify your email, it adds a trust badge to your profile, which helps agencies confirm your bookings faster:\n\n${link}\n\nIt's optional. Skip it and your account still works fine.\n\nIf you didn't create this account, ignore the email.`,
         html:    `<p>Hi ${p.full_name},</p><p>Welcome to DriveLink. Click the button below to verify your email, it adds a trust badge to your profile, which helps agencies confirm your bookings faster:</p><p><a href="${link}" style="background:#f59e0b;color:#0f172a;padding:12px 18px;border-radius:8px;text-decoration:none;font-weight:600;display:inline-block">Verify my email</a></p><p style="color:#64748b;font-size:12px">It's optional. Skip it and your account still works fine. If you didn't create this account, ignore this email.</p>`,
       });
-      emailVerifyDispatched = true;
+      emailVerifyDispatched = emailResult.ok;
     }
   }
 
@@ -139,11 +144,18 @@ export async function POST(req: NextRequest) {
 
   // Cleanup pending row
   await service.from("pending_signups").delete().eq("phone", intl);
+  await service
+    .from("otp_challenges")
+    .delete()
+    .eq("subject_key", otpChallengeSubject("signup", intl))
+    .eq("purpose", "signup");
 
   return NextResponse.json({
     ok: true,
     hasEmail:        Boolean(p.email),
     emailVerifyDispatched,
-    dest:            "/account?welcome=1",
+    // The account itself is universal, but a person who deliberately started
+    // from "List your vehicle" should continue straight to page creation.
+    dest:            body.intent === "provider" ? "/account/pages/new" : "/account?welcome=1",
   });
 }

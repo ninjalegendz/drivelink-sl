@@ -1,9 +1,47 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient, createServiceClient } from "@/lib/supabase/server";
-import { buildAgencyPingMessage } from "@/lib/sms/messages";
 import { calcBookingPriceByDays, billableDaysBetween, toDateTime } from "@/lib/bookings/pricing";
-import { notifyCascade } from "@/lib/notify";
-import { runAfterResponse } from "@/lib/after-response";
+import { LAUNCH_BOOKING_CONFIRMATION_FEE_LKR } from "@/lib/payments/model";
+import { kickNotificationOutbox } from "@/lib/notification-outbox";
+import {
+  RENTER_BOOKINGS_SELECT,
+  type RenterBookingRow,
+} from "@/components/bookings/renter-bookings-query";
+import {
+  assessSelfDriveEligibility,
+  isForeignPermitType,
+  type DriverLicenceRecord,
+  type EligibleDriver,
+} from "@/lib/booking/self-drive-eligibility";
+import { listingPublicationProblem } from "@/lib/vehicles/trust";
+
+export async function GET() {
+  const supabase = await createClient();
+  const { data: { user } } = await supabase.auth.getUser();
+
+  if (!user) {
+    return NextResponse.json({ error: "Unauthorised" }, { status: 401 });
+  }
+
+  // Rental Page rows contain private contact and operational fields. Keep the
+  // browser outside that table and return only this renter's safe booking view.
+  const service = await createServiceClient();
+  const { data, error } = await service
+    .from("bookings")
+    .select(RENTER_BOOKINGS_SELECT)
+    .eq("renter_id", user.id)
+    .order("created_at", { ascending: false });
+
+  if (error) {
+    console.error("Failed to load renter bookings", error);
+    return NextResponse.json({ error: "Could not refresh bookings" }, { status: 500 });
+  }
+
+  return NextResponse.json(
+    { bookings: (data ?? []) as unknown as RenterBookingRow[] },
+    { headers: { "Cache-Control": "private, no-store, max-age=0" } },
+  );
+}
 
 export async function POST(req: NextRequest) {
   const supabase = await createClient();
@@ -13,19 +51,18 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "Unauthorised" }, { status: 401 });
   }
 
-  // Book-before-ID: renters can send a request without completing KYC first
-  // (removes the biggest drop-off). Identity verification is required later,
-  // the provider's contact details only unlock once the renter is verified
-  // AND the provider has confirmed (gated on the booking detail page).
+  // Booking requests are accepted only after identity verification. The
+  // service-side gate below is authoritative; hiding the form is only UX.
 
   const body = await req.json();
   // agency_id is intentionally NOT trusted from the client, we derive it from
   // the vehicle below. Only the vehicle + dates are required.
   const { vehicle_id, start_date, end_date } = body;
-  // BOOK-011 / TRUST-022: chosen drive mode + foreign-renter self-drive permit.
+  // Chosen drive mode + foreign-licence permit declaration. The server derives
+  // whether it is foreign from the reviewed licence; client booleans are not
+  // trusted for a safety decision.
   const requestedMode = body.rental_mode === "self_drive" || body.rental_mode === "with_driver" ? body.rental_mode : null;
-  const isForeignRenter = body.is_foreign_renter === true;
-  const permitAck = body.permit_ack === true;
+  const foreignPermitType = isForeignPermitType(body.foreign_permit_type) ? body.foreign_permit_type : null;
   // Times are optional; default to 10:00 handover if the client omits them.
   const start_time = typeof body.start_time === "string" && body.start_time ? body.start_time.slice(0, 5) : "10:00";
   const end_time   = typeof body.end_time   === "string" && body.end_time   ? body.end_time.slice(0, 5)   : "10:00";
@@ -46,7 +83,7 @@ export async function POST(req: NextRequest) {
   const startEpoch = Date.parse(`${start_date}T${start_time}:00+05:30`);
   if (!Number.isFinite(startEpoch) || startEpoch < Date.now() + 24 * 3_600_000) {
     return NextResponse.json(
-      { error: "Pick-up must be at least 24 hours from now. For urgent bookings, contact us on WhatsApp." },
+      { error: "Pick-up must be at least 24 hours from now. Choose a later time to send an online request." },
       { status: 400 },
     );
   }
@@ -58,8 +95,8 @@ export async function POST(req: NextRequest) {
   // We never trust the client-supplied price OR agency_id, the agency is
   // derived from the vehicle row so a request can't be mis-attributed.
   const [{ data: vehicle }, { data: renter }] = await Promise.all([
-    service.from("vehicles").select("agency_id, status, make, model, year, plate_number, daily_rate_lkr, monthly_rate_lkr, deposit_lkr, self_drive, with_driver, min_rental_days, max_rental_days").eq("id", vehicle_id).single(),
-    service.from("profiles").select("full_name, kyc_status, is_blacklisted, booking_frozen, license_front_url, license_back_url").eq("id", user.id).single(),
+    service.from("vehicles").select("agency_id, status, plate_number, photos, rejection_reason, listing_authority_basis, listing_authority_declared, listing_authority_confirmed_at, listing_authority_confirmed_by, listing_authority_declaration_version, daily_rate_lkr, weekly_rate_lkr, monthly_rate_lkr, deposit_lkr, self_drive, with_driver, min_rental_days, max_rental_days, min_renter_age, min_license_years").eq("id", vehicle_id).single(),
+    service.from("profiles").select("kyc_status, is_blacklisted, booking_frozen, license_front_url, license_back_url, date_of_birth, license_issued_on, license_expires_on, license_jurisdiction, license_review_status, license_reviewed_at").eq("id", user.id).single(),
   ]);
 
   if (!vehicle) {
@@ -69,23 +106,40 @@ export async function POST(req: NextRequest) {
   const v = vehicle as {
     agency_id:        string;
     status:           string;
-    make:             string;
-    model:            string;
-    year:             number;
     plate_number:     string | null;
+    photos:           string[] | null;
+    rejection_reason: string | null;
+    listing_authority_basis: string | null;
+    listing_authority_declared: boolean;
+    listing_authority_confirmed_at: string | null;
+    listing_authority_confirmed_by: string | null;
+    listing_authority_declaration_version: string | null;
     daily_rate_lkr:   number;
+    weekly_rate_lkr:  number | null;
     monthly_rate_lkr: number | null;
     deposit_lkr:      number | null;
     self_drive:       boolean;
     with_driver:      boolean;
     min_rental_days:  number | null;
     max_rental_days:  number | null;
+    min_renter_age:   number | null;
+    min_license_years:number | null;
   };
 
   // Only bookable while the listing is live. Blocks direct-API attempts to
   // book unlisted / under-maintenance / pending-review vehicles.
   if (v.status !== "available") {
     return NextResponse.json({ error: "This vehicle isn't available for booking." }, { status: 409 });
+  }
+  if (listingPublicationProblem(v)) {
+    return NextResponse.json({ error: "This vehicle isn't available for booking." }, { status: 409 });
+  }
+
+  if (!v.self_drive && !v.with_driver) {
+    return NextResponse.json(
+      { error: "This listing is missing a rental mode. The Rental Page needs to correct it before it can be booked." },
+      { status: 409 },
+    );
   }
 
   // Verified renters only. Quality over quantity: an owner should never
@@ -116,7 +170,7 @@ export async function POST(req: NextRequest) {
   // automatically by trg_clear_booking_freeze when that booking completes.
   if ((renter as { booking_frozen?: boolean } | null)?.booking_frozen) {
     return NextResponse.json(
-      { error: "Your account is frozen because a rental is seriously overdue. Resolve it to book again." },
+      { error: "Your account is paused after DriveLink reviewed an unreturned rental. Resolve that booking or contact support before booking again." },
       { status: 403 },
     );
   }
@@ -135,23 +189,32 @@ export async function POST(req: NextRequest) {
   if (effectiveMode === "with_driver" && !v.with_driver) effectiveMode = "self_drive";
 
   const isSelfDrive = effectiveMode === "self_drive";
+  let approvedDriver: EligibleDriver | null = null;
 
-  // Self-drive licence gate - now keyed on the chosen mode, not the vehicle.
+  // Self-drive has an eligibility gate, not merely an upload gate. The
+  // reviewer confirms the submitted licence first; then we compare verified
+  // date-of-birth and first-issue date to this vehicle's own requirements.
   if (isSelfDrive) {
-    const r = renter as { license_front_url?: string | null; license_back_url?: string | null } | null;
-    if (!r?.license_front_url || !r?.license_back_url) {
+    const eligibility = assessSelfDriveEligibility(
+      renter as DriverLicenceRecord,
+      { minRenterAge: v.min_renter_age, minLicenseYears: v.min_license_years },
+      start_date,
+      foreignPermitType,
+    );
+    if (!eligibility.ok) {
       return NextResponse.json(
-        { error: "Upload your driving licence (front and back) in your account before booking self-drive." },
+        {
+          error: eligibility.message,
+          needsLicenceReview: eligibility.code === "licence_review_required" || eligibility.code === "licence_expired",
+          eligibilityCode: eligibility.code,
+        },
         { status: 403 },
       );
     }
-    // TRUST-022: a foreign visitor self-driving must confirm the permit position.
-    if (isForeignRenter && !permitAck) {
-      return NextResponse.json(
-        { error: "Please confirm you hold (or will obtain) a valid International Driving Permit and Sri Lankan recognition permit for self-drive." },
-        { status: 400 },
-      );
-    }
+
+    // Keep the approved facts that mattered at booking time. The Rental Page
+    // receives the decision and declared permit, not the renter's DOB.
+    approvedDriver = eligibility.driver;
   }
 
   // Authoritative agency id, from the vehicle, not the request body.
@@ -159,27 +222,31 @@ export async function POST(req: NextRequest) {
 
   const { data: agency } = await service
     .from("agencies")
-    .select("id, name, whatsapp_number, deactivated_at, sms_notifications_enabled, whatsapp_notifications_enabled, profiles!owner_id(email)")
+    .select("id, owner_id, is_verified, whatsapp_verified_at, deactivated_at, is_blocked, deleted_at, owner:profiles!owner_id(kyc_status, is_blacklisted, deleted_at)")
     .eq("id", realAgencyId)
     .single();
 
   if (!agency) {
-    return NextResponse.json({ error: "Vehicle or agency not found" }, { status: 404 });
+    return NextResponse.json({ error: "Vehicle or Rental Page not found" }, { status: 404 });
   }
 
   const a = agency as unknown as {
     id:                              string;
-    name:                            string;
-    whatsapp_number:                 string;
-    deactivated_at:                  string | null;
-    sms_notifications_enabled:       boolean;
-    whatsapp_notifications_enabled:  boolean;
-    profiles:                        { email: string | null } | null;
+    owner_id:                        string;
+    is_verified:                     boolean;
+    whatsapp_verified_at:            string | null;
+    deactivated_at: string | null;
+    is_blocked: boolean;
+    deleted_at: string | null;
+    owner: { kyc_status: string; is_blacklisted: boolean; deleted_at: string | null } | null;
   };
 
   // PAGE-005: a paused page never takes new bookings, even if a stray vehicle
   // slipped back to 'available' (e.g. approved while paused).
-  if (a.deactivated_at) {
+  const ownerEligible = a.owner?.kyc_status === "verified"
+    && a.owner.is_blacklisted !== true
+    && !a.owner.deleted_at;
+  if (!a.is_verified || !a.whatsapp_verified_at || a.deactivated_at || a.is_blocked || a.deleted_at || !ownerEligible) {
     return NextResponse.json({ error: "This vehicle isn't available for booking." }, { status: 409 });
   }
 
@@ -290,12 +357,7 @@ export async function POST(req: NextRequest) {
     );
   }
 
-  const { subtotal } = calcBookingPriceByDays(days, v.daily_rate_lkr, v.monthly_rate_lkr);
-
-  // Booking fee comes from platform settings, 0 during the free-launch period
-  // (no payment step), a positive value once monetization is switched on.
-  const { data: settingsRow } = await service.from("platform_settings").select("booking_fee_lkr").eq("id", true).single();
-  const bookingFee = Math.max(0, (settingsRow as { booking_fee_lkr?: number } | null)?.booking_fee_lkr ?? 0);
+  const { subtotal } = calcBookingPriceByDays(days, v.daily_rate_lkr, v.monthly_rate_lkr, v.weekly_rate_lkr);
 
   // Create the booking. total_days is a generated (time-aware) column, so we
   // don't set it, the DB derives it from the dates + times.
@@ -312,14 +374,23 @@ export async function POST(req: NextRequest) {
       end_time,
       daily_rate_lkr:  v.daily_rate_lkr,
       subtotal_lkr:    subtotal,
-      booking_fee_lkr: bookingFee,
+      // Launch safety: a future fee needs a payment gateway, a new database
+      // migration, and a new checkout flow. An admin toggle cannot turn on a
+      // manual bank-transfer path by accident.
+      booking_fee_lkr: LAUNCH_BOOKING_CONFIRMATION_FEE_LKR,
       // BOOK-013: snapshot the deposit at request time so it can't be raised
       // before the owner accepts.
       deposit_lkr:     v.deposit_lkr ?? null,
-      // BOOK-011 / TRUST-022
+      // Self-drive eligibility snapshot. The original licence and declared
+      // permit must still be inspected at pickup; this does not certify them.
       rental_mode:            effectiveMode,
-      is_foreign_renter:      isSelfDrive ? isForeignRenter : false,
-      tourist_permit_ack_at:  isSelfDrive && isForeignRenter && permitAck ? new Date().toISOString() : null,
+      is_foreign_renter:      isSelfDrive && approvedDriver?.jurisdiction === "foreign",
+      tourist_permit_ack_at:  isSelfDrive && approvedDriver?.jurisdiction === "foreign" ? new Date().toISOString() : null,
+      foreign_permit_type:    approvedDriver?.foreignPermitType ?? null,
+      driver_license_jurisdiction: approvedDriver?.jurisdiction ?? null,
+      driver_age_at_pickup:   approvedDriver?.ageAtPickup ?? null,
+      driver_license_years_at_pickup: approvedDriver?.licenseYearsAtPickup ?? null,
+      driver_license_reviewed_at: approvedDriver?.reviewedAt ?? null,
     })
     .select("id")
     .single();
@@ -329,41 +400,8 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "Failed to create booking" }, { status: 500 });
   }
 
-  // Fire SMS ping to agency (non-blocking, don't fail the booking if SMS fails).
-  // Sent via text.lk; the agency confirms by clicking through to the dashboard.
-  const vehicleName = `${v.year} ${v.make} ${v.model}`;
-  const renterName  = renter?.full_name ?? "Verified Renter";
-
-  const appUrl = process.env.NEXT_PUBLIC_APP_URL!;
-
-  // Notify the agency via the cascade: SMS -> WhatsApp -> Email (first success
-  // wins). The realtime dashboard toast fires regardless. Non-blocking.
-  const ref      = booking.id.slice(0, 8).toUpperCase();
-  const pingText = buildAgencyPingMessage({
-    bookingId:    booking.id,
-    renterName,
-    vehicleName,
-    vehiclePlate: v.plate_number ?? undefined,
-    startDate:    `${start_date} ${start_time}`,
-    endDate:      `${end_date} ${end_time}`,
-    totalDays:    days,
-    appUrl,
-  });
-
-  // Don't make the renter wait on SMS/WhatsApp/email, fire it after the
-  // response. The realtime dashboard toast fires regardless.
-  runAfterResponse(
-    notifyCascade({
-      phone:        a.whatsapp_number,
-      smsKey:       "new_booking_agency",
-      text:         pingText,
-      email:        a.profiles?.email ?? null,
-      emailSubject: `New booking ${ref}, ${vehicleName}`,
-      emailText:    pingText,
-    }).then((notified) => {
-      if (!notified.delivered) console.error("[booking notify] all channels failed for", booking.id);
-    }),
-  );
+  // The insert trigger stored the page notice in the same transaction.
+  kickNotificationOutbox(service);
 
   return NextResponse.json({ bookingId: booking.id }, { status: 201 });
 }

@@ -1,108 +1,75 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createServiceClient } from "@/lib/supabase/server";
-import { resolveIdentifier, isEmailLike } from "@/lib/auth/identifier";
+import { resolveIdentifier } from "@/lib/auth/identifier";
 import {
   generateOtp,
-  hashOtp,
-  OTP_TTL_MS,
-  cooldownForSendCount,
-  effectiveSendCount,
 } from "@/lib/sms/otp";
+import {
+  discardUndeliveredOtpChallenge,
+  issueOtpChallenge,
+  otpChallengeSubject,
+} from "@/lib/auth/otp-challenge";
 import { sendOtpCascade } from "@/lib/sms/send-otp";
 import { sendEmail } from "@/lib/email/send";
+import { authStartLimitResponse, consumeAuthStartLimit } from "@/lib/auth/request-throttle";
 
 // POST /api/auth/login/send-code  body: { identifier: string }
 //
 // Resolves the identifier (email or phone), generates a 6-digit OTP, stores
-// its hash on the profile, and ships it through the matching channel.
-//
-// When no account matches we say so plainly (accountNotFound), rather than
-// faking a "code sent" screen the user would wait at forever. The signup
-// flow already reveals whether a number/email is registered, so hiding it
-// here only confused legitimate users, it never actually prevented
-// enumeration. Flooding is still bounded by the resend cooldown below.
+// its hash on the profile, and ships it through the matching channel. An
+// identifier with no account gets a 404 and accountNotFound, so the sign-in
+// screen can send that person to sign-up instead of a code that never arrives.
 export async function POST(req: NextRequest) {
   const { identifier } = (await req.json().catch(() => ({}))) as { identifier?: string };
   if (!identifier || identifier.trim().length < 3) {
     return NextResponse.json({ error: "Enter your email or phone number." }, { status: 400 });
   }
 
-  const channelHint = isEmailLike(identifier) ? "email" : "phone";
   const service = await createServiceClient();
+  try {
+    const rateLimit = await consumeAuthStartLimit(service, req.headers);
+    if (!rateLimit.allowed) {
+      const body = authStartLimitResponse(rateLimit.retryAfterSec);
+      return NextResponse.json(body, {
+        status: 429,
+        headers: { "Retry-After": String(body.waitSec) },
+      });
+    }
+  } catch (error) {
+    console.error("[login send] request rate limit", error);
+    return NextResponse.json({ error: "Couldn't send a login code. Try again shortly." }, { status: 500 });
+  }
   const identity = await resolveIdentifier(service, identifier);
 
-  // No account → tell them, and let the UI offer to create one.
+  // Tell the caller plainly that there is no account here.
+  //
+  // This is a deliberate trade. Answering honestly lets someone probe numbers
+  // to learn who has a DriveLink account, which the neutral response used to
+  // prevent. But that neutrality sent every genuinely new person to a code
+  // screen for a code that could never arrive, and they left. The request rate
+  // limiter above is what keeps bulk probing slow.
   if (!identity) {
     return NextResponse.json(
       {
+        error: "No DriveLink account uses that number or email yet.",
         accountNotFound: true,
-        error: channelHint === "email"
-          ? "No DriveLink account uses that email. Create an account to continue."
-          : "No DriveLink account uses that number. Create an account to continue.",
       },
       { status: 404 },
     );
   }
 
-  // Email entered but the email address isn't verified yet → mail them a
-  // magic link and tell the UI so it can show the "verify or use phone" copy.
-  if (identity.channel === "email" && !identity.emailVerified) {
-    const { data: linkData, error: linkError } = await service.auth.admin.generateLink({
-      type:  "magiclink",
-      email: identity.email!,
-      options: {
-        redirectTo: `${process.env.NEXT_PUBLIC_APP_URL}/auth/callback`,
-      },
-    });
-    if (!linkError && linkData?.properties?.action_link) {
-      const link = linkData.properties.action_link;
-      await sendEmail({
-        to:      identity.email!,
-        subject: "Verify your email to log in to DriveLink",
-        text:    `Click this link to verify your email and log in:\n\n${link}\n\nIf you didn't request this, ignore the email.`,
-        html:    `<p>Click the button below to verify your email and log in:</p><p><a href="${link}" style="background:#f59e0b;color:#0f172a;padding:12px 18px;border-radius:8px;text-decoration:none;font-weight:600;display:inline-block">Verify and log in</a></p><p style="color:#64748b;font-size:12px">If you didn't request this, ignore the email.</p>`,
-      });
-    }
-    return NextResponse.json({ ok: true, channel: "email", emailUnverified: true });
+  const code = generateOtp();
+  const subject = otpChallengeSubject("profile", identity.userId);
+  let issued: Awaited<ReturnType<typeof issueOtpChallenge>>;
+  try {
+    issued = await issueOtpChallenge(service, subject, "login", code);
+  } catch (error) {
+    console.error("[login send] issue challenge", error);
+    return NextResponse.json({ error: "Couldn't send a login code. Try again shortly." }, { status: 500 });
   }
-
-  // Escalating resend cooldown, pull current burst state
-  const { data: cooldownRow } = await service
-    .from("profiles")
-    .select("phone_otp_last_sent, phone_otp_send_count")
-    .eq("id", identity.userId)
-    .single();
-  const cd = (cooldownRow as {
-    phone_otp_last_sent:  string | null;
-    phone_otp_send_count: number;
-  } | null) ?? { phone_otp_last_sent: null, phone_otp_send_count: 0 };
-
-  const priorSends   = effectiveSendCount(cd.phone_otp_send_count, cd.phone_otp_last_sent);
-  const requiredGap  = cooldownForSendCount(priorSends);
-  if (cd.phone_otp_last_sent && requiredGap > 0) {
-    const elapsed = Date.now() - new Date(cd.phone_otp_last_sent).getTime();
-    if (elapsed < requiredGap) {
-      const waitSec = Math.ceil((requiredGap - elapsed) / 1000);
-      return NextResponse.json({ error: `Wait ${waitSec}s before requesting another code.`, waitSec }, { status: 429 });
-    }
+  if (!issued.result.ok) {
+    return NextResponse.json({ ok: true });
   }
-
-  const code         = generateOtp();
-  const hash         = await hashOtp(code, identity.userId);
-  const expiresAt    = new Date(Date.now() + OTP_TTL_MS).toISOString();
-  const newSendCount = priorSends + 1;
-  const nextCooldownSec = Math.ceil(cooldownForSendCount(newSendCount) / 1000);
-
-  await service
-    .from("profiles")
-    .update({
-      phone_otp_hash:       hash,
-      phone_otp_expires_at: expiresAt,
-      phone_otp_attempts:   0,
-      phone_otp_last_sent:  new Date().toISOString(),
-      phone_otp_send_count: newSendCount,
-    })
-    .eq("id", identity.userId);
 
   // Send via the channel the user typed. If they typed phone but no email-
   // verification ever happened, that's fine, we use phone here.
@@ -113,19 +80,16 @@ export async function POST(req: NextRequest) {
       text:    `Your DriveLink login code is ${code}. It expires in 10 minutes. If you didn't request this, you can ignore the email.`,
       html:    `<p>Your DriveLink login code is:</p><p style="font-size:28px;letter-spacing:6px;font-weight:700;font-variant-numeric:tabular-nums;color:#f59e0b">${code}</p><p>It expires in 10 minutes. If you didn't request this, you can ignore the email.</p>`,
     });
-    return NextResponse.json({
-      ok:               true,
-      channel:          "email",
-      deliveredVia:     "email",
-      nextCooldownSec,
-      devOnly:          result.devOnly ?? false,
-      devCode:          result.devOnly ? code : undefined,
-    });
+    if (!result.ok) {
+      await discardUndeliveredOtpChallenge(service, subject, "login", issued.codeHash);
+      return NextResponse.json({ ok: true });
+    }
+    return NextResponse.json({ ok: true });
   }
 
   // Phone login: SMS -> WhatsApp -> Email (so a foreign user who can't get an
   // SMS still receives the code). Returns the channel that actually delivered.
-  const { channel: deliveredVia, devOnly } = await sendOtpCascade({
+  const { channel: deliveredVia } = await sendOtpCascade({
     phone:  identity.phone,
     code,
     smsKey: "login",
@@ -133,18 +97,9 @@ export async function POST(req: NextRequest) {
   });
 
   if (!deliveredVia) {
-    return NextResponse.json(
-      { error: "We couldn't reach you by SMS, WhatsApp, or email. Please contact support." },
-      { status: 502 },
-    );
+    await discardUndeliveredOtpChallenge(service, subject, "login", issued.codeHash);
+    return NextResponse.json({ ok: true });
   }
 
-  return NextResponse.json({
-    ok:              true,
-    channel:         "phone",   // input channel (drives the UI mask)
-    deliveredVia,               // sms | whatsapp | email (drives the "check X" hint)
-    nextCooldownSec,
-    devOnly,
-    devCode:         devOnly ? code : undefined,
-  });
+  return NextResponse.json({ ok: true });
 }

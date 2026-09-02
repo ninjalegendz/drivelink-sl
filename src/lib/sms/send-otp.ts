@@ -36,13 +36,13 @@ export async function sendOtpCascade(
   // 3) Email (last resort)
   if (email) {
     try {
-      await sendEmail({
+      const result = await sendEmail({
         to:      email,
         subject: "Your DriveLink verification code",
         text:    `Your DriveLink code is ${code}. It expires in 10 minutes. If this wasn't you, ignore this email.`,
         html:    `<p>Your DriveLink verification code is <strong style="font-size:20px">${code}</strong>.</p><p>It expires in 10 minutes. If this wasn't you, ignore this email.</p>`,
       });
-      return { channel: "email", devOnly: false };
+      if (result.ok) return { channel: "email", devOnly: Boolean(result.devOnly) };
     } catch {
       /* fall through */
     }

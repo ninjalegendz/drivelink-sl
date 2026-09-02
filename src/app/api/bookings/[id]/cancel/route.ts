@@ -1,8 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient, createServiceClient } from "@/lib/supabase/server";
-import { notifyCascade } from "@/lib/notify";
-import { runAfterResponse } from "@/lib/after-response";
 import { logEvent } from "@/lib/activity/log";
+import { kickNotificationOutbox } from "@/lib/notification-outbox";
 
 interface RouteContext {
   params: Promise<{ id: string }>;
@@ -28,7 +27,7 @@ export async function POST(_req: NextRequest, ctx: RouteContext) {
 
   const { data: bookingRow } = await service
     .from("bookings")
-    .select("id, renter_id, agency_id, status, vehicles(make, model, year), agencies(name, whatsapp_number)")
+    .select("id, renter_id, agency_id, status")
     .eq("id", id)
     .single();
   const booking = bookingRow as {
@@ -36,8 +35,6 @@ export async function POST(_req: NextRequest, ctx: RouteContext) {
     renter_id: string;
     agency_id: string;
     status: string;
-    vehicles: { make: string; model: string; year: number } | null;
-    agencies: { name: string; whatsapp_number: string | null } | null;
   } | null;
 
   if (!booking) return NextResponse.json({ error: "Booking not found." }, { status: 404 });
@@ -46,7 +43,7 @@ export async function POST(_req: NextRequest, ctx: RouteContext) {
     return NextResponse.json({ error: "This booking can no longer be cancelled here." }, { status: 409 });
   }
 
-  const { error } = await service
+  const { data: cancelledRows, error } = await service
     .from("bookings")
     .update({
       status:              "cancelled",
@@ -55,8 +52,12 @@ export async function POST(_req: NextRequest, ctx: RouteContext) {
       cancelled_by:        "renter",
     })
     .eq("id", id)
-    .in("status", Array.from(CANCELLABLE));
+    .in("status", Array.from(CANCELLABLE))
+    .select("id");
   if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+  if (!cancelledRows?.length) {
+    return NextResponse.json({ error: "The booking changed before it could be cancelled. Refresh and try again." }, { status: 409 });
+  }
 
   await logEvent(service, {
     actorId:            user.id,
@@ -70,19 +71,7 @@ export async function POST(_req: NextRequest, ctx: RouteContext) {
     metadata:           { previous_status: booking.status },
   });
 
-  // Best-effort page notification (the button says the agency is notified).
-  if (booking.agencies?.whatsapp_number) {
-    const v = booking.vehicles;
-    const vehicleName = v ? `${v.year} ${v.make} ${v.model}` : "a vehicle";
-    const ref = id.slice(0, 8).toUpperCase();
-    runAfterResponse(
-      notifyCascade({
-        phone:  booking.agencies.whatsapp_number,
-        smsKey: "new_booking_agency",
-        text:   `A renter cancelled their booking for ${vehicleName} (ref ${ref}). The dates are free again.`,
-      }),
-    );
-  }
+  kickNotificationOutbox(service);
 
   return NextResponse.json({ ok: true });
 }

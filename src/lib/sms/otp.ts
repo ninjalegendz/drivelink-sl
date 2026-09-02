@@ -13,7 +13,6 @@ export function generateOtp(): string {
   // reject and resample to keep the distribution flat.
   const cutoff = Math.floor(0xffffffff / limit) * limit;
   const buf = new Uint32Array(1);
-  // eslint-disable-next-line no-constant-condition
   while (true) {
     crypto.getRandomValues(buf);
     if (buf[0] < cutoff) {

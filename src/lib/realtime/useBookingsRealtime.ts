@@ -136,7 +136,6 @@ export function useBookingsRealtime<T extends BookingRow & HasCreatedAt>(
       if (channel) supabase.removeChannel(channel);
     };
     // Re-subscribe when the channel name or filter changes (e.g. user switches tabs).
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [options.channelName, options.filter]);
 
   return rows;

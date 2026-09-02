@@ -2,7 +2,7 @@
  * Central, growth-aware site config.
  *
  * Anything that changes as DriveLink grows, contact channels, launch-phase
- * flags, pricing framing, currency display, lives HERE and reads from
+ * flags and currency display lives HERE and reads from
  * NEXT_PUBLIC_* env vars (with sensible production defaults) so it can be
  * changed per-environment without touching component code.
  *
@@ -32,14 +32,13 @@ export const siteConfig = {
   whatsappDisplay,
   whatsappNumber: digits(whatsappDisplay),
   supportEmail: process.env.NEXT_PUBLIC_SUPPORT_EMAIL ?? "support@drivelink.lk",
-  privacyEmail: process.env.NEXT_PUBLIC_PRIVACY_EMAIL ?? "privacy@drivelink.lk",
+  // There are exactly three ways to reach DriveLink: the phone number below,
+  // the same number on WhatsApp, and support@. No privacy@ inbox exists, so
+  // pointing people at one sent privacy requests nowhere.
+  phoneDisplay: process.env.NEXT_PUBLIC_PHONE_NUMBER ?? "+94 70 659 4005",
+  phoneNumber: digits(process.env.NEXT_PUBLIC_PHONE_NUMBER ?? "+94 70 659 4005"),
 
   // ── Growth-phase flags (see the platform plan's phases) ──
-  // Free launch: no platform/booking fee and "0% commission" framing across
-  // the site. Flip NEXT_PUBLIC_FREE_LAUNCH=false when monetization begins
-  // (plan Phase 4) and the fee copy/cards switch off automatically.
-  freeLaunch: flag(process.env.NEXT_PUBLIC_FREE_LAUNCH, true),
-
   // Show USD alongside LKR for tourists.
   showUsd: flag(process.env.NEXT_PUBLIC_SHOW_USD, true),
   // LKR→USD divisor used when a listing has no explicit USD price.

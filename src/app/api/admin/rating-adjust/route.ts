@@ -5,10 +5,9 @@ import { logEvent } from "@/lib/activity/log";
 // POST /api/admin/rating-adjust
 // body: { target_kind: 'renter' | 'agency', target_id, field, delta, reason }
 //
-// Manual override of a profile's rating_avg / reliability_pct (for renters
-// or agencies). Logs every adjustment with admin id + reason in the
-// rating_adjustments table so we have an audit trail. Renters'
-// rating/reliability live on profiles; agencies' on agencies.
+// Manual reliability override for renters or Rental Pages. Public star reviews
+// belong to Rental Pages and are recalculated from completed-booking reviews;
+// admins must not edit those review aggregates through this endpoint.
 export async function POST(req: NextRequest) {
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
@@ -26,7 +25,7 @@ export async function POST(req: NextRequest) {
   const body = (await req.json().catch(() => ({}))) as Partial<{
     target_kind: "renter" | "agency";
     target_id:   string;
-    field:       "rating_avg" | "reliability_pct";
+    field:       "reliability_pct";
     delta:       number;
     reason:      string;
   }>;
@@ -37,8 +36,8 @@ export async function POST(req: NextRequest) {
   if (!["renter", "agency"].includes(body.target_kind)) {
     return NextResponse.json({ error: "Invalid target_kind." }, { status: 400 });
   }
-  if (!["rating_avg", "reliability_pct"].includes(body.field)) {
-    return NextResponse.json({ error: "Invalid field." }, { status: 400 });
+  if (body.field !== "reliability_pct") {
+    return NextResponse.json({ error: "Only reliability can be adjusted manually." }, { status: 400 });
   }
   if (body.reason.trim().length < 5) {
     return NextResponse.json({ error: "Reason must be at least 5 characters." }, { status: 400 });
@@ -53,12 +52,7 @@ export async function POST(req: NextRequest) {
   const cur = typeof curRaw === "number" ? curRaw : 0;
   let next = cur + body.delta;
 
-  // Clamp: rating_avg is 0-5, reliability_pct is 0-100
-  if (body.field === "rating_avg") {
-    next = Math.max(0, Math.min(5,   next));
-  } else {
-    next = Math.max(0, Math.min(100, Math.round(next)));
-  }
+  next = Math.max(0, Math.min(100, Math.round(next)));
 
   const { error: updateError } = await service.from(table).update({ [body.field]: next }).eq("id", body.target_id);
   if (updateError) {

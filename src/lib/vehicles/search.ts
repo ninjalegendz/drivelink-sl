@@ -4,6 +4,7 @@ import { rankVehicles } from "@/data/vehicles";
 import { toPublicVehicle } from "@/lib/vehicles/format";
 import { createPublicClient } from "@/lib/supabase/server";
 import type { VehicleRow, AgencySnippet, VehicleWithAgency } from "@/types/queries";
+import { hasCurrentHireInsurance, isCurrentVerifiedVehicle } from "@/lib/vehicles/trust";
 
 export const VEHICLES_PAGE_SIZE = 24;
 const CACHE_TTL = 60; // seconds, public browse data can be ~1 min stale
@@ -24,13 +25,13 @@ export interface VehicleSearchParams {
 // Single source of truth for a page of marketplace vehicles. Runs the DB
 // search_vehicles() function (filters + date-availability in SQL), hydrates the
 // agency snippet for the returned page (bounded, so the IN-list is small),
-// redacts plate numbers, then applies the in-app ranking. Shared by the listings
+// receives a database-redacted plate number, then applies the in-app ranking. Shared by the listings
 // page (first page) and the load-more API (subsequent pages) so they're identical.
 export async function searchVehiclePage(
   supabase: SupabaseClient,
   p: VehicleSearchParams,
 ): Promise<VehicleWithAgency[]> {
-  const { data } = await supabase.rpc("search_vehicles", {
+  const { data, error } = await supabase.rpc("search_vehicles", {
     p_q:         p.q || null,
     p_city:      p.city || null,
     p_type:      p.type || null,
@@ -42,20 +43,35 @@ export async function searchVehiclePage(
     p_offset:    p.offset ?? 0,
     p_insurance: p.insurance || null,
   });
-  const rows = (data ?? []) as VehicleRow[];
+  if (error) throw new Error("Public vehicle search failed.", { cause: error });
+
+  const rows = ((data ?? []) as VehicleRow[])
+    .filter((vehicle) => p.insurance !== "hire" || hasCurrentHireInsurance(vehicle))
+    .map((vehicle) => isCurrentVerifiedVehicle(vehicle) ? vehicle : { ...vehicle, verified_vehicle: false });
   if (rows.length === 0) return [];
 
   const agencyIds = [...new Set(rows.map((v) => v.agency_id))];
   const agencyById = new Map<string, AgencySnippet>();
-  const { data: agencyRows } = await supabase
+  const { data: agencyRows, error: agencyError } = await supabase
     .from("agencies")
-    .select("id, owner_id, name, city, is_verified, reliability_pct, cancellation_count, avg_response_minutes, rating_avg, rating_count, profiles!owner_id(rating_avg, rating_count)")
+    .select("id, name, city, is_verified, reliability_pct, cancellation_count, avg_response_minutes, rating_avg, rating_count")
     .in("id", agencyIds);
+  if (agencyError) throw new Error("Public Rental Page lookup failed.", { cause: agencyError });
+
   for (const a of (agencyRows ?? []) as unknown as AgencySnippet[]) agencyById.set(a.id, a);
 
-  return rankVehicles(
+  const ranked = rankVehicles(
     rows.map((v) => toPublicVehicle({ ...v, agencies: agencyById.get(v.agency_id) ?? null })) as VehicleWithAgency[],
   );
+
+  // search_vehicles() already returns bookable rows first, but rankVehicles
+  // re-sorts on its own score and would mix the taken ones back in. Partition
+  // after ranking so the trust ranking still decides the order *within* each
+  // group, while anything unavailable for the requested dates stays underneath
+  // what the renter can actually book.
+  const bookable = ranked.filter((v) => !v.booked_in_range && !v.blocked_in_range);
+  const taken = ranked.filter((v) => v.booked_in_range || v.blocked_in_range);
+  return [...bookable, ...taken];
 }
 
 // Cached wrapper over searchVehiclePage for public reads. Keyed by the search
@@ -74,16 +90,7 @@ export async function searchVehiclePageCached(p: VehicleSearchParams): Promise<V
 // Cached "newest available, ranked, top 6" for the home page.
 export async function getHomeFeaturedCached(): Promise<VehicleWithAgency[]> {
   const run = unstable_cache(
-    async () => {
-      const supabase = createPublicClient();
-      const { data } = await supabase
-        .from("vehicles")
-        .select("*, agencies(id, owner_id, name, city, is_verified, reliability_pct, cancellation_count, avg_response_minutes, rating_avg, rating_count, profiles!owner_id(rating_avg, rating_count))")
-        .eq("status", "available")
-        .order("created_at", { ascending: false })
-        .limit(12);
-      return rankVehicles((data ?? []) as VehicleWithAgency[]).slice(0, 6).map(toPublicVehicle);
-    },
+    async () => (await searchVehiclePage(createPublicClient(), { limit: 12, offset: 0 })).slice(0, 6),
     ["home-featured"],
     { revalidate: CACHE_TTL, tags: ["vehicles"] },
   );

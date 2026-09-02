@@ -115,11 +115,23 @@ export function mapDiditStatus(raw: string): "verified" | "rejected" | "pending"
 // number (NIC). Didit's payload shape varies across versions, we
 // check the obvious paths and return the first non-empty hit.
 export function extractDiditNic(session: Record<string, unknown>): string | null {
+  const decision = session.decision as Record<string, unknown> | undefined;
+  const data = session.data as Record<string, unknown> | undefined;
+  const pluralRecords = [
+    ...(Array.isArray(session.id_verifications) ? session.id_verifications : []),
+    ...(Array.isArray(decision?.id_verifications) ? decision.id_verifications : []),
+    ...(Array.isArray(data?.id_verifications) ? data.id_verifications : []),
+  ].filter((value): value is Record<string, unknown> => Boolean(value && typeof value === "object"));
   const candidates = [
+    ...pluralRecords.flatMap((record) => [
+      record.document_number,
+      (record.document_data as Record<string, unknown> | undefined)?.document_number,
+      record.personal_number,
+    ]),
     (session.id_verification as Record<string, unknown> | undefined)?.document_number,
     ((session.id_verification as Record<string, unknown> | undefined)?.document_data as Record<string, unknown> | undefined)?.document_number,
-    (session.decision as Record<string, unknown> | undefined)?.document_number,
-    ((session.decision as Record<string, unknown> | undefined)?.id_verification as Record<string, unknown> | undefined)?.document_number,
+    decision?.document_number,
+    (decision?.id_verification as Record<string, unknown> | undefined)?.document_number,
     session.document_number,
   ];
   const hit = candidates.find((v) => typeof v === "string" && v.trim().length > 0);

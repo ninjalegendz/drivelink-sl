@@ -54,9 +54,13 @@ export async function GET(req: NextRequest) {
     })
     .eq("id", userId);
 
-  // Their Rental Pages were soft-deleted alongside the account, bring
-  // them back too (un-blocked, placeholder details, vehicles stay
-  // unlisted until the owner re-lists deliberately).
+  await service.auth.admin.updateUserById(userId, {
+    user_metadata: { full_name: "(Restored, please update your name)", deleted: false },
+  });
+
+  // Bring back only pages deleted with this account. Admin-deleted pages stay
+  // deleted, and an earlier suspension remains in force. Vehicles stay
+  // unlisted until the owner deliberately resubmits or relists them.
   await restoreOwnedPages(userId);
 
   return NextResponse.redirect(`${origin}/?undeleted=1`);

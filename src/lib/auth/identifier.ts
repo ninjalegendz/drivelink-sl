@@ -1,10 +1,14 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
+import { toE164 } from "@/lib/auth/phone-format";
 
-// Returns the digits that uniquely identify a Sri Lankan phone, the last 9
-// after the country code. So "+94 77 360 5505", "0773605505", "94773605505"
-// all reduce to "773605505" for matching.
-export function phoneSuffix(input: string): string {
-  return input.replace(/\D/g, "").slice(-9);
+// Prefer the one canonical E.164 number. Keep an exact raw fallback only for
+// an older local-format record; never use a suffix, which can collide across
+// countries (for example, Sri Lankan and UK numbers with the same ending).
+export function phoneLookupCandidates(input: string): string[] {
+  const raw = input.trim();
+  const canonical = toE164(raw);
+  if (!canonical) return [];
+  return [...new Set([canonical, raw])];
 }
 
 export function isEmailLike(input: string): boolean {
@@ -20,8 +24,8 @@ export interface ResolvedIdentity {
 }
 
 /**
- * Look up a user by either email (auth.users.email) or phone
- * (profiles.phone, matched on last 9 digits). Service-role client required.
+ * Look up a user by either email (auth.users.email) or a full normalised
+ * phone number. Service-role client required.
  *
  * Returns null when the identifier doesn't resolve, caller should still
  * present a generic success message to avoid leaking account existence.
@@ -65,13 +69,13 @@ export async function resolveIdentifier(
   }
 
   // Phone path
-  const suffix = phoneSuffix(trimmed);
-  if (suffix.length < 9) return null;
+  const candidates = phoneLookupCandidates(trimmed);
+  if (candidates.length === 0) return null;
 
   const { data: profiles } = await service
     .from("profiles")
     .select("id, phone")
-    .like("phone", `%${suffix}`)
+    .in("phone", candidates)
     .is("deleted_at", null);
 
   const matches = (profiles ?? []) as { id: string; phone: string }[];

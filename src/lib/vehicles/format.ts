@@ -10,7 +10,7 @@ export function toPublicVehicle<T extends { plate_number?: string | null }>(v: T
 }
 
 export function insuranceLabel(type: "private" | "hire"): string {
-  return type === "hire" ? "Hire Insurance" : "Private (P-Number)";
+  return type === "hire" ? "Hire insurance declared" : "Private (P-number) declared";
 }
 
 export function fuelPolicyLabel(policy: "full_to_full" | "same_to_same"): string {

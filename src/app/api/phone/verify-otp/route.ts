@@ -1,6 +1,10 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient, createServiceClient } from "@/lib/supabase/server";
-import { compareOtp, OTP_MAX_ATTEMPTS } from "@/lib/sms/otp";
+import {
+  otpChallengeSubject,
+  otpVerificationError,
+  verifyOtpChallenge,
+} from "@/lib/auth/otp-challenge";
 
 // POST /api/phone/verify-otp  body: { code: string }
 export async function POST(req: NextRequest) {
@@ -16,7 +20,7 @@ export async function POST(req: NextRequest) {
   const service = await createServiceClient();
   const { data: profile } = await service
     .from("profiles")
-    .select("phone_verified, phone_otp_hash, phone_otp_expires_at, phone_otp_attempts")
+    .select("phone_verified")
     .eq("id", user.id)
     .single();
 
@@ -24,30 +28,25 @@ export async function POST(req: NextRequest) {
 
   const p = profile as {
     phone_verified:        boolean;
-    phone_otp_hash:        string | null;
-    phone_otp_expires_at:  string | null;
-    phone_otp_attempts:    number;
   };
 
   if (p.phone_verified)        return NextResponse.json({ error: "Phone already verified." }, { status: 400 });
-  if (!p.phone_otp_hash || !p.phone_otp_expires_at)
-                                return NextResponse.json({ error: "Request a code first." },   { status: 400 });
-  if (new Date(p.phone_otp_expires_at).getTime() < Date.now())
-                                return NextResponse.json({ error: "Code expired. Request a new one." }, { status: 400 });
-  if (p.phone_otp_attempts >= OTP_MAX_ATTEMPTS)
-                                return NextResponse.json({ error: "Too many failed attempts. Request a new code." }, { status: 429 });
 
-  const matches = await compareOtp(code, user.id, p.phone_otp_hash);
-  if (!matches) {
-    await service
-      .from("profiles")
-      .update({ phone_otp_attempts: p.phone_otp_attempts + 1 })
-      .eq("id", user.id);
-    const remaining = OTP_MAX_ATTEMPTS - p.phone_otp_attempts - 1;
-    return NextResponse.json(
-      { error: remaining > 0 ? `Incorrect code. ${remaining} attempt${remaining === 1 ? "" : "s"} left.` : "Incorrect code. Request a new one." },
-      { status: 400 }
+  let verification: Awaited<ReturnType<typeof verifyOtpChallenge>>;
+  try {
+    verification = await verifyOtpChallenge(
+      service,
+      otpChallengeSubject("profile", user.id),
+      "phone_verify",
+      code,
     );
+  } catch (error) {
+    console.error("[otp verify] verify challenge", error);
+    return NextResponse.json({ error: "Couldn't verify that code. Try again shortly." }, { status: 500 });
+  }
+  if (!verification.ok) {
+    const response = otpVerificationError(verification);
+    return NextResponse.json({ error: response.error }, { status: response.status });
   }
 
   // Success, flip phone_verified and clear OTP fields.

@@ -80,7 +80,7 @@ export async function PATCH(req: NextRequest, ctx: RouteContext) {
   // Blocking a page cascades: unlist its currently-available vehicles so the
   // public marketplace stops surfacing them. (Runs on the service client;
   // vehicles.status is a protected column.)
-  if (update.is_blocked === true) {
+  if (update.is_blocked === true || update.is_verified === false) {
     const { error: cascadeError } = await service
       .from("vehicles")
       .update({ status: "unlisted" })
@@ -112,7 +112,7 @@ export async function DELETE(_req: NextRequest, ctx: RouteContext) {
   const { id } = await ctx.params;
   const service = await createServiceClient();
 
-  // Block re-deletion + check for outstanding fees + active bookings
+  // Block re-deletion and check for active bookings.
   const { data: agencyRow } = await service
     .from("agencies")
     .select("deleted_at")

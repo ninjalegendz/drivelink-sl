@@ -11,6 +11,7 @@
 // so even a forged cookie can only ever select among the user's own pages.
 import { cookies } from "next/headers";
 import type { SupabaseClient } from "@supabase/supabase-js";
+import { createServiceClient } from "@/lib/supabase/server";
 import type { RentalPageRow } from "@/types/queries";
 
 export const ACTIVE_PAGE_COOKIE = "dl_active_page";
@@ -30,10 +31,15 @@ const PAGE_COLUMNS =
  * use getActingPages.
  */
 export async function getOwnedPages(
-  supabase: SupabaseClient,
+  _supabase: SupabaseClient,
   userId: string,
 ): Promise<RentalPageRow[]> {
-  const { data } = await supabase
+  // Private page fields cannot be granted to the shared `authenticated`
+  // database role without making them scrapeable from every public page.
+  // The caller has already authenticated this user id; the service read is
+  // therefore pinned explicitly to pages they own.
+  const service = await createServiceClient();
+  const { data } = await service
     .from("agencies")
     .select(PAGE_COLUMNS)
     .eq("owner_id", userId)
@@ -50,16 +56,17 @@ export async function getOwnedPages(
  * comparing page.owner_id to the user id.
  */
 export async function getActingPages(
-  supabase: SupabaseClient,
+  _supabase: SupabaseClient,
   userId: string,
 ): Promise<RentalPageRow[]> {
-  const { data: mems } = await supabase
+  const service = await createServiceClient();
+  const { data: mems } = await service
     .from("agency_members")
     .select("agency_id")
     .eq("user_id", userId);
   const memberIds = (mems ?? []).map((m) => (m as { agency_id: string }).agency_id);
 
-  let query = supabase.from("agencies").select(PAGE_COLUMNS).is("deleted_at", null);
+  let query = service.from("agencies").select(PAGE_COLUMNS).is("deleted_at", null);
   query = memberIds.length
     ? query.or(`owner_id.eq.${userId},id.in.(${memberIds.join(",")})`)
     : query.eq("owner_id", userId);

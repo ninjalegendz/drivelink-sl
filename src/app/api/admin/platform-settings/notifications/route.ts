@@ -3,10 +3,10 @@ import { createClient, createServiceClient } from "@/lib/supabase/server";
 import { _resetSmsGateCache } from "@/lib/sms/gate";
 
 // POST /api/admin/platform-settings/notifications
-// body: { <toggle keys>: boolean, booking_fee_lkr: number }
+// body: { <toggle keys>: boolean }
 //
-// Admin-only. Updates the SMS toggles and the booking_fee_lkr knob on
-// the singleton platform_settings row. The SMS gate caches the row for
+// Admin-only. Updates SMS toggles on the singleton platform_settings row.
+// The SMS gate caches the row for
 // 60s, we clear that cache after writing so the new values take effect
 // on the next sendSmsIfEnabled call without waiting for TTL.
 
@@ -18,8 +18,7 @@ const BOOL_KEYS = [
   "sms_new_booking_agency_enabled",
   "sms_booking_status_renter_enabled",
   "sms_admin_booking_status_renter_enabled",
-  "sms_expiry_renter_enabled",
-  "sms_expiry_agency_enabled",
+  "sms_listing_moderation_enabled",
 ] as const;
 
 async function requireAdmin() {
@@ -53,11 +52,10 @@ export async function POST(req: NextRequest) {
   }
 
   if (body.booking_fee_lkr !== undefined) {
-    const n = Math.floor(Number(body.booking_fee_lkr));
-    if (!Number.isFinite(n) || n < 0) {
-      return NextResponse.json({ error: "Booking fee must be 0 or a positive number." }, { status: 400 });
-    }
-    update.booking_fee_lkr = n;
+    return NextResponse.json(
+      { error: "The booking confirmation fee is fixed at Rs. 0." },
+      { status: 409 },
+    );
   }
 
   // Nothing valid to write? Return 400 so the UI shows a clear error.

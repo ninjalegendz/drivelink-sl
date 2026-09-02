@@ -7,7 +7,7 @@
 // original file, compression is a best-effort optimisation, never a gate.
 export async function compressImage(
   file: File,
-  { maxDim = 1600, quality = 0.82 }: { maxDim?: number; quality?: number } = {},
+  { maxDim = 1600, quality = 0.82, forceJpeg = false }: { maxDim?: number; quality?: number; forceJpeg?: boolean } = {},
 ): Promise<File> {
   if (typeof document === "undefined") return file;            // SSR guard
   if (!file.type.startsWith("image/") || file.type === "image/svg+xml") return file;
@@ -18,7 +18,7 @@ export async function compressImage(
     const scale = Math.min(1, maxDim / longest);
 
     // Already small in both dimensions and bytes → leave untouched.
-    if (scale === 1 && file.size < 1_000_000) {
+    if (scale === 1 && file.size < 1_000_000 && (!forceJpeg || file.type === "image/jpeg")) {
       bitmap.close?.();
       return file;
     }
@@ -39,7 +39,7 @@ export async function compressImage(
     const blob: Blob | null = await new Promise((resolve) =>
       canvas.toBlob(resolve, "image/jpeg", quality),
     );
-    if (!blob || blob.size >= file.size) return file; // never upsize bytes
+    if (!blob || (blob.size >= file.size && !forceJpeg)) return file; // never upsize bytes unless format conversion is required
 
     const name = file.name.replace(/\.(png|webp|gif|heic|heif|jpe?g)$/i, "") + ".jpg";
     return new File([blob], name, { type: "image/jpeg" });
