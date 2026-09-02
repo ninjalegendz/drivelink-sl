@@ -1,35 +1,29 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
-import { useRouter } from "next/navigation";
-import Link from "next/link";
-import { Star, ShieldAlert, Check, X, FileText, Eye } from "lucide-react";
+import { useCallback } from "react";
+import { ShieldAlert, Check } from "lucide-react";
 import { Badge } from "@/components/ui/Badge";
-import { ReviewForm } from "@/components/booking/ReviewForm";
 import { AgencyBookingActions } from "@/components/booking/AgencyBookingActions";
-import { ReportProblemButton } from "@/components/booking/ReportProblemButton";
 import { ReportRenterButton } from "@/components/booking/ReportRenterButton";
 import { MessageRenterButton } from "@/components/booking/BookingChat";
-import { InspectionFlow } from "@/components/booking/InspectionFlow";
-import { ChargeLedger } from "@/components/booking/ChargeLedger";
 import { BOOKING_STATUS_LABELS } from "@/lib/booking/state-machine";
 import { formatLKR, reliabilityColor, reliabilityLabel } from "@/lib/vehicles/format";
+import { FOREIGN_PERMIT_LABELS } from "@/lib/booking/self-drive-eligibility";
 import { usePolledRows } from "@/lib/realtime/usePolledRows";
 import { createClient } from "@/lib/supabase/client";
 import type { BookingStatus } from "@/types/database";
-import type { InspectionPhase, InspectionRow } from "@/lib/booking/inspection-types";
 import { AGENCY_BOOKINGS_SELECT, type AgencyBookingRow } from "./agency-bookings-query";
 
 const statusVariant: Record<BookingStatus, "slate" | "yellow" | "green" | "red" | "blue"> = {
   requested:            "slate",
   pending_confirmation: "yellow",
-  confirmed:            "yellow",
+  confirmed:            "green",
   payment_pending:      "blue",
   active:               "green",
   completed:            "green",
   declined:             "red",
   cancelled:            "red",
-  disputed:             "red",
+  disputed:             "slate",
 };
 
 interface Props {
@@ -38,11 +32,29 @@ interface Props {
   /** The page owner's user id, for the booking chat (who "mine" is). */
   currentUserId:       string;
   filterStatus:        BookingStatus | "";
-  /** Booking ids this agency has already reviewed the renter for. */
-  reviewedBookingIds?: string[];
+  canExportSummary: boolean;
+  isPageOwner: boolean;
+  canManageBooking: boolean;
+  canManageHandover: boolean;
+  canCommunicate: boolean;
+  canManageCases: boolean;
+  canManageFinancial: boolean;
 }
 
-export function AgencyBookingsList({ initial, agencyId, currentUserId, filterStatus, reviewedBookingIds = [] }: Props) {
+/**
+ * The owner's booking list.
+ *
+ * An owner needs to answer one question per row: do I want this rental, and
+ * who is asking. So each card carries the renter, their verification and
+ * reliability, the dates, what they will pay, and the two or three buttons
+ * that actually move the booking. The handover, the money and the vehicle's
+ * condition are settled between the two people in person; DriveLink keeps the
+ * record of what was agreed and gets out of the way.
+ */
+export function AgencyBookingsList({
+  initial, agencyId, currentUserId, filterStatus,
+  canManageBooking, canManageHandover, canCommunicate, canManageCases,
+}: Props) {
   const poll = useCallback(async () => {
     const supabase = createClient();
     let query = supabase
@@ -56,14 +68,6 @@ export function AgencyBookingsList({ initial, agencyId, currentUserId, filterSta
   }, [agencyId, filterStatus]);
 
   const bookings = usePolledRows<AgencyBookingRow>(initial, poll);
-  const router   = useRouter();
-
-  const [openReviewId, setOpenReviewId] = useState<string | null>(null);
-  const [justReviewed, setJustReviewed] = useState<Set<string>>(new Set());
-  const isReviewed = (id: string) => reviewedBookingIds.includes(id) || justReviewed.has(id);
-
-  // Pickup/return inspection modal (migration 051).
-  const [openInspection, setOpenInspection] = useState<{ booking: AgencyBookingRow; phase: InspectionPhase } | null>(null);
 
   if (bookings.length === 0) {
     return (
@@ -80,311 +84,105 @@ export function AgencyBookingsList({ initial, agencyId, currentUserId, filterSta
         const renter  = booking.profiles;
         const status  = booking.status;
         const blocked = renter?.is_blacklisted ?? false;
-        const pickupInsp = booking.booking_inspections?.find((i) => i.phase === "pickup") ?? null;
-        const returnInsp = booking.booking_inspections?.find((i) => i.phase === "return") ?? null;
-        // One-to-one embed usually arrives as an object; normalize either way.
-        const agRaw     = booking.booking_agreements;
-        const agreement = Array.isArray(agRaw) ? (agRaw[0] ?? null) : agRaw ?? null;
-        // Booking chat (migration 054): unread dot = any renter message newer
-        // than this page's read cursor. Computed from the lightweight
-        // (sender_id, created_at) embed; bodies load when the modal opens.
-        const msgsMeta      = booking.booking_messages ?? [];
-        const msgsReadMs    = booking.page_msgs_read_at ? Date.parse(booking.page_msgs_read_at) : 0;
-        const hasUnreadMsgs = msgsMeta.some(
-          (m) => m.sender_id === booking.renter_id && Date.parse(m.created_at) > msgsReadMs,
+        const verified = renter?.kyc_status === "verified";
+        const deposit = booking.deposit_lkr ?? vehicle?.deposit_lkr ?? 0;
+
+        const readCursor = booking.page_msgs_read_at ? Date.parse(booking.page_msgs_read_at) : 0;
+        const hasUnread = (booking.booking_messages ?? []).some(
+          (m) => m.sender_id !== currentUserId && Date.parse(m.created_at) > readCursor,
         );
-        const chatClosed = ["completed", "declined", "cancelled"].includes(status);
 
         return (
-          <div
-            key={booking.id}
-            className={`rounded-2xl p-4 border ${
-              blocked
-                ? "bg-red-500/5 border-red-500/30"
-                : "bg-white border-slate-100"
-            }`}
-          >
-            <div className="flex items-start justify-between gap-4">
-              <div className="flex-1 min-w-0">
-                <div className="flex items-center gap-2 flex-wrap">
-                  <p className="font-semibold text-slate-900">
-                    {vehicle?.year} {vehicle?.make} {vehicle?.model}
-                  </p>
-                  <Badge variant={statusVariant[status]}>
-                    {BOOKING_STATUS_LABELS[status]}
-                  </Badge>
-                </div>
-
-                <p className="text-slate-600 text-sm mt-1">
-                  {booking.start_date} {booking.start_time?.slice(0, 5)} → {booking.end_date} {booking.end_time?.slice(0, 5)} ({booking.total_days} days)
+          <div key={booking.id} className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
+            <div className="flex flex-wrap items-start justify-between gap-3">
+              <div className="min-w-0">
+                <p className="font-mono text-xs text-slate-500">{booking.id.slice(0, 8).toUpperCase()}</p>
+                <h3 className="mt-0.5 font-semibold text-slate-900">
+                  {vehicle ? `${vehicle.year} ${vehicle.make} ${vehicle.model}` : "Vehicle"}
+                  {vehicle?.plate_number ? <span className="ml-1.5 font-normal text-slate-500">{vehicle.plate_number}</span> : null}
+                </h3>
+                <p className="mt-1 text-sm text-slate-600">
+                  {booking.start_date} to {booking.end_date}
+                  <span className="text-slate-400"> · </span>
+                  {booking.start_time?.slice(0, 5)} pick-up
                 </p>
+              </div>
+              <Badge variant={statusVariant[status]}>{BOOKING_STATUS_LABELS[status]}</Badge>
+            </div>
 
-                {renter && (
-                  <div className="flex items-center gap-3 mt-2 flex-wrap">
-                    <p className={`text-sm ${blocked ? "text-red-300" : "text-slate-700"}`}>
-                      {renter.full_name}
-                    </p>
-                    {blocked && <Badge variant="red">Flagged renter</Badge>}
-                    {renter.kyc_status === "verified" && (
-                      <Badge variant="green">ID Verified</Badge>
-                    )}
-                    {booking.rental_mode && (
-                      <Badge variant="slate">{booking.rental_mode === "self_drive" ? "Self-drive" : "With driver"}</Badge>
-                    )}
-                    {booking.is_foreign_renter && (
-                      <Badge variant="yellow">Foreign visitor: check permit at handover</Badge>
-                    )}
-                    {(renter.rating_count ?? 0) > 0 && (
-                      <span className="inline-flex items-center gap-1 text-slate-600 text-xs">
-                        <Star size={11} fill="currentColor" className="text-amber-400" />
-                        {renter.rating_avg?.toFixed(1)}
-                      </span>
-                    )}
-                    <span className={`text-xs font-medium ${reliabilityColor(renter.reliability_pct)}`}>
-                      {reliabilityLabel(renter.reliability_pct)} reliable
-                    </span>
-                    {booking.doc_share_consent_at && (
-                      <Link
-                        href={`/dashboard/bookings/${booking.id}/documents`}
-                        className="inline-flex items-center gap-1 text-xs font-semibold text-blue-600 hover:text-blue-700"
-                      >
-                        <Eye size={12} /> View documents
-                      </Link>
-                    )}
-                  </div>
-                )}
-
-                {blocked && (
-                  <div className="mt-3 px-3 py-2 bg-red-500/10 border border-red-500/30 rounded-lg flex gap-2 text-sm">
-                    <ShieldAlert size={16} className="text-red-400 shrink-0 mt-0.5" />
-                    <div>
-                      <p className="text-red-400 font-medium text-xs">
-                        DriveLink has flagged this renter
-                      </p>
-                      <p className="text-red-300/80 text-xs mt-0.5">
-                        {renter?.blacklist_reason_public
-                          ? renter.blacklist_reason_public
-                          : "No public reason provided. Contact DriveLink support before accepting."}
-                      </p>
-                      <p className="text-slate-500 text-[11px] mt-1">
-                        You may decline this request without penalty.
-                      </p>
-                    </div>
-                  </div>
-                )}
-
-                <p className="text-slate-500 text-xs mt-2">
-                  Rental: {formatLKR(booking.subtotal_lkr)}
-                </p>
-
-                {/* Two-way reviews: rate the renter after a completed trip */}
-                {status === "completed" && renter && (
-                  <div className="mt-3 pt-3 border-t border-slate-100">
-                    {isReviewed(booking.id) ? (
-                      <p className="text-xs text-emerald-600 inline-flex items-center gap-1">
-                        <Star size={12} fill="currentColor" /> You rated this renter
-                      </p>
-                    ) : openReviewId === booking.id ? (
-                      <div>
-                        <p className="text-xs font-semibold text-slate-700 mb-2">Rate {renter.full_name}</p>
-                        <ReviewForm
-                          bookingId={booking.id}
-                          revieweeId={booking.renter_id}
-                          subjectName={renter.full_name}
-                          onSubmitted={() => {
-                            setJustReviewed((s) => new Set(s).add(booking.id));
-                            setOpenReviewId(null);
-                          }}
-                        />
-                      </div>
-                    ) : (
-                      <button
-                        type="button"
-                        onClick={() => setOpenReviewId(booking.id)}
-                        className="text-xs font-semibold text-blue-600 hover:text-blue-700"
-                      >
-                        Rate this renter →
-                      </button>
-                    )}
-                  </div>
+            {/* Who is asking. This is the decision the owner is actually making. */}
+            <div className="mt-3 rounded-lg bg-slate-50 p-3">
+              <div className="flex flex-wrap items-center gap-x-2 gap-y-1">
+                <span className="font-medium text-slate-900">{renter?.full_name ?? "Renter"}</span>
+                {verified
+                  ? <span className="inline-flex items-center gap-1 text-xs font-semibold text-emerald-700"><Check size={12} /> Identity verified</span>
+                  : <span className="inline-flex items-center gap-1 text-xs font-semibold text-amber-700"><ShieldAlert size={12} /> Not verified</span>}
+                {renter?.reliability_pct !== null && renter?.reliability_pct !== undefined && (
+                  <span className={`text-xs font-semibold ${reliabilityColor(renter.reliability_pct)}`}>
+                    {reliabilityLabel(renter.reliability_pct)}
+                  </span>
                 )}
               </div>
+              {blocked && (
+                <p className="mt-1.5 text-xs font-medium text-rose-700">
+                  This renter is blocked on DriveLink{renter?.blacklist_reason_public ? `: ${renter.blacklist_reason_public}` : "."}
+                </p>
+              )}
+              {booking.is_foreign_renter && booking.rental_mode === "self_drive" && (
+                <p className="mt-1.5 text-xs text-slate-600">
+                  Foreign licence, permit declared: {FOREIGN_PERMIT_LABELS[booking.foreign_permit_type ?? "none"]}
+                </p>
+              )}
+              {booking.doc_share_consent_at && (
+                <p className="mt-1.5 text-xs text-slate-600">The renter has shared their documents with you.</p>
+              )}
+            </div>
 
-              <div className="flex flex-col items-end gap-2 shrink-0">
-                <AgencyBookingActions
-                  bookingId={booking.id}
-                  status={status}
-                  renterReturnedAt={booking.renter_returned_at}
-                  returnInspectionAcked={!!returnInsp?.renter_ack_at}
-                  startAt={booking.start_at}
-                />
-                {status === "disputed" && <Badge variant="red">Under review</Badge>}
-                {(status === "active" || status === "completed" || status === "disputed" || !!booking.overdue_critical_at) && (
-                  <a
-                    href={`/api/bookings/${booking.id}/evidence-pack`}
-                    className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold border bg-slate-100 text-slate-700 border-slate-200 hover:bg-slate-200 transition-colors"
-                    title="Download agreement, inspections, timeline & photos as one file"
-                  >
-                    <FileText size={12} /> Evidence pack
-                  </a>
-                )}
-                {agreement && (
-                  <Link
-                    href={`/bookings/${booking.id}/agreement`}
-                    className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold border bg-slate-100 text-slate-700 border-slate-200 hover:bg-slate-200 transition-colors"
-                  >
-                    <FileText size={12} /> Agreement
-                    {!agreement.owner_accepted_at && (
-                      <span
-                        className="w-1.5 h-1.5 rounded-full bg-amber-500"
-                        title="You haven't signed this agreement yet"
-                        aria-label="Unsigned"
-                      />
-                    )}
-                  </Link>
-                )}
-                {/* BUILD 1: the pickup inspection is now recorded BEFORE the
-                    rental starts (it gates activation), so it's available while
-                    'confirmed'. The return inspection appears once active. */}
-                {(status === "confirmed" || status === "active") && (
-                  <div className="flex flex-col items-end gap-1.5">
-                    <InspectionButton
-                      label="Pickup inspection"
-                      inspection={pickupInsp}
-                      onClick={() => setOpenInspection({ booking, phase: "pickup" })}
-                    />
-                    {status === "active" && (
-                      <InspectionButton
-                        label="Return inspection"
-                        inspection={returnInsp}
-                        onClick={() => setOpenInspection({ booking, phase: "return" })}
-                      />
-                    )}
-                  </div>
-                )}
-                {(!chatClosed || msgsMeta.length > 0) && (
+            {/* What they pay you, in person. */}
+            <div className="mt-3 flex flex-wrap items-baseline gap-x-4 gap-y-1 text-sm">
+              <span className="font-semibold text-slate-900">
+                {formatLKR(booking.subtotal_lkr)}
+                <span className="ml-1 font-normal text-slate-500">for {booking.total_days} day{booking.total_days === 1 ? "" : "s"}</span>
+              </span>
+              {deposit > 0 && (
+                <span className="text-slate-600">Deposit {formatLKR(deposit)}</span>
+              )}
+              <span className="text-xs text-slate-500">Collected by you at handover</span>
+            </div>
+
+            <div className="mt-4 flex flex-wrap items-center justify-between gap-3 border-t border-slate-100 pt-3">
+              <div className="flex flex-wrap items-center gap-2">
+                {canCommunicate && (
                   <MessageRenterButton
                     bookingId={booking.id}
                     currentUserId={currentUserId}
                     renterName={renter?.full_name ?? "Renter"}
-                    hasUnread={hasUnreadMsgs}
-                    readOnly={chatClosed}
-                    closedNote={status === "completed"
-                      ? "This conversation is closed: the booking is complete."
-                      : "This conversation is closed."}
+                    hasUnread={hasUnread}
+                    readOnly={["declined", "cancelled"].includes(status)}
+                    closedNote="This conversation is closed."
                   />
                 )}
-                <ReportProblemButton
-                  bookingId={booking.id}
-                  bookingStatus={status}
-                  completedAt={booking.completed_at}
-                  side="page"
-                />
-                <ReportRenterButton
-                  bookingId={booking.id}
-                  reportable={status === "completed" || status === "disputed" || !!booking.overdue_critical_at}
-                />
-                {(status === "active" || status === "completed" || status === "disputed") && (
-                  <div className="w-full max-w-sm mt-1">
-                    <ChargeLedger
-                      bookingId={booking.id}
-                      mode="owner"
-                      rentalSubtotalLkr={booking.subtotal_lkr}
-                      depositHeldLkr={booking.deposit_received_at ? (booking.deposit_lkr ?? 0) : 0}
-                      settlementAckAt={booking.settlement_ack_at}
-                    />
-                  </div>
+                {canManageCases && (
+                  <ReportRenterButton
+                    bookingId={booking.id}
+                    reportable={status === "completed"}
+                  />
                 )}
               </div>
+
+              <AgencyBookingActions
+                bookingId={booking.id}
+                status={status}
+                startAt={booking.start_at}
+
+                canManageBooking={canManageBooking}
+                canManageHandover={canManageHandover}
+                canManageCases={canManageCases}
+              />
             </div>
           </div>
         );
       })}
-
-      {openInspection && (
-        <InspectionModal
-          booking={openInspection.booking}
-          phase={openInspection.phase}
-          onClose={() => setOpenInspection(null)}
-          onSubmitted={() => {
-            setOpenInspection(null);
-            router.refresh();
-          }}
-        />
-      )}
-    </div>
-  );
-}
-
-function InspectionButton({
-  label, inspection, onClick,
-}: {
-  label:      string;
-  inspection: InspectionRow | null;
-  onClick:    () => void;
-}) {
-  const acked   = !!inspection?.renter_ack_at;
-  const pending = !!inspection && !acked;
-  return (
-    <button
-      type="button"
-      onClick={onClick}
-      className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold border transition-colors ${
-        acked
-          ? "bg-emerald-50 text-emerald-700 border-emerald-200 hover:bg-emerald-100"
-          : pending
-          ? "bg-amber-50 text-amber-700 border-amber-200 hover:bg-amber-100"
-          : "bg-slate-100 text-slate-700 border-slate-200 hover:bg-slate-200"
-      }`}
-    >
-      {acked && <Check size={12} />}
-      {label}
-      {pending && <span className="text-[10px] font-normal">(awaiting renter)</span>}
-    </button>
-  );
-}
-
-function InspectionModal({
-  booking, phase, onClose, onSubmitted,
-}: {
-  booking:      AgencyBookingRow;
-  phase:        InspectionPhase;
-  onClose:      () => void;
-  onSubmitted:  () => void;
-}) {
-  useEffect(() => {
-    const prev = document.body.style.overflow;
-    document.body.style.overflow = "hidden";
-    function onKey(e: KeyboardEvent) { if (e.key === "Escape") onClose(); }
-    window.addEventListener("keydown", onKey);
-    return () => { document.body.style.overflow = prev; window.removeEventListener("keydown", onKey); };
-  }, [onClose]);
-
-  const existing   = booking.booking_inspections?.find((i) => i.phase === phase) ?? null;
-  const depositLkr = booking.deposit_lkr ?? booking.vehicles?.deposit_lkr ?? 0;
-
-  return (
-    <div className="fixed inset-0 z-50 bg-black/70 flex items-center justify-center p-4" onClick={onClose}>
-      <div className="glass-card rounded-3xl w-full max-w-lg p-5 max-h-[90vh] overflow-y-auto" onClick={(e) => e.stopPropagation()}>
-        <div className="flex items-start justify-between mb-4">
-          <div>
-            <h2 className="text-slate-900 font-semibold">{phase === "pickup" ? "Pickup inspection" : "Return inspection"}</h2>
-            <p className="text-slate-500 text-xs mt-0.5">Booking {booking.id.slice(0, 8).toUpperCase()}</p>
-          </div>
-          <button type="button" onClick={onClose} className="text-slate-500 hover:text-slate-900" aria-label="Close">
-            <X size={18} />
-          </button>
-        </div>
-        <InspectionFlow
-          mode="submit"
-          bookingId={booking.id}
-          phase={phase}
-          vehiclePlate={booking.vehicles?.plate_number ?? null}
-          depositLkr={depositLkr}
-          existing={existing}
-          onSubmitted={onSubmitted}
-        />
-      </div>
     </div>
   );
 }

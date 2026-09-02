@@ -1,8 +1,9 @@
 "use client";
 
-import { useEffect, useState } from "react";
-import { Flag, X } from "lucide-react";
+import { useState } from "react";
+import { Flag } from "lucide-react";
 import { Button } from "@/components/ui/Button";
+import { BottomSheet } from "@/components/ui/BottomSheet";
 
 const MIN_REASON = 20;
 const MAX_REASON = 2000;
@@ -30,7 +31,7 @@ export function ReportRenterButton({ bookingId, reportable }: Props) {
   if (!reportable) return null;
 
   if (done && !open) {
-    return <p className="text-emerald-600 text-[11px] font-medium text-right">Report submitted for review.</p>;
+    return <p className="text-emerald-600 text-xs font-medium text-right">Report submitted for review.</p>;
   }
 
   return (
@@ -38,7 +39,7 @@ export function ReportRenterButton({ bookingId, reportable }: Props) {
       <button
         type="button"
         onClick={() => setOpen(true)}
-        className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold bg-slate-100 text-slate-500 border border-slate-200 hover:bg-slate-200 hover:text-slate-700 transition-colors"
+        className="inline-flex min-h-10 items-center gap-1.5 rounded-lg border border-slate-200 bg-slate-100 px-3 py-1.5 text-xs font-semibold text-slate-600 hover:bg-slate-200 hover:text-slate-800"
       >
         <Flag size={12} /> Report renter
       </button>
@@ -65,14 +66,6 @@ function ReportRenterModal({
   const [error,   setError]   = useState<string | null>(null);
   const [success, setSuccess] = useState(false);
 
-  useEffect(() => {
-    const prev = document.body.style.overflow;
-    document.body.style.overflow = "hidden";
-    function onKey(e: KeyboardEvent) { if (e.key === "Escape") onClose(); }
-    window.addEventListener("keydown", onKey);
-    return () => { document.body.style.overflow = prev; window.removeEventListener("keydown", onKey); };
-  }, [onClose]);
-
   async function submit(e: React.FormEvent) {
     e.preventDefault();
     const trimmed = reason.trim();
@@ -94,20 +87,9 @@ function ReportRenterModal({
   }
 
   return (
-    <div className="fixed inset-0 z-50 bg-black/70 flex items-center justify-center p-4" onClick={onClose}>
-      <div className="animate-bounce-in glass-card rounded-3xl w-full max-w-md p-5" onClick={(e) => e.stopPropagation()}>
-        <div className="flex items-start justify-between mb-4">
-          <div>
-            <h2 className="text-slate-900 font-semibold flex items-center gap-2">
-              <Flag size={16} className="text-slate-500" /> Report renter
-            </h2>
-            <p className="text-slate-500 text-xs mt-0.5">Booking {bookingId.slice(0, 8).toUpperCase()}</p>
-          </div>
-          <button type="button" onClick={onClose} className="text-slate-500 hover:text-slate-900" aria-label="Close">
-            <X size={18} />
-          </button>
-        </div>
-
+    <BottomSheet title="Report renter" closeLabel="Close report renter" onClose={onClose} className="md:max-w-md">
+      <div className="max-h-[calc(85vh-3.5rem)] overflow-y-auto p-5">
+        <p className="mb-4 text-xs text-slate-500">Booking {bookingId.slice(0, 8).toUpperCase()}</p>
         {success ? (
           <div>
             <p className="text-emerald-600 text-sm font-medium mb-4">Report submitted for review.</p>
@@ -119,7 +101,7 @@ function ReportRenterModal({
           <form onSubmit={submit} className="space-y-4">
             <p className="text-slate-500 text-xs bg-slate-50 border border-slate-200 rounded-lg px-3 py-2 leading-normal">
               For serious issues only: non-return, fraud, damage with refusal to settle. Reports are
-              reviewed by DriveLink with your booking&apos;s evidence (agreement, inspections, incidents)
+              reviewed by DriveLink against the booking record and this account&apos;s history
               before any action. False reports affect your page&apos;s standing.
             </p>
 
@@ -128,7 +110,7 @@ function ReportRenterModal({
                 <label className="text-slate-700 text-xs font-medium">
                   What happened <span className="text-amber-600">*</span>
                 </label>
-                <span className={`text-[11px] ${reason.length > MAX_REASON ? "text-red-500" : "text-slate-400"}`}>
+                <span className={`text-xs ${reason.length > MAX_REASON ? "text-rose-700" : "text-slate-400"}`}>
                   {reason.length}/{MAX_REASON}
                 </span>
               </div>
@@ -138,11 +120,11 @@ function ReportRenterModal({
                 rows={5}
                 required
                 placeholder="Describe the non-return, fraud, or unresolved damage in detail."
-                className="w-full px-3 py-2 bg-slate-100 border border-slate-200 rounded-lg text-slate-900 text-sm focus:outline-none focus:border-blue-500"
+                className="w-full px-3 py-2 bg-slate-100 border border-slate-200 rounded-lg text-slate-900 text-sm focus:border-blue-500"
               />
             </div>
 
-            {error && <p className="text-red-400 text-sm">{error}</p>}
+            {error && <p role="alert" className="text-sm text-red-700">{error}</p>}
 
             <div className="flex gap-2 justify-end pt-1">
               <Button type="button" size="sm" variant="ghost" onClick={onClose}>Cancel</Button>
@@ -151,6 +133,6 @@ function ReportRenterModal({
           </form>
         )}
       </div>
-    </div>
+    </BottomSheet>
   );
 }

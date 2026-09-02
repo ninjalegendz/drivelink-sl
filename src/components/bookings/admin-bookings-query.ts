@@ -15,8 +15,12 @@ export interface AdminBookingRow {
   end_time:        string;
   total_days:      number;
   subtotal_lkr:    number;
-  booking_fee_lkr: number;
   created_at:      string;
+  end_at:          string;
+  extended_end_at: string | null;
+  renter_returned_at: string | null;
+  overdue_review_prompted_at: string | null;
+  overdue_critical_at: string | null;
   vehicles: { make: string; model: string; year: number; city: string } | null;
   profiles: {
     full_name:        string;
@@ -24,8 +28,6 @@ export interface AdminBookingRow {
     kyc_status:       string;
     is_blacklisted:   boolean;
     blacklist_reason: string | null;
-    rating_avg:       number | null;
-    rating_count:     number;
     reliability_pct:  number | null;
   } | null;
   agencies: { name: string; city: string } | null;
@@ -38,11 +40,13 @@ export interface AdminBookingRow {
     amount_lkr:    number | null;
     created_at:    string;
   }[] | null;
+  booking_overdue_reviews: { id: string; status: string; requested_at: string } | { id: string; status: string; requested_at: string }[] | null;
 }
 
 export const ADMIN_BOOKINGS_SELECT =
-  "id, status, start_date, end_date, start_time, end_time, total_days, subtotal_lkr, booking_fee_lkr, created_at, " +
+  "id, status, start_date, end_date, start_time, end_time, end_at, extended_end_at, renter_returned_at, overdue_review_prompted_at, overdue_critical_at, total_days, subtotal_lkr, created_at, " +
   "vehicles(make, model, year, city), " +
-  "profiles(full_name, phone, kyc_status, is_blacklisted, blacklist_reason, rating_avg, rating_count, reliability_pct), " +
+  "profiles(full_name, phone, kyc_status, is_blacklisted, blacklist_reason, reliability_pct), " +
   "agencies(name, city), " +
-  "incidents(id, type, filed_by_side, status, description, amount_lkr, created_at)";
+  "incidents(id, type, filed_by_side, status, description, amount_lkr, created_at), " +
+  "booking_overdue_reviews(id, status, requested_at)";

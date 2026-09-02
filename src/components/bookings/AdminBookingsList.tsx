@@ -1,14 +1,13 @@
 "use client";
 
 import { Fragment, useCallback, useState } from "react";
-import { BadgeCheck, ShieldAlert, Star, ChevronDown, ChevronUp } from "lucide-react";
+import { BadgeCheck, ShieldAlert, ChevronDown, ChevronUp, Clock3 } from "lucide-react";
 import { Badge } from "@/components/ui/Badge";
 import { formatLKR, reliabilityColor, reliabilityLabel } from "@/lib/vehicles/format";
 import { BOOKING_STATUS_LABELS } from "@/lib/booking/state-machine";
 import { AdminBookingActions } from "@/components/admin/AdminBookingActions";
 import { usePolledRows } from "@/lib/realtime/usePolledRows";
 import { createClient } from "@/lib/supabase/client";
-import { INCIDENT_TYPE_LABELS, INCIDENT_SIDE_LABELS, type IncidentType } from "@/lib/booking/incident-types";
 import type { BookingStatus } from "@/types/database";
 import { ADMIN_BOOKINGS_SELECT, type AdminBookingRow } from "./admin-bookings-query";
 
@@ -67,7 +66,6 @@ export function AdminBookingsList({ initial, filterStatus }: Props) {
               <th className="pb-3 pr-4 font-medium">Agency</th>
               <th className="pb-3 pr-4 font-medium">Dates</th>
               <th className="pb-3 pr-4 font-medium">Rental</th>
-              <th className="pb-3 pr-4 font-medium">Fee</th>
               <th className="pb-3 font-medium">Actions</th>
             </tr>
           </thead>
@@ -75,12 +73,15 @@ export function AdminBookingsList({ initial, filterStatus }: Props) {
             {bookings.map((b) => {
               const isBlacklisted = b.profiles?.is_blacklisted ?? false;
               const incidentCount = b.incidents?.length ?? 0;
-              const hasIncidents  = b.status === "disputed" && incidentCount > 0;
+              const hasIncidents  = false;
+              const reviewRaw = b.booking_overdue_reviews;
+              const recoveryReview = Array.isArray(reviewRaw) ? reviewRaw[0] : reviewRaw;
+              const hasRecovery = recoveryReview?.status === "pending" || !!b.overdue_critical_at;
               const isExpanded    = expanded.has(b.id);
               return (
                 <Fragment key={b.id}>
                   <tr
-                    className={`transition-colors ${isBlacklisted ? "bg-red-500/5 hover:bg-red-500/10" : "hover:bg-white/60"}`}
+                    className={`transition-colors ${isBlacklisted ? "bg-rose-50 hover:bg-rose-50" : "hover:bg-white/60"}`}
                   >
                     <td className="py-3 pr-4">
                       <span className="font-mono text-xs text-slate-600">
@@ -93,18 +94,25 @@ export function AdminBookingsList({ initial, filterStatus }: Props) {
                           {BOOKING_STATUS_LABELS[b.status]}
                         </Badge>
                         {isBlacklisted && (
-                          <span className="inline-flex items-center gap-1 text-red-400 text-[10px] font-medium">
+                          <span className="inline-flex items-center gap-1 text-rose-600 text-xs font-medium">
                             <ShieldAlert size={11} /> Renter blocked
                           </span>
                         )}
                         {hasIncidents && (
-                          <button
-                            type="button"
-                            onClick={() => toggleExpanded(b.id)}
-                            className="inline-flex items-center gap-0.5 text-red-500 text-[10px] font-medium hover:text-red-600"
-                          >
-                            {isExpanded ? <ChevronUp size={11} /> : <ChevronDown size={11} />}
-                            {isExpanded ? "Hide report" : `View report (${incidentCount})`}
+                          <div className="flex flex-col items-start gap-1">
+                            <button
+                              type="button"
+                              onClick={() => toggleExpanded(b.id)}
+                              className="inline-flex items-center gap-0.5 text-red-600 text-xs font-medium hover:text-red-700"
+                            >
+                              {isExpanded ? <ChevronUp size={11} /> : <ChevronDown size={11} />}
+                              {isExpanded ? "Hide summary" : `View summary (${incidentCount})`}
+                            </button>
+                          </div>
+                        )}
+                        {hasRecovery && (
+                          <button type="button" onClick={() => toggleExpanded(b.id)} className="inline-flex items-center gap-1 text-amber-700 text-xs font-semibold hover:text-amber-800">
+                            <Clock3 size={11} /> {recoveryReview?.status === "pending" ? "Return review" : "Critical return"}
                           </button>
                         )}
                       </div>
@@ -114,13 +122,13 @@ export function AdminBookingsList({ initial, filterStatus }: Props) {
                       <span className="text-slate-500 text-xs ml-1">· {b.vehicles?.city}</span>
                     </td>
                     <td className="py-3 pr-4">
-                      <p className={isBlacklisted ? "text-red-300 line-through" : "text-slate-900"}>{b.profiles?.full_name}</p>
+                      <p className={isBlacklisted ? "text-rose-700 line-through" : "text-slate-900"}>{b.profiles?.full_name}</p>
                       <p className="text-slate-500 text-xs">{b.profiles?.phone}</p>
                       <div className="flex items-center gap-2 flex-wrap mt-1">
                         <RenterTrustPills p={b.profiles} />
                       </div>
                       {isBlacklisted && b.profiles?.blacklist_reason && (
-                        <p className="text-red-400/80 text-[11px] mt-0.5 max-w-xs">
+                        <p className="text-rose-600/80 text-xs mt-0.5 max-w-xs">
                           Reason: {b.profiles.blacklist_reason}
                         </p>
                       )}
@@ -132,15 +140,13 @@ export function AdminBookingsList({ initial, filterStatus }: Props) {
                       <span className="text-slate-500">{b.total_days}d</span>
                     </td>
                     <td className="py-3 pr-4 text-slate-700">{formatLKR(b.subtotal_lkr)}</td>
-                    <td className="py-3 pr-4 text-blue-600 font-medium">{formatLKR(b.booking_fee_lkr)}</td>
                     <td className="py-3">
                       <AdminBookingActions bookingId={b.id} status={b.status} />
                     </td>
                   </tr>
-                  {hasIncidents && isExpanded && (
+                  {(hasIncidents || hasRecovery) && isExpanded && (
                     <tr>
-                      <td colSpan={9} className="pb-4 pt-0">
-                        <IncidentsBlock incidents={b.incidents} />
+                      <td colSpan={8} className="pb-4 pt-0">
                       </td>
                     </tr>
                   )}
@@ -156,7 +162,10 @@ export function AdminBookingsList({ initial, filterStatus }: Props) {
         {bookings.map((b) => {
           const isBlacklisted = b.profiles?.is_blacklisted ?? false;
           const incidentCount = b.incidents?.length ?? 0;
-          const hasIncidents  = b.status === "disputed" && incidentCount > 0;
+          const hasIncidents  = false;
+          const reviewRaw = b.booking_overdue_reviews;
+          const recoveryReview = Array.isArray(reviewRaw) ? reviewRaw[0] : reviewRaw;
+          const hasRecovery = recoveryReview?.status === "pending" || !!b.overdue_critical_at;
           const isExpanded    = expanded.has(b.id);
           return (
             <div
@@ -164,7 +173,7 @@ export function AdminBookingsList({ initial, filterStatus }: Props) {
               className={`rounded-xl border p-3 ${isBlacklisted ? "border-red-200 bg-red-50/40" : "border-slate-200 bg-white"}`}
             >
               <div className="flex items-center justify-between gap-2 mb-2">
-                <span className="font-mono text-[11px] text-slate-500">{b.id.slice(0, 8).toUpperCase()}</span>
+                <span className="font-mono text-xs text-slate-500">{b.id.slice(0, 8).toUpperCase()}</span>
                 <Badge variant={statusVariant[b.status]}>{BOOKING_STATUS_LABELS[b.status]}</Badge>
               </div>
 
@@ -173,12 +182,18 @@ export function AdminBookingsList({ initial, filterStatus }: Props) {
                   <button
                     type="button"
                     onClick={() => toggleExpanded(b.id)}
-                    className="inline-flex items-center gap-0.5 text-red-500 text-[11px] font-medium hover:text-red-600"
+                    className="inline-flex items-center gap-0.5 text-rose-700 text-xs font-medium hover:text-red-600"
                   >
                     {isExpanded ? <ChevronUp size={12} /> : <ChevronDown size={12} />}
                     {isExpanded ? "Hide report" : `View report (${incidentCount})`}
                   </button>
-                  {isExpanded && <IncidentsBlock incidents={b.incidents} />}
+                </div>
+              )}
+              {hasRecovery && (
+                <div className="mb-2">
+                  <button type="button" onClick={() => toggleExpanded(b.id)} className="inline-flex items-center gap-1 text-xs font-semibold text-amber-800">
+                    <Clock3 size={12} /> {recoveryReview?.status === "pending" ? "Review unreturned vehicle" : "Critical return record"}
+                  </button>
                 </div>
               )}
 
@@ -192,14 +207,14 @@ export function AdminBookingsList({ initial, filterStatus }: Props) {
 
               <div className="mt-2 pt-2 border-t border-slate-100">
                 <div className="flex items-center justify-between gap-2">
-                  <p className={`text-sm ${isBlacklisted ? "text-red-400 line-through" : "text-slate-900"}`}>{b.profiles?.full_name}</p>
+                  <p className={`text-sm ${isBlacklisted ? "text-rose-600 line-through" : "text-slate-900"}`}>{b.profiles?.full_name}</p>
                   <p className="text-xs text-slate-500">{b.profiles?.phone}</p>
                 </div>
                 <div className="flex items-center gap-2 flex-wrap mt-1">
                   <RenterTrustPills p={b.profiles} />
                 </div>
                 {isBlacklisted && (
-                  <p className="text-red-400/90 text-[11px] mt-1 inline-flex items-start gap-1">
+                  <p className="text-rose-600/90 text-xs mt-1 inline-flex items-start gap-1">
                     <ShieldAlert size={11} className="mt-0.5 shrink-0" /> Blocked: {b.profiles?.blacklist_reason ?? "flagged in the system"}
                   </p>
                 )}
@@ -208,7 +223,6 @@ export function AdminBookingsList({ initial, filterStatus }: Props) {
               <div className="mt-2 pt-2 border-t border-slate-100 flex flex-wrap gap-x-3 gap-y-0.5 text-xs">
                 <span><span className="text-slate-500">Agency:</span> <span className="text-slate-700">{b.agencies?.name}</span></span>
                 <span><span className="text-slate-500">Rental:</span> <span className="text-slate-700">{formatLKR(b.subtotal_lkr)}</span></span>
-                <span><span className="text-slate-500">Fee:</span> <span className="text-blue-600 font-medium">{formatLKR(b.booking_fee_lkr)}</span></span>
               </div>
 
               <div className="mt-2">
@@ -226,58 +240,18 @@ export function AdminBookingsList({ initial, filterStatus }: Props) {
   );
 }
 
-// Shared renter trust signals (ID-verified, rating, reliability), used by both
+// Shared renter trust signals (ID verification and reliability), used by both
 // the desktop table row and the mobile card.
 function RenterTrustPills({ p }: { p: AdminBookingRow["profiles"] }) {
   return (
     <>
       {p?.kyc_status === "verified" && (
-        <span className="inline-flex items-center gap-1 text-emerald-500 text-[11px]"><BadgeCheck size={11} /> ID</span>
+        <span className="inline-flex items-center gap-1 text-emerald-500 text-xs"><BadgeCheck size={11} /> ID</span>
       )}
-      {(p?.rating_count ?? 0) > 0 && (
-        <span className="inline-flex items-center gap-1 text-blue-600 text-[11px]">
-          <Star size={10} fill="currentColor" />
-          {p?.rating_avg?.toFixed(1)}
-        </span>
-      )}
-      <span className={`text-[11px] font-medium ${reliabilityColor(p?.reliability_pct ?? null)}`}>
+      <span className={`text-xs font-medium ${reliabilityColor(p?.reliability_pct ?? null)}`}>
         {reliabilityLabel(p?.reliability_pct ?? null)}
       </span>
     </>
   );
 }
 
-// Incident report(s) filed against a disputed booking, shown in an
-// expandable block so admins can see what was reported before resolving.
-function IncidentsBlock({ incidents }: { incidents: AdminBookingRow["incidents"] }) {
-  if (!incidents || incidents.length === 0) return null;
-  return (
-    <div className="space-y-2">
-      {incidents.map((inc) => (
-        <div key={inc.id} className="bg-red-500/5 border border-red-500/20 rounded-lg p-3 text-xs">
-          <div className="flex items-center justify-between gap-2 flex-wrap">
-            <span className="font-semibold text-slate-900">
-              {INCIDENT_TYPE_LABELS[inc.type as IncidentType] ?? inc.type}
-            </span>
-            <span className="text-slate-500">
-              Filed by {INCIDENT_SIDE_LABELS[inc.filed_by_side] ?? inc.filed_by_side}
-              {" · "}
-              {new Date(inc.created_at).toLocaleString("en-LK", { dateStyle: "medium", timeStyle: "short" })}
-            </span>
-          </div>
-          <p className="text-slate-700 mt-1.5 whitespace-pre-wrap">{inc.description}</p>
-          <div className="flex items-center gap-3 mt-1.5">
-            {inc.amount_lkr != null && (
-              <span className="text-slate-600">
-                Amount: <span className="font-medium text-slate-900">{formatLKR(inc.amount_lkr)}</span>
-              </span>
-            )}
-            {inc.status !== "open" && (
-              <span className="text-slate-400 italic">Status: {inc.status}</span>
-            )}
-          </div>
-        </div>
-      ))}
-    </div>
-  );
-}

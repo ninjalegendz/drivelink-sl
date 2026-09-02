@@ -7,9 +7,8 @@ import { Badge } from "@/components/ui/Badge";
 import { BOOKING_STATUS_LABELS } from "@/lib/booking/state-machine";
 import { formatLKR } from "@/lib/vehicles/format";
 import { usePolledRows } from "@/lib/realtime/usePolledRows";
-import { createClient } from "@/lib/supabase/client";
 import type { BookingStatus } from "@/types/database";
-import { RENTER_BOOKINGS_SELECT, type RenterBookingRow } from "./renter-bookings-query";
+import type { RenterBookingRow } from "./renter-bookings-query";
 
 const statusVariant: Record<BookingStatus, "slate" | "yellow" | "green" | "red" | "blue"> = {
   requested:            "slate",
@@ -24,20 +23,20 @@ const statusVariant: Record<BookingStatus, "slate" | "yellow" | "green" | "red" 
 };
 
 interface Props {
-  initial:  RenterBookingRow[];
-  renterId: string;
+  initial: RenterBookingRow[];
 }
 
-export function RenterBookingsList({ initial, renterId }: Props) {
+export function RenterBookingsList({ initial }: Props) {
   const poll = useCallback(async () => {
-    const supabase = createClient();
-    const { data } = await supabase
-      .from("bookings")
-      .select(RENTER_BOOKINGS_SELECT)
-      .eq("renter_id", renterId)
-      .order("created_at", { ascending: false });
-    return (data ?? null) as RenterBookingRow[] | null;
-  }, [renterId]);
+    const response = await fetch("/api/bookings", {
+      method: "GET",
+      cache: "no-store",
+      headers: { Accept: "application/json" },
+    });
+    if (!response.ok) return null;
+    const payload = await response.json() as { bookings?: RenterBookingRow[] };
+    return Array.isArray(payload.bookings) ? payload.bookings : null;
+  }, []);
 
   const bookings = usePolledRows<RenterBookingRow>(initial, poll);
 
@@ -90,7 +89,7 @@ export function RenterBookingsList({ initial, renterId }: Props) {
               <div className="text-right shrink-0">
                 <p className="text-slate-900 text-sm font-medium">{formatLKR(b.subtotal_lkr)}</p>
                 {b.booking_fee_lkr > 0 && (
-                  <p className="text-blue-600 text-xs">+{formatLKR(b.booking_fee_lkr)} fee</p>
+                  <p className="text-blue-600 text-xs">+{formatLKR(b.booking_fee_lkr)} DriveLink confirmation fee</p>
                 )}
                 <p className="text-slate-400 text-xs mt-1 font-mono">{b.id.slice(0, 8).toUpperCase()}</p>
               </div>

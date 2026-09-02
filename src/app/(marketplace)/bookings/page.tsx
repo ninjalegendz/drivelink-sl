@@ -1,14 +1,20 @@
 import { redirect } from "next/navigation";
-import { createClient } from "@/lib/supabase/server";
+import { createClient, createServiceClient } from "@/lib/supabase/server";
 import { RenterBookingsList } from "@/components/bookings/RenterBookingsList";
 import { RENTER_BOOKINGS_SELECT, type RenterBookingRow } from "@/components/bookings/renter-bookings-query";
+import { PageShell } from "@/components/ui/PageShell";
+import { PageHeader } from "@/components/ui/PageHeader";
 
 export default async function MyBookingsPage() {
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) redirect("/login?next=/bookings");
 
-  const { data } = await supabase
+  // The service read is constrained to the authenticated renter. This keeps
+  // historical page names available without granting every signed-in account
+  // raw SELECT access to all Rental Page contact columns.
+  const service = await createServiceClient();
+  const { data } = await service
     .from("bookings")
     .select(RENTER_BOOKINGS_SELECT)
     .eq("renter_id", user.id)
@@ -17,9 +23,12 @@ export default async function MyBookingsPage() {
   const bookings = (data ?? []) as unknown as RenterBookingRow[];
 
   return (
-    <div className="max-w-2xl mx-auto px-4 py-8">
-      <h1 className="text-2xl font-bold text-slate-900 mb-2">My Bookings</h1>
-      <RenterBookingsList initial={bookings} renterId={user.id} />
-    </div>
+    <PageShell width="narrow">
+      <PageHeader
+        title="Your bookings"
+        description="Every request you have sent, and every rental in progress."
+      />
+      <RenterBookingsList initial={bookings} />
+    </PageShell>
   );
 }

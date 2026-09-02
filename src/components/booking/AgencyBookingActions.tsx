@@ -2,27 +2,32 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { Check } from "lucide-react";
+import { AlertTriangle } from "lucide-react";
 import { Button } from "@/components/ui/Button";
+import { BottomSheet } from "@/components/ui/BottomSheet";
 import type { BookingStatus } from "@/types/database";
 
 interface Props {
   bookingId: string;
   status: BookingStatus;
-  /** Set when the renter has reported the car returned (return handshake). */
-  renterReturnedAt?: string | null;
-  /** Whether the renter has acked a return inspection (migration 051 soft gate on completion). */
-  returnInspectionAcked?: boolean;
+  canManageBooking?: boolean;
+  canManageHandover?: boolean;
+  canManageCases?: boolean;
   /** Generated start_at timestamp (migration 041); gates "Cancel booking" to strictly before pickup. */
   startAt?: string | null;
 }
 
 type AgencyTransition = "confirmed" | "active" | "declined" | "completed" | "cancelled";
 
-export function AgencyBookingActions({ bookingId, status, renterReturnedAt, returnInspectionAcked, startAt }: Props) {
+export function AgencyBookingActions({
+  bookingId, status, startAt,
+  canManageBooking = true, canManageHandover = true, canManageCases = true,
+}: Props) {
   const router = useRouter();
   const [loading, setLoading] = useState<"confirm" | "decline" | "start" | "complete" | "cancel" | null>(null);
   const [error, setError]     = useState<string | null>(null);
+  const [confirmation, setConfirmation] = useState<"cancel" | "no_show" | null>(null);
+  const [cancelReason, setCancelReason] = useState("");
 
   // Goes through /api/bookings/transition so the server can fire the
   // renter SMS in addition to flipping the status. Doing this client-side
@@ -62,18 +67,17 @@ export function AgencyBookingActions({ bookingId, status, renterReturnedAt, retu
     new Date(startAt).getTime() > Date.now();
 
   async function cancelBooking() {
-    const proceed = window.confirm(
-      "Cancelling close to pickup adds a strike to your page and lowers its ranking. Renters see cancellation history.\n\nCancel this booking?",
-    );
-    if (!proceed) return;
-    const reasonInput = window.prompt("Optional: reason for cancelling (shown only to DriveLink admin)") ?? "";
     setLoading("cancel");
-    await transition("cancelled", reasonInput.trim() || undefined);
+    const completed = await transition("cancelled", cancelReason.trim() || undefined);
     setLoading(null);
+    if (completed) {
+      setConfirmation(null);
+      setCancelReason("");
+    }
   }
 
   const cancelButton = canCancel && (
-    <Button size="sm" variant="danger" loading={loading === "cancel"} onClick={cancelBooking}>
+    <Button size="sm" variant="danger" loading={loading === "cancel"} onClick={() => { setError(null); setCancelReason(""); setConfirmation("cancel"); }}>
       Cancel booking
     </Button>
   );
@@ -83,23 +87,72 @@ export function AgencyBookingActions({ bookingId, status, renterReturnedAt, retu
   // page strike) instead of leaving it stuck.
   const pickupPassed = !!startAt && new Date(startAt).getTime() <= Date.now();
   async function markNoShow() {
-    const proceed = window.confirm(
-      "Mark this as a no-show? The renter didn't pick up the vehicle. This releases the dates and does NOT add a strike to your page.",
-    );
-    if (!proceed) return;
     setLoading("cancel");
-    await transition("cancelled");
+    const completed = await transition("cancelled");
     setLoading(null);
+    if (completed) setConfirmation(null);
   }
   const noShowButton = (
-    <Button size="sm" variant="danger" loading={loading === "cancel"} onClick={markNoShow}>
+    <Button size="sm" variant="danger" loading={loading === "cancel"} onClick={() => { setError(null); setConfirmation("no_show"); }}>
       Renter didn&apos;t show: release
     </Button>
   );
 
+  const confirmationSheet = confirmation && (
+    <BottomSheet
+      title={confirmation === "cancel" ? "Cancel confirmed booking?" : "Record renter no-show?"}
+      closeLabel="Close without changing booking"
+      onClose={() => { if (!loading) setConfirmation(null); }}
+    >
+      <div className="space-y-4 overflow-y-auto px-4 py-5">
+        <div className="flex items-start gap-3 border-l-4 border-amber-500 pl-3">
+          <AlertTriangle size={19} className="mt-0.5 shrink-0 text-amber-600" aria-hidden="true" />
+          <div>
+            <p className="font-medium text-slate-950">
+              {confirmation === "cancel" ? "The renter will lose this reservation." : "Use this only when the renter did not collect the vehicle."}
+            </p>
+            <p className="mt-1 text-sm leading-6 text-slate-600">
+              {confirmation === "cancel"
+                ? "A cancellation close to pickup adds a strike to this Rental Page and can lower its ranking. The action cannot be undone."
+                : "This releases the dates without adding a cancellation strike to your Rental Page. DriveLink keeps the no-show record for reliability review."}
+            </p>
+          </div>
+        </div>
+        {confirmation === "cancel" && (
+          <label className="block">
+            <span className="mb-1.5 block text-sm font-medium text-slate-800">Reason for DriveLink admin <span className="font-normal text-slate-500">(optional)</span></span>
+            <textarea
+              value={cancelReason}
+              onChange={(event) => setCancelReason(event.target.value)}
+              maxLength={500}
+              rows={3}
+              placeholder="For example: vehicle developed a mechanical fault"
+              className="w-full resize-none rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-slate-950 outline-none focus:border-blue-600"
+            />
+          </label>
+        )}
+        {error && <p role="alert" className="text-sm text-red-600">{error}</p>}
+        <div className="grid grid-cols-2 gap-3">
+          <Button type="button" variant="secondary" disabled={loading === "cancel"} onClick={() => setConfirmation(null)}>
+            Go back
+          </Button>
+          <Button
+            type="button"
+            variant="danger"
+            loading={loading === "cancel"}
+            onClick={confirmation === "cancel" ? cancelBooking : markNoShow}
+          >
+            {confirmation === "cancel" ? "Cancel booking" : "Confirm no-show"}
+          </Button>
+        </div>
+      </div>
+    </BottomSheet>
+  );
+
   if (status === "pending_confirmation") {
+    if (!canManageBooking) return null;
     return (
-      <div className="flex flex-col items-end gap-2 shrink-0">
+      <div className="flex flex-col items-stretch gap-2 sm:items-end">
         <div className="flex gap-2">
           <Button
             size="sm"
@@ -125,75 +178,65 @@ export function AgencyBookingActions({ bookingId, status, renterReturnedAt, retu
             Decline
           </Button>
         </div>
-        {error && <p className="text-red-400 text-xs max-w-xs text-right">{error}</p>}
+        {error && <p className="text-rose-600 text-xs max-w-xs text-right">{error}</p>}
       </div>
     );
   }
 
   if (status === "confirmed") {
-    // Decision 3: "confirmed" means reserved - the rental hasn't started. The
-    // owner starts it at pickup with "Start rental", which is the handover
-    // moment (server gates it to on/near the pickup date). Cancel stays
-    // available before pickup.
+    // Confirmed means the owner has agreed to the dates. DriveLink is not part
+    // of the handover, so there is no "start rental" step gated on a checklist:
+    // the next thing the platform needs to know is that the rental finished,
+    // which is what opens reviews and updates both sides' reliability.
     return (
-      <div className="flex flex-col items-end gap-2 shrink-0">
-        <Button
-          size="sm"
-          loading={loading === "start"}
-          onClick={async () => {
-            const proceed = window.confirm(
-              "Record the pickup inspection (photos + odometer + fuel) FIRST. It's required before a rental can start and it's your evidence for any later claim.\n\nOnce the pickup inspection is saved, start the rental to mark the vehicle handed over. Continue?",
-            );
-            if (!proceed) return;
-            setLoading("start");
-            const res = await transition("active");
-            setLoading(null);
-            // If the server blocks activation for a missing pickup inspection,
-            // the transition helper surfaces the error into `error` state below.
-            void res;
-          }}
-        >
-          Start rental (mark picked up)
-        </Button>
-        {pickupPassed ? noShowButton : cancelButton}
-        {error && <p className="text-red-400 text-xs max-w-xs text-right">{error}</p>}
+      <>
+      <div className="flex flex-col items-stretch gap-2 sm:items-end">
+        {canManageHandover && (
+          <Button
+            size="sm"
+            loading={loading === "complete"}
+            onClick={async () => {
+              setLoading("complete");
+              await transition("completed");
+              setLoading(null);
+            }}
+          >
+            Rental finished
+          </Button>
+        )}
+        {canManageCases && (pickupPassed ? noShowButton : cancelButton)}
+        {error && <p className="text-rose-600 text-xs max-w-xs text-right">{error}</p>}
       </div>
+      {confirmationSheet}
+      </>
     );
   }
 
+  // Legacy rows that are still sitting in "active" can be closed out the same way.
   if (status === "active") {
+    if (!canManageHandover && !canManageCases) return null;
     return (
-      <div className="flex flex-col items-end gap-2 shrink-0">
-        {renterReturnedAt && (
-          <span className="inline-flex items-center gap-1 text-emerald-600 text-[11px] font-medium">
-            <Check size={11} /> Renter reported return
-          </span>
+      <>
+      <div className="flex flex-col items-stretch gap-2 sm:items-end">
+        {canManageHandover && (
+          <Button
+            size="sm"
+            variant="secondary"
+            loading={loading === "complete"}
+            onClick={async () => {
+              setLoading("complete");
+              await transition("completed");
+              setLoading(null);
+            }}
+          >
+            Rental finished
+          </Button>
         )}
-        <Button
-          size="sm"
-          variant="secondary"
-          loading={loading === "complete"}
-          onClick={async () => {
-            // Soft gate (migration 051): nudge toward recording a return
-            // inspection before closing the booking out, since it's the
-            // only evidence trail for a later damage claim, but never
-            // block completion on it.
-            if (!returnInspectionAcked) {
-              const proceed = window.confirm(
-                "No return inspection on record. Complete anyway? Without it you can't file damage claims later.",
-              );
-              if (!proceed) return;
-            }
-            setLoading("complete");
-            await transition("completed");
-            setLoading(null);
-          }}
-        >
-          Confirm return &amp; complete
-        </Button>
-        {cancelButton}
-        {error && <p className="text-red-400 text-xs max-w-xs text-right">{error}</p>}
+        {canManageCases && cancelButton}
+        {error && <p className="text-rose-600 text-xs max-w-xs text-right">{error}</p>}
       </div>
+      {confirmationSheet}
+      </>
     );
   }
 

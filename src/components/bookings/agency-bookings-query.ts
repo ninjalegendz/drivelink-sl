@@ -5,14 +5,12 @@
 // exported from that "use client" file, a Server Component importing it would
 // receive a client-reference proxy instead of the actual string, which then
 // blows up as `.split is not a function` when handed to supabase.select().
+//
+// Scope note: DriveLink records the booking and introduces the two parties. It
+// no longer holds condition reports, rental agreements, charge ledgers or
+// settlements, so those embeds are gone. What is left is what an owner needs to
+// answer a request and hand over a vehicle.
 import type { BookingStatus } from "@/types/database";
-import { INSPECTIONS_SELECT, type InspectionRow } from "@/lib/booking/inspection-types";
-
-/** Acceptance stamps from the digital rental agreement (migration 051). */
-export interface AgreementAcceptance {
-  renter_accepted_at: string | null;
-  owner_accepted_at:  string | null;
-}
 
 export interface AgencyBookingRow {
   id:           string;
@@ -27,39 +25,25 @@ export interface AgencyBookingRow {
   created_at:   string;
   /** Generated timestamp (start_date + start_time), migration 041. Used to gate page-side cancellation to "before pickup". */
   start_at:     string;
-  renter_returned_at: string | null;
+  end_at:       string;
   completed_at: string | null;
   deposit_lkr:  number | null;
-  /** Deposit actually collected at pickup (migration 051) + renter's settlement sign-off (068). */
-  deposit_received_at: string | null;
-  settlement_ack_at:   string | null;
-  /** Chosen drive mode + foreign self-drive permit flag (migration 072). */
+  /** Chosen drive mode plus the reviewed foreign-licence permit declaration. */
   rental_mode:       "self_drive" | "with_driver" | null;
   is_foreign_renter: boolean;
+  foreign_permit_type: "idp_1968" | "aa_ceylon_endorsement" | "dmt_airport_permit" | "none" | null;
   /** Set once the renter has granted document-sharing consent (migration 051). */
   doc_share_consent_at: string | null;
-  /** Set by the overdue cron ladder once a return is 24h+ overdue (migration 051/052); gates page-side renter reporting. */
-  overdue_critical_at: string | null;
   /** Page-side read cursor for the booking chat (migration 054). */
   page_msgs_read_at: string | null;
   vehicles: { make: string; model: string; year: number; plate_number: string | null; deposit_lkr: number } | null;
   profiles: {
     full_name:               string;
-    rating_avg:              number | null;
-    rating_count:            number;
     reliability_pct:         number | null;
     kyc_status:              string;
     is_blacklisted:          boolean;
     blacklist_reason_public: string | null;
   } | null;
-  /** Pickup/return condition reports (migration 051), at most one per phase. */
-  booking_inspections: InspectionRow[] | null;
-  /**
-   * The digital rental agreement's acceptance stamps. booking_id is UNIQUE so
-   * PostgREST usually embeds it one-to-one (an object), but keep the array
-   * shape in the type too and normalize at the call site to stay version-proof.
-   */
-  booking_agreements: AgreementAcceptance | AgreementAcceptance[] | null;
   /**
    * Chat metadata for the unread dot (migration 054): sender + timestamp only,
    * no bodies. PostgREST can't LIMIT an embed from inside the select string,
@@ -70,9 +54,7 @@ export interface AgencyBookingRow {
 }
 
 export const AGENCY_BOOKINGS_SELECT =
-  "id, renter_id, status, start_date, end_date, start_time, end_time, start_at, total_days, subtotal_lkr, created_at, renter_returned_at, completed_at, deposit_lkr, deposit_received_at, settlement_ack_at, rental_mode, is_foreign_renter, doc_share_consent_at, overdue_critical_at, page_msgs_read_at, " +
+  "id, renter_id, status, start_date, end_date, start_time, end_time, start_at, end_at, total_days, subtotal_lkr, created_at, completed_at, deposit_lkr, rental_mode, is_foreign_renter, foreign_permit_type, doc_share_consent_at, page_msgs_read_at, " +
   "vehicles(make, model, year, plate_number, deposit_lkr), " +
-  "profiles(full_name, rating_avg, rating_count, reliability_pct, kyc_status, is_blacklisted, blacklist_reason_public), " +
-  `booking_inspections(${INSPECTIONS_SELECT}), ` +
-  "booking_agreements(renter_accepted_at, owner_accepted_at), " +
+  "profiles(full_name, reliability_pct, kyc_status, is_blacklisted, blacklist_reason_public), " +
   "booking_messages(sender_id, created_at)";

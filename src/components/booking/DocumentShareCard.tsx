@@ -3,22 +3,20 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
-import { ShieldCheck, Eye } from "lucide-react";
+import { Eye, FileKey2, ShieldCheck } from "lucide-react";
 import { Button } from "@/components/ui/Button";
 
 interface Props {
-  bookingId:      string;
-  pageName:       string;
+  bookingId: string;
+  pageName: string;
   consentGranted: boolean;
-  /** Revocation is only allowed while the booking is active. */
-  canRevoke:      boolean;
+  canRevoke: boolean;
 }
-
 export function DocumentShareCard({ bookingId, pageName, consentGranted, canRevoke }: Props) {
   const router = useRouter();
   const [dismissed, setDismissed] = useState(false);
-  const [loading, setLoading]     = useState(false);
-  const [error, setError]         = useState<string | null>(null);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   async function call(method: "POST" | "DELETE") {
     setLoading(true);
@@ -26,12 +24,12 @@ export function DocumentShareCard({ bookingId, pageName, consentGranted, canRevo
     try {
       const res = await fetch(`/api/bookings/${bookingId}/consent`, { method });
       if (!res.ok) {
-        const p = await res.json().catch(() => ({}));
-        throw new Error((p as { error?: string }).error ?? "Something went wrong.");
+        const payload = await res.json().catch(() => ({}));
+        throw new Error((payload as { error?: string }).error ?? "Could not update document sharing. Check your connection and try again.");
       }
       router.refresh();
-    } catch (e) {
-      setError(e instanceof Error ? e.message : "Something went wrong.");
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Could not update document sharing. Check your connection and try again.");
     } finally {
       setLoading(false);
     }
@@ -39,64 +37,61 @@ export function DocumentShareCard({ bookingId, pageName, consentGranted, canRevo
 
   if (consentGranted) {
     return (
-      <div className="bg-emerald-500/10 border border-emerald-500/20 rounded-2xl p-4 mb-4">
+      <section className="mb-4 border-y border-emerald-200 bg-emerald-50 px-4 py-4">
         <div className="flex items-start gap-3">
-          <ShieldCheck size={18} className="text-emerald-600 mt-0.5 shrink-0" />
-          <div className="flex-1">
-            <p className="text-emerald-700 font-semibold text-sm">Documents shared with {pageName}</p>
-            <p className="text-slate-600 text-xs mt-0.5">
-              Your identity summary and driving licence photos are shown to {pageName} in a
-              watermarked, view-only viewer for this booking only (no download button, though
-              screenshots can&apos;t be technically prevented). Every view is logged, see your{" "}
-              <Link href="/account/documents" className="underline hover:text-slate-800">
-                sharing history
-              </Link>.
+          <ShieldCheck size={19} className="mt-0.5 shrink-0 text-emerald-700" />
+          <div className="min-w-0 flex-1">
+            <h2 className="text-sm font-semibold text-emerald-900">Documents shared with {pageName}</h2>
+            <p className="mt-1 text-xs leading-5 text-slate-700">
+              The page owner and staff who were separately granted renter-document permission may request your approved government ID and driving licence for this booking. Your liveness selfie is never shared. DriveLink watermarks and logs each server request. Screenshots and photographs cannot be completely prevented.
             </p>
-            {canRevoke && (
-              <button
-                type="button"
-                onClick={() => call("DELETE")}
-                disabled={loading}
-                className="mt-2 text-xs text-slate-500 hover:text-red-500 disabled:opacity-50 transition-colors"
-              >
-                {loading ? "Stopping…" : "Stop sharing"}
-              </button>
-            )}
-            {error && <p className="text-red-500 text-xs mt-1">{error}</p>}
+            <div className="mt-3 flex flex-wrap items-center gap-x-4 gap-y-2">
+              <Link href="/account/documents" className="inline-flex items-center gap-1.5 text-xs font-medium text-emerald-800 underline underline-offset-2">
+                <Eye size={13} /> See access history
+              </Link>
+              {canRevoke && (
+                <button
+                  type="button"
+                  onClick={() => call("DELETE")}
+                  disabled={loading}
+                  className="text-xs font-medium text-rose-700 hover:text-rose-800 disabled:opacity-50"
+                >
+                  {loading ? "Stopping..." : "Stop future access"}
+                </button>
+              )}
+            </div>
+            {error && <p role="alert" className="mt-2 text-xs text-rose-700">{error}</p>}
           </div>
         </div>
-      </div>
+      </section>
     );
   }
 
   if (dismissed) return null;
 
   return (
-    <div className="bg-white rounded-2xl border border-slate-100 p-4 mb-4">
+    <section className="mb-4 border-y border-slate-200 bg-white px-4 py-4">
       <div className="flex items-start gap-3">
-        <Eye size={18} className="text-blue-600 mt-0.5 shrink-0" />
-        <div className="flex-1">
-          <p className="text-slate-900 font-semibold text-sm">Document sharing</p>
-          <p className="text-slate-600 text-xs mt-1">
-            Your verified identity summary and driving licence photos become viewable (not
-            downloadable) by {pageName} for this booking only. Every view is logged and visible
-            to you.
+        <FileKey2 size={19} className="mt-0.5 shrink-0 text-blue-700" />
+        <div className="min-w-0 flex-1">
+          <h2 className="text-sm font-semibold text-slate-900">Share documents for this booking?</h2>
+          <p className="mt-1 text-xs leading-5 text-slate-600">
+            This lets authorised people at {pageName} request your approved government ID and driving licence only while this booking needs them. Your liveness selfie is never shared. Each image carries the booking, page, viewer and time, and each request appears in your access history.
           </p>
-          <div className="flex items-center gap-3 mt-3">
+          <p className="mt-2 text-xs leading-5 text-slate-500">
+            Share only after checking that this is the Rental Page you intend to rent from. Watermarks discourage misuse but cannot stop screenshots or camera photos.
+          </p>
+          <div className="mt-3 flex flex-wrap items-center gap-3">
             <Button size="sm" onClick={() => call("POST")} loading={loading}>
-              Share documents
+              <ShieldCheck size={14} /> Share for this booking
             </Button>
-            <button
-              type="button"
-              onClick={() => setDismissed(true)}
-              className="text-xs text-slate-500 hover:text-slate-700 transition-colors"
-            >
+            <button type="button" onClick={() => setDismissed(true)} className="text-xs font-medium text-slate-500 hover:text-slate-700">
               Not now
             </button>
           </div>
-          {error && <p className="text-red-500 text-xs mt-2">{error}</p>}
+          {error && <p role="alert" className="mt-2 text-xs text-rose-700">{error}</p>}
         </div>
       </div>
-    </div>
+    </section>
   );
 }

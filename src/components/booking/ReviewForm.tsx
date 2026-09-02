@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { Star } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 import { Button } from "@/components/ui/Button";
+import { containsPublicContactDetails, PUBLIC_CONTACT_ERROR } from "@/lib/content/public-contact";
 
 interface Props {
   bookingId:   string;
@@ -30,6 +31,10 @@ export function ReviewForm({ bookingId, revieweeId, subjectName, onSubmitted }: 
 
     if (rating === 0) {
       setError("Please pick a star rating.");
+      return;
+    }
+    if (containsPublicContactDetails(comment)) {
+      setError(PUBLIC_CONTACT_ERROR);
       return;
     }
 
@@ -97,11 +102,11 @@ export function ReviewForm({ bookingId, revieweeId, subjectName, onSubmitted }: 
           rows={3}
           maxLength={500}
           placeholder="What did you like or wish was better?"
-          className="w-full px-3 py-2 bg-slate-100 border border-slate-200 rounded-lg text-slate-900 placeholder-slate-400 text-sm focus:outline-none focus:border-blue-500 resize-none"
+          className="w-full px-3 py-2 bg-slate-100 border border-slate-200 rounded-lg text-slate-900 placeholder-slate-400 text-sm focus:border-blue-500 resize-none"
         />
       </div>
 
-      {error && <p className="text-red-400 text-sm">{error}</p>}
+      {error && <p className="text-rose-600 text-sm">{error}</p>}
 
       <Button type="submit" loading={loading} size="md">
         Submit review
