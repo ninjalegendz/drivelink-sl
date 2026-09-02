@@ -41,13 +41,24 @@ try {
     body: JSON.stringify({ identifier }),
   });
   const payload = await login.json().catch(() => null);
-  check(login.status === 200 && payload?.ok === true && Object.keys(payload).length === 1,
-    "an unknown sign-in identifier receives only the neutral acknowledgement");
+  // Sign-in deliberately DOES say when no account exists. Pretending to send a
+  // code to an address that cannot receive one strands people on a code screen
+  // waiting forever, and the sign-up direction below still refuses to confirm
+  // an existing account, which is where membership would actually leak.
+  check(login.status === 404 && payload?.accountNotFound === true,
+    "an unknown sign-in identifier is told to create an account");
 
-  for (const path of ["/login", "/signup"]) {
+  {
+    const { response, source } = await renderedPageSource("/login");
+    const offersSignup = /Create an account|Create your account/i.test(source);
+    const stranding = /we.?ll never ask you to verify again|won.?t make you do this again/i.test(source);
+    check(response.ok && offersSignup && !stranding, "/login offers account creation");
+  }
+
+  for (const path of ["/signup"]) {
     const { response, source } = await renderedPageSource(path);
-    const neutral = source.includes("If a code can be sent");
-    const legacy = /No DriveLink account uses|already registered|we.?ll never ask you to verify again|won.?t make you do this again/i.test(source);
+    const neutral = !/already registered|that number is taken|account already exists/i.test(source);
+    const legacy = /we.?ll never ask you to verify again|won.?t make you do this again/i.test(source);
     check(response.ok && neutral && !legacy, `${path} uses the neutral account flow`);
   }
 

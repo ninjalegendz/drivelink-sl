@@ -3,7 +3,7 @@
 // Playwright + Chromium against the local dev server: real clicks through
 // the real UI, with structural assertions that the shipped screens match
 // the blueprint (universal signup, Rental Pages, Terms Engine panel,
-// agreement + police mode, inspections, messaging, dispute + admin
+// messaging, the owner closing the rental, and reviews
 // resolution). DB assertions via the service client where the UI's
 // side-effects land. Self-cleaning, SMS toggles muted around the run.
 //
@@ -14,7 +14,35 @@ import { createClient as createSb } from "@supabase/supabase-js";
 import { createServerClient } from "@supabase/ssr";
 import fs from "fs";
 
-const BASE = "http://localhost:3000";
+// localhost, because the R2 buckets' CORS allowlist contains that exact origin
+// and browser photo uploads fail preflight from any other. See assertServingDriveLink
+// below for the hazard that comes with it.
+const BASE = process.env.DRIVELINK_TEST_BASE || "http://localhost:3000";
+
+/**
+ * On Windows `localhost` resolves to ::1 before 127.0.0.1, so any other project
+ * holding [::1]:3000 answers instead of this app. That does not look like a
+ * misconfiguration when it happens: the suite reports that the signup page has
+ * lost its fields and that buttons have stopped existing. Checking once, up
+ * front, turns half an hour of chasing a phantom regression into one line.
+ */
+async function assertServingDriveLink() {
+  let body = "";
+  try {
+    body = await (await fetch(`${BASE}/login`)).text();
+  } catch (err) {
+    throw new Error(`Nothing is answering on ${BASE}. Start the app first.`, { cause: err });
+  }
+  if (!/DriveLink/i.test(body)) {
+    throw new Error(
+      `${BASE} is serving a different application, so this run would test the wrong app.
+`
+      + `        On Windows, localhost resolves to ::1 first: another project's dev server is probably on that port.
+`
+      + `        Stop it, or run against the other address with DRIVELINK_TEST_BASE.`,
+    );
+  }
+}
 const SHOTS = "e2e-shots";
 fs.mkdirSync(SHOTS, { recursive: true });
 
@@ -62,7 +90,11 @@ async function cookiesFor(email) {
     },
   });
   await ssr.auth.setSession({ access_token: data.session.access_token, refresh_token: data.session.refresh_token });
-  return [...jar.entries()].map(([name, value]) => ({ name, value, domain: "localhost", path: "/" }));
+  // Derived from BASE, not hardcoded: a cookie scoped to "localhost" is simply
+  // not sent to 127.0.0.1, which presents as every signed-in page redirecting
+  // to login rather than as an auth error.
+  const host = new URL(BASE).hostname;
+  return [...jar.entries()].map(([name, value]) => ({ name, value, domain: host, path: "/" }));
 }
 
 // 1x1 transparent PNG for photo inputs
@@ -90,6 +122,7 @@ async function pollDb(fn, tries = 14, ms = 500) {
 }
 
 async function main() {
+  await assertServingDriveLink();
   section("setup");
   {
     const { data: settings } = await svc.from("platform_settings").select("*").eq("id", true).single();
@@ -162,7 +195,11 @@ async function main() {
     const ownerPg = await mk(await cookiesFor(`fe-owner-${STAMP}@phone.drivelink.invalid`));
     await ownerPg.goto(`${BASE}/account/pages/new`);
     await settled(ownerPg);
-    ok("create-page form heading", (await ownerPg.locator("body").innerText()).includes("Create your Rental Page"));
+    const createPageText = await ownerPg.locator("body").innerText();
+    if (!createPageText.includes("Create your Rental Page")) {
+      console.log("  [debug] /account/pages/new shows: " + JSON.stringify(createPageText.slice(0, 400)));
+    }
+    ok("create-page form heading", createPageText.includes("Create your Rental Page"));
     await ownerPg.getByText("Personal", { exact: true }).first().click();
     await ownerPg.getByPlaceholder(/Kasun/i).fill("FE Motors");
     // custom Select for city
@@ -233,9 +270,18 @@ async function main() {
     // date inputs, so drive them the way a person does. Each trigger carries
     // data-datepicker with its label and each day cell a data-date, so this
     // stays stable without depending on the rendered month name.
+    // The calendar opens on the month of its minimum date, so a target in a
+    // later month needs the same "next month" taps a person would make. This
+    // used to click the day cell directly, which passed all month and then
+    // failed for the few days a year when today + 3 crosses into the next one.
     const pickDate = async (label, iso) => {
       await renterPg.locator(`[data-datepicker="${label}"]`).click();
-      await renterPg.locator(`[data-date="${iso}"]`).click();
+      const cell = renterPg.locator(`[data-date="${iso}"]`);
+      for (let hop = 0; hop < 3 && await cell.count() === 0; hop += 1) {
+        await renterPg.getByRole("button", { name: "Next month" }).click();
+        await renterPg.waitForTimeout(150);
+      }
+      await cell.click();
     };
     const dateTriggers = renterPg.locator("[data-datepicker]");
     ok("booking form date pickers", await dateTriggers.count() >= 2, `found ${await dateTriggers.count()}`);
@@ -266,63 +312,18 @@ async function main() {
     await shot(renterPg, "06-booking-waiting");
 
     // ── owner: confirm via UI ────────────────────────────────────────
-    section("owner UI: confirm booking, agreement signing");
+    section("owner UI: confirm booking");
     await ownerPg.goto(`${BASE}/dashboard/bookings`);
     await settled(ownerPg);
     await ownerPg.getByRole("button", { name: /^confirm$/i }).first().click();
-    // "confirmed" means reserved. The launch fee is Rs. 0 so there is no
-    // payment-review step, but the booking only becomes "active" at pickup,
-    // after the agreement is signed and the handover inspection is saved.
+    // "confirmed" means the owner accepted the dates. Everything after that
+    // happens between the two people; the platform hears about it again only
+    // when the owner marks the rental finished.
     const afterConfirm = await pollDb(async () => {
       const { data } = await svc.from("bookings").select("status").eq("id", booking.id).single();
       return data?.status === "confirmed" ? data : null;
     });
     ok("confirm via UI -> confirmed (reserved)", afterConfirm?.status === "confirmed", afterConfirm?.status ?? "not confirmed");
-
-    // agreement: renter signs, then owner
-    const agreementReady = await (async () => {
-      for (let i = 0; i < 20; i++) {
-        const { data } = await svc.from("booking_agreements").select("id").eq("booking_id", booking.id).maybeSingle();
-        if (data) return true;
-        await sleep(500);
-      }
-      return false;
-    })();
-    ok("agreement snapshot exists", agreementReady);
-    await renterPg.goto(`${BASE}/bookings/${booking.id}/agreement`);
-    await settled(renterPg);
-    const agText = await renterPg.locator("body").innerText();
-    ok("agreement: venue disclaimer", /not a party/i.test(agText));
-    ok("agreement: police mode present", /Show to police/i.test(agText));
-    ok("agreement: deposit standard", /deposit/i.test(agText));
-    const signAgreement = async (pg, who) => {
-      const emailField = pg.getByPlaceholder("you@example.com");
-      if (await emailField.count()) {
-        await emailField.first().fill(`fe-${who}-${STAMP}@example.com`);
-      }
-      await pg.getByRole("button", { name: /accept agreement/i }).first().click();
-    };
-
-    await renterPg.getByRole("button", { name: /accept agreement/i }).first().waitFor({ state: "visible" });
-    await signAgreement(renterPg, "renter");
-    let ag1 = await pollDb(async () => {
-      const { data } = await svc.from("booking_agreements").select("renter_accepted_at").eq("booking_id", booking.id).single();
-      return data?.renter_accepted_at ? data : null;
-    });
-    if (!ag1) { await signAgreement(renterPg, "renter").catch(() => {}); ag1 = await pollDb(async () => {
-      const { data } = await svc.from("booking_agreements").select("renter_accepted_at").eq("booking_id", booking.id).single();
-      return data?.renter_accepted_at ? data : null;
-    }); }
-    ok("renter signed via UI", !!ag1);
-    await shot(renterPg, "07-agreement");
-    await ownerPg.goto(`${BASE}/bookings/${booking.id}/agreement`);
-    await settled(ownerPg);
-    await signAgreement(ownerPg, "owner");
-    const ag2 = await pollDb(async () => {
-      const { data } = await svc.from("booking_agreements").select("owner_accepted_at").eq("booking_id", booking.id).single();
-      return data?.owner_accepted_at ? data : null;
-    });
-    ok("owner signed via UI", !!ag2);
 
     // ── messaging via UI ─────────────────────────────────────────────
     section("messaging UI");
@@ -343,146 +344,29 @@ async function main() {
     });
     ok("message sent via UI", !!msgs, "message row never appeared");
 
-    // ── inspection via UI ────────────────────────────────────────────
-    section("pickup inspection UI");
-    await ownerPg.goto(`${BASE}/dashboard/bookings`);
-    await ownerPg.getByRole("button", { name: /pickup inspection/i }).first().click();
-    await sleep(500);
-    // the "Add more" input takes multiple files in one shot (the per-slot
-    // inputs get replaced by previews as they fill, so handles go stale)
-    const addMore = ownerPg.locator('input[type="file"][multiple]').first();
-    await addMore.setInputFiles(photoFiles(4));
-    const uploaded = await ownerPg.waitForFunction(
-      () => /4\/4/.test(document.body.innerText),
-      null, { timeout: 30000 },
-    ).then(() => true).catch(() => false);
-    ok("4 photos uploaded via UI", uploaded, (await ownerPg.locator(".text-rose-600").allInnerTexts().catch(() => [])).join("; "));
-    await ownerPg.getByPlaceholder("e.g. 45210").fill("45000");
-    await ownerPg.getByRole("button", { name: /^full$/i }).first().click().catch(async () => {
-      await ownerPg.getByText(/^Full$/).first().click();
-    });
-    // plate confirm + deposit received + documents present checkboxes
-    for (const cb of await ownerPg.locator('input[type="checkbox"]').all()) {
-      await cb.check().catch(() => {});
-    }
-    await sleep(300);
-    const sel = ownerPg.locator("select");
-    if (await sel.count()) await sel.first().selectOption({ index: 1 }).catch(() => {});
-    await ownerPg.getByRole("button", { name: /submit pickup inspection/i }).click();
-    await sleep(1500);
-    const formError = (await ownerPg.locator(".text-rose-600").allInnerTexts().catch(() => [])).join("; ");
-    if (formError) console.log(`  (form error shown: ${formError})`);
-    const inspection = await (async () => {
-      for (let i = 0; i < 20; i++) {
-        const { data } = await svc.from("booking_inspections").select("id, phase, photo_urls").eq("booking_id", booking.id).eq("phase", "pickup").maybeSingle();
-        if (data) return data;
-        await sleep(600);
-      }
-      return null;
-    })();
-    ok("pickup inspection submitted via UI", !!inspection, "no inspection row");
-    ok("inspection has 4 photos", (inspection?.photo_urls ?? []).length === 4, `${inspection?.photo_urls?.length}`);
-    await shot(ownerPg, "08-after-inspection");
-
-    // renter reviews
-    await renterPg.goto(`${BASE}/bookings/${booking.id}`);
-    await renterPg.getByRole("button", { name: /looks correct/i }).first().click();
-    const acked = await pollDb(async () => {
-      const { data } = await svc.from("booking_inspections").select("renter_ack_at").eq("booking_id", booking.id).eq("phase", "pickup").single();
-      return data?.renter_ack_at ? data : null;
-    });
-    ok("renter acked inspection via UI", !!acked);
-    await shot(renterPg, "09-inspection-acked");
-
-    // ── owner starts the rental ──────────────────────────────────────
-    // A problem can only be reported once the rental is under way: incident
-    // types are empty for a booking that is merely "confirmed". Starting the
-    // rental is also the confirmed -> active transition, which nothing else
-    // in this suite covered.
-    section("start rental UI");
-    // A rental can only be started from 24 hours before pickup (enforced in the
-    // database, P0001). A request cannot be made for today either, so the two
-    // rules cannot both be satisfied by choosing dates. Move the booking's
-    // pickup to an hour from now instead, which is what waiting until pickup
-    // day would do. start_at is generated from these columns.
-    {
-      const soon = new Date(Date.now() + 3600_000);
-      const { error: ffError } = await svc.from("bookings").update({
-        start_date: soon.toISOString().slice(0, 10),
-        start_time: soon.toISOString().slice(11, 16),
-      }).eq("id", booking.id);
-      ok("fast-forwarded to pickup time", !ffError, ffError?.message ?? "");
-    }
+    // ── the owner closes the rental ──────────────────────────────────
+    // DriveLink is not part of the handover any more, so there is no pickup
+    // checklist, no start-rental gate and no dispute desk. The only thing left
+    // for the platform to learn is that the rental finished, which is what
+    // opens reviews and updates reliability.
+    section("owner closes the rental");
     await ownerPg.goto(`${BASE}/dashboard/bookings`);
     await settled(ownerPg);
-    await ownerPg.getByRole("button", { name: /start rental/i }).first().click();
-    const started = await pollDb(async () => {
+    await ownerPg.getByRole("button", { name: /rental finished/i }).first().click();
+    const closed = await pollDb(async () => {
       const { data } = await svc.from("bookings").select("status").eq("id", booking.id).single();
-      return data?.status === "active" ? data : null;
+      return data?.status === "completed" ? data : null;
     });
-    ok("start rental via UI -> active", !!started, started?.status ?? "not active");
+    ok("owner closes the rental via UI -> completed", !!closed, closed?.status ?? "never completed");
 
-    // ── dispute + admin resolution via UI ────────────────────────────
-    section("dispute + admin resolution UI");
     await renterPg.goto(`${BASE}/bookings/${booking.id}`);
     await settled(renterPg);
-    const reportBtn = renterPg.getByRole("button", { name: /report a problem/i }).first();
-    await reportBtn.waitFor({ state: "visible", timeout: 20000 });
-    await reportBtn.click();
-    await sleep(400);
-    await renterPg.locator("textarea").last().fill("The air conditioning failed on the expressway.");
-    await renterPg.getByRole("button", { name: /submit|report/i }).last().click();
-    const disputed = await pollDb(async () => {
-      const { data } = await svc.from("bookings").select("status").eq("id", booking.id).single();
-      return data?.status === "disputed" ? data : null;
-    });
-    ok("dispute filed via UI", !!disputed, "status never reached disputed");
+    const renterText = await renterPg.locator("body").innerText();
+    ok("renter sees the rental is finished", /finished|completed/i.test(renterText));
+    ok("renter is invited to review", /how did it go|rating/i.test(renterText));
+    ok("renter page states DriveLink's role", /introduces renters and vehicle owners/i.test(renterText));
+    ok("no agreement or inspection language remains", !/rental agreement|pickup inspection|dispute/i.test(renterText));
 
-    const adminPg = await mk(await cookiesFor(`fe-admin-${STAMP}@phone.drivelink.invalid`));
-    adminPg.on("dialog", (dlg) => dlg.accept("Owner arranged a repair, renter compensated one day."));
-    await adminPg.goto(`${BASE}/admin/bookings?status=disputed`);
-    await settled(adminPg);
-    const adminSees = await adminPg.getByText(/Aqua/).first().waitFor({ state: "visible", timeout: 20000 }).then(() => true).catch(() => false);
-    ok("admin sees disputed booking", adminSees, "booking not visible");
-    // Cases are decided on the case desk, not the bookings list. Open the
-    // incident this dispute created.
-    const { data: incidentRow } = await svc.from("incidents").select("id").eq("booking_id", booking.id).limit(1).maybeSingle();
-    ok("incident record created", !!incidentRow?.id, "no incident row");
-    await adminPg.goto(`${BASE}/admin/cases?case=${incidentRow.id}`);
-    await settled(adminPg);
-
-    // Deciding a case is deliberately not one click: the admin must take the
-    // case, complete four review checks, and write a decision both parties see.
-    // The desk lists every open case, so several "Assign to me" buttons can be
-    // present. Click them until this incident is the one that gets assigned.
-    const assignButtons = await adminPg.getByRole("button", { name: /assign to me/i }).all();
-    let assignedRow = null;
-    for (const button of assignButtons) {
-      await button.click().catch(() => {});
-      assignedRow = await pollDb(async () => {
-        const { data } = await svc.from("incidents").select("assigned_to").eq("id", incidentRow.id).single();
-        return data?.assigned_to ? data : null;
-      }, 6, 400);
-      if (assignedRow) break;
-    }
-    ok("admin assigned the case", !!assignedRow, `${assignButtons.length} assign buttons tried`);
-    await settled(adminPg);
-
-    for (const box of await adminPg.locator('input[type="checkbox"]').all()) {
-      await box.check().catch(() => {});
-    }
-    await adminPg
-      .getByPlaceholder(/State what evidence was accepted/i)
-      .fill("Return photos and the pickup record were compared. The fuel difference is accepted at the listed rate and the balance is settled directly between the parties.");
-    await adminPg.getByRole("button", { name: /record decision/i }).first().click();
-    await sleep(2500);
-    const { data: resolved } = await svc.from("bookings").select("status").eq("id", booking.id).single();
-    ok("admin resolved via UI", ["completed", "active"].includes(resolved?.status ?? ""), resolved?.status);
-    const { data: incRes } = await svc.from("incidents").select("status, resolution_note").eq("booking_id", booking.id);
-    ok("incident closed with note", (incRes ?? []).every((i) => i.status === "resolved" && i.resolution_note), JSON.stringify(incRes));
-    await shot(adminPg, "10-admin-resolved");
-
-    // ── renter account structure ─────────────────────────────────────
     section("account structure");
     await renterPg.goto(`${BASE}/account`);
     await settled(renterPg);
@@ -509,7 +393,7 @@ async function cleanup() {
     const pageIds = (pages ?? []).map((p) => p.id);
     const { data: bookings } = await svc.from("bookings").select("id").in("renter_id", userIds);
     const bookingIds = (bookings ?? []).map((b) => b.id);
-    for (const table of ["document_access_log", "booking_messages", "booking_agreements", "booking_inspections", "incidents", "blacklist_reports", "reviews"]) {
+    for (const table of ["document_access_log", "booking_messages", "blacklist_reports", "reviews"]) {
       if (bookingIds.length) await svc.from(table).delete().in("booking_id", bookingIds);
     }
     await svc.from("activity_events").delete().in("actor_id", userIds);
@@ -526,7 +410,17 @@ async function cleanup() {
   }
 }
 
-try { await main(); } finally {
+// The finally block exits the process, which swallowed anything main() threw:
+// a crash during setup printed "0 passed, 0 failed" and exited 0, so a run that
+// never happened looked like a clean one.
+try {
+  await main();
+} catch (err) {
+  fail += 1;
+  failures.push(`ABORTED before the suite could run: ${err.message}`);
+  console.error(`
+ABORTED: ${err.message}`);
+} finally {
   await cleanup();
   console.log(`\n===== FRONTEND E2E: ${pass} passed, ${fail} failed =====`);
   for (const f of failures) console.log(`  ✗ ${f}`);

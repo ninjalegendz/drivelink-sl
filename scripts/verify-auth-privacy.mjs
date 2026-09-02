@@ -29,16 +29,25 @@ function lacks(source, pattern, message) {
   check(!pattern.test(source), message);
 }
 
-// No browser-facing response or screen should confirm that an identifier is
-// registered. This checks both public APIs and the booking sign-in form,
-// which previously had its own account-existence branch.
-lacks(files.loginSend, /accountNotFound|emailUnverified|No DriveLink account/i, "login API does not expose account status");
+// Sign-in deliberately tells someone when no account exists, rather than
+// sending them to a code screen for a code that can never arrive. That is a
+// known trade: it makes the login form enumerable, and the request rate limiter
+// is what keeps bulk probing slow. These checks pin the intended behaviour so
+// the dead-end version cannot come back by accident.
+check(/accountNotFound/.test(files.loginSend), "login API reports when no account exists");
+check(/accountNotFound|accountMissing/.test(files.loginPage), "sign-in page handles the no-account case");
+check(/Create your account|Create an account/.test(files.loginPage), "sign-in offers account creation when none exists");
+
+// Sign-up is the other direction and stays closed: confirming that an
+// identifier is ALREADY registered would leak membership to someone who never
+// had the account, with no matching benefit.
 lacks(files.signupStart, /already registered|status:\s*409/i, "signup API does not expose duplicate accounts");
-lacks(files.loginPage, /accountMissing|accountNotFound|No DriveLink account/i, "sign-in page has no account-status branch");
 lacks(files.guestBooking, /accountNotFound|No account with that|emailUnverified/i, "booking sign-in has no account-status branch");
 
+// The code screen still avoids promising delivery, because a code can fail to
+// arrive for reasons other than a missing account.
 for (const [name, source] of Object.entries(files)) {
-  if (name.endsWith("Page") || name === "guestBooking") {
+  if (name === "signupPage" || name === "guestBooking") {
     check(source.includes("If a code can be sent"), `${name} uses neutral delivery wording`);
   }
 }

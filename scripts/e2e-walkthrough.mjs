@@ -19,7 +19,9 @@ import { createServerClient } from "@supabase/ssr";
 import { S3Client, PutObjectCommand, DeleteObjectCommand } from "@aws-sdk/client-s3";
 import fs from "fs";
 
-const BASE = "http://localhost:3000";
+// 127.0.0.1 rather than localhost: on Windows localhost resolves to ::1 first,
+// where another project's dev server can answer instead of this one.
+const BASE = process.env.DRIVELINK_TEST_BASE || "http://127.0.0.1:3000";
 
 const env = {};
 for (const line of fs.readFileSync(".env.local", "utf8").split("\n")) {

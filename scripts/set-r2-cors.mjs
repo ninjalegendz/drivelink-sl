@@ -18,7 +18,18 @@ const s3 = new S3Client({
   credentials: { accessKeyId: env.R2_ACCESS_KEY_ID, secretAccessKey: env.R2_SECRET_ACCESS_KEY },
 });
 
-const ORIGINS = ["https://www.drivelink.lk", "https://drivelink.lk", "https://drivelink-sl.vercel.app", "http://localhost:3000"];
+// 127.0.0.1 as well as localhost: they are different origins to a browser, and
+// the test harness uses 127.0.0.1 because localhost can resolve to another
+// project's dev server on Windows.
+//
+// The old Vercel preview origin is gone: the app runs on Cloudflare now, and a
+// dead domain should not keep permission to PUT into these buckets.
+const ORIGINS = [
+  "https://www.drivelink.lk",
+  "https://drivelink.lk",
+  "http://localhost:3000",
+  "http://127.0.0.1:3000",
+];
 
 for (const Bucket of [env.R2_BUCKET, env.R2_PRIVATE_BUCKET || "drivelink-private"]) {
   await s3.send(new PutBucketCorsCommand({
