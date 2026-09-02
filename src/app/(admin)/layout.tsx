@@ -2,8 +2,8 @@ import { redirect } from "next/navigation";
 import Link from "next/link";
 import Image from "next/image";
 import {
-  LayoutDashboard, ReceiptText, ClipboardList, Users, Building2, Settings, Car,
-  Headphones, Receipt, BarChart3, UserCog, Flag,
+  LayoutDashboard, ClipboardList, Users, Building2, Settings, Car,
+  Headphones, BarChart3, UserCog, Flag,
 } from "lucide-react";
 import { createClient } from "@/lib/supabase/server";
 import { SignOutButton } from "@/components/account/SignOutButton";
@@ -17,21 +17,17 @@ interface AdminNavItem {
   label:   string;
   Icon:    React.ComponentType<{ size?: number; className?: string }>;
   badge?:  NavBadge;
-  feeOnly?: boolean; // only shown once a booking fee is configured (> 0)
 }
 
-// Calmer sidebar: Action Inbox merged into Home; the 3 settings pages merged
-// into one Settings; Blacklist folded into Renters/KYC; Slip Queue + Invoices
-// only appear once monetization is on (booking_fee_lkr > 0).
+// Calmer sidebar: Action Inbox is merged into Home, notification settings are
+// in one place, and Blacklist is folded into Renters/KYC.
 const NAV: AdminNavItem[] = [
   { href: "/admin",                 label: "Home",          Icon: LayoutDashboard, badge: "home" },
   { href: "/admin/analytics",       label: "Analytics",     Icon: BarChart3 },
   { href: "/admin/vehicles",        label: "Listings",      Icon: Car },
   { href: "/admin/bookings",        label: "All Bookings",  Icon: ClipboardList },
-  { href: "/admin/slips",           label: "Slip Queue",    Icon: ReceiptText, feeOnly: true },
-  { href: "/admin/invoices",        label: "Invoices",      Icon: Receipt, feeOnly: true },
   { href: "/admin/users",           label: "Renters / KYC", Icon: Users },
-  { href: "/admin/agencies",        label: "Agencies",      Icon: Building2 },
+  { href: "/admin/agencies",        label: "Rental Pages",  Icon: Building2 },
   { href: "/admin/reports",         label: "Reports",       Icon: Flag },
   { href: "/admin/support",         label: "Support",       Icon: Headphones, badge: "support" },
   { href: "/admin/settings",        label: "Settings",      Icon: Settings },
@@ -42,8 +38,6 @@ const HREF_TO_ICON: Record<string, MobileNavItem["icon"]> = {
   "/admin/analytics":       "analytics",
   "/admin/vehicles":        "listings",
   "/admin/bookings":        "all-bookings",
-  "/admin/slips":           "slips",
-  "/admin/invoices":        "invoices",
   "/admin/users":           "users",
   "/admin/agencies":        "agencies",
   "/admin/support":         "support",
@@ -63,21 +57,16 @@ export default async function AdminLayout({ children }: { children: React.ReactN
 
   if (!profile || profile.role !== "admin") redirect("/");
 
-  // Badge counts + monetization flag, in one round-trip.
+  // Badge counts for the two admin areas that need immediate attention.
   const [
     { count: supportUnread },
     { count: pendingVehicles },
-    { data: settingsRow },
   ] = await Promise.all([
     supabase.from("support_threads").select("*", { count: "exact", head: true }).eq("has_unread_admin", true),
     supabase.from("vehicles").select("*", { count: "exact", head: true }).eq("status", "pending_review"),
-    supabase.from("platform_settings").select("booking_fee_lkr").eq("id", true).single(),
   ]);
 
   const inboxTotal = (pendingVehicles ?? 0) + (supportUnread ?? 0);
-  const feeEnabled = (((settingsRow as { booking_fee_lkr?: number } | null)?.booking_fee_lkr) ?? 0) > 0;
-
-  const visibleNav = NAV.filter((item) => !item.feeOnly || feeEnabled);
 
   function badgeCount(b?: NavBadge): number {
     if (b === "home")     return inboxTotal;
@@ -88,11 +77,10 @@ export default async function AdminLayout({ children }: { children: React.ReactN
   // Bottom bar on mobile: 3 most-touched pages + the rest in the "More" sheet.
   const mobilePrimary: MobileNavItem[] = [
     { href: "/admin",          label: "Home",     icon: "home", badge: inboxTotal > 0 ? inboxTotal : undefined },
-    { href: "/admin/bookings", label: "Bookings", icon: "all-bookings" },
     { href: "/admin/vehicles", label: "Listings", icon: "listings" },
   ];
   const primaryHrefs = mobilePrimary.map((p) => p.href);
-  const mobileSecondary: MobileNavItem[] = visibleNav
+  const mobileSecondary: MobileNavItem[] = NAV
     .filter((item) => !primaryHrefs.includes(item.href))
     .map((item) => ({
       href:  item.href,
@@ -100,6 +88,12 @@ export default async function AdminLayout({ children }: { children: React.ReactN
       icon:  HREF_TO_ICON[item.href] ?? "home",
       badge: badgeCount(item.badge) > 0 ? badgeCount(item.badge) : undefined,
     }));
+  // Same one-way door as the dashboard: the desktop sidebar is hidden on a
+  // phone, so the marketplace needs a route out of here.
+  mobileSecondary.push(
+    { href: "/vehicles", label: "Browse vehicles", icon: "browse" },
+    { href: "/",         label: "DriveLink home",  icon: "home" },
+  );
 
   return (
     <div className="min-h-screen flex">
@@ -107,15 +101,14 @@ export default async function AdminLayout({ children }: { children: React.ReactN
       <aside className="hidden md:flex w-52 shrink-0 border-r border-slate-200 flex-col fixed h-full glass">
         <div className="p-4 border-b border-slate-200">
           <Link href="/" className="inline-flex items-center gap-2 font-bold text-lg align-middle">
-            <Image src="/logo-circle.png" alt="DriveLink logo" width={26} height={26} unoptimized className="h-[26px] w-[26px] shrink-0" />
-            <span>Drive<span className="text-blue-600">Link</span></span>
+            <Image src="/logo-horizontal.png" alt="DriveLink" width={1034} height={175} unoptimized priority className="h-6 w-auto shrink-0" />
           </Link>
-          <span className="ml-2 text-xs bg-red-500/15 text-red-500 px-2 py-0.5 rounded-full font-medium ring-1 ring-red-500/25">
+          <span className="ml-2 text-xs bg-rose-50 text-rose-700 px-2 py-0.5 rounded-full font-medium ring-1 ring-rose-200">
             ADMIN
           </span>
         </div>
         <nav className="flex-1 p-3 space-y-0.5 overflow-y-auto">
-          {visibleNav.map(({ href, label, Icon, badge }) => {
+          {NAV.map(({ href, label, Icon, badge }) => {
             const count = badgeCount(badge);
             return (
               <Link
@@ -128,7 +121,7 @@ export default async function AdminLayout({ children }: { children: React.ReactN
                   {label}
                 </span>
                 {count > 0 && (
-                  <span className={`text-[10px] font-semibold px-1.5 py-0.5 rounded-full animate-pop-in ${
+                  <span className={`text-xs font-semibold px-1.5 py-0.5 rounded-full animate-pop-in ${
                     badge === "support" ? "bg-red-500 text-white" : "bg-blue-600 text-white"
                   }`}>
                     {count}

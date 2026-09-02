@@ -50,8 +50,8 @@ export function KycActions({ userId, hasDiditSession }: Props) {
   }
 
   return (
-    <div className="flex flex-col items-end gap-1">
-      <div className="flex gap-2 shrink-0">
+    <div className="flex w-full flex-col items-stretch gap-1 sm:w-auto sm:items-end">
+      <div className="flex flex-wrap gap-2">
         {hasDiditSession && (
           <Button size="sm" variant="secondary" loading={loading === "sync"} onClick={syncFromDidit}>
             <RefreshCw size={14} /> Sync from Didit
@@ -64,8 +64,8 @@ export function KycActions({ userId, hasDiditSession }: Props) {
           <X size={14} /> Reject
         </Button>
       </div>
-      {info  && <p className="text-emerald-400 text-xs max-w-xs text-right">{info}</p>}
-      {error && <p className="text-red-400 text-xs max-w-xs text-right">{error}</p>}
+      {info  && <p className="text-emerald-700 text-xs max-w-xs text-right">{info}</p>}
+      {error && <p className="text-rose-600 text-xs max-w-xs text-right">{error}</p>}
     </div>
   );
 }

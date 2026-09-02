@@ -51,7 +51,7 @@ export default async function AdminSupportListPage() {
         <h1 className="text-2xl font-bold text-slate-900">Support</h1>
       </div>
       <p className="text-slate-600 text-sm mb-6">
-        Agency support threads. {threads.length} total{unreadCount > 0 ? ` · ${unreadCount} need a reply` : ""}.
+        Rental Page support threads. {threads.length} total{unreadCount > 0 ? ` · ${unreadCount} need a reply` : ""}.
       </p>
 
       {threads.length === 0 ? (
@@ -72,7 +72,7 @@ export default async function AdminSupportListPage() {
                   <div className="min-w-0 flex-1">
                     <div className="flex items-center gap-2 flex-wrap">
                       <p className="font-semibold text-slate-900">{t.agencies?.name ?? t.profiles?.full_name ?? "Unknown"}</p>
-                      <Badge variant="slate">{t.renter_id ? "Renter" : "Agency"}</Badge>
+                      <Badge variant="slate">{t.renter_id ? "Renter" : "Rental Page"}</Badge>
                       {t.agencies?.city && <span className="text-slate-500 text-xs">{t.agencies.city}</span>}
                       {t.has_unread_admin && <Badge variant="red">New</Badge>}
                     </div>

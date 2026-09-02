@@ -49,15 +49,15 @@ export function EmailTestSender({ disabled }: Props) {
           onChange={(e) => setTo(e.target.value)}
           disabled={disabled}
           placeholder="you@example.com"
-          className="flex-1 px-3 py-2 bg-slate-100 border border-slate-200 rounded-lg text-slate-900 placeholder-slate-400 text-sm focus:outline-none focus:border-blue-500 disabled:opacity-50"
+          className="flex-1 px-3 py-2 bg-slate-100 border border-slate-200 rounded-lg text-slate-900 placeholder-slate-400 text-sm focus:border-blue-500 disabled:opacity-50"
         />
         <Button type="button" variant="secondary" loading={sending} disabled={disabled} onClick={send}>
           <Send size={14} /> Send
         </Button>
       </div>
 
-      {error && <p className="text-red-400 text-sm mt-2">{error}</p>}
-      {info  && <p className="text-emerald-400 text-sm mt-2">{info}</p>}
+      {error && <p className="text-rose-600 text-sm mt-2">{error}</p>}
+      {info  && <p className="text-emerald-700 text-sm mt-2">{info}</p>}
     </div>
   );
 }

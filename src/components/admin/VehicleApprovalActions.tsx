@@ -9,9 +9,10 @@ import type { VehicleStatus } from "@/types/database";
 interface Props {
   vehicleId: string;
   status:    VehicleStatus;
+  approvalProblem?: string | null;
 }
 
-export function VehicleApprovalActions({ vehicleId, status }: Props) {
+export function VehicleApprovalActions({ vehicleId, status, approvalProblem }: Props) {
   const router = useRouter();
   const [loading, setLoading] = useState<string | null>(null);
   const [error, setError]     = useState<string | null>(null);
@@ -48,7 +49,7 @@ export function VehicleApprovalActions({ vehicleId, status }: Props) {
       <div className="flex flex-wrap gap-2 justify-end">
         {status === "pending_review" && (
           <>
-            <Button size="sm" loading={loading === "approve"} onClick={() => update("available", "approve")}>
+            <Button size="sm" disabled={Boolean(approvalProblem)} loading={loading === "approve"} onClick={() => update("available", "approve")}>
               <Check size={14} /> Approve
             </Button>
             <Button size="sm" variant="danger" loading={loading === "reject"} onClick={() => update("unlisted", "reject")}>
@@ -70,7 +71,7 @@ export function VehicleApprovalActions({ vehicleId, status }: Props) {
 
         {status === "unlisted" && (
           <>
-            <Button size="sm" loading={loading === "approve"} onClick={() => update("available", "approve")}>
+            <Button size="sm" disabled={Boolean(approvalProblem)} loading={loading === "approve"} onClick={() => update("available", "approve")}>
               <Check size={14} /> Restore
             </Button>
             <Button size="sm" variant="secondary" loading={loading === "review"} onClick={() => update("pending_review", "review")}>
@@ -79,7 +80,8 @@ export function VehicleApprovalActions({ vehicleId, status }: Props) {
           </>
         )}
       </div>
-      {error && <p className="text-red-400 text-xs">{error}</p>}
+      {approvalProblem && <p className="max-w-sm text-right text-xs leading-5 text-amber-700">Cannot publish: {approvalProblem}</p>}
+      {error && <p className="text-rose-600 text-xs">{error}</p>}
     </div>
   );
 }

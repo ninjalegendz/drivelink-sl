@@ -36,7 +36,7 @@ export function BlacklistActions({ reportId }: { reportId: string; reportedNic: 
           Dismiss
         </Button>
       </div>
-      {error && <p className="text-red-400 text-xs">{error}</p>}
+      {error && <p className="text-rose-600 text-xs">{error}</p>}
     </div>
   );
 }

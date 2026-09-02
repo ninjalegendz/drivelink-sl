@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { Save, ShieldAlert, MessageSquare, BellRing } from "lucide-react";
+import { Save, ShieldAlert, MessageSquare } from "lucide-react";
 import { Button } from "@/components/ui/Button";
 
 interface Initial {
@@ -13,17 +13,14 @@ interface Initial {
   sms_new_booking_agency_enabled:          boolean;
   sms_booking_status_renter_enabled:       boolean;
   sms_admin_booking_status_renter_enabled: boolean;
-  sms_expiry_renter_enabled:               boolean;
-  sms_expiry_agency_enabled:               boolean;
-  booking_fee_lkr:                         number;
+  sms_listing_moderation_enabled:          boolean;
 }
-
 interface Props {
   initial:   Initial;
   updatedAt: string | null;
 }
 
-type BoolKey = Exclude<keyof Initial, "booking_fee_lkr">;
+type BoolKey = keyof Initial;
 
 const AUTH_TOGGLES: { key: BoolKey; label: string; hint: string }[] = [
   { key: "sms_signup_renter_enabled", label: "Renter signup OTP",
@@ -43,10 +40,8 @@ const NOTIFICATION_TOGGLES: { key: BoolKey; label: string; hint: string }[] = [
     hint: "Tells the renter when the agency confirms or declines their booking." },
   { key: "sms_admin_booking_status_renter_enabled", label: "Booking status, renter notice (admin-driven)",
     hint: "Same as above but when an admin moves the booking on the agency's behalf." },
-  { key: "sms_expiry_renter_enabled", label: "Booking auto-cancel, renter notice",
-    hint: "Tells the renter their booking was auto-cancelled because the lock-in wasn't paid." },
-  { key: "sms_expiry_agency_enabled", label: "Booking auto-cancel, agency notice",
-    hint: "Lets the agency know the slot opened back up after auto-cancel." },
+  { key: "sms_listing_moderation_enabled", label: "Listing approved or rejected",
+    hint: "Tells a Rental Page the outcome of a listing review, with the reason when it is sent back. Without it an owner has to log in to find out." },
 ];
 
 export function NotificationSettingsForm({ initial, updatedAt }: Props) {
@@ -64,12 +59,10 @@ export function NotificationSettingsForm({ initial, updatedAt }: Props) {
     e.preventDefault();
     setSaving(true); setError(null); setInfo(null);
 
-    const fee = Math.max(0, Math.floor(Number(form.booking_fee_lkr) || 0));
-
     const res = await fetch("/api/admin/platform-settings/notifications", {
       method:  "POST",
       headers: { "Content-Type": "application/json" },
-      body:    JSON.stringify({ ...form, booking_fee_lkr: fee }),
+      body:    JSON.stringify(form),
     });
     const payload = await res.json().catch(() => ({}));
     setSaving(false);
@@ -78,8 +71,6 @@ export function NotificationSettingsForm({ initial, updatedAt }: Props) {
     setInfo("Saved.");
     router.refresh();
   }
-
-  const feeFreeMode = (Number(form.booking_fee_lkr) || 0) === 0;
 
   return (
     <form onSubmit={save} className="space-y-5">
@@ -111,30 +102,8 @@ export function NotificationSettingsForm({ initial, updatedAt }: Props) {
         ))}
       </Section>
 
-      <Section icon={<BellRing size={16} className="text-blue-600" />}
-               title="Booking fee"
-               sub="The amount a renter pays to lock in a booking. Set to 0 to keep bookings free.">
-        <div>
-          <label className="text-slate-700 text-xs font-medium mb-1.5 block">Booking fee (LKR)</label>
-          <input
-            type="number"
-            inputMode="numeric"
-            min={0}
-            step={50}
-            value={form.booking_fee_lkr}
-            onChange={(e) => setForm((f) => ({ ...f, booking_fee_lkr: Number(e.target.value) }))}
-            className={`${inputClass} font-mono`}
-          />
-          <p className={`mt-2 text-xs ${feeFreeMode ? "text-emerald-400" : "text-blue-500"}`}>
-            {feeFreeMode
-              ? "Free mode, renters submit requests with no payment step."
-              : `Renters will be asked for Rs. ${form.booking_fee_lkr.toLocaleString("en-LK")} to lock in a confirmed request. Payment integration is not built yet, admin marks paid manually for now.`}
-          </p>
-        </div>
-      </Section>
-
-      {error && <p className="text-red-400 text-sm">{error}</p>}
-      {info  && <p className="text-emerald-400 text-sm">{info}</p>}
+      {error && <p className="text-rose-600 text-sm">{error}</p>}
+      {info  && <p className="text-emerald-700 text-sm">{info}</p>}
       {updatedAt && (
         <p className="text-slate-400 text-xs">
           Last updated {new Date(updatedAt).toLocaleString("en-LK")}.
@@ -183,6 +152,3 @@ function ToggleRow({ label, hint, checked, onChange }: {
     </label>
   );
 }
-
-const inputClass =
-  "w-full px-3 py-2 bg-slate-100 border border-slate-200 rounded-lg text-slate-900 placeholder-slate-400 text-sm focus:outline-none focus:border-blue-500";

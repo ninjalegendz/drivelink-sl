@@ -3,10 +3,11 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
-import { Ban, Undo2, Trash2, Pencil, Star, Activity } from "lucide-react";
+import { Ban, Undo2, Trash2, Pencil, Gauge, Activity } from "lucide-react";
 import { Button } from "@/components/ui/Button";
 import { EditAgencyModal } from "@/components/admin/EditAgencyModal";
 import { RatingAdjustModal } from "@/components/admin/RatingAdjustModal";
+import { ConfirmDialog } from "@/components/ui/ConfirmDialog";
 
 interface Props {
   agencyId:        string;
@@ -25,9 +26,10 @@ export function AgencyActions({ agencyId, name, city, address, whatsapp_number, 
   const [error, setError]     = useState<string | null>(null);
   const [editOpen,   setEditOpen]   = useState(false);
   const [ratingOpen, setRatingOpen] = useState(false);
+  const [confirming, setConfirming] = useState<null | "block" | "delete">(null);
 
   async function block() {
-    if (!confirm(`Block ${name}? Their listings will be hidden from the marketplace.`)) return;
+    setConfirming(null);
     setLoading("block");
     setError(null);
 
@@ -68,7 +70,7 @@ export function AgencyActions({ agencyId, name, city, address, whatsapp_number, 
   }
 
   async function remove() {
-    if (!confirm(`Soft-delete ${name}? Their identifying info will be scrubbed, vehicles unlisted, but booking history is preserved for renters who transacted with them.`)) return;
+    setConfirming(null);
     setLoading("delete");
     setError(null);
 
@@ -90,7 +92,7 @@ export function AgencyActions({ agencyId, name, city, address, whatsapp_number, 
           <Activity size={14} /> Timeline
         </Link>
         <Button size="sm" variant="ghost" onClick={() => setRatingOpen(true)}>
-          <Star size={14} /> Adjust
+          <Gauge size={14} /> Reliability
         </Button>
         <Button size="sm" variant="ghost" onClick={() => setEditOpen(true)}>
           <Pencil size={14} /> Edit
@@ -100,15 +102,37 @@ export function AgencyActions({ agencyId, name, city, address, whatsapp_number, 
             <Undo2 size={14} /> Unblock
           </Button>
         ) : (
-          <Button size="sm" variant="secondary" loading={loading === "block"} onClick={block}>
+          <Button size="sm" variant="secondary" loading={loading === "block"} onClick={() => setConfirming("block")}>
             <Ban size={14} /> Block
           </Button>
         )}
-        <Button size="sm" variant="danger" loading={loading === "delete"} onClick={remove}>
+        <Button size="sm" variant="danger" loading={loading === "delete"} onClick={() => setConfirming("delete")}>
           <Trash2 size={14} /> Delete
         </Button>
       </div>
-      {error && <p className="text-red-400 text-xs">{error}</p>}
+      {error && <p className="text-rose-600 text-xs">{error}</p>}
+
+      <ConfirmDialog
+        open={confirming === "block"}
+        title={`Block ${name}?`}
+        consequence="Their listings are hidden from the marketplace immediately and they cannot take new bookings. Rentals already in progress carry on, and you can unblock them again at any time."
+        confirmLabel="Block this page"
+        busy={loading === "block"}
+        onConfirm={block}
+        onCancel={() => setConfirming(null)}
+      />
+
+      <ConfirmDialog
+        open={confirming === "delete"}
+        title={`Soft-delete ${name}?`}
+        consequence="Their identifying details are scrubbed and every vehicle is unlisted. Booking history is kept so renters who dealt with them keep their records. This is not reversible from the admin screens."
+        confirmLabel="Soft-delete this page"
+        requireTyped={name}
+        busy={loading === "delete"}
+        onConfirm={remove}
+        onCancel={() => setConfirming(null)}
+      />
+
       {editOpen && (
         <EditAgencyModal
           agencyId={agencyId}
@@ -121,7 +145,6 @@ export function AgencyActions({ agencyId, name, city, address, whatsapp_number, 
           targetKind="agency"
           targetId={agencyId}
           targetName={name}
-          currentRating={null}
           currentRel={reliabilityPct ?? null}
           onClose={() => setRatingOpen(false)}
         />

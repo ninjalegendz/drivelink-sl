@@ -2,21 +2,19 @@
 
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import { X, Star } from "lucide-react";
+import { Gauge, X } from "lucide-react";
 import { Button } from "@/components/ui/Button";
 
 interface Props {
   targetKind:    "renter" | "agency";
   targetId:      string;
   targetName:    string;
-  currentRating: number | null;
   currentRel:    number | null;
   onClose:       () => void;
 }
 
-export function RatingAdjustModal({ targetKind, targetId, targetName, currentRating, currentRel, onClose }: Props) {
+export function RatingAdjustModal({ targetKind, targetId, targetName, currentRel, onClose }: Props) {
   const router = useRouter();
-  const [field,   setField]   = useState<"rating_avg" | "reliability_pct">("reliability_pct");
   const [delta,   setDelta]   = useState("0");
   const [reason,  setReason]  = useState("");
   const [loading, setLoading] = useState(false);
@@ -30,11 +28,11 @@ export function RatingAdjustModal({ targetKind, targetId, targetName, currentRat
     return () => { document.body.style.overflow = prev; window.removeEventListener("keydown", onKey); };
   }, [onClose]);
 
-  const currentValue = field === "rating_avg" ? currentRating : currentRel;
+  const currentValue = currentRel;
   const deltaNum = Number(delta) || 0;
   const previewNext = typeof currentValue === "number"
-    ? clamp(currentValue + deltaNum, field)
-    : clamp(deltaNum, field);
+    ? clamp(currentValue + deltaNum)
+    : clamp(deltaNum);
 
   async function submit(e: React.FormEvent) {
     e.preventDefault();
@@ -48,7 +46,7 @@ export function RatingAdjustModal({ targetKind, targetId, targetName, currentRat
       body:    JSON.stringify({
         target_kind: targetKind,
         target_id:   targetId,
-        field,
+        field:       "reliability_pct",
         delta:       deltaNum,
         reason:      reason.trim(),
       }),
@@ -67,7 +65,7 @@ export function RatingAdjustModal({ targetKind, targetId, targetName, currentRat
         <div className="flex items-start justify-between mb-4">
           <div>
             <h2 className="text-slate-900 font-semibold flex items-center gap-2">
-              <Star size={16} className="text-blue-600" /> Adjust rating
+              <Gauge size={16} className="text-blue-600" /> Adjust reliability
             </h2>
             <p className="text-slate-500 text-xs mt-0.5">{targetName}</p>
           </div>
@@ -78,47 +76,19 @@ export function RatingAdjustModal({ targetKind, targetId, targetName, currentRat
 
         <form onSubmit={submit} className="space-y-4">
           <div>
-            <label className="text-slate-700 text-xs font-medium mb-1.5 block">Which value</label>
-            <div className="grid grid-cols-2 gap-2">
-              <button
-                type="button"
-                onClick={() => setField("reliability_pct")}
-                className={`px-3 py-2 rounded-lg text-sm border ${
-                  field === "reliability_pct"
-                    ? "bg-blue-500/10 border-blue-500/50 text-blue-500"
-                    : "bg-slate-100 border-slate-200 text-slate-600 hover:text-slate-900"
-                }`}
-              >
-                Reliability ({currentRel ?? "N/A"}%)
-              </button>
-              <button
-                type="button"
-                onClick={() => setField("rating_avg")}
-                className={`px-3 py-2 rounded-lg text-sm border ${
-                  field === "rating_avg"
-                    ? "bg-blue-500/10 border-blue-500/50 text-blue-500"
-                    : "bg-slate-100 border-slate-200 text-slate-600 hover:text-slate-900"
-                }`}
-              >
-                Rating ({currentRating?.toFixed(1) ?? "-"})
-              </button>
-            </div>
-          </div>
-
-          <div>
             <label className="text-slate-700 text-xs font-medium mb-1.5 block">
-              Change by ({field === "rating_avg" ? "0.1 to 5.0" : ": 100 to +100"})
+              Change reliability by (-100 to +100)
             </label>
             <div className="flex gap-2">
-              <button type="button" onClick={() => setDelta(String(deltaNum - (field === "rating_avg" ? 0.1 : 5)))} className="px-3 py-2 bg-slate-100 border border-slate-200 rounded-lg text-slate-900">. </button>
+              <button type="button" onClick={() => setDelta(String(deltaNum - 5))} className="px-3 py-2 bg-slate-100 border border-slate-200 rounded-lg text-slate-900" aria-label="Decrease by 5">-</button>
               <input
                 type="number"
-                step={field === "rating_avg" ? "0.1" : "1"}
+                step="1"
                 value={delta}
                 onChange={(e) => setDelta(e.target.value)}
                 className="flex-1 px-3 py-2 bg-slate-100 border border-slate-200 rounded-lg text-slate-900 text-center font-mono"
               />
-              <button type="button" onClick={() => setDelta(String(deltaNum + (field === "rating_avg" ? 0.1 : 5)))} className="px-3 py-2 bg-slate-100 border border-slate-200 rounded-lg text-slate-900">+</button>
+              <button type="button" onClick={() => setDelta(String(deltaNum + 5))} className="px-3 py-2 bg-slate-100 border border-slate-200 rounded-lg text-slate-900" aria-label="Increase by 5">+</button>
             </div>
             <p className="text-slate-400 text-xs mt-1.5">
               {currentValue ?? 0} {deltaNum >= 0 ? "+" : ""} {deltaNum} = <span className="text-slate-900 font-semibold">{previewNext}</span>
@@ -135,12 +105,12 @@ export function RatingAdjustModal({ targetKind, targetId, targetName, currentRat
               rows={3}
               required
               placeholder="e.g. Renter reported by Beast Cars for damaged windshield (off-platform incident). Reducing reliability by 15 as compensation."
-              className="w-full px-3 py-2 bg-slate-100 border border-slate-200 rounded-lg text-slate-900 text-sm focus:outline-none focus:border-blue-500"
+              className="w-full px-3 py-2 bg-slate-100 border border-slate-200 rounded-lg text-slate-900 text-sm focus:border-blue-500"
             />
             <p className="text-slate-400 text-xs mt-1">Logged in the audit trail with your admin ID and timestamp.</p>
           </div>
 
-          {error && <p className="text-red-400 text-sm">{error}</p>}
+          {error && <p className="text-rose-600 text-sm">{error}</p>}
 
           <div className="flex gap-2 justify-end pt-1">
             <Button type="button" size="sm" variant="ghost" onClick={onClose}>Cancel</Button>
@@ -152,7 +122,6 @@ export function RatingAdjustModal({ targetKind, targetId, targetName, currentRat
   );
 }
 
-function clamp(v: number, field: "rating_avg" | "reliability_pct"): number {
-  if (field === "rating_avg") return Math.max(0, Math.min(5, Math.round(v * 10) / 10));
+function clamp(v: number): number {
   return Math.max(0, Math.min(100, Math.round(v)));
 }

@@ -5,7 +5,6 @@ import type { BookingStatus } from "@/types/database";
 
 const TABS: { label: string; value: string }[] = [
   { label: "All",           value: "" },
-  { label: "Pending slip",  value: "payment_pending" },
   { label: "Active",        value: "active" },
   { label: "Completed",     value: "completed" },
   { label: "Declined",      value: "declined" },

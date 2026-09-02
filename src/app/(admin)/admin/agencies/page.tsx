@@ -17,7 +17,8 @@ export default async function AdminAgenciesPage() {
       id, name, description, address, city, whatsapp_number, is_verified, is_blocked,
       page_type, business_reg_no, business_reg_url,
       reliability_pct, confirmed_count, cancellation_count, strike_count, created_at,
-      profiles(full_name, phone, kyc_status, rating_avg, rating_count),
+      rating_avg, rating_count,
+      profiles(full_name, phone, kyc_status),
       vehicles(count)
     `)
     .order("created_at", { ascending: false });
@@ -38,8 +39,10 @@ export default async function AdminAgenciesPage() {
     confirmed_count: number;
     cancellation_count: number;
     strike_count: number;
+    rating_avg: number | null;
+    rating_count: number;
     created_at: string;
-    profiles: { full_name: string; phone: string; kyc_status: string; rating_avg: number | null; rating_count: number } | null;
+    profiles: { full_name: string; phone: string; kyc_status: string } | null;
     vehicles: { count: number }[];
   }[];
 
@@ -122,7 +125,7 @@ export default async function AdminAgenciesPage() {
         {/* Description */}
         {a.description && (
           <div className="mb-3">
-            <p className="text-slate-500 text-[10px] uppercase tracking-wider mb-1">About</p>
+            <p className="text-slate-500 text-xs uppercase tracking-wider mb-1">About</p>
             <p className="text-slate-700 text-sm whitespace-pre-line leading-relaxed bg-slate-100/60 border border-slate-200/60 rounded-lg px-3 py-2">
               {a.description}
             </p>
@@ -130,16 +133,17 @@ export default async function AdminAgenciesPage() {
         )}
 
         {/* Metrics grid */}
-        <div className="grid grid-cols-2 sm:grid-cols-5 gap-2 mb-3">
+        <div className="grid grid-cols-2 sm:grid-cols-6 gap-2 mb-3">
           {[
             { label: "Reliability", value: reliabilityLabel(a.reliability_pct), color: reliabilityColor(a.reliability_pct) },
             { label: "Confirmed",   value: a.confirmed_count },
             { label: "Cancellations", value: a.cancellation_count, color: a.cancellation_count > 0 ? "text-blue-600" : "" },
             { label: "Fleet size",  value: fleetCount },
-            { label: "Strikes",     value: a.strike_count, color: a.strike_count > 0 ? "text-red-400" : "" },
+            { label: "Page rating", value: a.rating_count > 0 ? `${a.rating_avg?.toFixed(1)} (${a.rating_count})` : "New" },
+            { label: "Strikes",     value: a.strike_count, color: a.strike_count > 0 ? "text-rose-600" : "" },
           ].map(({ label, value, color }) => (
             <div key={label} className="bg-slate-100/60 border border-slate-200/60 rounded-lg px-3 py-2">
-              <p className="text-slate-500 text-[10px] uppercase tracking-wider">{label}</p>
+              <p className="text-slate-500 text-xs uppercase tracking-wider">{label}</p>
               <p className={`text-sm font-semibold mt-0.5 ${color ?? "text-slate-900"}`}>{value}</p>
             </div>
           ))}
@@ -149,7 +153,7 @@ export default async function AdminAgenciesPage() {
         <div className="bg-slate-100/60 border border-slate-200/60 rounded-lg px-3 py-2.5">
           <div className="flex items-center justify-between gap-3 flex-wrap">
             <div className="min-w-0">
-              <p className="text-slate-500 text-[10px] uppercase tracking-wider">Owner</p>
+              <p className="text-slate-500 text-xs uppercase tracking-wider">Owner</p>
               <p className="text-slate-900 text-sm font-medium mt-0.5 truncate">
                 {a.profiles?.full_name ?? "-"}
               </p>
@@ -157,11 +161,6 @@ export default async function AdminAgenciesPage() {
             </div>
             <div className="text-right">
               <Badge variant={kycVariant[ownerKyc]}>{kycLabel[ownerKyc]}</Badge>
-              {(a.profiles?.rating_count ?? 0) > 0 && (
-                <p className="text-slate-600 text-xs mt-1">
-                  ★ {a.profiles?.rating_avg?.toFixed(1)} ({a.profiles?.rating_count})
-                </p>
-              )}
             </div>
           </div>
           {!a.is_verified && ownerKyc !== "verified" && (
@@ -176,7 +175,7 @@ export default async function AdminAgenciesPage() {
 
   return (
     <div>
-      <h1 className="text-2xl font-bold text-slate-900 mb-1">Agencies</h1>
+      <h1 className="text-2xl font-bold text-slate-900 mb-1">Rental Pages</h1>
       <p className="text-slate-600 text-sm mb-6">
         {agencies.length} total · {pending.length} pending review · {approved.length} live
       </p>
@@ -196,10 +195,10 @@ export default async function AdminAgenciesPage() {
         </div>
       )}
 
-      {/* Live agencies */}
+      {/* Live Rental Pages */}
       {approved.length > 0 && (
         <div>
-          <h2 className="text-slate-900 font-semibold mb-3">Live agencies</h2>
+          <h2 className="text-slate-900 font-semibold mb-3">Live Rental Pages</h2>
           <div className="space-y-3">
             {approved.map((a) => <AgencyCard key={a.id} a={a} />)}
           </div>
@@ -207,7 +206,7 @@ export default async function AdminAgenciesPage() {
       )}
 
       {agencies.length === 0 && (
-        <div className="text-center py-16 text-slate-500">No agencies yet.</div>
+        <div className="text-center py-16 text-slate-500">No Rental Pages yet.</div>
       )}
     </div>
   );

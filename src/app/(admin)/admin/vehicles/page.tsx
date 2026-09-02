@@ -6,8 +6,10 @@ import { Badge } from "@/components/ui/Badge";
 import { VehicleApprovalActions } from "@/components/admin/VehicleApprovalActions";
 import { VehicleBadgeEditor } from "@/components/admin/VehicleBadgeEditor";
 import { VehicleFeatureToggle } from "@/components/admin/VehicleFeatureToggle";
+import { VehicleVerificationToggle } from "@/components/admin/VehicleVerificationToggle";
 import { formatLKR, insuranceLabel, fuelPolicyLabel } from "@/lib/vehicles/format";
 import type { Database } from "@/types/database";
+import { hasCurrentVehicleCompliance, listingPublicationProblem } from "@/lib/vehicles/trust";
 
 type VehicleRow  = Database["public"]["Tables"]["vehicles"]["Row"];
 type AgencyLite  = { name: string; city: string; whatsapp_number: string };
@@ -45,10 +47,10 @@ export default async function AdminVehiclesPage({ searchParams }: Props) {
   // Document proof (CR / insurance) for the document check, admin-only.
   const ids = vehicles.map((v) => v.id);
   const { data: docRows } = ids.length
-    ? await supabase.from("vehicle_documents").select("vehicle_id, cr_url, insurance_url").in("vehicle_id", ids)
+    ? await supabase.from("vehicle_documents").select("vehicle_id, cr_url, insurance_url, revenue_license_url").in("vehicle_id", ids)
     : { data: [] };
   const docMap = new Map(
-    ((docRows ?? []) as { vehicle_id: string; cr_url: string | null; insurance_url: string | null }[]).map((d) => [d.vehicle_id, d]),
+    ((docRows ?? []) as { vehicle_id: string; cr_url: string | null; insurance_url: string | null; revenue_license_url: string | null }[]).map((d) => [d.vehicle_id, d]),
   );
 
   return (
@@ -129,11 +131,22 @@ export default async function AdminVehiclesPage({ searchParams }: Props) {
                     </Link>
                     <div className="flex flex-wrap items-center gap-2 justify-end">
                       <VehicleFeatureToggle vehicleId={v.id} initial={v.is_featured ?? false} />
-                      <VehicleApprovalActions vehicleId={v.id} status={v.status} />
+                      <VehicleApprovalActions
+                        vehicleId={v.id}
+                        status={v.status}
+                        approvalProblem={listingPublicationProblem(v, { approvalClearsRejection: true })}
+                      />
                     </div>
                   </div>
                   <div className="mt-3">
                     <VehicleBadgeEditor vehicleId={v.id} initialBadges={v.badges ?? []} />
+                  </div>
+                  <div className="mt-3">
+                    <VehicleVerificationToggle
+                      vehicleId={v.id}
+                      initial={v.verified_vehicle}
+                      eligible={hasCurrentVehicleCompliance(v) && Boolean(docMap.get(v.id)?.cr_url && docMap.get(v.id)?.insurance_url && docMap.get(v.id)?.revenue_license_url)}
+                    />
                   </div>
                 </div>
               );
@@ -164,7 +177,7 @@ export default async function AdminVehiclesPage({ searchParams }: Props) {
                   <div className="text-right shrink-0">
                     <p className="text-blue-600 font-bold">{formatLKR(v.daily_rate_lkr)}<span className="text-slate-500 text-xs font-normal"> / day</span></p>
                     {v.monthly_rate_lkr && (
-                      <p className="text-emerald-400 text-xs mt-0.5">{formatLKR(v.monthly_rate_lkr)} / month</p>
+                      <p className="text-emerald-700 text-xs mt-0.5">{formatLKR(v.monthly_rate_lkr)} / month</p>
                     )}
                     {v.deposit_lkr > 0 && (
                       <p className="text-slate-500 text-xs mt-0.5">+ {formatLKR(v.deposit_lkr)} deposit</p>
@@ -185,10 +198,10 @@ export default async function AdminVehiclesPage({ searchParams }: Props) {
                       >
                         <Image src={url} alt={`Photo ${i + 1}`} fill className="object-cover" sizes="176px" />
                         {i === 0 && (
-                          <span className="absolute bottom-1 left-1 text-[10px] bg-blue-600 text-white font-semibold px-1.5 py-0.5 rounded">Cover</span>
+                          <span className="absolute bottom-1 left-1 text-xs bg-blue-600 text-white font-semibold px-1.5 py-0.5 rounded">Cover</span>
                         )}
                         <div className="absolute inset-0 bg-black/0 group-hover:bg-black/30 flex items-center justify-center transition-colors">
-                          <span className="opacity-0 group-hover:opacity-100 text-white text-[10px] bg-black/60 px-2 py-0.5 rounded transition-opacity inline-flex items-center gap-1">
+                          <span className="opacity-0 group-hover:opacity-100 text-white text-xs bg-black/60 px-2 py-0.5 rounded transition-opacity inline-flex items-center gap-1">
                             View <ExternalLink size={10} />
                           </span>
                         </div>
@@ -215,7 +228,7 @@ export default async function AdminVehiclesPage({ searchParams }: Props) {
                     { label: "Slug",         value: v.slug, mono: true },
                   ].map(({ label, value, mono }) => (
                     <div key={label} className="bg-slate-100/60 border border-slate-200/60 rounded-lg px-3 py-2">
-                      <p className="text-slate-500 text-[10px] uppercase tracking-wider">{label}</p>
+                      <p className="text-slate-500 text-xs uppercase tracking-wider">{label}</p>
                       <p className={`text-slate-900 text-xs mt-0.5 ${mono ? "font-mono truncate" : ""}`}>{value}</p>
                     </div>
                   ))}
@@ -224,7 +237,7 @@ export default async function AdminVehiclesPage({ searchParams }: Props) {
                 {/* Description */}
                 {v.description && (
                   <div className="mb-3">
-                    <p className="text-slate-500 text-[10px] uppercase tracking-wider mb-1">Description</p>
+                    <p className="text-slate-500 text-xs uppercase tracking-wider mb-1">Description</p>
                     <p className="text-slate-700 text-sm whitespace-pre-line leading-relaxed bg-slate-100/60 border border-slate-200/60 rounded-lg px-3 py-2">
                       {v.description}
                     </p>
@@ -234,16 +247,31 @@ export default async function AdminVehiclesPage({ searchParams }: Props) {
                 {/* Features */}
                 {v.features && v.features.length > 0 && (
                   <div className="mb-3">
-                    <p className="text-slate-500 text-[10px] uppercase tracking-wider mb-1.5">Features ({v.features.length})</p>
+                    <p className="text-slate-500 text-xs uppercase tracking-wider mb-1.5">Features ({v.features.length})</p>
                     <div className="flex flex-wrap gap-1.5">
                       {v.features.map((f) => <Badge key={f} variant="slate">{f}</Badge>)}
                     </div>
                   </div>
                 )}
 
+                {/* Recorded authority declaration */}
+                <div className="mb-3 rounded-lg border border-slate-200 bg-slate-50 px-3 py-3">
+                  <p className="text-slate-500 text-xs uppercase tracking-wider">Right to list</p>
+                  {v.listing_authority_declared && v.listing_authority_confirmed_at ? (
+                    <>
+                      <p className="mt-1 text-xs font-semibold text-slate-900">
+                        {v.listing_authority_basis === "registered_owner" ? "Page operator says it owns the vehicle" : "Page operator says the registered owner authorised it"}
+                      </p>
+                      <p className="mt-1 text-xs leading-5 text-slate-600">Self-declared on {new Date(v.listing_authority_confirmed_at).toLocaleString("en-LK", { dateStyle: "medium", timeStyle: "short" })}. Compare the plate and any submitted CR; ask for written authority when the operator is not the registered owner.</p>
+                    </>
+                  ) : (
+                    <p className="mt-1 text-xs font-medium text-amber-700">No recorded right-to-list declaration. Do not publish.</p>
+                  )}
+                </div>
+
                 {/* Document proof */}
                 <div className="mb-3">
-                  <p className="text-slate-500 text-[10px] uppercase tracking-wider mb-1.5">Document proof</p>
+                  <p className="text-slate-500 text-xs uppercase tracking-wider mb-1.5">Document proof</p>
                   {(() => {
                     const docs = docMap.get(v.id);
                     if (!docs || (!docs.cr_url && !docs.insurance_url)) {
@@ -261,14 +289,27 @@ export default async function AdminVehiclesPage({ searchParams }: Props) {
                             Insurance <ExternalLink size={11} />
                           </a>
                         )}
+                        {docs.revenue_license_url && (
+                          <a href={docs.revenue_license_url} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-1 text-xs font-medium text-blue-600 hover:text-blue-700 bg-blue-50 border border-blue-100 px-2 py-1 rounded-lg">
+                            Revenue licence <ExternalLink size={11} />
+                          </a>
+                        )}
                       </div>
                     );
                   })()}
+                  <p className="mt-2 text-xs leading-5 text-slate-600">Verified Vehicle review requires registration, hire insurance, and a revenue licence.</p>
                 </div>
 
                 {/* Badge assignment */}
                 <div className="mb-3">
                   <VehicleBadgeEditor vehicleId={v.id} initialBadges={v.badges ?? []} />
+                </div>
+                <div className="mb-3">
+                  <VehicleVerificationToggle
+                    vehicleId={v.id}
+                    initial={v.verified_vehicle}
+                    eligible={hasCurrentVehicleCompliance(v) && Boolean(docMap.get(v.id)?.cr_url && docMap.get(v.id)?.insurance_url && docMap.get(v.id)?.revenue_license_url)}
+                  />
                 </div>
 
                 {/* Actions row */}
@@ -283,7 +324,11 @@ export default async function AdminVehiclesPage({ searchParams }: Props) {
                   </Link>
                   <div className="flex flex-wrap items-center gap-2 justify-end">
                     <VehicleFeatureToggle vehicleId={v.id} initial={v.is_featured ?? false} />
-                    <VehicleApprovalActions vehicleId={v.id} status={v.status} />
+                  <VehicleApprovalActions
+                    vehicleId={v.id}
+                    status={v.status}
+                    approvalProblem={listingPublicationProblem(v, { approvalClearsRejection: true })}
+                  />
                   </div>
                 </div>
               </div>

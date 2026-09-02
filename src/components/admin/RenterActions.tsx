@@ -3,10 +3,11 @@
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
-import { Ban, Undo2, Trash2, X, Pencil, Star, Activity } from "lucide-react";
+import { Ban, Undo2, Trash2, X, Pencil, Gauge, Activity } from "lucide-react";
 import { Button } from "@/components/ui/Button";
 import { EditRenterModal } from "@/components/admin/EditRenterModal";
 import { RatingAdjustModal } from "@/components/admin/RatingAdjustModal";
+import { ConfirmDialog } from "@/components/ui/ConfirmDialog";
 
 interface Props {
   userId:         string;
@@ -15,16 +16,16 @@ interface Props {
   email:          string | null;
   role:           "renter" | "agency_owner" | "admin";
   isBlacklisted:  boolean;
-  ratingAvg?:     number | null;
   reliabilityPct?: number | null;
 }
 
-export function RenterActions({ userId, fullName, phone, email, role, isBlacklisted, ratingAvg, reliabilityPct }: Props) {
+export function RenterActions({ userId, fullName, phone, email, role, isBlacklisted, reliabilityPct }: Props) {
   const router = useRouter();
   const [loading, setLoading] = useState<string | null>(null);
   const [error, setError]     = useState<string | null>(null);
 
   // Block-modal state
+  const [confirmingDelete, setConfirmingDelete] = useState(false);
   const [modalOpen,    setModalOpen]    = useState(false);
   const [adminReason,  setAdminReason]  = useState("");
   const [publicReason, setPublicReason] = useState("");
@@ -98,7 +99,10 @@ export function RenterActions({ userId, fullName, phone, email, role, isBlacklis
   }
 
   async function remove() {
-    if (!confirm(`Permanently delete ${fullName}? This removes their account, profile, and bookings. Cannot be undone.`)) return;
+    // Confirmation happens in <ConfirmDialog>, which requires the account name
+    // to be typed. Permanently removing someone's account and booking history
+    // should not be one mis-tap away on a phone.
+    setConfirmingDelete(false);
     setLoading("delete");
     setError(null);
 
@@ -112,8 +116,8 @@ export function RenterActions({ userId, fullName, phone, email, role, isBlacklis
   }
 
   return (
-    <div className="flex flex-col items-end gap-1">
-      <div className="flex gap-2 shrink-0 flex-wrap justify-end">
+    <div className="flex w-full flex-col items-stretch gap-1 sm:w-auto sm:items-end">
+      <div className="flex flex-wrap gap-2 sm:justify-end">
         <Link
           href={`/admin/users/${userId}/timeline`}
           className="inline-flex items-center gap-1 px-2.5 py-1 text-xs text-slate-600 hover:text-blue-600 rounded-lg hover:bg-slate-100 transition-colors"
@@ -121,7 +125,7 @@ export function RenterActions({ userId, fullName, phone, email, role, isBlacklis
           <Activity size={14} /> Timeline
         </Link>
         <Button size="sm" variant="ghost" onClick={() => setRatingOpen(true)}>
-          <Star size={14} /> Adjust
+          <Gauge size={14} /> Reliability
         </Button>
         <Button size="sm" variant="ghost" onClick={() => setEditOpen(true)}>
           <Pencil size={14} /> Edit
@@ -135,7 +139,7 @@ export function RenterActions({ userId, fullName, phone, email, role, isBlacklis
             <Ban size={14} /> Block
           </Button>
         )}
-        <Button size="sm" variant="danger" loading={loading === "delete"} onClick={remove}>
+        <Button size="sm" variant="danger" loading={loading === "delete"} onClick={() => setConfirmingDelete(true)}>
           <Trash2 size={14} /> Delete
         </Button>
       </div>
@@ -151,12 +155,22 @@ export function RenterActions({ userId, fullName, phone, email, role, isBlacklis
           targetKind="renter"
           targetId={userId}
           targetName={fullName}
-          currentRating={ratingAvg ?? null}
           currentRel={reliabilityPct ?? null}
           onClose={() => setRatingOpen(false)}
         />
       )}
-      {error && !modalOpen && <p className="text-red-400 text-xs">{error}</p>}
+      {error && !modalOpen && <p className="text-rose-600 text-xs">{error}</p>}
+
+      <ConfirmDialog
+        open={confirmingDelete}
+        title={`Permanently delete ${fullName}?`}
+        consequence="This removes their account, profile and booking history. It cannot be undone, and any Rental Page that dealt with them loses that record too."
+        confirmLabel="Delete this account"
+        requireTyped={fullName}
+        busy={loading === "delete"}
+        onConfirm={remove}
+        onCancel={() => setConfirmingDelete(false)}
+      />
 
       {modalOpen && (
         <div
@@ -194,9 +208,9 @@ export function RenterActions({ userId, fullName, phone, email, role, isBlacklis
                   required
                   autoFocus
                   placeholder="Internal note, only admins see this. e.g. 'Police report filed by Beast Cars on 2026-04-12, vehicle returned damaged with smell of alcohol.'"
-                  className="w-full px-3 py-2 bg-slate-100 border border-slate-200 rounded-lg text-slate-900 text-sm placeholder-slate-400 focus:outline-none focus:border-blue-500"
+                  className="w-full px-3 py-2 bg-slate-100 border border-slate-200 rounded-lg text-slate-900 text-sm placeholder-slate-400 focus:border-blue-500"
                 />
-                <p className="text-slate-400 text-[11px] mt-1">
+                <p className="text-slate-400 text-xs mt-1">
                   Private. Other admins see this when reviewing the renter or any of their bookings.
                 </p>
               </div>
@@ -210,14 +224,14 @@ export function RenterActions({ userId, fullName, phone, email, role, isBlacklis
                   onChange={(e) => setPublicReason(e.target.value)}
                   rows={2}
                   placeholder="What agencies see on bookings from this renter. e.g. 'Returned a vehicle with damage and refused to pay deposit. Decline at your discretion.'"
-                  className="w-full px-3 py-2 bg-slate-100 border border-slate-200 rounded-lg text-slate-900 text-sm placeholder-slate-400 focus:outline-none focus:border-blue-500"
+                  className="w-full px-3 py-2 bg-slate-100 border border-slate-200 rounded-lg text-slate-900 text-sm placeholder-slate-400 focus:border-blue-500"
                 />
-                <p className="text-slate-400 text-[11px] mt-1">
+                <p className="text-slate-400 text-xs mt-1">
                   Visible to any agency that receives a booking from this renter. Keep it factual, no names, no sensitive details.
                 </p>
               </div>
 
-              {error && <p className="text-red-400 text-xs">{error}</p>}
+              {error && <p className="text-rose-600 text-xs">{error}</p>}
 
               <div className="flex gap-2 justify-end pt-1">
                 <Button type="button" size="sm" variant="ghost" onClick={() => setModalOpen(false)}>

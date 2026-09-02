@@ -115,7 +115,7 @@ export function EditRenterModal({ userId, initial, onClose }: Props) {
             )}
           </div>
 
-          {error && <p className="text-red-400 text-sm">{error}</p>}
+          {error && <p className="text-rose-600 text-sm">{error}</p>}
 
           <div className="flex gap-2 justify-end pt-2">
             <Button type="button" size="sm" variant="ghost" onClick={onClose}>Cancel</Button>
@@ -128,4 +128,4 @@ export function EditRenterModal({ userId, initial, onClose }: Props) {
 }
 
 const inputClass =
-  "w-full px-3 py-2 bg-slate-100 border border-slate-200 rounded-lg text-slate-900 placeholder-slate-400 text-sm focus:outline-none focus:border-blue-500";
+  "w-full px-3 py-2 bg-slate-100 border border-slate-200 rounded-lg text-slate-900 placeholder-slate-400 text-sm focus:border-blue-500";

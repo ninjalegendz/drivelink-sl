@@ -5,8 +5,8 @@ import { Star } from "lucide-react";
 
 /**
  * Admin-only: promote a listing to "Featured", floats it to the top of
- * search and shows a Featured ribbon (plan §18). No fee during launch; this
- * is a curation tool. is_featured is a protected column, so this goes
+ * search and shows a Featured ribbon (plan §18). This is a curation tool,
+ * not a revenue control. is_featured is a protected column, so this goes
  * through the admin vehicle-moderation route.
  */
 export function VehicleFeatureToggle({ vehicleId, initial }: { vehicleId: string; initial: boolean }) {

@@ -1,6 +1,6 @@
 import { redirect } from "next/navigation";
 
-// Merged into the tabbed /admin/settings page. Redirect for old links.
+// Retired with the manual bank-transfer workflow. Keep old links useful.
 export default function AdminPaymentSettingsRedirect() {
-  redirect("/admin/settings?tab=bank");
+  redirect("/admin/settings?tab=sms");
 }

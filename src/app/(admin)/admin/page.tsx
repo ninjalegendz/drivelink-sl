@@ -10,6 +10,7 @@ import { VehicleApprovalActions } from "@/components/admin/VehicleApprovalAction
 import { VehicleBadgeEditor } from "@/components/admin/VehicleBadgeEditor";
 import { VehicleFeatureToggle } from "@/components/admin/VehicleFeatureToggle";
 import { formatLKR, insuranceLabel } from "@/lib/vehicles/format";
+import { TutorialCallout } from "@/components/tutorials/TutorialCallout";
 import type { Database } from "@/types/database";
 
 type VehicleRow = Database["public"]["Tables"]["vehicles"]["Row"];
@@ -93,6 +94,8 @@ export default async function AdminHomePage() {
       </div>
 
       {/* ── Action queue ── */}
+      <TutorialCallout audience="admin" tutorialSlug="review-and-resolve-as-drivelink-admin" />
+
       {actionTotal === 0 ? (
         <div className="bg-white border border-slate-200 rounded-2xl shadow-sm p-10 text-center">
           <CheckCircle2 size={40} className="mx-auto mb-3 text-emerald-500" strokeWidth={1.5} />
@@ -142,7 +145,7 @@ export default async function AdminHomePage() {
                 <Link key={t.id} href={`/admin/support/${t.id}`}
                   className="flex items-center gap-3 bg-white border border-slate-200 rounded-2xl shadow-sm p-4 hover:border-blue-300 transition-colors">
                   <div className="flex-1 min-w-0">
-                    <p className="font-semibold text-slate-900 text-sm">{t.agencies?.name ?? "Agency"}</p>
+                    <p className="font-semibold text-slate-900 text-sm">{t.agencies?.name ?? "Rental Page"}</p>
                     <p className="text-slate-500 text-xs mt-0.5">Last message {new Date(t.last_message_at).toLocaleString("en-LK")}</p>
                   </div>
                   <Badge variant="red">Reply</Badge>
@@ -181,7 +184,7 @@ export default async function AdminHomePage() {
             <Link key={b.id} href={`/admin/bookings?id=${b.id}`}
               className="flex items-center justify-between gap-4 bg-white border border-slate-200 hover:border-blue-300 rounded-xl px-4 py-3 transition-colors">
               <div className="flex items-center gap-3 min-w-0">
-                <span className={`text-[10px] font-bold uppercase px-2 py-0.5 rounded-full shrink-0 ${STATUS_PILL[b.status] ?? "bg-slate-100 text-slate-600"}`}>
+                <span className={`text-xs font-bold uppercase px-2 py-0.5 rounded-full shrink-0 ${STATUS_PILL[b.status] ?? "bg-slate-100 text-slate-600"}`}>
                   {b.status.replace(/_/g, " ")}
                 </span>
                 <span className="text-slate-900 text-sm truncate">
