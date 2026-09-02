@@ -1,7 +1,12 @@
 import type { Metadata, Viewport } from "next";
+import { Suspense } from "react";
 import { Poppins } from "next/font/google";
 import "./globals.css";
+import { NavigationProgress } from "@/components/layout/NavigationProgress";
 import { ServiceWorkerRegister } from "@/components/pwa/ServiceWorkerRegister";
+import { OfflineBanner } from "@/components/pwa/OfflineBanner";
+import { TrafficAnalytics } from "@/components/analytics/TrafficAnalytics";
+import { PostHogAnalytics } from "@/components/analytics/PostHogAnalytics";
 
 // Poppins is the ONE brand typeface - body, headings and monospace slots all
 // resolve to it (see the --font-* tokens in globals.css). Weights match the
@@ -16,11 +21,11 @@ const poppins = Poppins({
 export const metadata: Metadata = {
   metadataBase: new URL("https://drivelink.lk"),
   title: {
-    default: "DriveLink SL: Verified Vehicle Rentals in Sri Lanka",
+    default: "DriveLink SL: Vehicle Rentals in Sri Lanka",
     template: "%s | DriveLink SL",
   },
   description:
-    "Find verified, affordable car rentals across Sri Lanka. ID-verified renters, trusted agencies.",
+    "Compare vehicle rentals across Sri Lanka. See each listing's provider, terms and recorded checks before you request.",
   keywords: ["car rental sri lanka", "rent a car colombo", "self drive sri lanka"],
   manifest: "/manifest.json",
   applicationName: "DriveLink",
@@ -32,9 +37,9 @@ export const metadata: Metadata = {
   openGraph: {
     type: "website",
     siteName: "DriveLink SL",
-    title: "DriveLink SL: Verified Vehicle Rentals in Sri Lanka",
+    title: "DriveLink SL: Vehicle Rentals in Sri Lanka",
     description:
-      "Rent verified cars, vans, SUVs, bikes and tuk-tuks across Sri Lanka. Self-drive, with a driver, or airport pickup. No platform fees.",
+      "Compare cars, vans, SUVs, bikes and tuk-tuks across Sri Lanka. DriveLink booking requests cost Rs. 0.",
     url: "/",
     locale: "en_LK",
   },
@@ -54,8 +59,20 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
       {/* Body bg + gradient lives in globals.css so the layered radial-
           gradients can be fixed-attached. Font + base text colour here. */}
       <body className="font-sans bg-slate-50 text-slate-900 antialiased" suppressHydrationWarning>
+        {/* Suspense because NavigationProgress reads useSearchParams; without a
+            boundary that would opt every page out of static rendering. */}
+        <Suspense fallback={null}>
+          <NavigationProgress />
+        </Suspense>
         {children}
+        <TrafficAnalytics />
+        {/* Same Suspense reason as above: it reads useSearchParams, because the
+            search page keeps its filters in the query string. */}
+        <Suspense fallback={null}>
+          <PostHogAnalytics />
+        </Suspense>
         <ServiceWorkerRegister />
+        <OfflineBanner />
       </body>
     </html>
   );
