@@ -48,7 +48,6 @@ export default function PrivacyPage() {
           <ul className="list-disc pl-5 space-y-1">
             <li>Driving licence (front and back photos), only for self-drive bookings</li>
             <li>Booking history: dates requested, vehicle details, price, payment method</li>
-            <li>Inspection records: condition photos, checklists, handover notes per booking</li>
             <li>Messages with Owners and DriveLink support staff</li>
             <li>Ratings and review text you provide about Rental Pages</li>
           </ul>
@@ -119,8 +118,9 @@ export default function PrivacyPage() {
                 prevented. See <Link href="/account/documents" className="text-blue-600 hover:text-blue-500">
                 your document sharing history
               </Link> anytime.</li>
-            <li><strong>Dispute evidence:</strong> if a dispute arises, both the Renter and Owner may
-                see messages, photos, and inspection notes relevant to that dispute only.</li>
+            <li><strong>A reported problem:</strong> if either side reports a problem, DriveLink
+                staff may read the messages and booking record for that booking in order to review
+                conduct on the platform. DriveLink does not decide who owes what.</li>
           </ul>
           <p className="mt-3">
             <strong>We do not sell, rent, or share personal data</strong> with advertisers, data
@@ -141,10 +141,10 @@ export default function PrivacyPage() {
                 identity-document number, verification result, blacklist state, and reliability controls
                 may be retained after account deletion so deletion cannot be used to evade a safety block.
                 These fields are not shown as an active public profile.</li>
-            <li><strong>Booking, inspection, message, payment-record and dispute evidence:</strong> may be
-                retained after account deletion in an anonymised booking record while needed for an open
-                claim, safety investigation, fraud prevention, accounting, or a lawful request. DriveLink
-                deletes or anonymises it when that purpose no longer applies.</li>
+            <li><strong>Booking records, messages and reported problems:</strong> may be retained
+                after account deletion in an anonymised booking record while needed for a safety
+                investigation, fraud prevention, accounting, or a lawful request. DriveLink deletes or
+                anonymises it when that purpose no longer applies.</li>
             <li><strong>Approved government ID and liveness data:</strong> Didit receives the original
                 verification capture under its own retention controls. DriveLink stores only the approved
                 government-ID front/back copy used for handover, plus verification facts. Stored images are

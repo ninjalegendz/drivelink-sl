@@ -10,8 +10,7 @@ import { kickNotificationOutbox } from "@/lib/notification-outbox";
 // checks before showing the renter's approved identity/licence photos to the
 // page. Service client throughout: the bookings RLS update policies
 // aren't carved out for this column, so this route is the single
-// validated entry point (party check + status check), same idiom as the
-// dispute and inspections routes.
+// validated entry point (party check + status check).
 //
 // Grant is allowed while confirmed / payment_pending / active - the
 // window where a page still needs to review the renter before or during

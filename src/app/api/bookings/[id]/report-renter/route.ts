@@ -15,8 +15,7 @@ import { canPerformPageAction } from "@/lib/pages/access";
 //
 // Defamation-safe by design: nothing here notifies the renter or surfaces
 // the report to them. Reports stay internal until an admin reviews the
-// booking's evidence (agreement, inspections, incidents) and approves or
-// dismisses.
+// booking record and the messages on it, then approves or dismisses.
 //
 // Goes through the service client: blacklist_reports has RLS enabled
 // (migration 001) with no insert policy for agencies at all, the app is

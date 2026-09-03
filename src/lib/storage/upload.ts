@@ -91,7 +91,7 @@ export async function uploadToR2(
   //
   //    Retried, because the people doing this most are standing beside a
   //    vehicle on mobile data. A single dropped request used to lose the photo
-  //    and, on the inspection screen, discard the whole submission with it.
+  //    and discard the whole submission with it.
   //    Only transient failures are retried: a 4xx means the signature or the
   //    file is wrong and trying again cannot help.
   await putWithRetry(putUrl, file);

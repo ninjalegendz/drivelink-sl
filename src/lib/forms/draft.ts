@@ -4,7 +4,7 @@ import { useEffect, useRef } from "react";
 
 // Local draft persistence for forms that are filled in bad conditions.
 //
-// The handover inspection is the worst case: it is completed at the roadside,
+// A listing draft is the worst case: it is filled in on a phone, often
 // one-handed, on mobile data, and it carries several uploaded photos. Losing it
 // to a dropped connection or a stray back-swipe destroys the evidence both
 // sides depend on, so the in-progress state is mirrored to this device as it
