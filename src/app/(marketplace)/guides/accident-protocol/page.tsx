@@ -6,12 +6,13 @@ import { pageShellClass } from "@/components/ui/PageShell";
 export const metadata: Metadata = {
   title: "Accident or breakdown? Do this | DriveLink",
   description:
-    "The step-by-step protocol for an accident or breakdown in a DriveLink rental in Sri Lanka: police report, insurer requirements, and what NOT to do at the roadside.",
+    "What to do after an accident or breakdown in Sri Lanka: police report, insurer requirements, and what not to do at the roadside.",
 };
 
-// Referenced by the rental agreement's liability section and the
-// in-booking "Report a problem" flow. Static, printable, and written to
-// be read in a stressful moment: short imperatives first, reasons after.
+// Written to be read in a stressful moment: short imperatives first, reasons
+// after. This is advice, not a process DriveLink runs. Who ends up paying for
+// what depends on the owner's insurance and what the two of them agreed, so
+// the page is careful never to promise a limit on anyone's liability.
 const STEPS: { icon: React.ReactNode; title: string; body: string }[] = [
   {
     icon: <Siren size={18} />,
@@ -26,7 +27,7 @@ const STEPS: { icon: React.ReactNode; title: string; body: string }[] = [
   {
     icon: <Phone size={18} />,
     title: "3. Call the owner now",
-    body: "Their number is on your booking page and in the rental agreement. The owner deals with their insurer. You deal with the owner, through the booking.",
+    body: "Their number is on your booking page. The owner is the one who deals with their insurer, so they need to know immediately. Call, do not only message.",
   },
   {
     icon: <Camera size={18} />,
@@ -41,7 +42,7 @@ const STEPS: { icon: React.ReactNode; title: string; body: string }[] = [
   {
     icon: <FileText size={18} />,
     title: "6. Report it on DriveLink",
-    body: "Open the booking → Report a problem → Accident (or Breakdown). Attach the photos and the police report number. This timestamps everything and brings in the DriveLink team.",
+    body: "Open the booking and use Report a problem. Attach the photos and the police report number. This timestamps what happened while it is fresh, which matters if anyone remembers it differently later.",
   },
 ];
 
@@ -54,8 +55,9 @@ export default function AccidentProtocolPage() {
         </p>
         <h1 className="text-3xl font-bold text-slate-900">Accident or breakdown? Do this.</h1>
         <p className="text-slate-600 leading-relaxed">
-          Six steps, in order. Every DriveLink rental agreement includes this protocol. Following it
-          protects your deposit, the owner&apos;s insurance claim, and you.
+          Six steps, in order. Following them protects you, the owner&apos;s insurance claim, and your
+          own position if there is a disagreement afterwards. Worth reading once before a trip rather
+          than for the first time at the roadside.
         </p>
       </header>
 
@@ -74,26 +76,30 @@ export default function AccidentProtocolPage() {
       <section className="rounded-2xl border border-slate-200 bg-slate-50 p-5 space-y-3 text-sm text-slate-600 leading-relaxed">
         <h2 className="font-semibold text-slate-900 text-base">Breakdowns (not your fault)</h2>
         <p>
-          If a mechanical failure was not caused by the renter, the Rental Page should arrange the remedy
-          stated in the booking agreement, such as repair, recovery, a replacement vehicle, or an agreed
-          refund for unusable days. DriveLink does not guarantee that every provider has replacement or
-          roadside capacity. Report it through the booking and give the provider a chance to respond, but{" "}
-          <strong>never authorise repairs yourself without the owner&apos;s written OK</strong> in the
-          conversation, or the cost may not be reimbursed. Record who authorised and paid any towing;
-          responsibility ultimately depends on the agreement, cause, and insurance position.
+          If a mechanical failure was not caused by you, call the owner and agree what happens next:
+          repair, recovery, a replacement vehicle, or money back for the days you cannot use it. Owners
+          differ enormously in what they can offer, and DriveLink does not arrange any of it, so ask
+          before you book if it matters to you. Whatever you agree,{" "}
+          <strong>never authorise repairs without the owner&apos;s written OK</strong> in the booking
+          chat, or you may be paying for them yourself. Record who authorised and who paid for any towing.
         </p>
-        <h2 className="font-semibold text-slate-900 text-base pt-2">What you&apos;re liable for</h2>
+        <h2 className="font-semibold text-slate-900 text-base pt-2">Who pays, and why to ask first</h2>
         <p>
-          With a properly hire-insured vehicle, your exposure in an at-fault accident is normally the
-          insurance excess plus anything the insurer excludes, as written in your rental agreement.{" "}
-          <strong>Breaching the agreement changes that to full liability</strong>: an unlisted driver at
-          the wheel, alcohol or drugs, prohibited-use trips, or driving without a valid licence/permit.
+          There is no standard answer, and DriveLink does not set one. What you owe after an at-fault
+          accident depends on the owner&apos;s insurance policy and on what the two of you agreed before
+          you drove away. Ask the owner directly, before you take the keys: whether the vehicle carries
+          hire insurance, what the excess is, and what they expect from you if something happens.
+        </p>
+        <p>
+          Some things put the cost on you almost anywhere: someone driving who was never named, alcohol
+          or drugs, driving without a valid licence or permit, or taking the vehicle somewhere the owner
+          told you not to. Insurers refuse claims for all of them.
         </p>
       </section>
 
       <footer className="text-sm text-slate-500">
-        Emergency numbers: Police <strong>119</strong> · Ambulance <strong>1990</strong>. Your booking,
-        agreement and owner contact are at{" "}
+        Emergency numbers: Police <strong>119</strong> · Ambulance <strong>1990</strong>. Your booking
+        and the owner&apos;s contact details are at{" "}
         <Link href="/bookings" className="text-blue-600 hover:underline">
           drivelink.lk/bookings
         </Link>

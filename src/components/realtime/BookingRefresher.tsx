@@ -12,7 +12,7 @@ interface Props {
 /**
  * Watches a single booking row over realtime and triggers a soft refresh
  * ONLY when the status actually changes. Refreshing on every field update
- * would close dialogs and reset forms (for example, mid-inspection) which is
+ * would close dialogs and reset forms (for example, mid-message) which is
  * unacceptable on this page. A status transition is the one signal that
  * unambiguously means "this view is now stale", the renter's current
  * status panel is wrong, the form sections need to swap, and any

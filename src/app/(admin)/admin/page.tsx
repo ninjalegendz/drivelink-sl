@@ -10,7 +10,6 @@ import { VehicleApprovalActions } from "@/components/admin/VehicleApprovalAction
 import { VehicleBadgeEditor } from "@/components/admin/VehicleBadgeEditor";
 import { VehicleFeatureToggle } from "@/components/admin/VehicleFeatureToggle";
 import { formatLKR, insuranceLabel } from "@/lib/vehicles/format";
-import { TutorialCallout } from "@/components/tutorials/TutorialCallout";
 import type { Database } from "@/types/database";
 
 type VehicleRow = Database["public"]["Tables"]["vehicles"]["Row"];
@@ -94,7 +93,6 @@ export default async function AdminHomePage() {
       </div>
 
       {/* ── Action queue ── */}
-      <TutorialCallout audience="admin" tutorialSlug="review-and-resolve-as-drivelink-admin" />
 
       {actionTotal === 0 ? (
         <div className="bg-white border border-slate-200 rounded-2xl shadow-sm p-10 text-center">

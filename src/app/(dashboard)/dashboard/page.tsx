@@ -7,7 +7,6 @@ import { AgencyBookingActions } from "@/components/booking/AgencyBookingActions"
 import { formatLKR, responseTimeLabel } from "@/lib/vehicles/format";
 import { getActivePage } from "@/lib/pages/active-page";
 import { getPageAccess } from "@/lib/pages/access";
-import { TutorialCallout } from "@/components/tutorials/TutorialCallout";
 import { Card } from "@/components/ui/Card";
 import { Section } from "@/components/ui/Section";
 import { EmptyState } from "@/components/ui/EmptyState";
@@ -83,11 +82,6 @@ export default async function DashboardPage() {
           <Plus size={16} /> List a vehicle
         </Link>}
       </div>
-
-      <TutorialCallout
-        audience={pageAccess.isOwner ? "owner" : "staff"}
-        tutorialSlug={pageAccess.isOwner ? "run-a-rental-from-request-to-return" : "work-safely-as-rental-page-staff"}
-      />
 
       {agency.reliability_pct !== null && agency.reliability_pct < 80 && (
         <div className="flex gap-3 p-4 bg-amber-50 border border-amber-200 rounded-2xl">

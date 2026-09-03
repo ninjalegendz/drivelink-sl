@@ -15,7 +15,7 @@ const LINKS = [
   { href: "/vehicles", label: "Explore Vehicles", Icon: Compass },
   { href: "/vehicles?option=airport-pickup", label: "Airport Transfers", Icon: Plane },
   { href: "/pricing",  label: "Pricing",          Icon: Tag },
-  { href: "/academy",  label: "Guides",           Icon: CirclePlay },
+  { href: "/guides",  label: "Guides",           Icon: CirclePlay },
 ];
 
 export function NavbarShell({ isAdmin, ownsPages, signedIn }: Props) {

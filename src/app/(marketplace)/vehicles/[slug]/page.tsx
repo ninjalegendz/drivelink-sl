@@ -11,7 +11,6 @@ import { Badge, VerificationBadge } from "@/components/ui/Badge";
 import { HelpHint } from "@/components/ui/HelpHint";
 import { BookingRequestForm } from "@/components/booking/BookingRequestForm";
 import { ReportListingButton } from "@/components/vehicles/ReportListingButton";
-import { TutorialCallout } from "@/components/tutorials/TutorialCallout";
 import { VehicleViewTracker } from "@/components/vehicles/VehicleViewTracker";
 import { isCurrentVerifiedVehicle } from "@/lib/vehicles/trust";
 import { VehicleGallery } from "@/components/vehicles/VehicleGallery";
@@ -162,7 +161,7 @@ export default async function VehicleDetailPage({ params, searchParams }: Props)
     : null;
 
   const disclosureRows: TermItem[] = [
-    ...(vehicle.has_gps_tracker ? [{ Icon: Satellite, text: "GPS tracker fitted (disclosed in your rental agreement)" }] : []),
+    ...(vehicle.has_gps_tracker ? [{ Icon: Satellite, text: "GPS tracker fitted (disclosed here before you request)" }] : []),
     ...(vehicle.has_etc_tag ? [{ Icon: Ticket, text: "Expressway ETC tag fitted: toll charges during your rental are yours" }] : []),
   ];
 
@@ -402,7 +401,7 @@ export default async function VehicleDetailPage({ params, searchParams }: Props)
                 <ShieldCheck size={15} className="text-blue-600" /> Rental terms
               </h3>
               <p className="text-slate-500 text-xs mt-0.5">
-                No surprise charges: these terms are locked into your booking agreement.
+                No surprise charges: these are the terms your request is sent on.
               </p>
             </div>
 
@@ -565,8 +564,6 @@ export default async function VehicleDetailPage({ params, searchParams }: Props)
               <ReportListingButton vehicleId={vehicle.id} />
             </div>
           </div>
-
-          <TutorialCallout audience={vehicle.self_drive ? "traveller" : "renter"} />
 
           {/* How it works */}
           <div className="bg-white rounded-2xl border border-slate-100 p-4 shadow-sm">

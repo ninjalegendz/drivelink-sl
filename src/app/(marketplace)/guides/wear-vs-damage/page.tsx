@@ -6,12 +6,12 @@ import { pageShellClass } from "@/components/ui/PageShell";
 export const metadata: Metadata = {
   title: "Wear vs Damage, who pays for what | DriveLink",
   description:
-    "The plain-language guide every DriveLink rental agreement points to: what counts as normal wear (owner's cost) vs damage (renter's cost) on a vehicle rental in Sri Lanka.",
+    "A plain-language reference for owners and renters in Sri Lanka: what usually counts as normal wear, and what usually counts as damage.",
 };
 
-// The published rubric referenced by every rental agreement's damage
-// clauses. Deliberately static content: it's the neutral arbiter both
-// sides read BEFORE arguing, and admins cite it in dispute resolutions.
+// A neutral reference, not a rule DriveLink enforces. The rental itself is a
+// private arrangement between the owner and the renter, so this exists to give
+// them the same list to look at before they start disagreeing from memory.
 const WEAR = [
   ["Tyre wear (within reason for the km driven)", "Brake pads and discs worn from normal use"],
   ["Clutch wear from normal driving", "Bulbs, fuses and wiper blades"],
@@ -32,15 +32,20 @@ export default function WearVsDamagePage() {
     <div className={pageShellClass("prose", "space-y-8")}>
       <header className="space-y-3">
         <p className="inline-flex items-center gap-2 text-blue-600 text-sm font-semibold">
-          <ShieldCheck size={16} /> DriveLink standard
+          <ShieldCheck size={16} /> Guide
         </p>
         <h1 className="text-3xl font-bold text-slate-900">Wear vs damage, who pays for what</h1>
         <p className="text-slate-600 leading-relaxed">
-          Every DriveLink rental agreement points to this page. Normal wear is the cost of running a
-          rental vehicle and stays with the owner. Damage beyond normal use is the renter&apos;s
-          responsibility, at the standards in the agreement (written estimate within 48 hours, maximum
-          7-day deposit hold, renter entitled to a second estimate). The pickup and return inspections,
-          with odometer, fuel and photos both sides confirmed, decide what changed during the rental.
+          Renting a vehicle from someone is a private arrangement between the two of you, and so is
+          anything you decide about wear or damage. DriveLink does not sit in the middle of that. What
+          this page gives you is a common reference, so the conversation starts from the same list
+          instead of from two different memories.
+        </p>
+        <p className="text-slate-600 leading-relaxed">
+          As a rule of thumb, normal wear is the cost of running a vehicle and stays with the owner.
+          Damage beyond normal use is usually the renter&apos;s. The single most useful thing either of
+          you can do is photograph the vehicle together at handover and again at return, including the
+          odometer and the fuel gauge. That record settles almost every disagreement.
         </p>
       </header>
 
@@ -78,8 +83,8 @@ export default function WearVsDamagePage() {
         <h2 className="font-semibold text-slate-900 text-base">The grey areas, called in advance</h2>
         <p>
           <strong className="text-slate-800">Hill-country clutch wear:</strong> normal wear on a trip the
-          listing allows; renter&apos;s cost if the listing restricted steep hill routes and the trip went
-          anyway (that&apos;s an agreement breach, and trackers or route evidence settle it).
+          listing allows. If the listing said no steep hill routes and the trip went anyway, most owners
+          would treat that as the renter&apos;s cost. Worth agreeing out loud before the keys change hands.
         </p>
         <p>
           <strong className="text-slate-800">Tyre punctures:</strong> a repairable puncture is the
@@ -87,23 +92,26 @@ export default function WearVsDamagePage() {
         </p>
         <p>
           <strong className="text-slate-800">Sand, mud, pet hair, smoke:</strong> not damage. Cleaning.
-          The listing&apos;s declared cleaning fee (capped at Rs. 10,000 platform-wide) applies only with
-          return-inspection photo evidence.
+          If the owner set a cleaning fee it is shown on the listing before you request, and DriveLink
+          does not allow one above Rs. 10,000. Photographs of how the vehicle came back are what make it
+          a fair charge rather than an argument.
         </p>
         <p>
           <strong className="text-slate-800">Loss of hire while repairing renter-caused damage:</strong>{" "}
-          capped at 50% of the daily rate × actual repair days, maximum 7 days. Open-ended
-          loss-of-hire claims aren&apos;t enforceable on DriveLink.
+          an owner does lose earnings while a vehicle is off the road, and it is reasonable to discuss
+          that. Open-ended claims are not. Agree an amount and a number of days in writing, based on a
+          real repair estimate, rather than leaving it to be settled afterwards.
         </p>
       </section>
 
       <footer className="text-sm text-slate-500">
-        Disagree about a specific charge?{" "}
+        Settle the charge itself with the other person. If someone behaved in a way others should be
+        protected from,{" "}
         <Link href="/bookings" className="text-blue-600 hover:underline">
-          Open the booking
+          open the booking
         </Link>{" "}
-        and use <em>Report a problem</em>. The DriveLink team reviews the inspection records against this
-        guide.
+        and use <em>Report a problem</em>. That is a report about conduct on DriveLink, not a judgement
+        on who owes what.
       </footer>
     </div>
   );

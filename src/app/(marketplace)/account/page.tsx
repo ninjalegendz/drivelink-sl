@@ -12,7 +12,6 @@ import { LicenseUploadForm } from "@/components/account/LicenseUploadForm";
 import { Explanation } from "@/components/ui/Explanation";
 import { TeamInvitations, type TeamInvitation } from "@/components/account/TeamInvitations";
 import { PageTransferInvitations, type PageTransferInvitation } from "@/components/account/PageTransferInvitations";
-import { TutorialCallout } from "@/components/tutorials/TutorialCallout";
 import { pageShellClass } from "@/components/ui/PageShell";
 
 interface Props {
@@ -134,8 +133,6 @@ export default async function AccountPage({ searchParams }: Props) {
           </p>
         </div>
       )}
-
-      {profile.role !== "admin" && <TutorialCallout audience="renter" />}
 
       {/* Email-verification nudge, only when an email exists and isn't verified yet */}
       {profile.email && !profile.email_verified_at && (

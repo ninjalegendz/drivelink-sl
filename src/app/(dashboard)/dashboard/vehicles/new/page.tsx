@@ -6,7 +6,6 @@ import { getActivePage } from "@/lib/pages/active-page";
 import { getPageAccess } from "@/lib/pages/access";
 import { VehicleWizard, type WizardPrefill } from "@/components/dashboard/VehicleWizard";
 import { AgencyVerificationGate } from "@/components/dashboard/AgencyVerificationGate";
-import { TutorialCallout } from "@/components/tutorials/TutorialCallout";
 
 interface Props {
   searchParams: Promise<{ from?: string }>;
@@ -68,8 +67,6 @@ export default async function NewVehiclePage({ searchParams }: Props) {
       <p className="text-slate-600 text-sm mb-4">
         A few quick steps, we&apos;ll review it, then it goes live. Listing is free.
       </p>
-
-      <TutorialCallout audience="owner" tutorialSlug="create-your-rental-page" className="mb-6" />
 
       {prefill && (
         <div className="inline-flex items-center gap-2 mb-6 px-3 py-2 bg-blue-50 border border-blue-200 rounded-xl text-blue-700 text-xs font-medium">

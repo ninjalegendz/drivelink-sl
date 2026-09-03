@@ -60,7 +60,7 @@ export function Footer() {
         ]} />
 
         <FooterColumn title="Guides & Policies" links={[
-          { href: "/academy", label: "Guides" },
+          { href: "/guides", label: "Guides" },
           { href: "/guides/wear-vs-damage", label: "Wear vs. Damage" },
           { href: "/guides/accident-protocol", label: "Accident Protocol" },
           { href: "/terms", label: "Terms of Service" },

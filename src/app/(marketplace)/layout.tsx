@@ -31,7 +31,7 @@ export default async function MarketplaceLayout({ children }: { children: React.
   const primary: MobileNavItem[] = !user
     ? [
         { href: "/vehicles", label: "Browse", icon: "browse" },
-        { href: "/academy", label: "Guides", icon: "guides" },
+        { href: "/guides", label: "Guides", icon: "guides" },
         { href: "/login", label: "Log in", icon: "signin" },
       ]
     : ownsPages
@@ -54,7 +54,7 @@ export default async function MarketplaceLayout({ children }: { children: React.
     { href: "/", label: "Home", icon: "home" },
     { href: "/vehicles?option=airport-pickup", label: "Airport transfers", icon: "car" },
     { href: "/pricing", label: "Pricing", icon: "pricing" },
-    { href: "/academy", label: "Guides", icon: "guides" },
+    { href: "/guides", label: "Guides", icon: "guides" },
     ...(ownsPages
       ? []
       : [{ href: user ? "/account/pages/new" : "/signup?intent=provider", label: "List your vehicle", icon: "dashboard" as const }]),

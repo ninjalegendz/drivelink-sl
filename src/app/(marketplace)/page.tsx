@@ -1,7 +1,6 @@
 import Link from "next/link";
 import { ShieldCheck, Search, MessageSquare, Car, Truck, Bike, Plane } from "lucide-react";
 import { Hero } from "@/components/layout/Hero";
-import { TutorialCallout } from "@/components/tutorials/TutorialCallout";
 import { VehiclesBrowser } from "@/components/vehicles/VehiclesBrowser";
 import { HeroSearchForm } from "@/components/vehicles/HeroSearchForm";
 import { getHomeFeaturedCached } from "@/lib/vehicles/search";
@@ -108,8 +107,6 @@ export default async function HomePage() {
           ))}
         </ol>
       </section>
-
-      <TutorialCallout audience="renter" />
 
       {/* Popular searches, internal links to SEO landing pages */}
       <section className="space-y-3">

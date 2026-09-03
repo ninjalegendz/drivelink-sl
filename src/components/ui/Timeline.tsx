@@ -31,7 +31,7 @@ interface StepProps {
   /** The one action available from this step, if any. */
   action?: React.ReactNode;
   /**
-   * Detail belonging to this step: a sub-checklist, an inspection record, a
+   * Detail belonging to this step: a sub-checklist, a record of what was
    * money summary. Keeping it nested here is the point of the timeline. The
    * brief asks that people never have to work out which separate screen or
    * panel owns a stage of their rental.

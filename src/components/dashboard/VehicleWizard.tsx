@@ -798,7 +798,7 @@ export function VehicleWizard({ agencyId, agencyCity, prefill, canDeclareListing
           {/* Disclosures */}
           <div className="space-y-2">
             <SectionHeading>Disclosures</SectionHeading>
-            <ToggleField label="GPS tracker fitted" hint="Disclosed to renters in the rental agreement, as required" on={hasGpsTracker} onChange={setHasGpsTracker} />
+            <ToggleField label="GPS tracker fitted" hint="Shown on your listing, so renters know before they request" on={hasGpsTracker} onChange={setHasGpsTracker} />
             <ToggleField label="ETC expressway tag fitted" hint="Tag charges during a rental are billed to the renter" on={hasEtcTag} onChange={setHasEtcTag} />
           </div>
 
