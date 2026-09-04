@@ -1,7 +1,8 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import { Activity, ArrowDownRight, BookOpen, CarFront, Eye, MousePointerClick, UsersRound } from "lucide-react";
+import { Activity, ArrowDownRight, BookOpen, CarFront, Eye, ExternalLink, MousePointerClick, UsersRound } from "lucide-react";
+import { HelpHint } from "@/components/ui/HelpHint";
 import { Sparkline } from "@/components/analytics/Sparkline";
 import type { TrafficRangeKey, TrafficSnapshot } from "@/lib/analytics/traffic";
 
@@ -31,6 +32,22 @@ const EVENT_LABELS: Record<string, string> = {
   guide_opened: "Opened guide",
   search_submitted: "Searched vehicles",
 };
+
+// Both systems record every page view, and they will not agree. The numbers
+// on this page are written by our own server when the request arrives, so a
+// blocker cannot remove them. PostHog is a script in the browser, so ad
+// blockers and privacy modes cut into its totals. Anyone comparing the two
+// deserves to be told which one to believe rather than left to guess.
+const COUNTING_NOTE =
+  "These figures and PostHog's will not match, and that is expected. This page is counted by our own server as each request arrives, so nothing can block it. PostHog counts from a script in the visitor's browser, which ad blockers and privacy settings stop, so its totals read lower. Where the two disagree, trust the numbers on this page.";
+
+// Public, and only used to build an outbound link.
+const POSTHOG_URL = (() => {
+  const host = process.env.NEXT_PUBLIC_POSTHOG_UI_HOST;
+  const project = process.env.NEXT_PUBLIC_POSTHOG_PROJECT_ID;
+  if (!host || !process.env.NEXT_PUBLIC_POSTHOG_KEY) return null;
+  return project ? `${host}/project/${project}` : host;
+})();
 
 function relativeTime(iso: string): string {
   const seconds = Math.max(0, Math.floor((Date.now() - new Date(iso).getTime()) / 1000));
@@ -92,12 +109,28 @@ export function TrafficAnalyticsPanel({ initial, range }: Props) {
             <Activity size={18} className="text-emerald-600" />
             <h2 id="traffic-heading" className="text-lg font-semibold text-slate-950">Traffic and customer journeys</h2>
           </div>
-          <p className="mt-1 text-sm text-slate-600">First-party activity only. Live means active within the last five minutes.</p>
+          <p className="mt-1 flex flex-wrap items-center gap-1.5 text-sm text-slate-600">
+            First-party activity only. Live means active within the last five minutes.
+            <HelpHint text={COUNTING_NOTE} />
+          </p>
         </div>
-        <p className="inline-flex items-center gap-2 text-xs font-medium text-slate-500">
-          <span aria-hidden="true" className="h-2 w-2 rounded-full bg-emerald-500 motion-safe:animate-pulse" />
-          Updates every 20 seconds
-        </p>
+        <div className="flex flex-wrap items-center gap-x-4 gap-y-2">
+          <p className="inline-flex items-center gap-2 text-xs font-medium text-slate-500">
+            <span aria-hidden="true" className="h-2 w-2 rounded-full bg-emerald-500 motion-safe:animate-pulse" />
+            Updates every 20 seconds
+          </p>
+          {POSTHOG_URL && (
+            <a
+              href={POSTHOG_URL}
+              target="_blank"
+              rel="noreferrer noopener"
+              className="inline-flex h-10 items-center gap-2 rounded-md border border-slate-300 bg-white px-3 text-sm font-medium text-slate-700 hover:bg-slate-50"
+            >
+              View in PostHog
+              <ExternalLink size={14} aria-hidden="true" />
+            </a>
+          )}
+        </div>
       </div>
 
       {error && <p role="alert" className="border-b border-red-200 bg-red-50 px-3 py-2 text-sm text-red-800">{error}</p>}
