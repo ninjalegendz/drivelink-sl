@@ -625,8 +625,10 @@ export default async function VehicleDetailPage({ params, searchParams }: Props)
 
       {/* Thumb-reachable action for the whole listing. This page is long on a
           phone, and without it the only way to act is to remember where the
-          request card was and scroll back to it. Desktop returns it to normal
-          flow, where the request card is already visible beside the content. */}
+          request card was and scroll back to it. Hidden on desktop, where that
+          card is already on screen, and hidden entirely when the listing is not
+          taking bookings, since it would link to a card that refuses them. */}
+      {isLive && (
       <ActionBar
         summary={
           <span>
@@ -642,6 +644,7 @@ export default async function VehicleDetailPage({ params, searchParams }: Props)
           Choose dates
         </a>
       </ActionBar>
+      )}
     </div>
   );
 }

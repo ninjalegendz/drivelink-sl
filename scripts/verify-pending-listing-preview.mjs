@@ -51,9 +51,12 @@ async function makeUser(tag, patch = {}) {
   return { id: data.user.id, email };
 }
 
+const sessions = new Map();
+
 async function cookiesFor(email, host) {
   const { data: sess, error } = await anon.auth.signInWithPassword({ email, password: PASSWORD });
   if (error) throw error;
+  sessions.set(email, sess.session);
   const jar = new Map();
   const ssr = createServerClient(env.NEXT_PUBLIC_SUPABASE_URL, env.NEXT_PUBLIC_SUPABASE_ANON_KEY, {
     cookies: {
@@ -119,6 +122,65 @@ try {
   chk("an admin can preview it", !asAdmin.is404, `status ${asAdmin.status}`);
   chk("the preview says it is not live yet",
     /pending|review|not live|will appear/i.test(asAdmin.body));
+
+  // ── The thumb bar ──
+  // It is a phone affordance duplicating the request card, so it must not
+  // appear on desktop, and must never offer dates on a listing that is not
+  // taking bookings. It rendered as a stray card under Guest reviews because
+  // md:static unsticks an element without removing it.
+  const { data: liveVehicle, error: lvErr } = await service.from("vehicles").insert({
+    agency_id: agency.id, make: "Toyota", model: "Aqua", year: 2019,
+    vehicle_type: "car", transmission: "automatic", seats: 5, fuel_type: "petrol",
+    city: "Colombo", daily_rate_lkr: 7500, deposit_lkr: 20000,
+    slug: `preview-live-${stamp}`, plate_number: `CA ${stamp.slice(-4)}`,
+    insurance_type: "hire", self_drive: true,
+    // Publication is guarded in the database: a live listing needs photos and
+    // a current right-to-list declaration, so the seed has to satisfy both.
+    photos: [1, 2, 3, 4].map((n) => `https://example.invalid/preview-${stamp}-${n}.jpg`),
+    status: "pending_review",
+  }).select("id").single();
+  if (lvErr) throw lvErr;
+  made.vehicles.push(liveVehicle.id);
+
+  const ownerSession = sessions.get(owner.email);
+  const asOwnerDb = createClient(env.NEXT_PUBLIC_SUPABASE_URL, env.NEXT_PUBLIC_SUPABASE_ANON_KEY, {
+    auth: { persistSession: false },
+    global: { headers: { Authorization: `Bearer ${ownerSession.access_token}` } },
+  });
+  const { error: declErr } = await asOwnerDb.from("vehicles")
+    .update({ listing_authority_declared: true, listing_authority_basis: "registered_owner" })
+    .eq("id", liveVehicle.id);
+  if (declErr) throw new Error("right-to-list declaration failed: " + declErr.message);
+
+  const { error: pubErr } = await service.from("vehicles")
+    .update({ status: "available" }).eq("id", liveVehicle.id);
+  if (pubErr) throw new Error("publish failed: " + pubErr.message);
+
+  const barState = async (path, width) => {
+    const ctx = await browser.newContext({ viewport: { width, height: 900 }, isMobile: width < 700, hasTouch: width < 700 });
+    const page = await ctx.newPage();
+    await page.goto(`${BASE}${path}`, { waitUntil: "load" });
+    await page.waitForTimeout(1500);
+    const r = await page.evaluate(() => {
+      const a = [...document.querySelectorAll("a")].find((x) => x.textContent.trim() === "Choose dates");
+      if (!a) return { present: false, visible: false };
+      const bar = a.closest("div")?.parentElement;
+      const cs = bar ? getComputedStyle(bar) : null;
+      return { present: true, visible: !!(a.offsetWidth || a.offsetHeight), position: cs?.position ?? "?" };
+    });
+    await ctx.close();
+    return r;
+  };
+
+  const liveMobile = await barState(`/vehicles/preview-live-${stamp}`, 390);
+  chk("on a phone, a live listing still gets the thumb bar", liveMobile.visible, JSON.stringify(liveMobile));
+  chk("and it is still sticky there", liveMobile.position === "sticky", liveMobile.position ?? "-");
+
+  const liveDesktop = await barState(`/vehicles/preview-live-${stamp}`, 1440);
+  chk("on desktop it is gone, not floating below the reviews", !liveDesktop.visible, JSON.stringify(liveDesktop));
+
+  const pendingMobile = await barState(`/vehicles/${slug}`, 390);
+  chk("a listing not taking bookings never offers dates", !pendingMobile.present, JSON.stringify(pendingMobile));
 
   // The 404 page itself.
   const ctx = await browser.newContext({ viewport: { width: 1280, height: 900 } });
