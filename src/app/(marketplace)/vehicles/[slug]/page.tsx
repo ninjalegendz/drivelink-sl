@@ -6,7 +6,8 @@ import {
   CarTaxiFront, Users, Ban, IdCard, Satellite, Ticket, Banknote, Moon,
   type LucideIcon,
 } from "lucide-react";
-import { createPublicClient } from "@/lib/supabase/server";
+import { createPublicClient, createClient, createServiceClient } from "@/lib/supabase/server";
+import { getActingPages } from "@/lib/pages/active-page";
 import { Badge, VerificationBadge } from "@/components/ui/Badge";
 import { HelpHint } from "@/components/ui/HelpHint";
 import { BookingRequestForm } from "@/components/booking/BookingRequestForm";
@@ -60,20 +61,56 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   };
 }
 
+/**
+ * A listing that is not public yet still has to be viewable by the two people
+ * who need to look at it: an admin deciding whether to approve it, and the
+ * owner checking how it will read. Row-level security hides a pending listing
+ * from the anonymous client, so both were sent to a 404 even though this page
+ * already carries the "not live yet" banner written for exactly this case.
+ *
+ * The public read below stays first and unchanged, so nothing widens for
+ * visitors. Only when that finds nothing do we ask who is asking, and the row
+ * is returned solely to an admin or to someone who acts for the page that owns
+ * it. Anyone else still gets the 404.
+ */
+async function fetchPreviewIfEntitled(slug: string) {
+  const supabase = await createClient();
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) return null;
+
+  const service = await createServiceClient();
+  const { data } = await service
+    .from("vehicles")
+    .select(PUBLIC_VEHICLE_WITH_AGENCY_SELECT)
+    .eq("slug", slug)
+    .maybeSingle();
+  if (!data) return null;
+
+  const { data: profile } = await supabase
+    .from("profiles").select("role").eq("id", user.id).single();
+  if ((profile as { role?: string } | null)?.role === "admin") return data;
+
+  const agencyId = (data as { agency_id?: string }).agency_id;
+  const pages = await getActingPages(supabase, user.id);
+  return pages.some((page) => page.id === agencyId) ? data : null;
+}
+
 export default async function VehicleDetailPage({ params, searchParams }: Props) {
   const { slug } = await params;
   const { from, to, from_time, to_time } = (await searchParams) ?? {};
   const supabase = createPublicClient();
 
-  const { data, error } = await supabase
+  const { data: publicRow, error } = await supabase
     .from("vehicles")
     .select(PUBLIC_VEHICLE_WITH_AGENCY_SELECT)
     .eq("slug", slug)
-    .single();
+    .maybeSingle();
 
   if (error && error.code !== "PGRST116") {
     throw new Error("Public vehicle detail lookup failed.", { cause: error });
   }
+
+  const data = publicRow ?? (await fetchPreviewIfEntitled(slug));
   if (!data) notFound();
 
   const vehicle = data as unknown as VehicleWithAgency;
