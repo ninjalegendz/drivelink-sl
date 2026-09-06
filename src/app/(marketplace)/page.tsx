@@ -3,6 +3,7 @@ import { ShieldCheck, Search, MessageSquare, Car, Truck, Bike, Plane } from "luc
 import { Hero } from "@/components/layout/Hero";
 import { VehiclesBrowser } from "@/components/vehicles/VehiclesBrowser";
 import { HeroSearchForm } from "@/components/vehicles/HeroSearchForm";
+import { InstallPrompt } from "@/components/pwa/InstallPrompt";
 import { getHomeFeaturedCached } from "@/lib/vehicles/search";
 import { LANDINGS } from "@/data/landings";
 import { createClient } from "@/lib/supabase/server";
@@ -124,6 +125,11 @@ export default async function HomePage() {
         </div>
       </section>
     </div>
+
+      {/* Fixed position, so it sits outside the page flow. The homepage is the
+          honest place to ask: someone who has landed and stayed is far more
+          likely to want the app than someone deep in a booking. */}
+      <InstallPrompt />
     </>
   );
 }

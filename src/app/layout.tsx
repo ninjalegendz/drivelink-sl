@@ -56,6 +56,19 @@ export const viewport: Viewport = {
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
     <html lang="en" className={poppins.variable}>
+      {/* Chrome fires beforeinstallprompt very early, routinely before React
+          has hydrated. A listener attached on mount therefore misses it and the
+          install offer never appears at all. This catches the event before the
+          app is running and parks it for InstallPrompt to pick up. Inline on
+          purpose: a separate file would load too late to be the point. */}
+      <head>
+        <script
+          dangerouslySetInnerHTML={{
+            __html:
+              "window.__dlInstallEvent=null;window.addEventListener('beforeinstallprompt',function(e){e.preventDefault();window.__dlInstallEvent=e;});",
+          }}
+        />
+      </head>
       {/* Body bg + gradient lives in globals.css so the layered radial-
           gradients can be fixed-attached. Font + base text colour here. */}
       <body className="font-sans bg-slate-50 text-slate-900 antialiased" suppressHydrationWarning>
