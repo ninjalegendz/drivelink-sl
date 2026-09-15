@@ -105,6 +105,7 @@ export type Database = {
           whatsapp_number: string | null;
           is_verified: boolean;
           is_blocked: boolean;
+          listing_auto_approve: boolean;
           cancellation_count: number;
           confirmed_count: number;
           strike_count: number;
@@ -140,6 +141,7 @@ export type Database = {
           whatsapp_number?: string | null;
           is_verified?: boolean;
           is_blocked?: boolean;
+          listing_auto_approve?: boolean;
           cancellation_count?: number;
           confirmed_count?: number;
           strike_count?: number;
@@ -219,6 +221,7 @@ export type Database = {
           tolls_included: boolean | null;
           driver_bata_lkr: number | null;
           verified_vehicle: boolean;
+          auto_published_at: string | null;
           revenue_license_expiry: string | null;
           insurance_expiry: string | null;
           emission_expiry: string | null;
@@ -364,6 +367,7 @@ export type Database = {
           tolls_included?: boolean | null;
           driver_bata_lkr?: number | null;
           verified_vehicle?: boolean;
+          auto_published_at?: string | null;
           revenue_license_expiry?: string | null;
           insurance_expiry?: string | null;
           emission_expiry?: string | null;

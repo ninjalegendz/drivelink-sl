@@ -1,7 +1,8 @@
 import { createClient, createServiceClient } from "@/lib/supabase/server";
 import { redirect } from "next/navigation";
 import Link from "next/link";
-import { ArrowLeft, Copy } from "lucide-react";
+import { ArrowLeft, Copy, MessageCircle } from "lucide-react";
+import { whatsappLink } from "@/lib/site-config";
 import { getActivePage } from "@/lib/pages/active-page";
 import { getPageAccess } from "@/lib/pages/access";
 import { VehicleWizard, type WizardPrefill } from "@/components/dashboard/VehicleWizard";
@@ -29,6 +30,7 @@ export default async function NewVehiclePage({ searchParams }: Props) {
 
   const ownerKycVerified = profile?.kyc_status === "verified";
   const canList          = ownerKycVerified;
+  const canDeclare       = pageAccess.capabilities.includes("declare_listing_authority");
 
   // Duplicating an existing listing? Seed the wizard from it (own fleet only;
   // photos/docs/plate are per-vehicle so they are not copied).
@@ -65,8 +67,29 @@ export default async function NewVehiclePage({ searchParams }: Props) {
 
       <h1 className="text-2xl font-bold text-slate-900 mb-1">List your vehicle</h1>
       <p className="text-slate-600 text-sm mb-4">
-        A few quick steps, we&apos;ll review it, then it goes live. Listing is free.
+        Three quick steps. Listing is free.
       </p>
+
+      {/* "List it for me": for owners who would rather send photos than fill in
+          a form. The team drafts it on this page and the owner confirms it. */}
+      {canList && !prefill && canDeclare && (
+        <a
+          href={whatsappLink(`Hi DriveLink, please list my vehicle for me. Rental Page: ${agency.name} (${agency.id.slice(0, 8).toUpperCase()})`)}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="mb-6 flex max-w-xl items-start gap-3 rounded-2xl border border-slate-200 bg-white p-4 transition-colors hover:border-blue-300"
+        >
+          <span className="grid h-9 w-9 shrink-0 place-items-center rounded-full bg-emerald-50 text-emerald-700">
+            <MessageCircle size={18} aria-hidden="true" />
+          </span>
+          <span>
+            <span className="block text-sm font-semibold text-slate-900">Short on time? We can list it for you</span>
+            <span className="mt-0.5 block text-xs leading-5 text-slate-600">
+              Send the photos, plate number and daily price on WhatsApp. Our team sets up the listing and you just check it and confirm.
+            </span>
+          </span>
+        </a>
+      )}
 
       {prefill && (
         <div className="inline-flex items-center gap-2 mb-6 px-3 py-2 bg-blue-50 border border-blue-200 rounded-xl text-blue-700 text-xs font-medium">
@@ -79,7 +102,7 @@ export default async function NewVehiclePage({ searchParams }: Props) {
             agencyId={agency.id}
             agencyCity={agency.city}
             prefill={prefill}
-            canDeclareListingAuthority={pageAccess.capabilities.includes("declare_listing_authority")}
+            canDeclareListingAuthority={canDeclare}
           />
         : <AgencyVerificationGate ownerKycVerified={ownerKycVerified} />}
     </div>

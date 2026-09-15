@@ -22,6 +22,9 @@ const FILTER_TABS = [
   { label: "Pending review", value: "pending_review" },
   { label: "Live",           value: "available" },
   { label: "Unlisted",       value: "unlisted" },
+  // Complete listings from a page with an approved listing publish without
+  // review. They land here so the team can spot-check them.
+  { label: "Went live on its own", value: "auto" },
   { label: "All",            value: "all" },
 ] as const;
 
@@ -37,7 +40,9 @@ export default async function AdminVehiclesPage({ searchParams }: Props) {
     .select("*, agencies(name, city, whatsapp_number)")
     .order("created_at", { ascending: false });
 
-  if (activeFilter !== "all") {
+  if (activeFilter === "auto") {
+    query = query.eq("status", "available").not("auto_published_at", "is", null);
+  } else if (activeFilter !== "all") {
     query = query.eq("status", activeFilter);
   }
 
@@ -57,7 +62,8 @@ export default async function AdminVehiclesPage({ searchParams }: Props) {
     <div>
       <h1 className="text-2xl font-bold text-slate-900 mb-1">Vehicle Listings</h1>
       <p className="text-slate-600 text-sm mb-6">
-        Approve new listings before they go live on the marketplace.
+        Approve new listings before they go live. Once a page has an approved listing, its complete listings go
+        live on their own; spot-check those under &quot;Went live on its own&quot;. Rejecting a listing turns that off for the page.
       </p>
 
       {/* Filter tabs */}
@@ -81,7 +87,11 @@ export default async function AdminVehiclesPage({ searchParams }: Props) {
         <div className="bg-white border border-slate-200 rounded-2xl shadow-sm p-12 text-center">
           <Car size={40} strokeWidth={1.5} className="mx-auto mb-3 text-slate-400" />
           <p className="text-slate-600 text-sm">
-            {activeFilter === "pending_review" ? "No vehicles waiting for review." : "No vehicles match this filter."}
+            {activeFilter === "pending_review"
+              ? "No vehicles waiting for review."
+              : activeFilter === "auto"
+                ? "Nothing has gone live on its own yet."
+                : "No vehicles match this filter."}
           </p>
         </div>
       ) : (
@@ -109,6 +119,9 @@ export default async function AdminVehiclesPage({ searchParams }: Props) {
                     <div className="flex-1 min-w-0 flex items-start justify-between gap-3">
                       <div className="min-w-0">
                         <p className="font-semibold text-slate-900 text-sm">{v.year} {v.make} {v.model}</p>
+                        {v.auto_published_at && (
+                          <div className="mt-1"><Badge variant="blue">Went live on its own</Badge></div>
+                        )}
                         <p className="text-slate-600 text-xs mt-0.5">
                           {v.agencies?.name ?? "-"} · {v.city}
                         </p>

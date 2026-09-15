@@ -97,6 +97,9 @@ export async function PATCH(req: NextRequest, ctx: RouteContext) {
     // UX-008: a rejection (→ unlisted) records the reason the owner sees;
     // approving or sending back to review clears any prior reason.
     update.rejection_reason = body.status === "unlisted" ? (body.rejection_reason?.trim() || null) : null;
+    // An admin decision replaces any automatic publication, so the listing
+    // leaves the "went live on its own" spot-check list.
+    update.auto_published_at = null;
   }
 
   if (typeof body.is_featured === "boolean") update.is_featured = body.is_featured;
@@ -149,17 +152,36 @@ export async function PATCH(req: NextRequest, ctx: RouteContext) {
   // the same status, and knows who to tell.
   const { data: beforeRow } = await service
     .from("vehicles")
-    .select("status, year, make, model, agencies(name, whatsapp_number, email)")
+    .select("status, year, make, model, agency_id, agencies(name, whatsapp_number, email)")
     .eq("id", id)
     .maybeSingle();
   const before = beforeRow as unknown as {
-    status: string; year: number; make: string; model: string;
+    status: string; year: number; make: string; model: string; agency_id: string;
     agencies: { name: string; whatsapp_number: string | null; email: string | null } | null;
   } | null;
 
   const { error } = await service.from("vehicles").update(update).eq("id", id);
   if (error) {
     return NextResponse.json({ error: error.message }, { status: 500 });
+  }
+
+  // Page trust. Approving a listing lets this page's later complete listings
+  // go live without waiting; rejecting one (with a reason) takes that away
+  // until an admin approves again. Hiding a listing without a reason is not a
+  // judgement on the page, so it leaves trust alone.
+  if (before?.agency_id && typeof update.status === "string" && update.status !== before.status) {
+    const trust = update.status === "available"
+      ? true
+      : update.status === "unlisted" && update.rejection_reason
+        ? false
+        : null;
+    if (trust !== null) {
+      const { error: trustError } = await service
+        .from("agencies")
+        .update({ listing_auto_approve: trust })
+        .eq("id", before.agency_id);
+      if (trustError) console.error("[vehicle moderation] page trust", trustError.message);
+    }
   }
 
   // Tell the owner the outcome. Until now a listing was approved or rejected in

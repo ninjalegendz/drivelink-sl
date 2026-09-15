@@ -2,7 +2,8 @@ import { createClient } from "@/lib/supabase/server";
 import { redirect } from "next/navigation";
 import Link from "next/link";
 import Image from "next/image";
-import { Car, Plus, ExternalLink } from "lucide-react";
+import { Car, Plus, ExternalLink, MessageCircle } from "lucide-react";
+import { whatsappLink } from "@/lib/site-config";
 import { getActivePage } from "@/lib/pages/active-page";
 import { getPageAccess } from "@/lib/pages/access";
 import { Badge } from "@/components/ui/Badge";
@@ -33,11 +34,11 @@ const STATUS_LABEL = {
 } as const;
 
 interface Props {
-  searchParams: Promise<{ documents?: string; authority?: string; photos?: string }>;
+  searchParams: Promise<{ documents?: string; authority?: string; photos?: string; submitted?: string }>;
 }
 
 export default async function FleetPage({ searchParams }: Props) {
-  const { documents, authority, photos } = await searchParams;
+  const { documents, authority, photos, submitted } = await searchParams;
   const failedPhotoCount = Number(photos) > 0 ? Number(photos) : 0;
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
@@ -96,18 +97,43 @@ export default async function FleetPage({ searchParams }: Props) {
         </div>
       )}
 
+      {submitted === "live" && (
+        <div role="status" className="mb-5 rounded-lg border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm leading-6 text-emerald-900">
+          Your vehicle is live. Renters can find it and send requests now.
+          <DismissNotice />
+        </div>
+      )}
+
+      {submitted === "review" && (
+        <div role="status" className="mb-5 rounded-lg border border-blue-200 bg-blue-50 px-4 py-3 text-sm leading-6 text-blue-950">
+          Sent for review. New listings are usually checked within 24 hours, and we text you the moment it goes live.
+          Once one listing is approved, your next ones go live as soon as you submit them.
+          <DismissNotice />
+        </div>
+      )}
+
       {vehicles.length === 0 ? (
         <EmptyState
           icon={<Car size={22} strokeWidth={1.5} className="text-slate-400" />}
           title="No vehicles yet"
-          description="Add your first vehicle to start receiving booking requests."
+          description="Add your first vehicle to start receiving booking requests. Short on time? Send us the photos on WhatsApp and we will set it up for you."
           action={
-            <Link
-              href="/dashboard/vehicles/new"
-              className="inline-flex min-h-11 items-center gap-1.5 rounded-lg bg-blue-600 px-4 text-sm font-semibold text-white transition-colors hover:bg-blue-700"
-            >
-              <Plus size={16} /> Add your first vehicle
-            </Link>
+            <div className="flex flex-wrap items-center justify-center gap-2">
+              <Link
+                href="/dashboard/vehicles/new"
+                className="inline-flex min-h-11 items-center gap-1.5 rounded-lg bg-blue-600 px-4 text-sm font-semibold text-white transition-colors hover:bg-blue-700"
+              >
+                <Plus size={16} /> Add your first vehicle
+              </Link>
+              <a
+                href={whatsappLink(`Hi DriveLink, please list my vehicle for me. Rental Page: ${agency.name} (${agency.id.slice(0, 8).toUpperCase()})`)}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="inline-flex min-h-11 items-center gap-1.5 rounded-lg border border-slate-200 bg-white px-4 text-sm font-semibold text-slate-700 transition-colors hover:bg-slate-50"
+              >
+                <MessageCircle size={16} /> List it for me
+              </a>
+            </div>
           }
         />
       ) : (
@@ -212,7 +238,7 @@ export default async function FleetPage({ searchParams }: Props) {
                   {needsAuthority && (
                     <div className="mt-2 rounded-lg border border-amber-200 bg-amber-50 px-2.5 py-2 text-xs leading-5 text-amber-950">
                       {canDeclareListingAuthority
-                        ? "Open Edit, confirm whether the page owns or is authorised to operate this vehicle, then save it for DriveLink review."
+                        ? "Open Edit, check the details, confirm this page owns or is authorised to rent out this vehicle, then save. It goes to DriveLink review, or straight live once your page has an approved listing."
                         : "The vehicle stays private until a Rental Page owner or manager records the right-to-list declaration."}
                     </div>
                   )}
@@ -223,6 +249,21 @@ export default async function FleetPage({ searchParams }: Props) {
                       <p className="text-red-700 text-xs"><span className="font-semibold">Rejected:</span> {(v as { rejection_reason?: string | null }).rejection_reason}</p>
                       <div className="mt-1.5"><ResubmitButton vehicleId={v.id} /></div>
                     </div>
+                  )}
+
+                  {/* Listings now go live with only the essentials, so point at
+                      the details that help a renter choose, without asking for
+                      them up front. */}
+                  {!needsAuthority
+                    && (v.status === "available" || v.status === "pending_review")
+                    && !(v.features?.length)
+                    && !v.description?.trim() && (
+                    <Link
+                      href={`/dashboard/vehicles/${v.id}/edit`}
+                      className="mt-2 block rounded-lg border border-blue-100 bg-blue-50 px-2.5 py-2 text-xs leading-5 text-blue-900 hover:bg-blue-100"
+                    >
+                      Improve this listing: add features and a short description so renters pick it.
+                    </Link>
                   )}
                 </div>
               </div>

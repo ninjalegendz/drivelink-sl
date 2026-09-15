@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { FileText } from "lucide-react";
 import { createServiceClient } from "@/lib/supabase/server";
 import { Badge } from "@/components/ui/Badge";
@@ -5,7 +6,12 @@ import { AgencyVerifyAction } from "@/components/admin/AgencyVerifyAction";
 import { AgencyActions } from "@/components/admin/AgencyActions";
 import { reliabilityColor, reliabilityLabel } from "@/lib/vehicles/format";
 
-export default async function AdminAgenciesPage() {
+interface Props {
+  searchParams: Promise<{ drafted?: string }>;
+}
+
+export default async function AdminAgenciesPage({ searchParams }: Props) {
+  const { drafted } = await searchParams;
   // Service client: these admin dashboards read protected profile columns
   // (phone, email, KYC docs, blacklist state) that browser sessions can no
   // longer SELECT. The (admin) layout enforces the admin role upstream.
@@ -109,6 +115,14 @@ export default async function AdminAgenciesPage() {
               )
             )}
             <AgencyVerifyAction agencyId={a.id} isVerified={a.is_verified} />
+            {ownerKyc === "verified" && (
+              <Link
+                href={`/admin/agencies/${a.id}/list-vehicle`}
+                className="inline-flex min-h-9 items-center text-xs font-semibold text-blue-600 hover:text-blue-700"
+              >
+                List a vehicle for them
+              </Link>
+            )}
             <AgencyActions
               agencyId={a.id}
               name={a.name}
@@ -179,6 +193,12 @@ export default async function AdminAgenciesPage() {
       <p className="text-slate-600 text-sm mb-6">
         {agencies.length} total · {pending.length} pending review · {approved.length} live
       </p>
+
+      {drafted && (
+        <div role="status" className="mb-6 rounded-lg border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm leading-6 text-emerald-900">
+          Draft saved: {drafted}. The owner has been sent a message to check it and confirm.
+        </div>
+      )}
 
       {/* Pending section */}
       {pending.length > 0 && (

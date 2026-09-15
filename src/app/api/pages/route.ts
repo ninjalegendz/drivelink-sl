@@ -76,13 +76,10 @@ export async function POST(req: NextRequest) {
   if (!isValidSLPhone(whatsappIn)) {
     return NextResponse.json({ error: "Enter a valid WhatsApp number." }, { status: 400 });
   }
-  // Email is required for Rental Pages so booking records, safety notices, and
-  // account-recovery messages have a durable delivery channel. Renter accounts
-  // remain phone-first; this only gates hosting.
-  if (!emailIn) {
-    return NextResponse.json({ error: "Enter an email for your page. Booking records and safety notices go there." }, { status: 400 });
-  }
-  if (!isEmailLike(emailIn)) {
+  // Email is optional. Requiring it stopped owners who run everything from a
+  // phone; notices fall back to the page's verified number and the account's
+  // own email. A supplied email still has to look like one.
+  if (emailIn && !isEmailLike(emailIn)) {
     return NextResponse.json({ error: "That email doesn't look right." }, { status: 400 });
   }
   if (containsPublicContactDetails(name, description)) {

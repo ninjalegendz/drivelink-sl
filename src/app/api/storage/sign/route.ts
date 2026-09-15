@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { createClient, createServiceClient } from "@/lib/supabase/server";
 import { getActivePage } from "@/lib/pages/active-page";
 import { canPerformPageAction, isAgencyOwner } from "@/lib/pages/access";
+import { isAdminUser } from "@/lib/auth/admin-check";
 import { buildUploadKeys, getPresignedPutUrl, type StoragePrefix } from "@/lib/storage/r2";
 import { allowedUpload, UPLOAD_LIMITS } from "@/lib/storage/upload-validation";
 
@@ -38,6 +39,7 @@ export async function POST(req: NextRequest) {
     contentType:  string;
     size:         number;
     bookingId:    string;
+    agencyId:     string;
   }>;
 
   if (!body.prefix || !ALLOWED_PREFIXES.has(body.prefix as StoragePrefix)) {
@@ -62,7 +64,23 @@ export async function POST(req: NextRequest) {
   }
   let ownerId  = user.id;
 
-  if (prefix === "vehicle-photos" || prefix === "vehicle-docs" || prefix === "business-docs") {
+  const draftForAgencyId = typeof body.agencyId === "string" ? body.agencyId : "";
+  if (draftForAgencyId && (prefix === "vehicle-photos" || prefix === "vehicle-docs")) {
+    // "List it for me": a DriveLink admin drafts a listing on an owner's page
+    // from the photos they sent on WhatsApp. Only admins may name a page.
+    const service = await createServiceClient();
+    if (!(await isAdminUser(service, user.id))) {
+      return NextResponse.json({ error: "Only DriveLink admins can upload to another Rental Page." }, { status: 403 });
+    }
+    const { data: target } = await service
+      .from("agencies")
+      .select("id")
+      .eq("id", draftForAgencyId)
+      .is("deleted_at", null)
+      .maybeSingle();
+    if (!target) return NextResponse.json({ error: "Rental Page not found." }, { status: 404 });
+    ownerId = draftForAgencyId;
+  } else if (prefix === "vehicle-photos" || prefix === "vehicle-docs" || prefix === "business-docs") {
     // Must own a Rental Page. Key gets rooted at the active page's id, not
     // the user id, so the existing folder convention (and the orphan
     // sweeper) keeps working.

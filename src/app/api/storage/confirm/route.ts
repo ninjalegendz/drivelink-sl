@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient, createServiceClient } from "@/lib/supabase/server";
 import { canPerformPageAction, isAgencyOwner } from "@/lib/pages/access";
+import { isAdminUser } from "@/lib/auth/admin-check";
 import {
   deleteObject,
   finalizePendingObject,
@@ -42,6 +43,8 @@ export async function POST(req: NextRequest) {
     ownsScope = prefix === "business-docs"
       ? await isAgencyOwner(service, user.id, ownerId)
       : await canPerformPageAction(service, user.id, ownerId, "manage_fleet");
+    // Admins drafting a listing for an owner ("List it for me").
+    if (!ownsScope && prefix !== "business-docs") ownsScope = await isAdminUser(service, user.id);
   } else if (prefix === "booking-photos") {
     const { data: bookingRow } = await service
       .from("bookings")

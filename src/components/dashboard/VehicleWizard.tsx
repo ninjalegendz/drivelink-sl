@@ -2,7 +2,7 @@
 
 import { useEffect, useId, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
-import { Camera, X, Check, Car, Bus, Bike, ChevronLeft, ChevronRight, Upload, FileText } from "lucide-react";
+import { Camera, X, Check, Car, Bus, Bike, ChevronLeft, ChevronRight, ChevronDown, Upload, FileText } from "lucide-react";
 import { TukTuk } from "@/components/ui/icons/TukTuk";
 import { createClient } from "@/lib/supabase/client";
 import { uploadToR2 } from "@/lib/storage/upload";
@@ -10,7 +10,6 @@ import { Select } from "@/components/ui/Select";
 import { PresetPicker } from "@/components/dashboard/PresetPicker";
 import { SL_CITIES } from "@/data/cities";
 import { RULE_PRESETS, FEATURE_PRESETS, SL_MAKES, RESTRICTED_USE_OPTIONS, bodyTypesFor, hasBodyType, makeModelHint } from "@/data/vehicle-presets";
-import { vehicleTypeLabel } from "@/data/vehicles";
 import { startNavigationProgress } from "@/components/layout/NavigationProgress";
 import { buildVehicleSlug } from "@/lib/vehicles/slug";
 import { containsPublicContactDetails, PUBLIC_CONTACT_ERROR } from "@/lib/content/public-contact";
@@ -78,20 +77,29 @@ interface Props {
   agencyCity: string;
   prefill?: WizardPrefill | null;
   canDeclareListingAuthority: boolean;
+  /**
+   * Set when a DriveLink admin drafts a listing on an owner's page from what
+   * they sent on WhatsApp ("List it for me"). The draft stays private until the
+   * owner confirms the right to list it.
+   */
+  adminDraft?: { pageName: string };
 }
 
-// "Rules and price" used to be a single step carrying about thirty controls:
-// the price, the whole terms engine, insurance, features, rules and three
-// document pickers. Splitting price/terms from rules/documents keeps each
-// screen to one subject, which is also what makes an inline error land near
-// the field that caused it.
-const STEPS = ["Basics", "Photos", "How people can rent it", "Price and terms", "Rules and documents", "Review"];
-const REVIEW_STEP = STEPS.length - 1;
+// Three steps to go live. The listing used to take six screens, and most of
+// what they asked (deposit, km allowance, fees, house rules, features,
+// documents) already has a sensible default. Those now sit
+// behind "More details" on the last step, where they can be set now or later.
+// Doors and engine size stay required on the first step.
+const STEPS = ["Your vehicle", "Photos", "Price and go live"];
+const LAST_STEP = STEPS.length - 1;
 const PHOTOS_STEP = 1;
 
-export function VehicleWizard({ agencyId, agencyCity, prefill, canDeclareListingAuthority }: Props) {
+export function VehicleWizard({ agencyId, agencyCity, prefill, canDeclareListingAuthority, adminDraft }: Props) {
   const router = useRouter();
   const [step, setStep] = useState(0);
+  // An admin drafts for many pages, so each page keeps its own unfinished draft
+  // and never overwrites the admin's own listing draft.
+  const draftKey = adminDraft ? `${DRAFT_KEY}:admin:${agencyId}` : DRAFT_KEY;
 
   // Text draft (autosaved). Files can't be persisted, so photos/docs reset on reload.
   // When duplicating (prefill), state seeds from the source vehicle instead.
@@ -108,12 +116,14 @@ export function VehicleWizard({ agencyId, agencyCity, prefill, canDeclareListing
   const [seats, setSeats] = useState<number | "">(prefill?.seats ?? 5);
   const [fuelType, setFuelType] = useState(prefill?.fuel_type ?? "");
   const [city, setCity] = useState(prefill?.city ?? agencyCity);
-  const [insuranceType, setInsuranceType] = useState<"hire" | "private">(prefill?.insurance_type ?? "hire");
+  // No default. It used to start on "Hire", so an owner with private insurance
+  // who never looked at the question advertised commercial cover they lack.
+  const [insuranceType, setInsuranceType] = useState<"hire" | "private" | "">(prefill?.insurance_type ?? "");
   const [rules, setRules] = useState<string[]>(prefill?.rules ?? []);
   const [features, setFeatures] = useState<string[]>(prefill?.features ?? []);
   const [description, setDescription] = useState(prefill?.description ?? "");
 
-  // ── Vehicle identity (optional, Step: Vehicle) ──
+  // ── Vehicle identity (optional, under More details) ──
   const [bodyType, setBodyType] = useState(prefill?.body_type ?? "");
   const [variant, setVariant] = useState(prefill?.variant ?? "");
   const [plateNumber, setPlateNumber] = useState("");
@@ -121,7 +131,7 @@ export function VehicleWizard({ agencyId, agencyCity, prefill, canDeclareListing
   const [engineCc, setEngineCc] = useState(numText(prefill?.engine_cc));
   const [odometerKm, setOdometerKm] = useState("");
 
-  // ── Rental terms (Step: Rental terms) - SL defaults pre-filled ──
+  // ── Rental terms (under More details) - SL defaults pre-filled ──
   const [weeklyRate, setWeeklyRate] = useState(numText(prefill?.weekly_rate_lkr));
   const [includedKmPerDay, setIncludedKmPerDay] = useState(prefill ? numText(prefill.included_km_per_day) : "100");
   const [unlimitedKm, setUnlimitedKm] = useState(prefill?.unlimited_km ?? false);
@@ -158,6 +168,7 @@ export function VehicleWizard({ agencyId, agencyCity, prefill, canDeclareListing
   const [insuranceFile, setInsuranceFile] = useState<File | null>(null);
   const [revenueLicenseFile, setRevenueLicenseFile] = useState<File | null>(null);
 
+  const [showMore, setShowMore] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [uploadProgress, setUploadProgress] = useState<{ done: number; total: number } | null>(null);
@@ -180,15 +191,14 @@ export function VehicleWizard({ agencyId, agencyCity, prefill, canDeclareListing
     requestAnimationFrame(() => errorRef.current?.scrollIntoView({ behavior: "smooth", block: "center" }));
   }
 
-  // Which core specs apply to this vehicle. Doors are meaningless on a
-  // bike/tuk-tuk; an electric vehicle has no engine cc. Everything else
-  // (seats, transmission, fuel type) is required for every vehicle.
+  // Which specs apply to this vehicle. Doors are meaningless on a bike or
+  // tuk-tuk, and an electric vehicle has no engine cc.
   const needsDoors = vehicleType === "car" || vehicleType === "suv" || vehicleType === "van";
   const isElectric = fuelType === "electric";
   const showBodyType = hasBodyType(vehicleType);
   const bodyTypeOptions = bodyTypesFor(vehicleType, bodyType).map((v) => ({ value: v, label: v }));
-  const specColumns = (needsDoors ? 1 : 0) + (isElectric ? 0 : 1) + 1;
-  const specGridClass = specColumns === 3 ? "grid-cols-3" : specColumns === 2 ? "grid-cols-2" : "grid-cols-1";
+  const specColumns = (needsDoors ? 1 : 0) + (isElectric ? 0 : 1);
+  const specGridClass = specColumns === 2 ? "grid-cols-2" : "grid-cols-1";
 
   // Switching the vehicle type used to leave the old body style selected, so
   // picking SUV, choosing "SUV", then switching to Car left Car showing "SUV".
@@ -213,14 +223,14 @@ export function VehicleWizard({ agencyId, agencyCity, prefill, canDeclareListing
     // draft to load and nothing of the owner's to overwrite.
     if (prefill) { setDraftHydrated(true); return; }
     try {
-      const raw = localStorage.getItem(DRAFT_KEY);
+      const raw = localStorage.getItem(draftKey);
       if (raw) {
         const d = JSON.parse(raw);
         setMake(d.make ?? ""); setModel(d.model ?? ""); setYear(d.year ?? CURRENT_YEAR - 3);
         setVehicleType(d.vehicleType ?? "car"); setDailyRate(d.dailyRate ?? ""); setDeposit(d.deposit ?? "");
         setSelfDrive(d.selfDrive ?? true); setWithDriver(d.withDriver ?? false); setAirportPickup(d.airportPickup ?? false);
         setTransmission(d.transmission ?? "automatic"); setSeats(d.seats ?? 5); setFuelType(d.fuelType ?? "");
-        setCity(d.city ?? agencyCity); setInsuranceType(d.insuranceType ?? "hire");
+        setCity(d.city ?? agencyCity); setInsuranceType(d.insuranceType ?? "");
         // Older drafts stored rules as newline text; migrate them to the chip list.
         setRules(Array.isArray(d.rules) ? d.rules : (d.rulesText ? String(d.rulesText).split("\n").map((s: string) => s.trim()).filter(Boolean) : []));
         setFeatures(Array.isArray(d.features) ? d.features : []);
@@ -240,7 +250,8 @@ export function VehicleWizard({ agencyId, agencyCity, prefill, canDeclareListing
         // Photos are File objects and cannot go into localStorage, so a
         // restored draft always comes back without them. Landing on the photo
         // step puts the owner where the missing work actually is, instead of a
-        // later step that would refuse to move on.
+        // later step that would refuse to move on. Drafts saved by the old
+        // six-step wizard clamp the same way.
         const savedStep = typeof d.step === "number" ? d.step : 0;
         setStep(Math.max(0, Math.min(savedStep, PHOTOS_STEP)));
         setDraftRestored(true);
@@ -261,7 +272,7 @@ export function VehicleWizard({ agencyId, agencyCity, prefill, canDeclareListing
   }, []);
 
   function discardDraft() {
-    try { localStorage.removeItem(DRAFT_KEY); } catch { /* ignore */ }
+    try { localStorage.removeItem(draftKey); } catch { /* ignore */ }
     window.location.reload();
   }
 
@@ -277,8 +288,8 @@ export function VehicleWizard({ agencyId, agencyCity, prefill, canDeclareListing
       minRenterAge, minLicenseYears, hasGpsTracker, hasEtcTag,
       perKmRate, tollsIncluded, driverBata,
     };
-    try { localStorage.setItem(DRAFT_KEY, JSON.stringify(d)); } catch { /* ignore */ }
-  }, [draftHydrated, prefill, step,
+    try { localStorage.setItem(draftKey, JSON.stringify(d)); } catch { /* ignore */ }
+  }, [draftHydrated, prefill, draftKey, step,
       make, model, year, vehicleType, dailyRate, deposit, selfDrive, withDriver, airportPickup, transmission, seats, fuelType, city, insuranceType, rules, features, description,
       bodyType, variant, plateNumber, doors, engineCc, odometerKm,
       weeklyRate, includedKmPerDay, unlimitedKm, extraMileage, deliveryAvailable, deliveryFee, minRentalDays, maxRentalDays,
@@ -287,40 +298,40 @@ export function VehicleWizard({ agencyId, agencyCity, prefill, canDeclareListing
       minRenterAge, minLicenseYears, hasGpsTracker, hasEtcTag,
       perKmRate, tollsIncluded, driverBata]);
 
-  function stepError(s: number): string | null {
+  /** An error, and whether it lives inside the folded "More details" section. */
+  function stepProblem(s: number): { message: string; inMore?: boolean } | null {
     if (s === 0) {
-      if (!make.trim() || !model.trim()) return "Add the make and model.";
-      if (!year || String(year).length !== 4) return "Add a 4-digit year.";
-      if (!plateNumber.trim()) return "Add the registration plate number. It stays private until a booking is confirmed.";
-      if (!fuelType) return "Select the fuel type.";
-      if (needsDoors && !doors) return "Add the number of doors.";
-      if (!isElectric && !engineCc) return "Add the engine size (cc).";
+      if (!make.trim() || !model.trim()) return { message: "Add the make and model." };
+      if (!year || String(year).length !== 4) return { message: "Add a 4-digit year." };
+      if (!plateNumber.trim()) return { message: "Add the registration plate number. It stays private until a booking is confirmed." };
+      if (!fuelType) return { message: "Select the fuel type." };
+      if (needsDoors && !doors) return { message: "Add the number of doors." };
+      if (!isElectric && !engineCc) return { message: "Add the engine size (cc)." };
+      if (!seats || Number(seats) < 1) return { message: "Add the number of seats." };
     }
     // Decision 10: a listing needs the core photo set before it can be
     // submitted for review - no more photo-less listings.
     if (s === 1 && photos.length < MIN_LISTING_PHOTOS) {
-      return `Add at least ${MIN_LISTING_PHOTOS} clear photos (front, back, sides, interior).`;
+      return { message: `Add at least ${MIN_LISTING_PHOTOS} clear photos (front, back, sides, interior).` };
     }
     if (s === 2) {
-      if (!selfDrive && !withDriver) return "Choose self-drive, with driver, or both. Airport handover is an extra service, not a rental mode.";
-      if (!seats || Number(seats) < 1) return "Add the number of seats.";
-    }
-    if (s === 3) {
-      if (!dailyRate || Number(dailyRate) < 500) return "Add a daily price (min Rs. 500).";
+      if (!dailyRate || Number(dailyRate) < 500) return { message: "Add a daily price (min Rs. 500)." };
+      if (!selfDrive && !withDriver) return { message: "Choose self-drive, with driver, or both." };
+      if (!insuranceType) return { message: "Choose the insurance this vehicle has." };
       // These used to be clamped silently on save, so an owner who typed
       // 25,000 for cleaning got 10,000 and was never told.
       if (cleaningFee && Number(cleaningFee) > MAX_CLEANING_FEE) {
-        return `The cleaning fee cannot be more than Rs. ${MAX_CLEANING_FEE.toLocaleString("en-LK")}.`;
+        return { message: `The cleaning fee cannot be more than Rs. ${MAX_CLEANING_FEE.toLocaleString("en-LK")}.`, inMore: true };
       }
       if (minRenterAge && (Number(minRenterAge) < MIN_RENTER_AGE_FLOOR || Number(minRenterAge) > MIN_RENTER_AGE_CEILING)) {
-        return `Minimum renter age must be between ${MIN_RENTER_AGE_FLOOR} and ${MIN_RENTER_AGE_CEILING}.`;
+        return { message: `Minimum renter age must be between ${MIN_RENTER_AGE_FLOOR} and ${MIN_RENTER_AGE_CEILING}.`, inMore: true };
       }
       if (minRentalDays && maxRentalDays && Number(maxRentalDays) < Number(minRentalDays)) {
-        return "The maximum rental length cannot be shorter than the minimum.";
+        return { message: "The maximum rental length cannot be shorter than the minimum.", inMore: true };
       }
-    }
-    if (s === REVIEW_STEP && canDeclareListingAuthority && (!authorityBasis || !authorityDeclared)) {
-      return "Confirm that you own this vehicle or are authorised to operate and rent it.";
+      if (canDeclareListingAuthority && (!authorityBasis || !authorityDeclared)) {
+        return { message: "Confirm that you own this vehicle or are authorised to operate and rent it." };
+      }
     }
     return null;
   }
@@ -334,30 +345,32 @@ export function VehicleWizard({ agencyId, agencyCity, prefill, canDeclareListing
   }
 
   function next() {
-    const e = stepError(step);
-    if (e) { showError(e); return; }
+    const problem = stepProblem(step);
+    if (problem) { showError(problem.message); return; }
     setError(null);
-    goToStep(Math.min(REVIEW_STEP, step + 1));
+    goToStep(Math.min(LAST_STEP, step + 1));
   }
   function back() { setError(null); goToStep(Math.max(0, step - 1)); }
 
   async function submit() {
-    // Every earlier step is validated by Next, but the review step has no Next
-    // button, so its own check never ran and the right-to-list declaration
-    // could be skipped entirely. Re-run every step here.
-    for (let s = 0; s <= REVIEW_STEP; s += 1) {
-      const e = stepError(s);
-      if (e) {
-        showError(e);
+    // The last step has no Next button, so its own check (including the
+    // right-to-list declaration) would never run. Re-check every step here.
+    for (let s = 0; s <= LAST_STEP; s += 1) {
+      const problem = stepProblem(s);
+      if (problem) {
+        if (problem.inMore) setShowMore(true);
+        showError(problem.message);
         if (s !== step) goToStep(s);
         return;
       }
     }
     if (containsPublicContactDetails(description, ...rules)) {
+      setShowMore(true);
       showError(PUBLIC_CONTACT_ERROR);
       return;
     }
     setLoading(true); setError(null);
+    const uploadOptions = adminDraft ? { agencyId } : {};
     try {
       // Upload every photo; a failed upload must NOT be silently dropped -
       // stop and let the owner retry (decision 10 / audit TRUST-020).
@@ -365,7 +378,7 @@ export function VehicleWizard({ agencyId, agencyCity, prefill, canDeclareListing
       setUploadProgress({ done: 0, total: photos.length });
       for (const { file } of photos) {
         try {
-          photoUrls.push((await uploadToR2("vehicle-photos", file)).publicUrl);
+          photoUrls.push((await uploadToR2("vehicle-photos", file, uploadOptions)).publicUrl);
           setUploadProgress({ done: photoUrls.length, total: photos.length });
         } catch (err) {
           // Keep the real reason. This used to be replaced with "check your
@@ -385,9 +398,9 @@ export function VehicleWizard({ agencyId, agencyCity, prefill, canDeclareListing
         return;
       }
       let crUrl: string | null = null, insUrl: string | null = null, revenueLicenseUrl: string | null = null;
-      if (crFile) crUrl = (await uploadToR2("vehicle-docs", crFile)).publicUrl;
-      if (insuranceFile) insUrl = (await uploadToR2("vehicle-docs", insuranceFile)).publicUrl;
-      if (revenueLicenseFile) revenueLicenseUrl = (await uploadToR2("vehicle-docs", revenueLicenseFile)).publicUrl;
+      if (crFile) crUrl = (await uploadToR2("vehicle-docs", crFile, uploadOptions)).publicUrl;
+      if (insuranceFile) insUrl = (await uploadToR2("vehicle-docs", insuranceFile, uploadOptions)).publicUrl;
+      if (revenueLicenseFile) revenueLicenseUrl = (await uploadToR2("vehicle-docs", revenueLicenseFile, uploadOptions)).publicUrl;
 
       const cleanRules    = Array.from(new Set(rules.map((s) => s.trim()).filter(Boolean)));
       const cleanFeatures = Array.from(new Set(features.map((s) => s.trim()).filter(Boolean)));
@@ -408,7 +421,7 @@ export function VehicleWizard({ agencyId, agencyCity, prefill, canDeclareListing
           vehicle_type: vehicleType, daily_rate_lkr: Number(dailyRate), deposit_lkr: Number(deposit) || 0,
           self_drive: selfDrive, with_driver: withDriver, airport_pickup: airportPickup,
           transmission, seats: Number(seats), fuel_type: fuelType || null, city,
-          insurance_type: insuranceType, mileage_limit: mileageLimitDerived,
+          insurance_type: insuranceType as "hire" | "private", mileage_limit: mileageLimitDerived,
           rules: cleanRules, features: cleanFeatures.length ? cleanFeatures : null,
           description: description.trim() || null,
           photos: photoUrls.length ? photoUrls : null,
@@ -451,15 +464,15 @@ export function VehicleWizard({ agencyId, agencyCity, prefill, canDeclareListing
           listing_authority_basis: canDeclareListingAuthority ? authorityBasis : null,
           listing_authority_declared: canDeclareListingAuthority ? authorityDeclared : false,
         })
-        .select("id").single();
+        .select("id, status").single();
 
       if (insErr) throw new Error(insErr.message);
-      const vehicleId = (inserted as { id: string }).id;
+      const saved = inserted as { id: string; status: string };
 
       let documentSaveFailed = false;
       if (crUrl || insUrl || revenueLicenseUrl) {
         const { error: documentError } = await supabase.from("vehicle_documents").upsert({
-          vehicle_id: vehicleId,
+          vehicle_id: saved.id,
           cr_url: crUrl,
           insurance_url: insUrl,
           revenue_license_url: revenueLicenseUrl,
@@ -470,11 +483,22 @@ export function VehicleWizard({ agencyId, agencyCity, prefill, canDeclareListing
         }
       }
 
-      try { localStorage.removeItem(DRAFT_KEY); } catch { /* ignore */ }
+      try { localStorage.removeItem(draftKey); } catch { /* ignore */ }
+
+      if (adminDraft) {
+        // Tell the owner there is a draft waiting for them. The draft itself is
+        // already saved, so a failed message only costs the nudge.
+        await fetch(`/api/admin/vehicles/${saved.id}/drafted`, { method: "POST" }).catch(() => undefined);
+        startNavigationProgress();
+        router.push(`/admin/agencies?drafted=${encodeURIComponent(`${year} ${make.trim()} ${model.trim()}`)}`);
+        router.refresh();
+        return;
+      }
+
       const destination = documentSaveFailed
         ? "/dashboard/vehicles?documents=retry"
         : canDeclareListingAuthority
-          ? "/dashboard/vehicles"
+          ? `/dashboard/vehicles?submitted=${saved.status === "available" ? "live" : "review"}`
           : "/dashboard/vehicles?authority=owner-review";
       startNavigationProgress();
       router.push(destination);
@@ -486,7 +510,7 @@ export function VehicleWizard({ agencyId, agencyCity, prefill, canDeclareListing
     }
   }
 
-  // Not a <form> (a stray Enter must never submit a five-step flow), so Enter
+  // Not a <form> (a stray Enter must never submit a multi-step flow), so Enter
   // is wired explicitly: it advances from a single-line field, and does
   // nothing in a textarea, where a newline is what people mean.
   function onKeyDown(e: React.KeyboardEvent) {
@@ -495,8 +519,12 @@ export function VehicleWizard({ agencyId, agencyCity, prefill, canDeclareListing
     if (el.tagName === "TEXTAREA" || el.tagName === "BUTTON") return;
     if (el.tagName !== "INPUT") return;
     e.preventDefault();
-    if (step < REVIEW_STEP) next();
+    if (step < LAST_STEP) next();
   }
+
+  const submitLabel = adminDraft
+    ? "Save draft for the owner"
+    : canDeclareListingAuthority ? "Submit listing" : "Save for owner review";
 
   return (
     <div className="max-w-xl" onKeyDown={onKeyDown}>
@@ -530,7 +558,70 @@ export function VehicleWizard({ agencyId, agencyCity, prefill, canDeclareListing
         </div>
       )}
 
-      {/* ── Step 0: Photos ── */}
+      {/* ── Step 1: Your vehicle ── */}
+      {step === 0 && (
+        <div className="space-y-5">
+          <div>
+            <p className="text-slate-600 text-sm mb-2">What kind of vehicle is it?</p>
+            <div className="grid grid-cols-3 gap-2">
+              {TYPE_TILES.map(({ value, label, Icon }) => (
+                <button key={value} type="button" onClick={() => changeVehicleType(value)}
+                  className={`flex flex-col items-center gap-1.5 py-4 rounded-2xl border-2 font-semibold text-sm transition-all ${vehicleType === value ? "bg-blue-50 border-blue-500 text-blue-700" : "bg-white border-slate-200 text-slate-500 hover:bg-slate-50"}`}>
+                  <Icon size={22} /> {label}
+                </button>
+              ))}
+            </div>
+          </div>
+          <div className="grid grid-cols-2 gap-3">
+            <BigField label="Make">
+              <input className={bigInput} value={make} onChange={(e) => setMake(e.target.value)} placeholder={makeModelHint(vehicleType).make} list="sl-makes" />
+              <datalist id="sl-makes">
+                {SL_MAKES.map((m) => <option key={m} value={m} />)}
+              </datalist>
+            </BigField>
+            <BigField label="Model"><input className={bigInput} value={model} onChange={(e) => setModel(e.target.value)} placeholder={makeModelHint(vehicleType).model} /></BigField>
+          </div>
+          <div className="grid grid-cols-2 gap-3">
+            <BigField label="Year"><input className={bigInput} type="number" inputMode="numeric" value={year} onChange={(e) => setYear(e.target.value === "" ? "" : Number(e.target.value))} placeholder="2018" /></BigField>
+            <BigField label="Seats"><input className={bigInput} type="number" inputMode="numeric" value={seats} onChange={(e) => setSeats(e.target.value === "" ? "" : Number(e.target.value))} min={1} max={20} /></BigField>
+          </div>
+          <BigField label="Registration plate number">
+            <input className={bigInput} value={plateNumber} onChange={(e) => setPlateNumber(e.target.value)} placeholder="WP CAB-1234" autoCapitalize="characters" />
+            <p className="mt-1 text-xs leading-5 text-slate-500">Kept private while browsing. The confirmed renter sees it for the handover plate check.</p>
+          </BigField>
+          <div>
+            <p className="text-slate-600 text-sm mb-2">Fuel</p>
+            <div className="grid grid-cols-4 gap-2">
+              {FUEL_TILES.map((f) => (
+                <button key={f} type="button" onClick={() => setFuelType(f)}
+                  className={`min-h-11 rounded-xl border-2 font-semibold text-sm capitalize ${fuelType === f ? "bg-blue-50 border-blue-500 text-blue-700" : "bg-white border-slate-200 text-slate-500"}`}>{f}</button>
+              ))}
+            </div>
+          </div>
+          {/* Required: renters filter and compare on these. Doors are skipped
+              for bikes and tuk-tuks, engine size for electric vehicles. */}
+          {specColumns > 0 && (
+            <div className={`grid gap-3 ${specGridClass}`}>
+              {needsDoors && <BigField label="Doors"><input className={bigInput} type="number" inputMode="numeric" value={doors} onChange={(e) => setDoors(e.target.value)} min={1} max={6} placeholder="4" /></BigField>}
+              {!isElectric && <BigField label="Engine cc"><input className={bigInput} type="number" inputMode="numeric" value={engineCc} onChange={(e) => setEngineCc(e.target.value)} min={0} placeholder="1500" /></BigField>}
+            </div>
+          )}
+          {/* Tiptronic is its own answer here, not a kind of automatic: plenty
+              of the used Japanese imports rented in Sri Lanka have it, and a
+              renter who needs a true automatic wants to know the difference. */}
+          <div>
+            <p className="text-slate-600 text-sm mb-2">Transmission</p>
+            <div className="grid grid-cols-3 gap-2">
+              {["automatic", "manual", "tiptronic"].map((t) => (
+                <button key={t} type="button" onClick={() => setTransmission(t)}
+                  className={`min-h-11 rounded-xl border-2 px-1 font-semibold text-sm capitalize ${transmission === t ? "bg-blue-50 border-blue-500 text-blue-700" : "bg-white border-slate-200 text-slate-500"}`}>{t}</button>
+              ))}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ── Step 2: Photos ── */}
       {step === 1 && (
         <div className="space-y-3">
           <p className="text-slate-600 text-sm">Add a few clear photos. The first one is the cover.</p>
@@ -558,76 +649,13 @@ export function VehicleWizard({ agencyId, agencyCity, prefill, canDeclareListing
         </div>
       )}
 
-      {/* ── Step 1: Vehicle ── */}
-      {step === 0 && (
-        <div className="space-y-5">
-          <div>
-            <p className="text-slate-600 text-sm mb-2">What kind of vehicle is it?</p>
-            <div className="grid grid-cols-3 gap-2">
-              {TYPE_TILES.map(({ value, label, Icon }) => (
-                <button key={value} type="button" onClick={() => changeVehicleType(value)}
-                  className={`flex flex-col items-center gap-1.5 py-4 rounded-2xl border-2 font-semibold text-sm transition-all ${vehicleType === value ? "bg-blue-50 border-blue-500 text-blue-700" : "bg-white border-slate-200 text-slate-500 hover:bg-slate-50"}`}>
-                  <Icon size={22} /> {label}
-                </button>
-              ))}
-            </div>
-          </div>
-          <div className="grid grid-cols-2 gap-3">
-            <BigField label="Make">
-              <input className={bigInput} value={make} onChange={(e) => setMake(e.target.value)} placeholder={makeModelHint(vehicleType).make} list="sl-makes" />
-              <datalist id="sl-makes">
-                {SL_MAKES.map((m) => <option key={m} value={m} />)}
-              </datalist>
-            </BigField>
-            <BigField label="Model"><input className={bigInput} value={model} onChange={(e) => setModel(e.target.value)} placeholder={makeModelHint(vehicleType).model} /></BigField>
-          </div>
-          <BigField label="Registration plate number">
-            <input className={bigInput} value={plateNumber} onChange={(e) => setPlateNumber(e.target.value)} placeholder="WP CAB-1234" autoCapitalize="characters" />
-            <p className="mt-1 text-xs leading-5 text-slate-500">Kept private while browsing. The confirmed renter sees it for the handover plate check.</p>
-          </BigField>
-          <BigField label="Year"><input className={bigInput} type="number" value={year} onChange={(e) => setYear(e.target.value === "" ? "" : Number(e.target.value))} placeholder="2018" /></BigField>
-          {/* A bike and a tuk-tuk have no body style, so the question is not
-              asked at all rather than offering them "Sedan" or "Coupe". */}
-          <div className={`grid gap-3 ${showBodyType ? "grid-cols-2" : "grid-cols-1"}`}>
-            {showBodyType && (
-              <BigField label="Body type (optional)">
-                <Select value={bodyType} onChange={setBodyType} options={bodyTypeOptions} placeholder="Select…" label="Body type" />
-              </BigField>
-            )}
-            <BigField label="Variant (optional)"><input className={bigInput} value={variant} onChange={(e) => setVariant(e.target.value)} placeholder="GLi, Hybrid, etc." /></BigField>
-          </div>
-          <div>
-            <p className="text-slate-600 text-sm mb-2">Fuel</p>
-            <div className="grid grid-cols-4 gap-2">
-              {FUEL_TILES.map((f) => (
-                <button key={f} type="button" onClick={() => setFuelType(f)}
-                  className={`min-h-11 rounded-xl border-2 font-semibold text-sm capitalize ${fuelType === f ? "bg-blue-50 border-blue-500 text-blue-700" : "bg-white border-slate-200 text-slate-500"}`}>{f}</button>
-              ))}
-            </div>
-          </div>
-          {/* Column count follows how many of these actually apply, so hiding
-              doors on a bike no longer leaves a third of the row empty. */}
-          <div className={`grid gap-3 ${specGridClass}`}>
-            {needsDoors && <BigField label="Doors"><input className={bigInput} type="number" inputMode="numeric" value={doors} onChange={(e) => setDoors(e.target.value)} min={1} max={6} placeholder="4" /></BigField>}
-            {!isElectric && <BigField label="Engine cc"><input className={bigInput} type="number" inputMode="numeric" value={engineCc} onChange={(e) => setEngineCc(e.target.value)} min={0} placeholder="1500" /></BigField>}
-            <BigField label="Odometer km (optional)"><input className={bigInput} type="number" inputMode="numeric" value={odometerKm} onChange={(e) => setOdometerKm(e.target.value)} min={0} placeholder="65000" /></BigField>
-          </div>
-        </div>
-      )}
-
-      {/* ── Step 4a: Price ── */}
-      {step === 3 && (
+      {/* ── Step 3: Price and go live ── */}
+      {step === 2 && (
         <div className="space-y-5">
           <BigField label="Price per day (LKR)">
             <input className={`${bigInput} text-2xl font-bold`} type="number" inputMode="numeric" value={dailyRate} onChange={(e) => setDailyRate(e.target.value)} placeholder="6500" min={500} />
           </BigField>
-          <p className="text-slate-500 text-xs">Set the everyday price first. The deposit and the rest of the terms follow below.</p>
-        </div>
-      )}
 
-      {/* ── Step 3: How to rent ── */}
-      {step === 2 && (
-        <div className="space-y-5">
           <div>
             <p className="text-slate-600 text-sm mb-2">How can people rent it? (tap all that apply)</p>
             <div className="grid grid-cols-2 gap-2">
@@ -641,39 +669,10 @@ export function VehicleWizard({ agencyId, agencyCity, prefill, canDeclareListing
                 </button>
               ))}
             </div>
-            <button
-              type="button"
-              onClick={() => setAirportPickup(!airportPickup)}
-              className={`mt-3 flex w-full items-start gap-3 rounded-xl border px-3 py-3 text-left transition-colors ${airportPickup ? "border-blue-500 bg-blue-50 text-blue-800" : "border-slate-200 bg-white text-slate-600"}`}
-            >
-              <span className={`mt-0.5 h-4 w-4 shrink-0 rounded border ${airportPickup ? "border-blue-600 bg-blue-600" : "border-slate-300"}`} />
-              <span>
-                <span className="block text-sm font-semibold">Airport handover available</span>
-                <span className="mt-0.5 block text-xs">The vehicle can be handed over or collected at the airport. This does not change who drives it.</span>
-              </span>
-            </button>
           </div>
-          {/* Tiptronic is its own answer here, not a kind of automatic: plenty
-              of the used Japanese imports rented in Sri Lanka have it, and a
-              renter who needs a true automatic wants to know the difference.
-              Three tiles need the full row, so Seats moved onto its own. */}
-          <div>
-            <p className="text-slate-600 text-sm mb-2">Transmission</p>
-            <div className="grid grid-cols-3 gap-2">
-              {["automatic", "manual", "tiptronic"].map((t) => (
-                <button key={t} type="button" onClick={() => setTransmission(t)}
-                  className={`min-h-11 rounded-xl border-2 px-1 font-semibold text-sm capitalize ${transmission === t ? "bg-blue-50 border-blue-500 text-blue-700" : "bg-white border-slate-200 text-slate-500"}`}>{t}</button>
-              ))}
-            </div>
-          </div>
-          <BigField label="Seats"><input className={bigInput} type="number" inputMode="numeric" value={seats} onChange={(e) => setSeats(e.target.value === "" ? "" : Number(e.target.value))} min={1} max={20} /></BigField>
-          <BigField label="City"><Select value={city} onChange={setCity} options={CITY_OPTIONS} label="City" /></BigField>
-        </div>
-      )}
 
-      {/* ── Step 5: Rules, features and documents ── */}
-      {step === 4 && (
-        <div className="space-y-5">
+          <BigField label="City"><Select value={city} onChange={setCity} options={CITY_OPTIONS} label="City" /></BigField>
+
           <div>
             <p className="text-slate-600 text-sm mb-2">Insurance</p>
             <div className="grid grid-cols-2 gap-2">
@@ -683,169 +682,181 @@ export function VehicleWizard({ agencyId, agencyCity, prefill, canDeclareListing
               ))}
             </div>
           </div>
-          {/* House rules */}
-          <div className="space-y-2">
-            <SectionHeading>House rules</SectionHeading>
-            <ToggleField label="Smoking allowed" on={smokingAllowed} onChange={setSmokingAllowed} />
-            <ToggleField label="Pets allowed" on={petsAllowed} onChange={setPetsAllowed} />
-            <ToggleField label="Ride-hail / commercial use allowed" on={rideHailAllowed} onChange={setRideHailAllowed} />
-            {selfDrive && (
-              <p className="rounded-lg border border-blue-200 bg-blue-50 p-3 text-xs leading-5 text-blue-900">
-                Self-drive is limited to the verified account holder named on the booking. Additional renter-drivers are not supported at launch.
-              </p>
-            )}
-            <div className="pt-1">
-              <p className="text-slate-600 text-sm mb-2">Not allowed:</p>
-              <div className="flex flex-wrap gap-1.5">
-                {RESTRICTED_USE_OPTIONS.map(({ value, label }) => {
-                  const on = restrictedUse.includes(value);
-                  return (
-                    <button key={value} type="button"
-                      onClick={() => setRestrictedUse((r) => on ? r.filter((v) => v !== value) : [...r, value])}
-                      className={`inline-flex min-h-11 items-center gap-1.5 px-3.5 rounded-full border text-sm font-medium transition-all ${on ? "bg-blue-50 border-blue-500 text-blue-700" : "bg-white border-slate-200 text-slate-500 hover:bg-slate-50"}`}>
-                      {on && <Check size={12} />} {label}
-                    </button>
-                  );
-                })}
-              </div>
-            </div>
-          </div>
 
-          <div>
-            <p className="text-slate-600 text-sm mb-0.5">Features (optional)</p>
-            <p className="text-slate-400 text-xs mb-2">Tap everything this vehicle has.</p>
-            <PresetPicker presets={FEATURE_PRESETS} value={features} onChange={setFeatures} addPlaceholder="Add another feature" />
-          </div>
-          <div>
-            <p className="text-slate-600 text-sm mb-0.5">Handover rules (optional)</p>
-            <p className="text-slate-400 text-xs mb-2">Tap the rules that apply, renters see these on the listing.</p>
-            <PresetPicker presets={RULE_PRESETS} value={rules} onChange={setRules} addPlaceholder="Add your own rule" />
-          </div>
-          <div>
-            <p className="text-slate-600 text-sm mb-0.5">Documents (optional)</p>
-            <p className="text-slate-400 text-xs mb-2">
-              Optional now: add all three when you are ready to apply for Verified Vehicle review.
-            </p>
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-              <DocPick label="Registration (CR)" file={crFile} onPick={setCrFile} />
-              <DocPick label="Insurance" file={insuranceFile} onPick={setInsuranceFile} />
-              <DocPick label="Revenue licence" file={revenueLicenseFile} onPick={setRevenueLicenseFile} />
-            </div>
-            <p className="text-slate-400 text-xs mt-1.5">Documents are private, only DriveLink admins see them.</p>
-          </div>
-        </div>
-      )}
+          {/* Everything below already has a sensible default, so it is folded
+              away rather than asked. Owners can fill it in now or from Edit. */}
+          <div className="rounded-2xl border border-slate-200 bg-white">
+            <button
+              type="button"
+              onClick={() => setShowMore((v) => !v)}
+              aria-expanded={showMore}
+              className="flex w-full min-h-11 items-center justify-between gap-3 px-4 py-3 text-left"
+            >
+              <span>
+                <span className="block text-sm font-semibold text-slate-900">More details (optional)</span>
+                <span className="block text-xs text-slate-500 mt-0.5">
+                  Deposit, km allowance, fees, house rules, features and documents. Defaults are set, change them now or later.
+                </span>
+              </span>
+              <ChevronDown size={18} className={`shrink-0 text-slate-500 transition-transform ${showMore ? "rotate-180" : ""}`} aria-hidden="true" />
+            </button>
 
-      {/* ── Step 5: Rental terms ── */}
-      {step === 3 && (
-        <div className="space-y-6">
-          <p className="text-slate-600 text-sm -mt-2">
-            These are shown to renters on the listing and recorded on every booking. Standard Sri Lankan defaults are pre-filled. Change only what&apos;s different for this vehicle.
-          </p>
+            {showMore && (
+              <div className="space-y-6 border-t border-slate-200 px-4 py-5">
+                {/* Vehicle specs */}
+                <div className="space-y-3">
+                  <SectionHeading>Vehicle specs</SectionHeading>
+                  {/* A bike and a tuk-tuk have no body style, so the question is
+                      not asked at all rather than offering them "Sedan". */}
+                  <div className={`grid gap-3 ${showBodyType ? "grid-cols-2" : "grid-cols-1"}`}>
+                    {showBodyType && (
+                      <BigField label="Body type">
+                        <Select value={bodyType} onChange={setBodyType} options={bodyTypeOptions} placeholder="Select…" label="Body type" />
+                      </BigField>
+                    )}
+                    <BigField label="Variant"><input className={bigInput} value={variant} onChange={(e) => setVariant(e.target.value)} placeholder="GLi, Hybrid, etc." /></BigField>
+                  </div>
+                  <BigField label="Odometer km"><input className={bigInput} type="number" inputMode="numeric" value={odometerKm} onChange={(e) => setOdometerKm(e.target.value)} min={0} placeholder="65000" /></BigField>
+                  <ToggleField label="Airport handover available" hint="Handed over or collected at the airport. This does not change who drives it." on={airportPickup} onChange={setAirportPickup} />
+                </div>
 
-          {/* Pricing extras */}
-          <div className="space-y-3">
-            <SectionHeading>Pricing extras</SectionHeading>
-            <BigField label="Weekly rate (optional)"><input className={bigInput} type="number" inputMode="numeric" value={weeklyRate} onChange={(e) => setWeeklyRate(e.target.value)} placeholder="e.g. 40000" min={0} /></BigField>
-            {/* The switch comes before the fields it disables. It used to sit
-                underneath them, so the allowance greyed itself out for no
-                visible reason. */}
-            <ToggleField label="Unlimited km" hint="Turn on to remove the daily distance allowance" on={unlimitedKm} onChange={setUnlimitedKm} />
-            {!unlimitedKm && (
-              <div className="grid grid-cols-2 gap-3">
-                <BigField label="Included km/day" hint="Extra km beyond this is charged">
-                  <input className={bigInput} type="number" inputMode="numeric" value={includedKmPerDay} onChange={(e) => setIncludedKmPerDay(e.target.value)} placeholder="100" min={0} />
-                </BigField>
-                <BigField label="Extra km charge (LKR/km)"><input className={bigInput} type="number" inputMode="numeric" value={extraMileage} onChange={(e) => setExtraMileage(e.target.value)} placeholder="e.g. 30" min={0} /></BigField>
-              </div>
-            )}
-            <ToggleField label="Delivery available" hint="Deliver the vehicle to the renter for a fee" on={deliveryAvailable} onChange={setDeliveryAvailable} />
-            {deliveryAvailable && (
-              <BigField label="Delivery fee (LKR)"><input className={bigInput} type="number" value={deliveryFee} onChange={(e) => setDeliveryFee(e.target.value)} placeholder="e.g. 1500" min={0} /></BigField>
-            )}
-            <div className="grid grid-cols-2 gap-3">
-              <BigField label="Min rental days"><input className={bigInput} type="number" value={minRentalDays} onChange={(e) => setMinRentalDays(e.target.value)} min={1} /></BigField>
-              <BigField label="Max rental days (optional)"><input className={bigInput} type="number" value={maxRentalDays} onChange={(e) => setMaxRentalDays(e.target.value)} min={1} placeholder="No limit" /></BigField>
-            </div>
-          </div>
+                {/* Pricing extras */}
+                <div className="space-y-3">
+                  <SectionHeading>Pricing extras</SectionHeading>
+                  <BigField label="Weekly rate"><input className={bigInput} type="number" inputMode="numeric" value={weeklyRate} onChange={(e) => setWeeklyRate(e.target.value)} placeholder="e.g. 40000" min={0} /></BigField>
+                  {/* The switch comes before the fields it disables. It used to sit
+                      underneath them, so the allowance greyed itself out for no
+                      visible reason. */}
+                  <ToggleField label="Unlimited km" hint="Turn on to remove the daily distance allowance" on={unlimitedKm} onChange={setUnlimitedKm} />
+                  {!unlimitedKm && (
+                    <div className="grid grid-cols-2 gap-3">
+                      <BigField label="Included km/day" hint="Extra km beyond this is charged">
+                        <input className={bigInput} type="number" inputMode="numeric" value={includedKmPerDay} onChange={(e) => setIncludedKmPerDay(e.target.value)} placeholder="100" min={0} />
+                      </BigField>
+                      <BigField label="Extra km charge (LKR/km)"><input className={bigInput} type="number" inputMode="numeric" value={extraMileage} onChange={(e) => setExtraMileage(e.target.value)} placeholder="e.g. 30" min={0} /></BigField>
+                    </div>
+                  )}
+                  <ToggleField label="Delivery available" hint="Deliver the vehicle to the renter for a fee" on={deliveryAvailable} onChange={setDeliveryAvailable} />
+                  {deliveryAvailable && (
+                    <BigField label="Delivery fee (LKR)"><input className={bigInput} type="number" value={deliveryFee} onChange={(e) => setDeliveryFee(e.target.value)} placeholder="e.g. 1500" min={0} /></BigField>
+                  )}
+                  <div className="grid grid-cols-2 gap-3">
+                    <BigField label="Min rental days"><input className={bigInput} type="number" value={minRentalDays} onChange={(e) => setMinRentalDays(e.target.value)} min={1} /></BigField>
+                    <BigField label="Max rental days"><input className={bigInput} type="number" value={maxRentalDays} onChange={(e) => setMaxRentalDays(e.target.value)} min={1} placeholder="No limit" /></BigField>
+                  </div>
+                </div>
 
-          {/* Deposit & fees */}
-          <div className="space-y-3">
-            <SectionHeading>Deposit &amp; fees</SectionHeading>
-            <BigField label="Refundable deposit (LKR)" hint="Held by you, returned after the rental. Leave blank for none.">
-              <input className={bigInput} type="number" value={deposit} onChange={(e) => setDeposit(e.target.value)} placeholder="0" min={0} step={1000} />
-            </BigField>
-            <div className="grid grid-cols-2 gap-3">
-              <BigField label="Cleaning fee" hint="Only if it comes back excessively dirty. Blank means no fee, and Rs. 10,000 is the most you can charge.">
-                <input className={bigInput} type="number" value={cleaningFee} onChange={(e) => setCleaningFee(e.target.value)} placeholder="0" min={0} max={10000} step={500} />
-              </BigField>
-              <BigField label="Refuel service fee" hint="Only if it comes back with less fuel. Blank means no fee.">
-                <input className={bigInput} type="number" value={refuelFee} onChange={(e) => setRefuelFee(e.target.value)} placeholder="0" min={0} step={100} />
-              </BigField>
-            </div>
-            <BigField label="Late fee per hour (optional)"><input className={bigInput} type="number" value={lateFeePerHour} onChange={(e) => setLateFeePerHour(e.target.value)} min={0} placeholder="No fee when blank" /></BigField>
-          </div>
+                {/* Deposit & fees */}
+                <div className="space-y-3">
+                  <SectionHeading>Deposit &amp; fees</SectionHeading>
+                  <BigField label="Refundable deposit (LKR)" hint="Held by you, returned after the rental. Leave blank for none.">
+                    <input className={bigInput} type="number" value={deposit} onChange={(e) => setDeposit(e.target.value)} placeholder="0" min={0} step={1000} />
+                  </BigField>
+                  <div className="grid grid-cols-2 gap-3">
+                    <BigField label="Cleaning fee" hint="Only if it comes back excessively dirty. Blank means no fee, and Rs. 10,000 is the most you can charge.">
+                      <input className={bigInput} type="number" value={cleaningFee} onChange={(e) => setCleaningFee(e.target.value)} placeholder="0" min={0} max={10000} step={500} />
+                    </BigField>
+                    <BigField label="Refuel service fee" hint="Only if it comes back with less fuel. Blank means no fee.">
+                      <input className={bigInput} type="number" value={refuelFee} onChange={(e) => setRefuelFee(e.target.value)} placeholder="0" min={0} step={100} />
+                    </BigField>
+                  </div>
+                  <BigField label="Late fee per hour"><input className={bigInput} type="number" value={lateFeePerHour} onChange={(e) => setLateFeePerHour(e.target.value)} min={0} placeholder="No fee when blank" /></BigField>
+                </div>
 
-          {/* Renter requirements */}
-          <div className="space-y-3">
-            <SectionHeading>Renter requirements</SectionHeading>
-            <div className="grid grid-cols-2 gap-3">
-              <BigField label="Min age"><input className={bigInput} type="number" value={minRenterAge} onChange={(e) => setMinRenterAge(e.target.value)} min={18} max={40} /></BigField>
-              <BigField label="Min years holding licence (you check at handover)"><input className={bigInput} type="number" value={minLicenseYears} onChange={(e) => setMinLicenseYears(e.target.value)} min={0} /></BigField>
-            </div>
-          </div>
+                {/* Renter requirements */}
+                <div className="space-y-3">
+                  <SectionHeading>Renter requirements</SectionHeading>
+                  <div className="grid grid-cols-2 gap-3">
+                    <BigField label="Min age"><input className={bigInput} type="number" value={minRenterAge} onChange={(e) => setMinRenterAge(e.target.value)} min={18} max={40} /></BigField>
+                    <BigField label="Min years holding licence (you check at handover)"><input className={bigInput} type="number" value={minLicenseYears} onChange={(e) => setMinLicenseYears(e.target.value)} min={0} /></BigField>
+                  </div>
+                </div>
 
-          {/* Disclosures */}
-          <div className="space-y-2">
-            <SectionHeading>Disclosures</SectionHeading>
-            <ToggleField label="GPS tracker fitted" hint="Shown on your listing, so renters know before they request" on={hasGpsTracker} onChange={setHasGpsTracker} />
-            <ToggleField label="ETC expressway tag fitted" hint="Tag charges during a rental are billed to the renter" on={hasEtcTag} onChange={setHasEtcTag} />
-          </div>
+                {/* With-driver terms */}
+                {withDriver && (
+                  <div className="space-y-3">
+                    <SectionHeading>With-driver terms</SectionHeading>
+                    <div className="grid grid-cols-2 gap-3">
+                      <BigField label="Per-km rate"><input className={bigInput} type="number" value={perKmRate} onChange={(e) => setPerKmRate(e.target.value)} min={0} placeholder="e.g. 60" /></BigField>
+                      <BigField label="Driver overnight allowance (Rs/night)"><input className={bigInput} type="number" value={driverBata} onChange={(e) => setDriverBata(e.target.value)} min={0} placeholder="2000" /></BigField>
+                    </div>
+                    <div>
+                      <p className="text-slate-600 text-sm mb-2">Tolls included in price?</p>
+                      <div className="grid grid-cols-2 gap-2">
+                        {([[true, "Yes"], [false, "No"]] as const).map(([v, l]) => (
+                          <button key={l} type="button" onClick={() => setTollsIncluded(v)}
+                            className={`min-h-11 rounded-xl border-2 font-semibold text-sm ${tollsIncluded === v ? "bg-blue-50 border-blue-500 text-blue-700" : "bg-white border-slate-200 text-slate-500"}`}>{l}</button>
+                        ))}
+                      </div>
+                    </div>
+                  </div>
+                )}
 
-          {/* With-driver terms */}
-          {withDriver && (
-            <div className="space-y-3">
-              <SectionHeading>With-driver terms</SectionHeading>
-              <div className="grid grid-cols-2 gap-3">
-                <BigField label="Per-km rate (optional)"><input className={bigInput} type="number" value={perKmRate} onChange={(e) => setPerKmRate(e.target.value)} min={0} placeholder="e.g. 60" /></BigField>
-                <BigField label="Driver overnight allowance (Rs/night)"><input className={bigInput} type="number" value={driverBata} onChange={(e) => setDriverBata(e.target.value)} min={0} placeholder="2000" /></BigField>
-              </div>
-              <div>
-                <p className="text-slate-600 text-sm mb-2">Tolls included in price?</p>
-                <div className="grid grid-cols-2 gap-2">
-                  {([[true, "Yes"], [false, "No"]] as const).map(([v, l]) => (
-                    <button key={l} type="button" onClick={() => setTollsIncluded(v)}
-                      className={`min-h-11 rounded-xl border-2 font-semibold text-sm ${tollsIncluded === v ? "bg-blue-50 border-blue-500 text-blue-700" : "bg-white border-slate-200 text-slate-500"}`}>{l}</button>
-                  ))}
+                {/* House rules */}
+                <div className="space-y-2">
+                  <SectionHeading>House rules</SectionHeading>
+                  <ToggleField label="Smoking allowed" on={smokingAllowed} onChange={setSmokingAllowed} />
+                  <ToggleField label="Pets allowed" on={petsAllowed} onChange={setPetsAllowed} />
+                  <ToggleField label="Ride-hail / commercial use allowed" on={rideHailAllowed} onChange={setRideHailAllowed} />
+                  {selfDrive && (
+                    <p className="rounded-lg border border-blue-200 bg-blue-50 p-3 text-xs leading-5 text-blue-900">
+                      Self-drive is limited to the verified account holder named on the booking. Additional renter-drivers are not supported at launch.
+                    </p>
+                  )}
+                  <div className="pt-1">
+                    <p className="text-slate-600 text-sm mb-2">Not allowed:</p>
+                    <div className="flex flex-wrap gap-1.5">
+                      {RESTRICTED_USE_OPTIONS.map(({ value, label }) => {
+                        const on = restrictedUse.includes(value);
+                        return (
+                          <button key={value} type="button"
+                            onClick={() => setRestrictedUse((r) => on ? r.filter((v) => v !== value) : [...r, value])}
+                            className={`inline-flex min-h-11 items-center gap-1.5 px-3.5 rounded-full border text-sm font-medium transition-all ${on ? "bg-blue-50 border-blue-500 text-blue-700" : "bg-white border-slate-200 text-slate-500 hover:bg-slate-50"}`}>
+                            {on && <Check size={12} />} {label}
+                          </button>
+                        );
+                      })}
+                    </div>
+                  </div>
+                </div>
+
+                {/* Disclosures */}
+                <div className="space-y-2">
+                  <SectionHeading>Disclosures</SectionHeading>
+                  <ToggleField label="GPS tracker fitted" hint="Shown on your listing, so renters know before they request" on={hasGpsTracker} onChange={setHasGpsTracker} />
+                  <ToggleField label="ETC expressway tag fitted" hint="Tag charges during a rental are billed to the renter" on={hasEtcTag} onChange={setHasEtcTag} />
+                </div>
+
+                <div>
+                  <p className="text-slate-600 text-sm mb-0.5">Features</p>
+                  <p className="text-slate-400 text-xs mb-2">Tap everything this vehicle has.</p>
+                  <PresetPicker presets={FEATURE_PRESETS} value={features} onChange={setFeatures} addPlaceholder="Add another feature" />
+                </div>
+                <div>
+                  <p className="text-slate-600 text-sm mb-0.5">Handover rules</p>
+                  <p className="text-slate-400 text-xs mb-2">Tap the rules that apply, renters see these on the listing.</p>
+                  <PresetPicker presets={RULE_PRESETS} value={rules} onChange={setRules} addPlaceholder="Add your own rule" />
+                </div>
+                <div>
+                  <p className="text-slate-600 text-sm mb-0.5">Documents</p>
+                  <p className="text-slate-400 text-xs mb-2">
+                    Add all three when you are ready to apply for the Verified Vehicle badge.
+                  </p>
+                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                    <DocPick label="Registration (CR)" file={crFile} onPick={setCrFile} />
+                    <DocPick label="Insurance" file={insuranceFile} onPick={setInsuranceFile} />
+                    <DocPick label="Revenue licence" file={revenueLicenseFile} onPick={setRevenueLicenseFile} />
+                  </div>
+                  <p className="text-slate-400 text-xs mt-1.5">Documents are private, only DriveLink admins see them.</p>
                 </div>
               </div>
-            </div>
-          )}
-        </div>
-      )}
-
-      {/* ── Step 6: Review ── */}
-      {step === REVIEW_STEP && (
-        <div className="space-y-3">
-          <div className="bg-white border border-slate-200 rounded-2xl p-4 space-y-2 text-sm">
-            <Row k="Vehicle" v={`${year} ${make} ${model}`} />
-            <Row k="Type" v={vehicleTypeLabel(vehicleType)} />
-            <Row k="Price/day" v={`Rs. ${Number(dailyRate || 0).toLocaleString("en-LK")}`} />
-            <Row k="Deposit" v={deposit ? `Rs. ${Number(deposit).toLocaleString("en-LK")}` : "None"} />
-            <Row k="Rent as" v={[selfDrive && "Self-drive", withDriver && "With driver"].filter(Boolean).join(", ") || "-"} />
-            <Row k="Airport handover" v={airportPickup ? "Available" : "Not offered"} />
-            <Row k="City" v={city} />
-            <Row k="Plate" v={plateNumber.toUpperCase()} />
-            <Row k="Photos" v={`${photos.length}`} />
-            <Row k="Features" v={features.length ? `${features.length} selected` : "None"} />
-            <Row k="Rules" v={rules.length ? `${rules.length} selected` : "None"} />
-            <Row k="Documents" v={[crFile && "CR", insuranceFile && "Insurance", revenueLicenseFile && "Revenue licence"].filter(Boolean).join(", ") || "None yet"} />
-            <Row k="Rental terms" v={unlimitedKm ? "Unlimited km" : `${includedKmPerDay || 100} km/day included`} />
+            )}
           </div>
+
           {canDeclareListingAuthority ? (
             <fieldset className="space-y-3 rounded-xl border border-slate-200 bg-white p-4">
               <legend className="px-1 text-sm font-semibold text-slate-900">Your right to list this vehicle</legend>
-              <p className="text-xs leading-5 text-slate-600">Choose the true statement. DriveLink may ask for supporting proof during review.</p>
+              <p className="text-xs leading-5 text-slate-600">Choose the true statement. DriveLink may ask for supporting proof.</p>
               <div className="grid gap-2 sm:grid-cols-2">
                 {([
                   ["registered_owner", "Owned by this page's operator"],
@@ -862,12 +873,22 @@ export function VehicleWizard({ agencyId, agencyCity, prefill, canDeclareListing
                 <span>I confirm this Rental Page has the legal right to offer this vehicle for the rental modes shown, and the details are accurate.</span>
               </label>
             </fieldset>
+          ) : adminDraft ? (
+            <div className="rounded-xl border border-blue-200 bg-blue-50 p-4 text-sm leading-6 text-blue-950">
+              This is saved as a private draft on {adminDraft.pageName}. The owner gets a message, checks the details,
+              confirms their right to list it and submits it. Nothing is shown to renters until then.
+            </div>
           ) : (
             <div className="rounded-xl border border-amber-200 bg-amber-50 p-4 text-sm leading-6 text-amber-950">
-              This will be saved privately for a Rental Page owner or manager to review. Only they can confirm the page&apos;s right to list the vehicle and send it to DriveLink for publication review.
+              This will be saved privately for a Rental Page owner or manager to review. Only they can confirm the page&apos;s right to list the vehicle and send it to DriveLink.
             </div>
           )}
-          <p className="text-slate-500 text-xs">{canDeclareListingAuthority ? "Your listing will be reviewed before it is published." : "This draft will not appear in search or accept bookings."} Verified Vehicle review needs registration, current hire insurance, and a revenue licence.</p>
+          {canDeclareListingAuthority && (
+            <p className="text-slate-500 text-xs">
+              New listings are usually checked within 24 hours, and we text you the moment yours is live. Once one listing is
+              approved, your next ones go live as soon as you submit them.
+            </p>
+          )}
         </div>
       )}
 
@@ -896,7 +917,7 @@ export function VehicleWizard({ agencyId, agencyCity, prefill, canDeclareListing
           className="inline-flex min-h-11 items-center gap-1.5 px-4 rounded-xl text-sm font-semibold text-slate-600 hover:bg-slate-100 disabled:opacity-40 transition-colors">
           <ChevronLeft size={16} /> Back
         </button>
-        {step < REVIEW_STEP ? (
+        {step < LAST_STEP ? (
           <button type="button" onClick={next}
             className="inline-flex min-h-11 items-center gap-1.5 px-6 rounded-xl text-sm font-bold bg-blue-600 hover:bg-blue-700 text-white shadow-sm transition-colors">
             Next <ChevronRight size={16} />
@@ -904,7 +925,7 @@ export function VehicleWizard({ agencyId, agencyCity, prefill, canDeclareListing
         ) : (
           <button type="button" onClick={submit} disabled={loading}
             className="inline-flex min-h-11 items-center gap-1.5 px-6 rounded-xl text-sm font-bold bg-blue-600 hover:bg-blue-700 text-white shadow-sm disabled:opacity-50 transition-colors">
-            {loading ? "Saving…" : canDeclareListingAuthority ? "Submit listing" : "Save for owner review"}
+            {loading ? "Saving…" : submitLabel}
           </button>
         )}
       </div>
@@ -922,10 +943,6 @@ function BigField({ label, hint, children }: { label: string; hint?: string; chi
       {hint && <span className="text-slate-400 text-xs mt-1 block">{hint}</span>}
     </label>
   );
-}
-
-function Row({ k, v }: { k: string; v: string }) {
-  return <div className="flex justify-between"><span className="text-slate-400">{k}</span><span className="font-semibold text-slate-800 capitalize text-right">{v}</span></div>;
 }
 
 function SectionHeading({ children }: { children: React.ReactNode }) {

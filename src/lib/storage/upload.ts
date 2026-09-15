@@ -54,7 +54,9 @@ async function putWithRetry(putUrl: string, file: File): Promise<void> {
 export async function uploadToR2(
   prefix: StoragePrefix,
   file: File,
-  options: { bookingId?: string } = {},
+  // agencyId: only for DriveLink admins drafting a listing on someone else's
+  // Rental Page. Owners and staff upload to their active page as before.
+  options: { bookingId?: string; agencyId?: string } = {},
 ): Promise<{ publicUrl: string; key: string }> {
   // Marketplace photos are served unoptimized from the CDN, so downscale them
   // before upload to keep renter bandwidth low. KYC and documents are left
@@ -78,6 +80,7 @@ export async function uploadToR2(
       contentType: file.type || "application/octet-stream",
       size:        file.size,
       bookingId:   options.bookingId,
+      agencyId:    options.agencyId,
     }),
   });
   if (!signRes.ok) {

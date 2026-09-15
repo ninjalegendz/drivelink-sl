@@ -2,12 +2,13 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { Building2, User, Sparkles } from "lucide-react";
+import { Building2, User, Sparkles, BadgeCheck } from "lucide-react";
 import { Button } from "@/components/ui/Button";
 import { startNavigationProgress } from "@/components/layout/NavigationProgress";
 import { Select } from "@/components/ui/Select";
 import { PhoneInput } from "@/components/ui/PhoneInput";
 import { SL_CITIES } from "@/data/cities";
+import { toInternationalSL } from "@/lib/auth/phone-format";
 import { containsPublicContactDetails, PUBLIC_CONTACT_ERROR } from "@/lib/content/public-contact";
 
 const CITY_OPTIONS = SL_CITIES.map((c) => ({ value: c, label: c }));
@@ -17,17 +18,35 @@ type PageType = "personal" | "business";
 const inputClass =
   "w-full min-h-11 px-4 py-2.5 bg-slate-100 border border-slate-200 rounded-xl text-base text-slate-900 placeholder-slate-400 focus:border-blue-500";
 
-export function PageCreateForm() {
+export interface PageCreateDefaults {
+  name: string;
+  whatsapp: string;
+  email: string;
+  /** The account phone already verified with a code, in +94 format. */
+  verifiedPhone: string | null;
+}
+
+/**
+ * Setting up a Rental Page used to be a blank form: name, city, WhatsApp and a
+ * required email, followed by a second code for a number the person had just
+ * verified at signup. Everything DriveLink already knows is filled in now, the
+ * email is optional, and using the verified signup phone skips the second code.
+ */
+export function PageCreateForm({ defaults }: { defaults?: PageCreateDefaults }) {
   const router = useRouter();
   const [pageType,      setPageType]      = useState<PageType>("personal");
-  const [name,          setName]          = useState("");
+  const [name,          setName]          = useState(defaults?.name ?? "");
   const [city,          setCity]          = useState("");
-  const [whatsapp,      setWhatsapp]      = useState("");
-  const [email,         setEmail]         = useState("");
+  const [whatsapp,      setWhatsapp]      = useState(defaults?.whatsapp ?? "");
+  const [email,         setEmail]         = useState(defaults?.email ?? "");
   const [description,   setDescription]   = useState("");
   const [businessRegNo, setBusinessRegNo] = useState("");
   const [loading, setLoading] = useState(false);
   const [error,   setError]   = useState<string | null>(null);
+
+  const usesVerifiedPhone = Boolean(
+    defaults?.verifiedPhone && toInternationalSL(whatsapp.trim()) === defaults.verifiedPhone,
+  );
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -36,8 +55,8 @@ export function PageCreateForm() {
     if (name.trim().length < 3) { setError("Name must be at least 3 characters."); return; }
     if (!city)                  { setError("Pick a city."); return; }
     if (!whatsapp.trim())       { setError("Enter a WhatsApp number for booking alerts."); return; }
-    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim())) {
-      setError("Enter a valid email: statements and booking records go there."); return;
+    if (email.trim() && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim())) {
+      setError("That email doesn't look right. Fix it or leave it blank."); return;
     }
     if (containsPublicContactDetails(name, description)) {
       setError(PUBLIC_CONTACT_ERROR); return;
@@ -53,7 +72,7 @@ export function PageCreateForm() {
         page_type:        pageType,
         city,
         whatsapp_number:  whatsapp.trim(),
-        email:            email.trim(),
+        email:            email.trim() || undefined,
         description:      description.trim() || undefined,
         business_reg_no:  pageType === "business" ? (businessRegNo.trim() || undefined) : undefined,
       }),
@@ -66,10 +85,15 @@ export function PageCreateForm() {
       return;
     }
 
+    // With the number already verified there is nothing left to do on the
+    // dashboard, so go straight to listing the first vehicle. A different
+    // number still needs its code, which the dashboard asks for.
+    const phoneReady = Boolean((payload.page as { whatsapp_verified_at?: string | null } | undefined)?.whatsapp_verified_at);
+
     // Stay in the loading state through the navigation: dropping it here left
-    // the button idle while the dashboard was still being fetched.
+    // the button idle while the next page was still being fetched.
     startNavigationProgress();
-    router.push("/dashboard");
+    router.push(phoneReady ? "/dashboard/vehicles/new" : "/dashboard");
     router.refresh();
   }
 
@@ -134,6 +158,7 @@ export function PageCreateForm() {
           placeholder={pageType === "business" ? "e.g. Perera Car Rentals" : "e.g. Kasun's Cars"}
           className={inputClass}
         />
+        <p className="text-slate-400 text-xs mt-1">Renters see this name. You can change it later.</p>
       </div>
 
       <div>
@@ -144,23 +169,31 @@ export function PageCreateForm() {
       <div>
         <span className="text-slate-600 text-sm mb-1 block">WhatsApp number</span>
         <PhoneInput value={whatsapp} onChange={setWhatsapp} required />
-        <p className="text-slate-400 text-xs mt-1">Booking alerts arrive here as an SMS.</p>
+        {usesVerifiedPhone ? (
+          <p className="text-emerald-700 text-xs mt-1 flex items-center gap-1.5">
+            <BadgeCheck size={13} className="shrink-0" aria-hidden="true" />
+            You already verified this number, so there is no extra code.
+          </p>
+        ) : (
+          <p className="text-slate-400 text-xs mt-1">Booking alerts arrive here. A different number gets a one-time code.</p>
+        )}
       </div>
 
       <div>
-        <label htmlFor="page-email" className="text-slate-600 text-sm mb-1 block">Email</label>
+        <label htmlFor="page-email" className="text-slate-600 text-sm mb-1 block">
+          Email <span className="text-slate-400 font-normal">(optional)</span>
+        </label>
         <input
           id="page-email"
           type="email"
           value={email}
           onChange={(e) => setEmail(e.target.value)}
-          required
           autoComplete="email"
           placeholder="you@example.com"
           className={inputClass}
         />
         <p className="text-slate-400 text-xs mt-1">
-          Booking records and DriveLink notices are sent here.
+          Booking records are also sent here when you add one.
         </p>
       </div>
 
@@ -182,7 +215,7 @@ export function PageCreateForm() {
       {error && <p role="alert" className="text-rose-600 text-sm font-medium">{error}</p>}
 
       <Button type="submit" loading={loading} className="w-full" size="lg">
-        Create Rental Page
+        {usesVerifiedPhone ? "Create page and list a vehicle" : "Create Rental Page"}
       </Button>
     </form>
   );
