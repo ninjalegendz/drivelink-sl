@@ -1,4 +1,5 @@
 import { redirect } from "next/navigation";
+import { requireVerifiedIdentity } from "@/lib/auth/require-verified-identity";
 import { createClient, createServiceClient } from "@/lib/supabase/server";
 import { RenterBookingsList } from "@/components/bookings/RenterBookingsList";
 import { RENTER_BOOKINGS_SELECT, type RenterBookingRow } from "@/components/bookings/renter-bookings-query";
@@ -9,6 +10,7 @@ export default async function MyBookingsPage() {
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) redirect("/login?next=/bookings");
+  await requireVerifiedIdentity("/bookings");
 
   // The service read is constrained to the authenticated renter. This keeps
   // historical page names available without granting every signed-in account

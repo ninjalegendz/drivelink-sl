@@ -1,4 +1,5 @@
 import { redirect } from "next/navigation";
+import { requireVerifiedIdentity } from "@/lib/auth/require-verified-identity";
 import Link from "next/link";
 import Image from "next/image";
 import { Settings, User, Headphones } from "lucide-react";
@@ -40,6 +41,8 @@ export default async function DashboardLayout({ children }: { children: React.Re
   let blocker: LivenessBlocker | null = null;
 
   if (user) {
+    // Page staff are held to the same identity check as everyone else.
+    await requireVerifiedIdentity("/dashboard");
     const { page, pages } = await getActivePage(supabase, user.id);
     if (!page) redirect("/account/pages/new");
 

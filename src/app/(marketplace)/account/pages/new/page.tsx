@@ -1,4 +1,5 @@
 import { redirect } from "next/navigation";
+import { requireVerifiedIdentity } from "@/lib/auth/require-verified-identity";
 import Link from "next/link";
 import { ArrowLeft, ShieldCheck } from "lucide-react";
 import { createClient } from "@/lib/supabase/server";
@@ -14,6 +15,7 @@ export default async function NewRentalPagePage() {
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) redirect("/login?next=/account/pages/new");
+  await requireVerifiedIdentity("/account/pages/new");
 
   const { data: profileData } = await supabase
     .from("profiles")

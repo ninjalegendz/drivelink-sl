@@ -81,8 +81,10 @@ export function RoleTermsTabs() {
             <li><strong>Reliability score:</strong> repeated late cancellations, no-shows, or
                 attempts to take a booking off the platform harm your score and may result in
                 account suspension or blacklisting.</li>
-            <li><strong>Identity verification:</strong> you must complete ID verification (Didit)
-                before booking. False identity information is grounds for account termination.</li>
+            <li><strong>Identity verification:</strong> you must complete ID verification (Didit), with
+                a passport, NIC or driving licence, before using your account. DriveLink does not review
+                your driving licence separately; the Rental Page checks the original at handover. False
+                identity information is grounds for account termination.</li>
             <li><strong>Disagreements:</strong> the rental, the money and the vehicle are between
                 you and the Owner. DriveLink does not mediate or decide who pays. Reporting a
                 problem records it against that account and can affect their standing. See{" "}
@@ -131,8 +133,8 @@ export function RoleTermsTabs() {
                 a reasonable timeframe. Requests pending too long auto-cancel. Once confirmed, you
                 may not cancel without genuine cause, such as a mechanical breakdown. Repeated
                 cancellations harm your reliability score and ranking.</li>
-            <li><strong>Verification:</strong> you must complete ID verification before you submit
-                your first vehicle. Registration and insurance documents support a Verified Vehicle
+            <li><strong>Verification:</strong> you must complete ID verification before using your
+                account. Registration and insurance documents support a Verified Vehicle
                 badge; DriveLink may request additional documents at any time.</li>
             <li><strong>Reliability score and blacklisting:</strong> your score is based on
                 confirmation speed, cancellation rate, and completed bookings. Low scores reduce

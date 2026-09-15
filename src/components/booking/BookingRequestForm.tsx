@@ -11,7 +11,6 @@ import { siteConfig } from "@/lib/site-config";
 import { calcBookingPriceByDays, billableDaysBetween, toDateTime } from "@/lib/bookings/pricing";
 import { GuestBookingModal } from "@/components/booking/GuestBookingModal";
 import { readPendingBooking, clearPendingBooking, startVerificationForBooking } from "@/lib/booking/pending-booking";
-import { FOREIGN_PERMIT_LABELS, type ForeignPermitType } from "@/lib/booking/self-drive-eligibility";
 import { trackTrafficEvent } from "@/lib/analytics/client";
 import { startNavigationProgress } from "@/components/layout/NavigationProgress";
 import { DatePicker } from "@/components/ui/DatePicker";
@@ -105,11 +104,7 @@ export function BookingRequestForm({ vehicleId, agencyId, vehicleName, dailyRate
   const [loading, setLoading]     = useState(false);
   const [error, setError]         = useState<string | null>(null);
   const [guestModal, setGuestModal] = useState(false);
-  // A reviewed account tells the form whether an original foreign permit needs
-  // to be declared. The server remains authoritative when the request sends.
   const [mode, setMode]           = useState<"self_drive" | "with_driver">(selfDrive ? "self_drive" : "with_driver");
-  const [licence, setLicence] = useState<{ signedIn: boolean; reviewStatus: string; jurisdiction: "sri_lanka" | "foreign" | null } | null>(null);
-  const [foreignPermitType, setForeignPermitType] = useState<ForeignPermitType | "">("");
   const effectiveMode = bothModes ? mode : (selfDrive ? "self_drive" : "with_driver");
   const isSelfDrive   = effectiveMode === "self_drive";
   // Shown when an unverified renter tries to send - a "verify to continue"
@@ -134,12 +129,6 @@ export function BookingRequestForm({ vehicleId, agencyId, vehicleName, dailyRate
 
   useEffect(() => {
     trackTrafficEvent({ event: "booking_form_view", entityType: "vehicle", entityId: vehicleId, label: vehicleName });
-    let cancelled = false;
-    fetch("/api/account/license/status")
-      .then((response) => response.ok ? response.json() : null)
-      .then((value) => { if (!cancelled && value) setLicence(value); })
-      .catch(() => undefined);
-    return () => { cancelled = true; };
   }, [vehicleId, vehicleName]);
 
   // Pick-up: no past slots on today; all slots on later dates. Return offers all
@@ -201,10 +190,6 @@ export function BookingRequestForm({ vehicleId, agencyId, vehicleName, dailyRate
       setError(`Pick-up must be at least ${LEAD_HOURS} hours from now. Choose a later time to send an online request.`);
       return;
     }
-    if (isSelfDrive && licence?.jurisdiction === "foreign" && (!foreignPermitType || foreignPermitType === "none")) {
-      setError("Choose the original driving permit you will show at handover, or select with driver.");
-      return;
-    }
 
     setLoading(true);
 
@@ -230,7 +215,6 @@ export function BookingRequestForm({ vehicleId, agencyId, vehicleName, dailyRate
         start_time: startTime,
         end_time:   endTime,
         rental_mode:       effectiveMode,
-        foreign_permit_type: foreignPermitType || null,
       }),
     });
 
@@ -239,7 +223,7 @@ export function BookingRequestForm({ vehicleId, agencyId, vehicleName, dailyRate
     const payload = await res.json().catch(() => ({}));
 
     if (!res.ok) {
-      const p = payload as { needsVerification?: boolean; verificationPending?: boolean; needsLicenceReview?: boolean; error?: string };
+      const p = payload as { needsVerification?: boolean; verificationPending?: boolean; error?: string };
       if (p.verificationPending) {
         // Didt webhook still in flight - don't push them to re-verify.
         setVerifyPending(true);
@@ -249,10 +233,6 @@ export function BookingRequestForm({ vehicleId, agencyId, vehicleName, dailyRate
       if (p.needsVerification) {
         setNeedsVerify(true);
         setVerifyPending(false);
-        return;
-      }
-      if (p.needsLicenceReview) {
-        setError(p.error ?? "Your driving licence needs review before a self-drive request.");
         return;
       }
       setError(p.error ?? "Failed to send request. Please try again.");
@@ -323,33 +303,14 @@ export function BookingRequestForm({ vehicleId, agencyId, vehicleName, dailyRate
         </div>
       )}
 
-      {/* The saved licence jurisdiction, not a client-side checkbox, decides
-          whether a permit declaration is necessary. */}
+      {/* DriveLink no longer reviews licences in advance. The owner inspects the
+          original at handover, which was always the check that counted. */}
       {isSelfDrive && (
-        <div className="space-y-2">
-          <p className="rounded-lg border border-blue-200 bg-blue-50 p-2.5 text-xs leading-5 text-blue-900">
-            This self-drive request names you, the verified account holder, as the only renter-driver. Your original licence must match at pickup.
-          </p>
-          {licence?.signedIn && licence.reviewStatus !== "verified" && (
-            <div className="rounded-lg border border-amber-200 bg-amber-50 p-2.5 text-xs leading-5 text-amber-900">
-              Self-drive needs a reviewed driving licence. <a href="/account" className="font-semibold underline">Open your account</a> to submit or check it. You can still choose with driver where it is offered.
-            </div>
-          )}
-          {licence?.jurisdiction === "foreign" && (
-            <fieldset className="rounded-lg border border-amber-200 bg-amber-50 p-3">
-              <legend className="px-1 text-xs font-semibold text-amber-900">Original permit to show at handover</legend>
-              <p className="mt-1 text-xs leading-5 text-amber-800">Tell the Rental Page which original document you expect to show. The page must inspect it at pickup. This is information, not legal advice or a DriveLink approval.</p>
-              <div className="mt-2 space-y-2">
-                {(Object.entries(FOREIGN_PERMIT_LABELS) as [ForeignPermitType, string][]).map(([value, label]) => (
-                  <label key={value} className="flex cursor-pointer items-start gap-2 text-xs text-slate-700">
-                    <input type="radio" name="foreign-permit" value={value} checked={foreignPermitType === value} onChange={() => setForeignPermitType(value)} className="mt-0.5" />
-                    <span>{label}</span>
-                  </label>
-                ))}
-              </div>
-            </fieldset>
-          )}
-        </div>
+        <p className="rounded-lg border border-blue-200 bg-blue-50 p-2.5 text-xs leading-5 text-blue-900">
+          Self-drive names you, the verified account holder, as the only driver. Bring your original
+          driving licence to the handover. If it was issued outside Sri Lanka, bring an International
+          Driving Permit or an AA Ceylon endorsement too. The owner checks both before handing over the keys.
+        </p>
       )}
 
       {/* Shown only when the chosen pick-up is under 24h away */}
@@ -515,7 +476,6 @@ export function BookingRequestForm({ vehicleId, agencyId, vehicleName, dailyRate
           totalDays: days,
           subtotal:  price.subtotal,
           rentalMode: effectiveMode,
-          foreignPermitType: foreignPermitType || undefined,
         }}
         onClose={() => setGuestModal(false)}
       />

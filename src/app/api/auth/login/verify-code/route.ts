@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { landingAfterSignIn } from "@/lib/auth/require-verified-identity";
 import { createClient, createServiceClient } from "@/lib/supabase/server";
 import { resolveIdentifier } from "@/lib/auth/identifier";
 import {
@@ -87,14 +88,14 @@ export async function POST(req: NextRequest) {
   // Tell the client where to land based on role.
   const { data: profile } = await service
     .from("profiles")
-    .select("role")
+    .select("role, kyc_status")
     .eq("id", identity.userId)
     .single();
-  const role = (profile as { role?: string } | null)?.role ?? "renter";
-  const dest =
-    role === "admin"        ? "/admin" :
-    role === "agency_owner" ? "/dashboard" :
-                              "/";
+  const typed = profile as { role?: string; kyc_status?: string } | null;
+  const role = typed?.role ?? "renter";
+  // Someone who signed up but never finished the identity check is sent there
+  // first, rather than into an account they cannot use yet.
+  const dest = landingAfterSignIn(role, typed?.kyc_status, role === "agency_owner" ? "/dashboard" : "/");
 
   return NextResponse.json({ ok: true, role, dest });
 }

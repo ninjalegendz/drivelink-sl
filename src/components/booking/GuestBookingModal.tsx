@@ -10,7 +10,6 @@ import { isValidInternationalPhone } from "@/data/country-codes";
 import { isEmailLike } from "@/lib/auth/identifier";
 import { startVerificationForBooking } from "@/lib/booking/pending-booking";
 import { formatLKR } from "@/lib/vehicles/format";
-import type { ForeignPermitType } from "@/lib/booking/self-drive-eligibility";
 
 type Mode  = "signup" | "login";
 type Stage = "identity" | "code" | "booking";
@@ -26,7 +25,6 @@ interface BookingDraft {
   totalDays:   number;
   subtotal:    number;
   rentalMode?: "self_drive" | "with_driver";
-  foreignPermitType?: ForeignPermitType;
 }
 
 interface Props {
@@ -212,14 +210,13 @@ export function GuestBookingModal({ draft, onClose }: Props) {
         start_time: draft.startTime ?? "10:00",
         end_time:   draft.endTime ?? "10:00",
         rental_mode:       draft.rentalMode ?? null,
-        foreign_permit_type: draft.foreignPermitType ?? null,
       }),
     });
     const bookingPayload = await bookingRes.json().catch(() => ({}));
     setLoading(false);
 
     if (!bookingRes.ok) {
-      const p = bookingPayload as { needsVerification?: boolean; verificationPending?: boolean; needsLicenceReview?: boolean; error?: string };
+      const p = bookingPayload as { needsVerification?: boolean; verificationPending?: boolean; error?: string };
       // A brand-new account is always unverified - DriveLink only sends
       // verified requests to owners, so hand off to Didit and bring them
       // back to this vehicle with their dates preserved.
@@ -236,10 +233,6 @@ export function GuestBookingModal({ draft, onClose }: Props) {
       }
       if (p.verificationPending) {
         setError("Your identity check is still being reviewed. Please give it a minute, then send your request from the vehicle page.");
-        return;
-      }
-      if (p.needsLicenceReview) {
-        setError("Your account is ready, but self-drive needs a reviewed driving licence. Open Account after closing this window to submit it.");
         return;
       }
       setError(`Account ready, but the booking didn't go through: ${p.error ?? "unknown error"}. You can try from the vehicle page.`);

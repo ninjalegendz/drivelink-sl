@@ -51,8 +51,8 @@ export default function TermsPage() {
             <li>You must provide accurate identity information. Knowingly providing false
                 information is grounds for permanent account termination.</li>
             <li>You are responsible for keeping your account credentials secure.</li>
-            <li>Renters must complete ID verification (via Didit, our third-party verifier)
-                before booking.</li>
+            <li>Every account must complete ID verification (via Didit, our third-party verifier),
+                with a passport, NIC or driving licence, before it can be used.</li>
             <li>Owners must complete identity verification before submitting a vehicle. Vehicle documents
                 support the Verified Vehicle badge and may be requested during review.</li>
           </ul>

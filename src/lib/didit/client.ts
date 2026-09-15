@@ -137,3 +137,38 @@ export function extractDiditNic(session: Record<string, unknown>): string | null
   const hit = candidates.find((v) => typeof v === "string" && v.trim().length > 0);
   return typeof hit === "string" ? hit.trim() : null;
 }
+
+// The date of birth on the verified document. It replaces the one renters used
+// to type into the separate licence form, which DriveLink no longer asks for,
+// and it is the only thing the self-drive age rule needs. Didit's payload shape
+// varies across versions, so every known path is tried and anything that is
+// not a real, past calendar date is ignored rather than stored.
+export function extractDiditDateOfBirth(session: Record<string, unknown>): string | null {
+  const decision = session.decision as Record<string, unknown> | undefined;
+  const data = session.data as Record<string, unknown> | undefined;
+  const records = [
+    ...(Array.isArray(session.id_verifications) ? session.id_verifications : []),
+    ...(Array.isArray(decision?.id_verifications) ? decision.id_verifications : []),
+    ...(Array.isArray(data?.id_verifications) ? data.id_verifications : []),
+    session.id_verification,
+    decision?.id_verification,
+  ].filter((value): value is Record<string, unknown> => Boolean(value && typeof value === "object"));
+
+  const candidates = records.flatMap((record) => [
+    record.date_of_birth,
+    record.birth_date,
+    record.dob,
+    (record.document_data as Record<string, unknown> | undefined)?.date_of_birth,
+  ]);
+
+  for (const value of candidates) {
+    if (typeof value !== "string") continue;
+    const day = value.trim().slice(0, 10);
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(day)) continue;
+    const parsed = new Date(`${day}T00:00:00Z`);
+    if (Number.isNaN(parsed.getTime()) || parsed.toISOString().slice(0, 10) !== day) continue;
+    if (parsed.getTime() > Date.now()) continue;
+    return day;
+  }
+  return null;
+}

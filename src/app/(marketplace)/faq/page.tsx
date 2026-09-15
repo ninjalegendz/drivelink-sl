@@ -16,8 +16,9 @@ const RENTER_FAQS: QA[] = [
     q: "How does booking work?",
     a: (
       <>
-        First verify your identity once with a quick ID check (and upload your licence if you
-        want self-drive). Then pick a vehicle, choose your dates, and send a free request. The
+        First verify your identity once, using your passport, NIC or driving licence. Then pick
+        a vehicle, choose your dates, and send a free request. Bring your original driving
+        licence to the handover, where the provider checks it. The
         provider sees you&apos;re already verified and confirms availability. Once approved, the
         provider&apos;s contact details unlock so you can call or WhatsApp them to arrange the
         handover. You pay the rental directly to the provider on pickup.

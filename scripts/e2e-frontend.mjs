@@ -140,13 +140,7 @@ async function main() {
   // at the request step, so the booking flow below could never run.
   await svc.from("profiles").update({
     kyc_status: "verified", nic_number: `199${STAMP}V`, address: "1 Test Lane, Colombo",
-    license_front_url: `/api/docs/kyc/${renterId}/fe-lic-f.png`, license_back_url: `/api/docs/kyc/${renterId}/fe-lic-b.png`,
-    license_review_status: "verified",
-    license_reviewed_at: new Date().toISOString(),
-    license_jurisdiction: "sri_lanka",
     date_of_birth: "1995-04-12",
-    license_issued_on: "2018-06-01",
-    license_expires_on: "2030-06-01",
   }).eq("id", renterId);
   await svc.from("profiles").update({ kyc_status: "verified", nic_number: `198${STAMP}V` }).eq("id", ownerId);
   ok("users seeded", true);
@@ -371,7 +365,7 @@ async function main() {
     await renterPg.goto(`${BASE}/account`);
     await settled(renterPg);
     const acctText = await renterPg.locator("body").innerText();
-    ok("account: driving licence card", /Driving licence/i.test(acctText));
+    ok("account: no separate licence review card", !/Driving licence/i.test(acctText));
     ok("account: rental pages section", /Rental Page/i.test(acctText));
     ok("account: document sharing history", /Document sharing history/i.test(acctText));
     await shot(renterPg, "11-account");

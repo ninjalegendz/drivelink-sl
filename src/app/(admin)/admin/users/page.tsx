@@ -4,10 +4,9 @@ import { ExternalLink, ShieldAlert } from "lucide-react";
 import { Badge } from "@/components/ui/Badge";
 import { KycActions } from "@/components/admin/KycActions";
 import { RenterActions } from "@/components/admin/RenterActions";
-import { LicenseReviewActions } from "@/components/admin/LicenseReviewActions";
 
 interface Props {
-  searchParams: Promise<{ kyc?: string; license?: string }>;
+  searchParams: Promise<{ kyc?: string }>;
 }
 
 /**
@@ -28,7 +27,7 @@ const kycVariant: Record<string, "slate" | "yellow" | "green" | "red"> = {
 };
 
 export default async function AdminUsersPage({ searchParams }: Props) {
-  const { kyc, license } = await searchParams;
+  const { kyc } = await searchParams;
   // Service client: these admin dashboards read protected profile columns
   // (phone, email, KYC docs, blacklist state) that browser sessions can no
   // longer SELECT. The (admin) layout enforces the admin role upstream.
@@ -36,11 +35,10 @@ export default async function AdminUsersPage({ searchParams }: Props) {
 
   let query = supabase
     .from("profiles")
-    .select("id, full_name, phone, phone_verified, role, kyc_status, nic_url, identity_back_url, selfie_url, identity_document_type, is_blacklisted, blacklist_reason, reliability_pct, avatar_url, didit_session_id, email, created_at, updated_at, license_front_url, license_back_url, date_of_birth, license_issued_on, license_expires_on, license_jurisdiction, license_review_status, license_review_note, license_submitted_at")
+    .select("id, full_name, phone, phone_verified, role, kyc_status, nic_url, identity_back_url, selfie_url, identity_document_type, is_blacklisted, blacklist_reason, reliability_pct, avatar_url, didit_session_id, email, created_at, updated_at")
     .order("created_at", { ascending: false });
 
-  if (license === "pending") query = query.eq("role", "renter").eq("license_review_status", "pending");
-  else if (kyc) query = query.eq("kyc_status", kyc);
+  if (kyc) query = query.eq("kyc_status", kyc);
   else query = query.eq("role", "renter");
 
   const { data } = await query.limit(100);
@@ -63,15 +61,6 @@ export default async function AdminUsersPage({ searchParams }: Props) {
     email: string | null;
     created_at: string;
     updated_at: string;
-    license_front_url: string | null;
-    license_back_url: string | null;
-    date_of_birth: string | null;
-    license_issued_on: string | null;
-    license_expires_on: string | null;
-    license_jurisdiction: "sri_lanka" | "foreign" | null;
-    license_review_status: "not_submitted" | "pending" | "verified" | "rejected" | null;
-    license_review_note: string | null;
-    license_submitted_at: string | null;
   }[];
 
   // Booking history per user, useful signal when reviewing a renter's KYC
@@ -118,14 +107,6 @@ export default async function AdminUsersPage({ searchParams }: Props) {
             {label}
           </a>
         ))}
-        <a
-          href="/admin/users?license=pending"
-          className={`px-3 py-1.5 rounded-lg text-sm transition-colors ${
-            license === "pending" ? "bg-amber-100 text-amber-900 font-medium" : "text-amber-800 hover:text-amber-900 bg-amber-50"
-          }`}
-        >
-          Licence reviews
-        </a>
         {/* Blacklist lives here now (folded out of the sidebar) */}
         <a
           href="/admin/blacklist"
@@ -160,9 +141,6 @@ export default async function AdminUsersPage({ searchParams }: Props) {
                   <div className="flex items-center gap-2 flex-wrap">
                     <p className="text-slate-900 font-semibold">{u.full_name}</p>
                     <Badge variant={kycVariant[u.kyc_status] ?? "slate"}>{u.kyc_status}</Badge>
-                    {u.license_review_status && u.license_review_status !== "not_submitted" && (
-                      <Badge variant={kycVariant[u.license_review_status] ?? "slate"}>Licence: {u.license_review_status}</Badge>
-                    )}
                     {u.is_blacklisted && <Badge variant="red">Blacklisted</Badge>}
                     {u.phone_verified && <Badge variant="green">Phone verified</Badge>}
                   </div>
@@ -286,29 +264,6 @@ export default async function AdminUsersPage({ searchParams }: Props) {
               </div>
             )}
 
-            {(u.license_front_url || u.license_back_url || u.license_review_status === "pending" || u.license_review_status === "rejected") && (
-              <div className="mt-4 border-t border-slate-200 pt-4">
-                <div className="flex flex-wrap items-center justify-between gap-2">
-                  <div>
-                    <p className="text-sm font-semibold text-slate-900">Driving licence</p>
-                    <p className="mt-0.5 text-xs text-slate-500">
-                      {u.license_jurisdiction === "foreign" ? "Issued outside Sri Lanka" : u.license_jurisdiction === "sri_lanka" ? "Issued in Sri Lanka" : "Issue location not provided"}
-                      {u.license_submitted_at ? ` · Submitted ${new Date(u.license_submitted_at).toLocaleDateString("en-LK")}` : ""}
-                    </p>
-                  </div>
-                </div>
-                <div className="mt-3 grid grid-cols-2 gap-3">
-                  <LicenceImage url={u.license_front_url} alt={`${u.full_name} driving licence front`} label="Licence front" />
-                  <LicenceImage url={u.license_back_url} alt={`${u.full_name} driving licence back`} label="Licence back" />
-                </div>
-                <dl className="mt-3 grid grid-cols-3 gap-2 text-xs">
-                  <div className="rounded-lg bg-slate-50 px-2.5 py-2"><dt className="text-slate-500">Date of birth</dt><dd className="mt-0.5 font-medium text-slate-800">{u.date_of_birth ?? "Not provided"}</dd></div>
-                  <div className="rounded-lg bg-slate-50 px-2.5 py-2"><dt className="text-slate-500">First issued</dt><dd className="mt-0.5 font-medium text-slate-800">{u.license_issued_on ?? "Not provided"}</dd></div>
-                  <div className="rounded-lg bg-slate-50 px-2.5 py-2"><dt className="text-slate-500">Expires</dt><dd className="mt-0.5 font-medium text-slate-800">{u.license_expires_on ?? "Not provided"}</dd></div>
-                </dl>
-                <LicenseReviewActions userId={u.id} status={u.license_review_status ?? "not_submitted"} />
-              </div>
-            )}
 
             {/* No docs uploaded yet */}
             {!u.nic_url && !u.identity_back_url && u.kyc_status === "unverified" && (
@@ -322,26 +277,6 @@ export default async function AdminUsersPage({ searchParams }: Props) {
           <div className="text-center py-16 text-slate-500">No users found.</div>
         )}
       </div>
-    </div>
-  );
-}
-
-function LicenceImage({ url, alt, label }: { url: string | null; alt: string; label: string }) {
-  return (
-    <div>
-      <p className="mb-1.5 text-xs text-slate-500">{label}</p>
-      {url ? (
-        <a href={url} target="_blank" rel="noopener noreferrer" className="block group">
-          <div className="relative h-36 w-full overflow-hidden rounded-xl border border-slate-200 bg-slate-100 group-hover:border-blue-500 transition-colors">
-            <Image src={previewSrc(url)} alt={alt} fill sizes="(min-width: 640px) 20rem, 45vw" className="object-cover" unoptimized />
-            <div className="absolute inset-0 flex items-center justify-center bg-black/0 transition-colors group-hover:bg-black/20">
-              <span className="opacity-0 group-hover:opacity-100 text-white text-xs bg-black/60 px-2 py-1 rounded transition-opacity inline-flex items-center gap-1">View full size <ExternalLink size={11} /></span>
-            </div>
-          </div>
-        </a>
-      ) : (
-        <div className="flex h-36 items-center justify-center rounded-xl border border-slate-200 bg-slate-100 text-sm text-slate-400">Not uploaded</div>
-      )}
     </div>
   );
 }

@@ -772,7 +772,7 @@ export function VehicleForm({ agencyId, agencyCity, vehicle, documents, canDecla
             <Field label="Min age">
               <input type="number" value={minRenterAge} onChange={(e) => setMinRenterAge(e.target.value)} min={18} max={40} className={inputClass} />
             </Field>
-            <Field label="Min years holding licence">
+            <Field label="Min years holding licence (you check at handover)">
               <input type="number" value={minLicenseYears} onChange={(e) => setMinLicenseYears(e.target.value)} min={0} className={inputClass} />
             </Field>
           </div>

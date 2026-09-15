@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { landingAfterSignIn } from "@/lib/auth/require-verified-identity";
 import { createClient, createServiceClient } from "@/lib/supabase/server";
 
 // Handles Supabase auth redirects.
@@ -54,16 +55,15 @@ export async function GET(req: NextRequest) {
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) return NextResponse.redirect(`${origin}/`);
 
-  const { data: profile } = await supabase
+  // Service client: kyc_status is protected from browser-session reads.
+  const service = await createServiceClient();
+  const { data: profile } = await service
     .from("profiles")
-    .select("role")
+    .select("role, kyc_status")
     .eq("id", user.id)
     .single();
-  const role = (profile as { role?: string } | null)?.role;
+  const typed = profile as { role?: string; kyc_status?: string } | null;
 
-  const dest =
-    role === "admin"        ? "/admin" :
-    role === "agency_owner" ? "/dashboard" :
-                              "/";
+  const dest = landingAfterSignIn(typed?.role, typed?.kyc_status, typed?.role === "agency_owner" ? "/dashboard" : "/");
   return NextResponse.redirect(`${origin}${dest}`);
 }

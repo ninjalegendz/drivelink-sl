@@ -8,11 +8,10 @@ import { DiditVerifyButton } from "@/components/account/DiditVerifyButton";
 import { PhoneVerifyForm } from "@/components/account/PhoneVerifyForm";
 import { SignOutButton } from "@/components/account/SignOutButton";
 import { RentalPageList } from "@/components/account/RentalPageList";
-import { LicenseUploadForm } from "@/components/account/LicenseUploadForm";
-import { Explanation } from "@/components/ui/Explanation";
 import { TeamInvitations, type TeamInvitation } from "@/components/account/TeamInvitations";
 import { PageTransferInvitations, type PageTransferInvitation } from "@/components/account/PageTransferInvitations";
 import { pageShellClass } from "@/components/ui/PageShell";
+import { requireVerifiedIdentity } from "@/lib/auth/require-verified-identity";
 
 interface Props {
   searchParams: Promise<{ didit?: string; welcome?: string }>;
@@ -49,6 +48,7 @@ export default async function AccountPage({ searchParams }: Props) {
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) redirect("/login?next=/account");
+  await requireVerifiedIdentity("/account");
 
   // Own-profile read runs on the service client: phone / email / licence URLs
   // are protected columns browser-session SELECT can no longer reach. The
@@ -57,7 +57,7 @@ export default async function AccountPage({ searchParams }: Props) {
   const [{ data: profile }, pages, invitationsResult, transfersResult] = await Promise.all([
     service
       .from("profiles")
-      .select("full_name, phone, phone_verified, email, email_verified_at, role, kyc_status, created_at, license_front_url, license_back_url, date_of_birth, license_issued_on, license_expires_on, license_jurisdiction, license_review_status, license_review_note")
+      .select("full_name, phone, phone_verified, email, email_verified_at, role, kyc_status, created_at")
       .eq("id", user.id)
       .single(),
     getOwnedPages(supabase, user.id),
@@ -149,18 +149,12 @@ export default async function AccountPage({ searchParams }: Props) {
       )}
 
       {/* Personal trust checks. Public reviews belong to Rental Pages, not people. */}
-      <div className="grid grid-cols-3 gap-3">
+      <div className="grid grid-cols-2 gap-3">
         <div className="bg-white border border-slate-200 rounded-2xl shadow-sm p-4 text-center">
           <Badge variant={profile.phone_verified ? "green" : "yellow"}>
             {profile.phone_verified ? "Verified" : "Action needed"}
           </Badge>
           <p className="text-slate-500 text-xs mt-2">Phone</p>
-        </div>
-        <div className="bg-white border border-slate-200 rounded-2xl shadow-sm p-4 text-center">
-          <Badge variant={profile.license_review_status === "verified" ? "green" : profile.license_review_status === "pending" ? "yellow" : "slate"}>
-            {profile.license_review_status === "verified" ? "Reviewed" : profile.license_review_status === "pending" ? "Under review" : "Not ready"}
-          </Badge>
-          <p className="text-slate-500 text-xs mt-2">Driving licence</p>
         </div>
         <div className="bg-white border border-slate-200 rounded-2xl shadow-sm p-4 text-center">
           <Badge variant={kycVariant[profile.kyc_status ?? "unverified"]}>
@@ -313,29 +307,6 @@ export default async function AccountPage({ searchParams }: Props) {
         </p>
       </div>
 
-      {/* Driving licence */}
-      <div className="bg-white border border-slate-200 rounded-2xl shadow-sm p-5">
-        <div className="flex items-center justify-between mb-4">
-          <h2 className="text-slate-900 font-semibold">Driving licence</h2>
-          <Badge variant={profile.license_review_status === "verified" ? "green" : profile.license_review_status === "pending" ? "yellow" : profile.license_review_status === "rejected" ? "red" : "slate"}>
-            {profile.license_review_status === "verified" ? "Reviewed" : profile.license_review_status === "pending" ? "Under review" : profile.license_review_status === "rejected" ? "Update needed" : "Not submitted"}
-          </Badge>
-        </div>
-        <p className="text-slate-600 text-xs mb-4">
-          Required for self-drive rentals. DriveLink reviews your submission first; the Rental Page still checks your original licence and any declared permit at pickup.
-        </p>
-        <Explanation explanation="selfDriveLicence" className="mb-4" />
-        <LicenseUploadForm
-          existingFrontUrl={profile.license_front_url}
-          existingBackUrl={profile.license_back_url}
-          initialDateOfBirth={profile.date_of_birth}
-          initialIssuedOn={profile.license_issued_on}
-          initialExpiresOn={profile.license_expires_on}
-          initialJurisdiction={profile.license_jurisdiction}
-          reviewStatus={profile.license_review_status ?? "not_submitted"}
-          reviewNote={profile.license_review_note}
-        />
-      </div>
 
       {/* Account details */}
       <div className="bg-white border border-slate-200 rounded-2xl shadow-sm p-5">

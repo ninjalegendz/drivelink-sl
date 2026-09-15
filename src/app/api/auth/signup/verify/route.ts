@@ -154,8 +154,8 @@ export async function POST(req: NextRequest) {
     ok: true,
     hasEmail:        Boolean(p.email),
     emailVerifyDispatched,
-    // The account itself is universal, but a person who deliberately started
-    // from "List your vehicle" should continue straight to page creation.
-    dest:            body.intent === "provider" ? "/account/pages/new" : "/account?welcome=1",
+    // Every new account verifies identity before it is used, then continues:
+    // to page creation if they started from "List your vehicle", otherwise home.
+    dest:            `/verify-identity?next=${encodeURIComponent(body.intent === "provider" ? "/account/pages/new" : "/account?welcome=1")}`,
   });
 }

@@ -9,8 +9,6 @@ import {
 } from "@/components/bookings/renter-bookings-query";
 import {
   assessSelfDriveEligibility,
-  isForeignPermitType,
-  type DriverLicenceRecord,
   type EligibleDriver,
 } from "@/lib/booking/self-drive-eligibility";
 import { listingPublicationProblem } from "@/lib/vehicles/trust";
@@ -58,11 +56,9 @@ export async function POST(req: NextRequest) {
   // agency_id is intentionally NOT trusted from the client, we derive it from
   // the vehicle below. Only the vehicle + dates are required.
   const { vehicle_id, start_date, end_date } = body;
-  // Chosen drive mode + foreign-licence permit declaration. The server derives
-  // whether it is foreign from the reviewed licence; client booleans are not
-  // trusted for a safety decision.
+  // Chosen drive mode. The owner inspects the original licence, and any permit
+  // a foreign licence needs, at the handover.
   const requestedMode = body.rental_mode === "self_drive" || body.rental_mode === "with_driver" ? body.rental_mode : null;
-  const foreignPermitType = isForeignPermitType(body.foreign_permit_type) ? body.foreign_permit_type : null;
   // Times are optional; default to 10:00 handover if the client omits them.
   const start_time = typeof body.start_time === "string" && body.start_time ? body.start_time.slice(0, 5) : "10:00";
   const end_time   = typeof body.end_time   === "string" && body.end_time   ? body.end_time.slice(0, 5)   : "10:00";
@@ -96,7 +92,7 @@ export async function POST(req: NextRequest) {
   // derived from the vehicle row so a request can't be mis-attributed.
   const [{ data: vehicle }, { data: renter }] = await Promise.all([
     service.from("vehicles").select("agency_id, status, plate_number, photos, rejection_reason, listing_authority_basis, listing_authority_declared, listing_authority_confirmed_at, listing_authority_confirmed_by, listing_authority_declaration_version, daily_rate_lkr, weekly_rate_lkr, monthly_rate_lkr, deposit_lkr, self_drive, with_driver, min_rental_days, max_rental_days, min_renter_age, min_license_years").eq("id", vehicle_id).single(),
-    service.from("profiles").select("kyc_status, is_blacklisted, booking_frozen, license_front_url, license_back_url, date_of_birth, license_issued_on, license_expires_on, license_jurisdiction, license_review_status, license_reviewed_at").eq("id", user.id).single(),
+    service.from("profiles").select("kyc_status, is_blacklisted, booking_frozen, date_of_birth").eq("id", user.id).single(),
   ]);
 
   if (!vehicle) {
@@ -191,29 +187,23 @@ export async function POST(req: NextRequest) {
   const isSelfDrive = effectiveMode === "self_drive";
   let approvedDriver: EligibleDriver | null = null;
 
-  // Self-drive has an eligibility gate, not merely an upload gate. The
-  // reviewer confirms the submitted licence first; then we compare verified
-  // date-of-birth and first-issue date to this vehicle's own requirements.
+  // Self-drive: DriveLink checks the one thing its records can prove, the age
+  // on the renter's verified identity document. The licence itself, and any
+  // permit a foreign licence needs, is inspected by the owner at handover.
   if (isSelfDrive) {
     const eligibility = assessSelfDriveEligibility(
-      renter as DriverLicenceRecord,
-      { minRenterAge: v.min_renter_age, minLicenseYears: v.min_license_years },
+      { date_of_birth: (renter as { date_of_birth?: string | null } | null)?.date_of_birth ?? null },
+      { minRenterAge: v.min_renter_age },
       start_date,
-      foreignPermitType,
     );
     if (!eligibility.ok) {
       return NextResponse.json(
-        {
-          error: eligibility.message,
-          needsLicenceReview: eligibility.code === "licence_review_required" || eligibility.code === "licence_expired",
-          eligibilityCode: eligibility.code,
-        },
+        { error: eligibility.message, eligibilityCode: eligibility.code },
         { status: 403 },
       );
     }
 
-    // Keep the approved facts that mattered at booking time. The Rental Page
-    // receives the decision and declared permit, not the renter's DOB.
+    // Keep the age at pickup; the Rental Page never receives the birth date.
     approvedDriver = eligibility.driver;
   }
 
@@ -381,16 +371,11 @@ export async function POST(req: NextRequest) {
       // BOOK-013: snapshot the deposit at request time so it can't be raised
       // before the owner accepts.
       deposit_lkr:     v.deposit_lkr ?? null,
-      // Self-drive eligibility snapshot. The original licence and declared
-      // permit must still be inspected at pickup; this does not certify them.
+      // Self-drive snapshot. The licence is inspected at pickup, so no licence
+      // facts are recorded here; the licence columns stay for older bookings.
       rental_mode:            effectiveMode,
-      is_foreign_renter:      isSelfDrive && approvedDriver?.jurisdiction === "foreign",
-      tourist_permit_ack_at:  isSelfDrive && approvedDriver?.jurisdiction === "foreign" ? new Date().toISOString() : null,
-      foreign_permit_type:    approvedDriver?.foreignPermitType ?? null,
-      driver_license_jurisdiction: approvedDriver?.jurisdiction ?? null,
+      is_foreign_renter:      false,
       driver_age_at_pickup:   approvedDriver?.ageAtPickup ?? null,
-      driver_license_years_at_pickup: approvedDriver?.licenseYearsAtPickup ?? null,
-      driver_license_reviewed_at: approvedDriver?.reviewedAt ?? null,
     })
     .select("id")
     .single();

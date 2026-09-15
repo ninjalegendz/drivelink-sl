@@ -1,4 +1,5 @@
 import { redirect } from "next/navigation";
+import { requireVerifiedIdentity } from "@/lib/auth/require-verified-identity";
 import Link from "next/link";
 import { ArrowLeft, ChevronLeft, ChevronRight, Download, Eye, ShieldCheck, ShieldX } from "lucide-react";
 import { createClient, createServiceClient } from "@/lib/supabase/server";
@@ -22,6 +23,7 @@ export default async function AccountDocumentsPage({ searchParams }: Props) {
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) redirect("/login?next=/account/documents");
+  await requireVerifiedIdentity("/account/documents");
 
   // These service reads are each pinned to the authenticated renter. They
   // preserve historical page names without reopening raw Rental Page contact

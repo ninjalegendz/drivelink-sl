@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient, createServiceClient } from "@/lib/supabase/server";
-import { fetchDiditSession, mapDiditStatus, extractDiditNic } from "@/lib/didit/client";
+import { fetchDiditSession, mapDiditStatus, extractDiditNic, extractDiditDateOfBirth } from "@/lib/didit/client";
 import { applyKycVerification } from "@/lib/account/kyc-apply";
 import { importDiditIdentityDocument } from "@/lib/didit/identity-document";
 
@@ -58,11 +58,13 @@ export async function POST(req: NextRequest) {
 
   const newStatus = mapDiditStatus(session.status);
   const nic = extractDiditNic(session as unknown as Record<string, unknown>);
+  const dateOfBirth = extractDiditDateOfBirth(session as unknown as Record<string, unknown>);
 
   const { blacklistInherited } = await applyKycVerification(service, {
     userId,
     newStatus,
     nic,
+    dateOfBirth,
   });
 
   let identityImported = false;

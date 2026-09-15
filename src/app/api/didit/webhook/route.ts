@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import crypto from "node:crypto";
 import { createClient as createSupabase } from "@supabase/supabase-js";
 import { applyKycVerification } from "@/lib/account/kyc-apply";
-import { extractDiditNic, fetchDiditSession, mapDiditStatus } from "@/lib/didit/client";
+import { extractDiditDateOfBirth, extractDiditNic, fetchDiditSession, mapDiditStatus } from "@/lib/didit/client";
 import { extractDiditIdentityDocument, importDiditIdentityDocument } from "@/lib/didit/identity-document";
 import { runAfterResponse } from "@/lib/after-response";
 
@@ -89,7 +89,8 @@ async function reconcileSession(userId: string, sessionId: string): Promise<void
     }
     const newStatus = mapDiditStatus(decision.status);
     const nic = extractDiditNic(decision as unknown as JsonRecord);
-    await applyKycVerification(adminClient, { userId, newStatus, nic });
+    const dateOfBirth = extractDiditDateOfBirth(decision as unknown as JsonRecord);
+    await applyKycVerification(adminClient, { userId, newStatus, nic, dateOfBirth });
     if (newStatus === "verified") {
       await importDiditIdentityDocument(adminClient, {
         userId,
@@ -149,10 +150,12 @@ export async function POST(req: Request) {
 
   const kycStatus = mapDiditStatus(rawStatus);
   const nic = signatureMode === "simple" ? null : extractDiditNic(body);
+  const dateOfBirth = signatureMode === "simple" ? null : extractDiditDateOfBirth(body);
   const { blacklistInherited } = await applyKycVerification(adminClient, {
     userId,
     newStatus: kycStatus,
     nic,
+    dateOfBirth,
   });
 
   // Full retrieval supplies the canonical v3 plural arrays and signed media

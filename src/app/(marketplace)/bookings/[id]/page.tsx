@@ -1,4 +1,5 @@
 import { notFound, redirect } from "next/navigation";
+import { requireVerifiedIdentity } from "@/lib/auth/require-verified-identity";
 import Link from "next/link";
 import { Phone, ShieldCheck, ShieldAlert, Sparkles } from "lucide-react";
 import { createClient, createServiceClient } from "@/lib/supabase/server";
@@ -51,6 +52,7 @@ export default async function BookingDetailPage({ params, searchParams }: Props)
 
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) redirect(`/login?next=/bookings/${id}`);
+  await requireVerifiedIdentity(`/bookings/${id}`);
 
   const { data: renterProfile } = await supabase
     .from("profiles").select("kyc_status").eq("id", user.id).single();

@@ -791,7 +791,7 @@ export function VehicleWizard({ agencyId, agencyCity, prefill, canDeclareListing
             <SectionHeading>Renter requirements</SectionHeading>
             <div className="grid grid-cols-2 gap-3">
               <BigField label="Min age"><input className={bigInput} type="number" value={minRenterAge} onChange={(e) => setMinRenterAge(e.target.value)} min={18} max={40} /></BigField>
-              <BigField label="Min years holding licence"><input className={bigInput} type="number" value={minLicenseYears} onChange={(e) => setMinLicenseYears(e.target.value)} min={0} /></BigField>
+              <BigField label="Min years holding licence (you check at handover)"><input className={bigInput} type="number" value={minLicenseYears} onChange={(e) => setMinLicenseYears(e.target.value)} min={0} /></BigField>
             </div>
           </div>
 

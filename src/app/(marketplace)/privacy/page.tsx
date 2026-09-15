@@ -46,7 +46,7 @@ export default function PrivacyPage() {
 
           <p className="font-medium text-slate-900 mt-4 mb-1">From renters:</p>
           <ul className="list-disc pl-5 space-y-1">
-            <li>Driving licence (front and back photos), only for self-drive bookings</li>
+            <li>Driving licence photos, only if you uploaded them before separate licence review was retired. DriveLink no longer asks for them: the Rental Page checks your original licence at handover</li>
             <li>Booking history: dates requested, vehicle details, price, payment method</li>
             <li>Messages with Owners and DriveLink support staff</li>
             <li>Ratings and review text you provide about Rental Pages</li>
@@ -111,7 +111,7 @@ export default function PrivacyPage() {
                 contact number after confirmation and identity verification. The Rental Page sees
                 the renter&apos;s name, verification/reliability status, booking facts, and can use the
                 booking chat. DriveLink does not publish personal contact details on listings.</li>
-            <li><strong>Driving licence and government ID documents:</strong> available to the Rental Page owner
+            <li><strong>Government ID documents, and any older driving licence photos:</strong> available to the Rental Page owner
                 and staff who were separately granted document permission <strong>only after you explicitly
                 consent</strong> in that specific booking. DriveLink adds a traceable image watermark and
                 records each server request. Screenshots, photographs, and browser tools cannot be completely
@@ -149,8 +149,8 @@ export default function PrivacyPage() {
                 verification capture under its own retention controls. DriveLink stores only the approved
                 government-ID front/back copy used for handover, plus verification facts. Stored images are
                 removed immediately when the DriveLink account is deleted.</li>
-            <li><strong>Driving licence photos:</strong> kept on your account once uploaded so you
-                don&apos;t have to re-submit them for every self-drive booking. They are shared with
+            <li><strong>Driving licence photos uploaded before licence review was retired:</strong> kept
+                on your account until you delete it, and never requested again. They are shared with
                 the Rental Page owner, or eligible staff given separate document permission, only for
                 bookings you make with that page, and you can withdraw that
                 access while the booking is confirmed or active. Stored licence images are removed

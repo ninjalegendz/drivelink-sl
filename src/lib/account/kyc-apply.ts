@@ -4,6 +4,8 @@ interface ApplyArgs {
   userId:    string;
   newStatus: "verified" | "rejected" | "pending";
   nic?:      string | null;
+  /** From the verified document. Stored only on a verified pass. */
+  dateOfBirth?: string | null;
 }
 
 interface ApplyResult {
@@ -22,10 +24,11 @@ interface ApplyResult {
 export async function applyKycVerification(
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   service: SupabaseClient<any>,
-  { userId, newStatus, nic }: ApplyArgs
+  { userId, newStatus, nic, dateOfBirth }: ApplyArgs
 ): Promise<ApplyResult> {
   const update: Record<string, unknown> = { kyc_status: newStatus };
   if (nic) update.nic_number = nic;
+  if (newStatus === "verified" && dateOfBirth) update.date_of_birth = dateOfBirth;
 
   let blacklistInherited = false;
   let inheritedReason: string | undefined;

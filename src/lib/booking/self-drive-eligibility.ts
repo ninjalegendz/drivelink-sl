@@ -1,14 +1,20 @@
-export type LicenseJurisdiction = "sri_lanka" | "foreign";
-export type LicenseReviewStatus = "not_submitted" | "pending" | "verified" | "rejected";
+// Self-drive eligibility, now that DriveLink no longer reviews driving licences.
+//
+// The licence is checked where it always had to be checked anyway: by the
+// owner, on the original document, at the handover. A scan reviewed days
+// earlier never replaced that, and made every renter wait on an admin before
+// they could ask for a car.
+//
+// What DriveLink can still confirm from its own records is age, because the
+// identity check reads a date of birth from the passport, NIC or licence the
+// renter verified with. So age is the only rule enforced here. A vehicle's
+// "minimum years holding a licence" stays on the listing as the owner's own
+// handover requirement: DriveLink holds no verified issue date to compare it
+// against, and enforcing it anyway would be a check it cannot actually make.
+
 export type ForeignPermitType = "idp_1968" | "aa_ceylon_endorsement" | "dmt_airport_permit" | "none";
 
-export const FOREIGN_PERMIT_TYPES: ForeignPermitType[] = [
-  "idp_1968",
-  "aa_ceylon_endorsement",
-  "dmt_airport_permit",
-  "none",
-];
-
+// Still needed to label older bookings that recorded a declared permit.
 export const FOREIGN_PERMIT_LABELS: Record<ForeignPermitType, string> = {
   idp_1968: "International Driving Permit (1949/1968)",
   aa_ceylon_endorsement: "AA Ceylon endorsement",
@@ -16,33 +22,22 @@ export const FOREIGN_PERMIT_LABELS: Record<ForeignPermitType, string> = {
   none: "None of these yet",
 };
 
-export interface DriverLicenceRecord {
-  license_front_url: string | null;
-  license_back_url: string | null;
+export interface DriverAgeRecord {
   date_of_birth: string | null;
-  license_issued_on: string | null;
-  license_expires_on: string | null;
-  license_jurisdiction: LicenseJurisdiction | null;
-  license_review_status: LicenseReviewStatus | null;
-  license_reviewed_at: string | null;
 }
 
 export interface SelfDriveRules {
   minRenterAge: number | null;
-  minLicenseYears: number | null;
 }
 
 export interface EligibleDriver {
-  ageAtPickup: number;
-  licenseYearsAtPickup: number;
-  jurisdiction: LicenseJurisdiction;
-  reviewedAt: string;
-  foreignPermitType: ForeignPermitType | null;
+  /** Null when the identity check did not return a date of birth. */
+  ageAtPickup: number | null;
 }
 
 export type EligibilityResult =
   | { ok: true; driver: EligibleDriver }
-  | { ok: false; code: "licence_review_required" | "licence_expired" | "minimum_age" | "minimum_experience" | "foreign_permit_required"; message: string };
+  | { ok: false; code: "minimum_age"; message: string };
 
 function isDateOnly(value: string | null): value is string {
   if (!value || !/^\d{4}-\d{2}-\d{2}$/.test(value)) return false;
@@ -59,47 +54,20 @@ function completedYears(from: string, on: string): number {
 }
 
 export function assessSelfDriveEligibility(
-  record: DriverLicenceRecord,
+  record: DriverAgeRecord,
   rules: SelfDriveRules,
   pickupDate: string,
-  foreignPermitType: ForeignPermitType | null,
 ): EligibilityResult {
-  const reviewed = record.license_review_status === "verified";
-  const dateOfBirth = record.date_of_birth;
-  const issuedOn = record.license_issued_on;
-  const expiresOn = record.license_expires_on;
-  const jurisdiction = record.license_jurisdiction;
-  const reviewedAt = record.license_reviewed_at;
-  if (
-    !reviewed
-    || !record.license_front_url
-    || !record.license_back_url
-    || !isDateOnly(dateOfBirth)
-    || !isDateOnly(issuedOn)
-    || !isDateOnly(expiresOn)
-    || !jurisdiction
-    || !reviewedAt
-    || issuedOn < dateOfBirth
-    || expiresOn < issuedOn
-  ) {
-    return {
-      ok: false,
-      code: "licence_review_required",
-      message: "Your driving licence needs DriveLink review before you can request a self-drive rental. Update it in your account, then wait for approval.",
-    };
-  }
-  if (!isDateOnly(pickupDate) || expiresOn < pickupDate) {
-    return {
-      ok: false,
-      code: "licence_expired",
-      message: "Your driving licence expires before this pickup. Upload a current licence for review before requesting self-drive.",
-    };
+  const minAge = rules.minRenterAge ?? 18;
+
+  if (!isDateOnly(record.date_of_birth) || !isDateOnly(pickupDate)) {
+    // No verified birth date to compare. Refusing a renter who has passed the
+    // identity check over a field the document did not expose would be worse
+    // than the owner confirming age from the original licence at handover.
+    return { ok: true, driver: { ageAtPickup: null } };
   }
 
-  const ageAtPickup = completedYears(dateOfBirth, pickupDate);
-  const licenseYearsAtPickup = completedYears(issuedOn, pickupDate);
-  const minAge = rules.minRenterAge ?? 18;
-  const minExperience = rules.minLicenseYears ?? 0;
+  const ageAtPickup = completedYears(record.date_of_birth, pickupDate);
   if (ageAtPickup < minAge) {
     return {
       ok: false,
@@ -107,33 +75,5 @@ export function assessSelfDriveEligibility(
       message: `This vehicle requires a driver aged ${minAge} or older at pickup.`,
     };
   }
-  if (licenseYearsAtPickup < minExperience) {
-    return {
-      ok: false,
-      code: "minimum_experience",
-      message: `This vehicle requires at least ${minExperience} year${minExperience === 1 ? "" : "s"} of driving-licence experience at pickup.`,
-    };
-  }
-  if (jurisdiction === "foreign" && (!foreignPermitType || foreignPermitType === "none")) {
-    return {
-      ok: false,
-      code: "foreign_permit_required",
-      message: "Choose the driving permit you will show in original form at handover, or choose a with-driver rental.",
-    };
-  }
-
-  return {
-    ok: true,
-    driver: {
-      ageAtPickup,
-      licenseYearsAtPickup,
-      jurisdiction,
-      reviewedAt,
-      foreignPermitType: jurisdiction === "foreign" ? foreignPermitType : null,
-    },
-  };
-}
-
-export function isForeignPermitType(value: unknown): value is ForeignPermitType {
-  return typeof value === "string" && FOREIGN_PERMIT_TYPES.includes(value as ForeignPermitType);
+  return { ok: true, driver: { ageAtPickup } };
 }
