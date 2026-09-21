@@ -74,11 +74,14 @@ export default async function AdminAgenciesPage({ searchParams }: Props) {
     return (
       <div className="bg-white border border-slate-200 rounded-2xl shadow-sm p-5">
 
-        {/* Header: name, badges, actions */}
-        <div className="flex items-start justify-between gap-4 mb-3">
+        {/* Header: name, badges, actions.
+            Stacks on a phone. Side by side, the action column could not shrink,
+            so it pushed past the screen, the browser widened the whole page to
+            fit it, and the name column collapsed to one word per line. */}
+        <div className="mb-3 flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between sm:gap-4">
           <div className="min-w-0 flex-1">
             <div className="flex items-center gap-2 flex-wrap">
-              <p className="text-slate-900 font-semibold text-lg">{a.name}</p>
+              <p className="min-w-0 break-words text-lg font-semibold text-slate-900">{a.name}</p>
               {a.is_blocked
                 ? <Badge variant="red">Blocked</Badge>
                 : a.is_verified
@@ -87,7 +90,7 @@ export default async function AdminAgenciesPage({ searchParams }: Props) {
               }
               {a.strike_count >= 3 && <Badge variant="red">{a.strike_count} strikes</Badge>}
             </div>
-            <p className="text-slate-600 text-sm mt-1">
+            <p className="mt-1 break-words text-sm text-slate-600">
               {a.city} · {a.whatsapp_number}
             </p>
             {a.address && (
@@ -97,7 +100,7 @@ export default async function AdminAgenciesPage({ searchParams }: Props) {
               {a.id.slice(0, 8).toUpperCase()} · Joined {new Date(a.created_at).toLocaleDateString("en-LK")}
             </p>
           </div>
-          <div className="flex flex-col items-end gap-2 shrink-0">
+          <div className="flex w-full flex-col items-stretch gap-2 sm:w-auto sm:items-end">
             {a.page_type === "business" && (
               a.business_reg_url ? (
                 <a
@@ -118,7 +121,7 @@ export default async function AdminAgenciesPage({ searchParams }: Props) {
             {ownerKyc === "verified" && (
               <Link
                 href={`/admin/agencies/${a.id}/list-vehicle`}
-                className="inline-flex min-h-9 items-center text-xs font-semibold text-blue-600 hover:text-blue-700"
+                className="inline-flex min-h-11 items-center justify-center rounded-lg border border-blue-200 bg-blue-50 px-3 text-xs font-semibold text-blue-700 hover:bg-blue-100 sm:min-h-9 sm:justify-end sm:border-0 sm:bg-transparent sm:px-0 sm:hover:bg-transparent"
               >
                 List a vehicle for them
               </Link>
@@ -156,8 +159,8 @@ export default async function AdminAgenciesPage({ searchParams }: Props) {
             { label: "Page rating", value: a.rating_count > 0 ? `${a.rating_avg?.toFixed(1)} (${a.rating_count})` : "New" },
             { label: "Strikes",     value: a.strike_count, color: a.strike_count > 0 ? "text-rose-600" : "" },
           ].map(({ label, value, color }) => (
-            <div key={label} className="bg-slate-100/60 border border-slate-200/60 rounded-lg px-3 py-2">
-              <p className="text-slate-500 text-xs uppercase tracking-wider">{label}</p>
+            <div key={label} className="min-w-0 bg-slate-100/60 border border-slate-200/60 rounded-lg px-3 py-2">
+              <p className="break-words text-[11px] uppercase leading-tight tracking-wide text-slate-500 sm:text-xs sm:tracking-wider">{label}</p>
               <p className={`text-sm font-semibold mt-0.5 ${color ?? "text-slate-900"}`}>{value}</p>
             </div>
           ))}

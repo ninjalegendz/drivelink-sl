@@ -69,12 +69,17 @@ export default async function LandingPage({ params }: Props) {
       </Hero>
 
       <section className="space-y-6">
-        <div className="flex items-end justify-between gap-4">
-          <div>
+        <div className="flex flex-col gap-2 sm:flex-row sm:items-end sm:justify-between sm:gap-6">
+          <div className="max-w-2xl">
             <h2 className="text-xl font-bold text-slate-800">{landing.h1}</h2>
             <p className="text-xs text-slate-400">{vehicles.length} verified option{vehicles.length === 1 ? "" : "s"} available</p>
           </div>
-          <Link href={allHref} className="text-blue-600 hover:text-blue-700 text-sm font-semibold whitespace-nowrap">View all →</Link>
+          <Link
+            href={allHref}
+            className="inline-flex shrink-0 items-center gap-1 self-start whitespace-nowrap text-sm font-semibold text-blue-600 hover:text-blue-700"
+          >
+            View all <span aria-hidden="true">&rarr;</span>
+          </Link>
         </div>
 
         {vehicles.length > 0 ? (

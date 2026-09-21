@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { Check, X, Undo2 } from "lucide-react";
 import { Button } from "@/components/ui/Button";
 import type { VehicleStatus } from "@/types/database";
+import { ADMIN_ACTION_ROW } from "@/components/admin/action-row";
 
 interface Props {
   vehicleId: string;
@@ -46,7 +47,7 @@ export function VehicleApprovalActions({ vehicleId, status, approvalProblem }: P
 
   return (
     <div className="flex flex-col items-end gap-2">
-      <div className="flex flex-wrap gap-2 justify-end">
+      <div className={ADMIN_ACTION_ROW}>
         {status === "pending_review" && (
           <>
             <Button size="sm" disabled={Boolean(approvalProblem)} loading={loading === "approve"} onClick={() => update("available", "approve")}>

@@ -170,16 +170,16 @@ function BrowsingRow({ event }: { event: BrowsingEvent }) {
       <div className="shrink-0 w-9 h-9 rounded-full flex items-center justify-center bg-slate-100">
         <MousePointerClick size={15} className="text-slate-500" />
       </div>
-      <div className="flex-1 rounded-xl border border-dashed border-slate-200 bg-slate-50/60 px-4 py-2.5">
-        <div className="flex items-start justify-between gap-3">
-          <p className="text-sm text-slate-700">{label}</p>
-          <p className="shrink-0 font-mono text-xs text-slate-400">
+      <div className="min-w-0 flex-1 rounded-xl border border-dashed border-slate-200 bg-slate-50/60 px-4 py-2.5">
+        <div className="flex flex-wrap items-start justify-between gap-x-3 gap-y-0.5">
+          <p className="min-w-0 break-words text-sm text-slate-700">{label}</p>
+          <p className="font-mono text-xs text-slate-400">
             {new Date(event.created_at).toLocaleString("en-LK", {
               month: "short", day: "numeric", hour: "2-digit", minute: "2-digit",
             })}
           </p>
         </div>
-        {event.path && <p className="mt-0.5 truncate font-mono text-xs text-slate-500">{event.path}</p>}
+        {event.path && <p className="mt-0.5 w-full truncate font-mono text-xs text-slate-500">{event.path}</p>}
         <div className="mt-1 flex flex-wrap items-center gap-x-3 gap-y-0.5 text-xs text-slate-500">
           <span>{origin}</span>
           {device && <span>{device}</span>}
@@ -227,10 +227,10 @@ export function ActivityTimeline({
             <div className={`shrink-0 w-9 h-9 rounded-full flex items-center justify-center ${tone.bg}`}>
               <r.Icon size={16} className={tone.icon} />
             </div>
-            <div className="flex-1 bg-white border border-slate-100 rounded-xl px-4 py-3">
-              <div className="flex items-start justify-between gap-3">
-                <p className="text-slate-900 text-sm font-medium">{r.title}</p>
-                <p className="text-slate-400 text-xs font-mono shrink-0">
+            <div className="min-w-0 flex-1 bg-white border border-slate-100 rounded-xl px-4 py-3">
+              <div className="flex flex-wrap items-start justify-between gap-x-3 gap-y-0.5">
+                <p className="min-w-0 break-words text-slate-900 text-sm font-medium">{r.title}</p>
+                <p className="text-slate-400 text-xs font-mono">
                   {new Date(e.created_at).toLocaleString("en-LK", {
                     month: "short", day: "numeric", hour: "2-digit", minute: "2-digit",
                   })}

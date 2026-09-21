@@ -8,6 +8,7 @@ import { Button } from "@/components/ui/Button";
 import { EditAgencyModal } from "@/components/admin/EditAgencyModal";
 import { RatingAdjustModal } from "@/components/admin/RatingAdjustModal";
 import { ConfirmDialog } from "@/components/ui/ConfirmDialog";
+import { ADMIN_ACTION_ROW, ADMIN_GHOST_CELL } from "@/components/admin/action-row";
 
 interface Props {
   agencyId:        string;
@@ -83,18 +84,18 @@ export function AgencyActions({ agencyId, name, city, address, whatsapp_number, 
   }
 
   return (
-    <div className="flex flex-col items-end gap-1">
-      <div className="flex gap-2 shrink-0 flex-wrap justify-end">
+    <div className="flex w-full flex-col items-stretch gap-1 sm:w-auto sm:items-end">
+      <div className={ADMIN_ACTION_ROW}>
         <Link
           href={`/admin/agencies/${agencyId}/timeline`}
-          className="inline-flex items-center gap-1 px-2.5 py-1 text-xs text-slate-600 hover:text-blue-600 rounded-lg hover:bg-slate-100 transition-colors"
+          className={`inline-flex items-center justify-center gap-1 px-2.5 py-1 text-xs text-slate-600 hover:text-blue-600 rounded-lg hover:bg-slate-100 transition-colors ${ADMIN_GHOST_CELL}`}
         >
           <Activity size={14} /> Timeline
         </Link>
-        <Button size="sm" variant="ghost" onClick={() => setRatingOpen(true)}>
+        <Button size="sm" variant="ghost" className={ADMIN_GHOST_CELL} onClick={() => setRatingOpen(true)}>
           <Gauge size={14} /> Reliability
         </Button>
-        <Button size="sm" variant="ghost" onClick={() => setEditOpen(true)}>
+        <Button size="sm" variant="ghost" className={ADMIN_GHOST_CELL} onClick={() => setEditOpen(true)}>
           <Pencil size={14} /> Edit
         </Button>
         {isBlocked ? (

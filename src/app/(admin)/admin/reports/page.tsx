@@ -45,7 +45,7 @@ export default async function AdminReportsPage() {
                   <span>By {r.reporter?.full_name ?? "-"}</span>
                   <span>{new Date(r.created_at).toLocaleDateString("en-LK")}</span>
                   {r.target_type === "vehicle" && (
-                    <Link href={`/admin/vehicles`} className="text-blue-600 hover:underline">Open listings</Link>
+                    <Link href={`/admin/vehicles`} className="inline-flex min-h-11 items-center text-blue-600 hover:underline">Open listings</Link>
                   )}
                 </div>
               </div>

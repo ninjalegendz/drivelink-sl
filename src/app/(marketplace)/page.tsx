@@ -57,25 +57,32 @@ export default async function HomePage() {
           <Link
             key={href}
             href={href}
-            className="flex min-h-20 items-center gap-3 border border-slate-200 bg-white p-4 hover:border-blue-300"
+            className="flex min-h-20 flex-col items-start gap-2 rounded-xl border border-slate-200 bg-white p-4 transition-colors hover:border-blue-300 sm:flex-row sm:items-center sm:gap-3"
           >
             <span className="grid h-10 w-10 shrink-0 place-items-center rounded-lg bg-blue-50 text-blue-700">
               <Icon size={18} />
             </span>
-            <span className="font-semibold text-slate-800 text-sm">{label}</span>
+            {/* The label sat in a narrow column beside the icon, so at larger
+                text sizes "Airport Handover" spilled outside the tile. */}
+            <span className="min-w-0 break-words text-sm font-semibold text-slate-800">{label}</span>
           </Link>
         ))}
       </div>
 
       {/* Featured vehicles */}
       <section className="space-y-6">
-        <div className="flex items-center justify-between">
-          <div>
+        {/* Stacks on a phone. Side by side, the link was squeezed into two
+            lines and sat on top of the description. */}
+        <div className="flex flex-col gap-2 sm:flex-row sm:items-end sm:justify-between sm:gap-6">
+          <div className="max-w-2xl">
             <h2 className="text-xl font-bold text-slate-800">Featured vehicles</h2>
             <p className="text-sm text-slate-600">Compare provider, rental mode, price and the checks recorded on each listing.</p>
           </div>
-          <Link href="/vehicles" className="text-blue-600 hover:text-blue-700 text-sm font-semibold transition-colors">
-            View all →
+          <Link
+            href="/vehicles"
+            className="inline-flex shrink-0 items-center gap-1 self-start whitespace-nowrap text-sm font-semibold text-blue-600 transition-colors hover:text-blue-700"
+          >
+            View all <span aria-hidden="true">&rarr;</span>
           </Link>
         </div>
 

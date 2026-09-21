@@ -4,6 +4,7 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { Check, X, RefreshCw } from "lucide-react";
 import { Button } from "@/components/ui/Button";
+import { ADMIN_ACTION_ROW } from "@/components/admin/action-row";
 
 interface Props {
   userId:           string;
@@ -51,7 +52,7 @@ export function KycActions({ userId, hasDiditSession }: Props) {
 
   return (
     <div className="flex w-full flex-col items-stretch gap-1 sm:w-auto sm:items-end">
-      <div className="flex flex-wrap gap-2">
+      <div className={ADMIN_ACTION_ROW}>
         {hasDiditSession && (
           <Button size="sm" variant="secondary" loading={loading === "sync"} onClick={syncFromDidit}>
             <RefreshCw size={14} /> Sync from Didit

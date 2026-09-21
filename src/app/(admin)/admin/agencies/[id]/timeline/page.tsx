@@ -35,7 +35,7 @@ export default async function AdminAgencyTimelinePage({ params }: Props) {
     <div>
       <Link
         href="/admin/agencies"
-        className="inline-flex items-center gap-1 text-slate-600 hover:text-slate-900 text-xs mb-4"
+        className="inline-flex min-h-11 items-center gap-1 text-sm text-slate-600 hover:text-slate-900 mb-2"
       >
         <ArrowLeft size={12} /> Back to agencies
       </Link>

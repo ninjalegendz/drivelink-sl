@@ -116,7 +116,7 @@ export default async function AdminVehiclesPage({ searchParams }: Props) {
                         </div>
                       )}
                     </div>
-                    <div className="flex-1 min-w-0 flex items-start justify-between gap-3">
+                    <div className="flex-1 min-w-0 flex flex-col gap-0.5 sm:flex-row sm:items-start sm:justify-between sm:gap-3">
                       <div className="min-w-0">
                         <p className="font-semibold text-slate-900 text-sm">{v.year} {v.make} {v.model}</p>
                         {v.auto_published_at && (
@@ -126,23 +126,23 @@ export default async function AdminVehiclesPage({ searchParams }: Props) {
                           {v.agencies?.name ?? "-"} · {v.city}
                         </p>
                       </div>
-                      <p className="text-blue-600 font-bold text-sm shrink-0 text-right">
+                      <p className="text-blue-600 font-bold text-sm shrink-0 sm:text-right">
                         {formatLKR(v.daily_rate_lkr)}<span className="text-slate-500 text-xs font-normal"> / day</span>
                       </p>
                     </div>
                   </div>
 
                   {/* Actions + badges span the full card width (no photo indent) */}
-                  <div className="mt-3 flex flex-wrap items-center justify-between gap-2">
+                  <div className="mt-3 flex flex-col items-stretch gap-2 sm:flex-row sm:flex-wrap sm:items-center sm:justify-between">
                     <Link
                       href={`/vehicles/${v.slug}`}
                       target="_blank"
                       rel="noopener noreferrer"
-                      className="inline-flex items-center gap-1 text-xs text-blue-600 hover:text-blue-500"
+                      className="inline-flex min-h-11 items-center gap-1 text-xs text-blue-600 hover:text-blue-500"
                     >
                       Preview <ExternalLink size={11} />
                     </Link>
-                    <div className="flex flex-wrap items-center gap-2 justify-end">
+                    <div className="flex flex-wrap items-center gap-2 sm:justify-end">
                       <VehicleFeatureToggle vehicleId={v.id} initial={v.is_featured ?? false} />
                       <VehicleApprovalActions
                         vehicleId={v.id}
@@ -170,7 +170,7 @@ export default async function AdminVehiclesPage({ searchParams }: Props) {
               <div key={v.id} className="bg-white border border-slate-200 rounded-2xl shadow-sm p-5">
 
                 {/* Header: title, agency, price, actions */}
-                <div className="flex items-start justify-between gap-4 mb-4">
+                <div className="mb-4 flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between sm:gap-4">
                   <div className="min-w-0 flex-1">
                     <div className="flex items-center gap-2 flex-wrap">
                       <p className="font-semibold text-slate-900 text-lg">
@@ -331,7 +331,7 @@ export default async function AdminVehiclesPage({ searchParams }: Props) {
                     href={`/vehicles/${v.slug}`}
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="inline-flex items-center gap-1 text-xs text-blue-600 hover:text-blue-500"
+                    className="inline-flex min-h-11 items-center gap-1 text-xs text-blue-600 hover:text-blue-500"
                   >
                     Open public preview <ExternalLink size={11} />
                   </Link>

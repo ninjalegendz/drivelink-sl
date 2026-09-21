@@ -206,8 +206,8 @@ export function AdminBookingsList({ initial, filterStatus }: Props) {
               </p>
 
               <div className="mt-2 pt-2 border-t border-slate-100">
-                <div className="flex items-center justify-between gap-2">
-                  <p className={`text-sm ${isBlacklisted ? "text-rose-600 line-through" : "text-slate-900"}`}>{b.profiles?.full_name}</p>
+                <div className="flex flex-wrap items-center justify-between gap-x-2 gap-y-0.5">
+                  <p className={`min-w-0 break-words text-sm ${isBlacklisted ? "text-rose-600 line-through" : "text-slate-900"}`}>{b.profiles?.full_name}</p>
                   <p className="text-xs text-slate-500">{b.profiles?.phone}</p>
                 </div>
                 <div className="flex items-center gap-2 flex-wrap mt-1">

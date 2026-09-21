@@ -4,6 +4,7 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { Check, X } from "lucide-react";
 import { Button } from "@/components/ui/Button";
+import { ADMIN_ACTION_ROW } from "@/components/admin/action-row";
 
 export function ReportActions({ reportId }: { reportId: string }) {
   const router = useRouter();
@@ -20,7 +21,7 @@ export function ReportActions({ reportId }: { reportId: string }) {
   }
 
   return (
-    <div className="flex gap-2 shrink-0">
+    <div className={ADMIN_ACTION_ROW}>
       <Button size="sm" loading={loading === "reviewed"} onClick={() => act("reviewed")}>
         <Check size={14} /> Actioned
       </Button>

@@ -34,8 +34,8 @@ export default async function AdminBlacklistPage() {
       <div className="space-y-3">
         {reports.map((r) => (
           <div key={r.id} className="bg-white border border-slate-200 rounded-2xl shadow-sm p-4">
-            <div className="flex items-start justify-between gap-4">
-              <div>
+            <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between sm:gap-4">
+              <div className="min-w-0 flex-1">
                 <div className="flex items-center gap-2 mb-1">
                   <p className="font-mono text-slate-900 font-semibold">{r.reported_nic}</p>
                   {r.approved === null && <Badge variant="yellow">Pending review</Badge>}
@@ -43,7 +43,7 @@ export default async function AdminBlacklistPage() {
                   {r.approved === false && <Badge variant="slate">Dismissed</Badge>}
                 </div>
                 <p className="text-slate-600 text-sm">{r.reason}</p>
-                <div className="flex gap-3 mt-1 text-xs text-slate-500">
+                <div className="mt-1 flex flex-wrap gap-x-3 gap-y-0.5 text-xs text-slate-500">
                   <span>Reported by: {r.agencies?.name ?? "Unknown"}</span>
                   <span>Booking: {r.bookings?.id?.slice(0, 8).toUpperCase() ?? "-"}</span>
                   <span>{new Date(r.created_at).toLocaleDateString("en-LK")}</span>

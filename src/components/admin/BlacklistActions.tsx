@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/Button";
+import { ADMIN_ACTION_ROW } from "@/components/admin/action-row";
 
 export function BlacklistActions({ reportId }: { reportId: string; reportedNic: string }) {
   const router = useRouter();
@@ -28,7 +29,7 @@ export function BlacklistActions({ reportId }: { reportId: string; reportedNic: 
 
   return (
     <div className="flex flex-col items-end gap-1 shrink-0">
-      <div className="flex gap-2">
+      <div className={ADMIN_ACTION_ROW}>
         <Button size="sm" variant="danger" loading={loading === "approve"} onClick={() => review(true)}>
           Blacklist NIC
         </Button>

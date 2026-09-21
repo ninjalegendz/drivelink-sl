@@ -169,7 +169,7 @@ export default async function AdminHomePage() {
       <div>
         <div className="flex items-center justify-between mb-3">
           <h2 className="text-sm font-bold text-slate-800">Recent bookings</h2>
-          <Link href="/admin/bookings" className="inline-flex items-center gap-1 text-blue-600 hover:text-blue-700 text-sm font-semibold">
+          <Link href="/admin/bookings" className="inline-flex min-h-11 items-center gap-1 text-blue-600 hover:text-blue-700 text-sm font-semibold">
             View all <ArrowRight size={14} />
           </Link>
         </div>
