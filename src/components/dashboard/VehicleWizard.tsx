@@ -2,12 +2,13 @@
 
 import { useEffect, useId, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
-import { Camera, X, Check, Car, Bus, Bike, ChevronLeft, ChevronRight, ChevronDown, Upload, FileText } from "lucide-react";
+import { Camera, Check, Car, Bus, Bike, ChevronLeft, ChevronRight, ChevronDown, Upload, FileText } from "lucide-react";
 import { TukTuk } from "@/components/ui/icons/TukTuk";
 import { createClient } from "@/lib/supabase/client";
 import { uploadToR2 } from "@/lib/storage/upload";
 import { Select } from "@/components/ui/Select";
 import { PresetPicker } from "@/components/dashboard/PresetPicker";
+import { PhotoOrderGrid, movePhotoInList } from "@/components/dashboard/PhotoOrderGrid";
 import { SL_CITIES } from "@/data/cities";
 import { RULE_PRESETS, FEATURE_PRESETS, SL_MAKES, RESTRICTED_USE_OPTIONS, bodyTypesFor, hasBodyType, makeModelHint } from "@/data/vehicle-presets";
 import { startNavigationProgress } from "@/components/layout/NavigationProgress";
@@ -624,7 +625,7 @@ export function VehicleWizard({ agencyId, agencyCity, prefill, canDeclareListing
       {/* ── Step 2: Photos ── */}
       {step === 1 && (
         <div className="space-y-3">
-          <p className="text-slate-600 text-sm">Add a few clear photos. The first one is the cover.</p>
+          <p className="text-slate-600 text-sm">Add a few clear photos, then put them in the order renters should see them.</p>
           <input id="wizard-photo-input" type="file" accept={PHOTO_ACCEPT} multiple className="sr-only"
             onChange={(e) => { if (e.target.files) { const items = Array.from(e.target.files).map((file) => ({ file, url: URL.createObjectURL(file) })); setPhotos((p) => [...p, ...items]); } e.target.value = ""; }} />
           <label htmlFor="wizard-photo-input"
@@ -633,19 +634,15 @@ export function VehicleWizard({ agencyId, agencyCity, prefill, canDeclareListing
             <p className="text-slate-700 font-semibold">Tap to add photos</p>
             <p className="text-slate-500 text-xs mt-0.5">Add at least 4 clear photos: front, back, sides and interior. JPG or PNG.</p>
           </label>
-          {photos.length > 0 && (
-            <div className="grid grid-cols-3 gap-2">
-              {photos.map((item, i) => (
-                <div key={item.url} className="relative aspect-square rounded-xl overflow-hidden bg-slate-100 group">
-                  {/* eslint-disable-next-line @next/next/no-img-element */}
-                  <img src={item.url} alt="" className="w-full h-full object-cover" />
-                  {i === 0 && <span className="absolute bottom-1 left-1 text-xs bg-blue-600 text-white font-semibold px-1.5 py-0.5 rounded">Cover</span>}
-                  <button type="button" onClick={() => { URL.revokeObjectURL(item.url); setPhotos((p) => p.filter((_, j) => j !== i)); }}
-                    className="absolute top-1 right-1 w-6 h-6 rounded-full bg-slate-900/70 hover:bg-rose-500 text-white flex items-center justify-center"><X size={12} /></button>
-                </div>
-              ))}
-            </div>
-          )}
+          <PhotoOrderGrid
+            photos={photos.map((item) => ({ key: item.url, src: item.url, pending: true }))}
+            onMove={(from, to) => setPhotos((prev) => movePhotoInList(prev, from, to))}
+            onRemove={(i) => setPhotos((prev) => {
+              const target = prev[i];
+              if (target) URL.revokeObjectURL(target.url);
+              return prev.filter((_, j) => j !== i);
+            })}
+          />
         </div>
       )}
 

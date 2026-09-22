@@ -5,6 +5,7 @@ import "./globals.css";
 import { NavigationProgress } from "@/components/layout/NavigationProgress";
 import { ServiceWorkerRegister } from "@/components/pwa/ServiceWorkerRegister";
 import { OfflineBanner } from "@/components/pwa/OfflineBanner";
+import { NumberInputWheelGuard } from "@/components/ui/NumberInputWheelGuard";
 import { TrafficAnalytics } from "@/components/analytics/TrafficAnalytics";
 import { PostHogAnalytics } from "@/components/analytics/PostHogAnalytics";
 
@@ -86,6 +87,9 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         </Suspense>
         <ServiceWorkerRegister />
         <OfflineBanner />
+        {/* Stops the wheel editing a focused number field while someone is
+            just scrolling the page. One mount covers every form in the app. */}
+        <NumberInputWheelGuard />
       </body>
     </html>
   );

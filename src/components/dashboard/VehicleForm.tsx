@@ -2,7 +2,6 @@
 
 import { useEffect, useId, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
-import Image from "next/image";
 import { Camera, X, FileText, Check, Upload } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 import { uploadToR2 } from "@/lib/storage/upload";
@@ -12,6 +11,7 @@ import { startNavigationProgress } from "@/components/layout/NavigationProgress"
 import { HelpHint } from "@/components/ui/HelpHint";
 import { Select } from "@/components/ui/Select";
 import { PresetPicker } from "@/components/dashboard/PresetPicker";
+import { PhotoOrderGrid, movePhotoInList } from "@/components/dashboard/PhotoOrderGrid";
 import { SL_CITIES } from "@/data/cities";
 import { VEHICLE_TYPES } from "@/data/vehicles";
 import { RULE_PRESETS, FEATURE_PRESETS, SL_MAKES, RESTRICTED_USE_OPTIONS, bodyTypesFor, hasBodyType, makeModelHint } from "@/data/vehicle-presets";
@@ -177,11 +177,17 @@ export function VehicleForm({ agencyId, agencyCity, vehicle, documents, canDecla
   );
   const [description, setDescription] = useState(vehicle?.description ?? "");
 
-  const [existingPhotos, setExistingPhotos] = useState<string[]>(vehicle?.photos ?? []);
-  // Each new photo keeps a stable preview URL created once (when picked), not
-  // re-created on every render, that re-creation, plus clearing the input
-  // value, was leaving the preview blank.
-  const [newPhotos, setNewPhotos]           = useState<{ file: File; url: string }[]>([]);
+  // One ordered list, because the first photo is the cover and order is the
+  // whole point. Keeping uploaded photos and freshly picked files in separate
+  // lists meant a new photo could never be placed before an old one, so an
+  // owner who wanted their best new shot as the cover had to delete every
+  // existing photo first. `file` marks the ones still to upload; each keeps a
+  // preview URL created once when picked, not re-created on every render
+  // (that re-creation, plus clearing the input value, blanked the preview).
+  const [photos, setPhotos] = useState<{ key: string; url: string; file?: File }[]>(
+    (vehicle?.photos ?? []).map((url) => ({ key: url, url })),
+  );
+  const pendingCount = photos.filter((p) => p.file).length;
 
   const [loading, setLoading]   = useState(false);
   const [error, setError]       = useState<string | null>(null);
@@ -243,8 +249,26 @@ export function VehicleForm({ agencyId, agencyCity, vehicle, documents, canDecla
 
   function addPhotos(files: FileList | null) {
     if (!files || files.length === 0) return;
-    const items = Array.from(files).map((file) => ({ file, url: URL.createObjectURL(file) }));
-    setNewPhotos((prev) => [...prev, ...items]);
+    const items = Array.from(files).map((file) => {
+      const url = URL.createObjectURL(file);
+      return { key: url, url, file };
+    });
+    setPhotos((prev) => [...prev, ...items]);
+    setDirty(true);
+  }
+
+  function movePhoto(from: number, to: number) {
+    setPhotos((prev) => movePhotoInList(prev, from, to));
+    setDirty(true);
+  }
+
+  function removePhoto(index: number) {
+    setPhotos((prev) => {
+      const target = prev[index];
+      if (target?.file) URL.revokeObjectURL(target.url);
+      return prev.filter((_, i) => i !== index);
+    });
+    setDirty(true);
   }
 
   async function handleSubmit(e: React.FormEvent) {
@@ -264,7 +288,7 @@ export function VehicleForm({ agencyId, agencyCity, vehicle, documents, canDecla
     if (!selfDrive && !withDriver)     { fail("Choose self-drive, with driver, or both. Airport handover is an extra service, not a rental mode."); return; }
     if (!seats || Number(seats) < 1)   { fail("Add the number of seats."); return; }
     if (!dailyRate || Number(dailyRate) < 500) { fail("Add a daily price of at least Rs. 500."); return; }
-    const photoCount = existingPhotos.length + newPhotos.length;
+    const photoCount = photos.length;
     if (photoCount < requiredPhotos) {
       fail(
         requiredPhotos === MIN_LISTING_PHOTOS
@@ -295,28 +319,37 @@ export function VehicleForm({ agencyId, agencyCity, vehicle, documents, canDecla
     setLoading(true);
 
     const supabase = createClient();
+    const orderedPhotoUrls: string[] = [];
     const uploadedUrls: string[] = [];
     const failedFiles: string[]  = [];
 
-    // Upload each new photo. If one fails, log it and continue with the rest
-    //, user will see a summary after the save. The sign endpoint roots the
-    // R2 key at the caller's agency-id automatically, no agencyId needed
-    // client-side.
-    if (newPhotos.length) setUploadProgress({ done: 0, total: newPhotos.length });
-    for (const { file } of newPhotos) {
+    // Walk the list in the order shown on screen, uploading the new files as
+    // they come, so the saved order is exactly the order the owner arranged
+    // (the first one being the cover). If one upload fails, log it and carry
+    // on with the rest; the user sees a summary after the save. The sign
+    // endpoint roots the R2 key at the caller's agency-id automatically, no
+    // agencyId needed client-side.
+    const toUpload = photos.filter((p) => p.file).length;
+    if (toUpload) setUploadProgress({ done: 0, total: toUpload });
+    for (const photo of photos) {
+      if (!photo.file) {
+        orderedPhotoUrls.push(photo.url);
+        continue;
+      }
       try {
-        const out = await uploadToR2("vehicle-photos", file);
+        const out = await uploadToR2("vehicle-photos", photo.file);
+        orderedPhotoUrls.push(out.publicUrl);
         uploadedUrls.push(out.publicUrl);
-        setUploadProgress({ done: uploadedUrls.length, total: newPhotos.length });
+        setUploadProgress({ done: uploadedUrls.length, total: toUpload });
       } catch (err) {
         const msg = err instanceof Error ? err.message : "upload failed";
-        console.error("[vehicle photo upload]", file.name, msg);
-        failedFiles.push(`${file.name}: ${msg}`);
+        console.error("[vehicle photo upload]", photo.file.name, msg);
+        failedFiles.push(`${photo.file.name}: ${msg}`);
       }
     }
 
     setUploadProgress(null);
-    if (failedFiles.length > 0 && uploadedUrls.length === 0 && newPhotos.length > 0) {
+    if (failedFiles.length > 0 && uploadedUrls.length === 0 && toUpload > 0) {
       fail(`All photo uploads failed:\n${failedFiles.join("\n")}`);
       setLoading(false);
       return;
@@ -326,7 +359,7 @@ export function VehicleForm({ agencyId, agencyCity, vehicle, documents, canDecla
       const cleanFeatures = Array.from(new Set(features.map((s) => s.trim()).filter(Boolean)));
       const cleanRules    = Array.from(new Set(rules.map((s) => s.trim()).filter(Boolean)));
 
-      const allPhotos = [...existingPhotos, ...uploadedUrls];
+      const allPhotos = orderedPhotoUrls;
 
       // Derived for backward compatibility: existing listing pages still read
       // the legacy free-text mileage_limit column, so we keep it in sync with
@@ -869,42 +902,27 @@ export function VehicleForm({ agencyId, agencyCity, vehicle, documents, canDecla
         >
           <Camera size={28} className="mx-auto mb-2 text-slate-600" strokeWidth={1.75} />
           <p className="text-slate-700 text-sm font-medium">
-            Click to {newPhotos.length || existingPhotos.length ? "add more photos" : "select photos"}
+            Click to {photos.length ? "add more photos" : "select photos"}
           </p>
           <p className="text-slate-500 text-xs mt-0.5">JPG or PNG · multiple allowed</p>
         </label>
 
         <p className="text-slate-500 text-xs mt-1">
-          First photo becomes the cover. Keep at least {requiredPhotos}. Photos upload when you save the form.
+          Keep at least {requiredPhotos}. Photos upload when you save the form.
         </p>
 
-        {(existingPhotos.length > 0 || newPhotos.length > 0) && (
+        {photos.length > 0 && (
           <>
             <p className="text-slate-600 text-xs mt-3">
-              {existingPhotos.length + newPhotos.length} photo{existingPhotos.length + newPhotos.length === 1 ? "" : "s"} selected
-              {newPhotos.length > 0 && ` · ${newPhotos.length} pending upload`}
+              {photos.length} photo{photos.length === 1 ? "" : "s"}
+              {pendingCount > 0 && ` · ${pendingCount} pending upload`}
             </p>
-            <div className="grid grid-cols-3 gap-2 mt-2 sm:grid-cols-4">
-              {existingPhotos.map((url, i) => (
-                <PhotoThumb
-                  key={`exist-${url}`} src={url}
-                  isCover={i === 0}
-                  onRemove={() => setExistingPhotos((prev) => prev.filter((_, j) => j !== i))}
-                />
-              ))}
-              {newPhotos.map((item, i) => (
-                <PhotoThumb
-                  key={item.url}
-                  src={item.url}
-                  isCover={existingPhotos.length === 0 && i === 0}
-                  isPending
-                  onRemove={() => {
-                    URL.revokeObjectURL(item.url);
-                    setNewPhotos((prev) => prev.filter((_, j) => j !== i));
-                  }}
-                />
-              ))}
-            </div>
+            <PhotoOrderGrid
+              className="mt-2"
+              photos={photos.map((p) => ({ key: p.key, src: p.url, pending: Boolean(p.file) }))}
+              onMove={movePhoto}
+              onRemove={removePhoto}
+            />
           </>
         )}
       </div>
@@ -1093,40 +1111,3 @@ function Field({
   );
 }
 
-function PhotoThumb({
-  src, isCover, isPending, onRemove,
-}: {
-  src:       string;
-  isCover?:  boolean;
-  isPending?: boolean;
-  onRemove:  () => void;
-}) {
-  return (
-    <div className="relative aspect-square rounded-lg overflow-hidden bg-slate-100 group">
-      {isPending ? (
-        // eslint-disable-next-line @next/next/no-img-element
-        <img src={src} alt="" className="w-full h-full object-cover" />
-      ) : (
-        <Image src={src} alt="" fill className="object-cover" sizes="120px" />
-      )}
-      <button
-        type="button"
-        onClick={onRemove}
-        className="absolute top-1 right-1 w-6 h-6 rounded-full bg-slate-900/70 hover:bg-red-500 text-white opacity-100 md:opacity-0 md:group-hover:opacity-100 transition flex items-center justify-center"
-        aria-label="Remove photo"
-      >
-        <X size={14} />
-      </button>
-      {isCover && (
-        <span className="absolute bottom-1 left-1 text-xs bg-blue-600 text-white font-semibold px-1.5 py-0.5 rounded">
-          Cover
-        </span>
-      )}
-      {isPending && (
-        <span className="absolute bottom-1 right-1 text-xs bg-slate-900/80 text-blue-200 px-1.5 py-0.5 rounded">
-          New
-        </span>
-      )}
-    </div>
-  );
-}
