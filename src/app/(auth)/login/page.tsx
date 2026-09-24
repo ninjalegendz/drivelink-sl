@@ -142,10 +142,10 @@ function LoginForm() {
   }
 
   return (
-    <Card padding="lg" className="space-y-6">
-      <div className="space-y-1">
-        <h1 className="text-xl font-bold text-slate-950">Sign in</h1>
-        <p className="text-sm text-slate-600">
+    <Card padding="lg" className="space-y-7">
+      <div className="space-y-1.5">
+        <h1 className="text-2xl font-semibold tracking-tight text-slate-950 sm:text-3xl">Sign in</h1>
+        <p className="text-sm text-slate-600 sm:text-base">
           New here?{" "}
           <Link href="/signup" className="font-medium text-blue-700 hover:text-blue-800">Create an account</Link>
         </p>
@@ -162,8 +162,8 @@ function LoginForm() {
                 type="button"
                 aria-pressed={method === m}
                 onClick={() => { setMethod(m); setError(null); setAccountMissing(false); }}
-                className={`spring-press flex min-h-10 items-center justify-center gap-1.5 rounded-lg text-sm font-medium transition-colors ${
-                  method === m ? "bg-white text-slate-900 shadow-sm" : "text-slate-600 hover:text-slate-800"
+                className={`spring-press flex min-h-11 items-center justify-center gap-1.5 rounded-lg text-sm font-medium transition-colors ${
+                  method === m ? "bg-white text-slate-900 shadow-xs" : "text-slate-600 hover:text-slate-800"
                 }`}
               >
                 {m === "phone" ? <Phone size={15} /> : <Mail size={15} />}
@@ -198,7 +198,7 @@ function LoginForm() {
           {error && <p role="alert" className="text-sm font-medium text-rose-600">{error}</p>}
 
           {accountMissing && (
-            <div role="alert" className="rounded-lg border border-blue-200 bg-blue-50 p-3.5">
+            <div role="alert" className="rounded-xl border border-blue-200 bg-blue-50 p-4">
               <p className="text-sm font-semibold text-blue-900">
                 No DriveLink account uses {method === "phone" ? "that number" : "that email"} yet.
               </p>
@@ -214,7 +214,7 @@ function LoginForm() {
             </div>
           )}
 
-          <Button type="submit" loading={loading} className="w-full" size="lg">
+          <Button type="submit" loading={loading} block size="lg">
             Send code
           </Button>
         </form>
@@ -231,12 +231,12 @@ function LoginForm() {
             <ArrowLeft size={14} /> Change {channel === "email" ? "email" : "phone"}
           </button>
 
-          <div className="flex items-start gap-3 rounded-lg bg-slate-100 p-3.5">
+          <div className="flex items-start gap-3">
             {channel === "email" ? <Mail size={18} className="mt-0.5 shrink-0 text-blue-600" /> : <Phone size={18} className="mt-0.5 shrink-0 text-blue-600" />}
             <div className="space-y-0.5">
               <p className="text-sm font-medium text-slate-800">Check your messages</p>
-              <p className="text-xs leading-5 text-slate-600">
-                If a code can be sent to <span className="font-mono text-slate-800">{maskIdentifier(identifier, channel)}</span>, it will arrive shortly and expires in 10 minutes.
+              <p className="text-xs leading-5 text-slate-500">
+                If a code can be sent to <span className="font-mono text-slate-700">{maskIdentifier(identifier, channel)}</span>, it will arrive shortly and expires in 10 minutes.
               </p>
             </div>
           </div>
@@ -253,7 +253,7 @@ function LoginForm() {
                 value={code}
                 onChange={(e) => setCode(e.target.value.replace(/\D/g, ""))}
                 required
-                className="w-full rounded-lg border border-slate-300 bg-white px-4 py-3 text-center font-mono text-2xl tracking-[0.4em] text-slate-950 focus:border-blue-500"
+                className="tabular w-full min-h-14 rounded-xl border border-slate-300 bg-white px-4 py-3 text-center text-3xl font-semibold tracking-[0.5em] text-slate-950 shadow-xs transition-[border-color,box-shadow] focus:border-blue-600 focus:outline-none focus:ring-4 focus:ring-blue-600/10"
               />
             )}
           </Field>
@@ -261,7 +261,7 @@ function LoginForm() {
           {info  && <p className="text-sm text-blue-700">{info}</p>}
           {error && <p role="alert" className="text-sm font-medium text-rose-600">{error}</p>}
 
-          <Button type="submit" loading={loading} disabled={code.length !== 6} className="w-full" size="lg">
+          <Button type="submit" loading={loading} disabled={code.length !== 6} block size="lg">
             Verify and sign in
           </Button>
 

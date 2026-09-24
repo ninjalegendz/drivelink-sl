@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useRef, useState } from "react";
-import { ChevronDown, Check, Search } from "lucide-react";
+import { ChevronDown, Check, CircleAlert, Search } from "lucide-react";
 import { COUNTRY_CODES, matchDialCode, phoneRuleFor, isValidNationalNumber, type CountryCode } from "@/data/country-codes";
 import { digitsOnly } from "@/lib/auth/phone-format";
 
@@ -180,11 +180,17 @@ export function PhoneInput({
     // panel opens, even before focus lands in the search box.
     <div ref={wrapperRef} className="relative" onKeyDown={handlePanelKeyDown}>
       <div
-        // Matches <Input>: white ground, slate-300 edge, 44px tall. It used to
-        // be a grey-filled control, which made every form it appeared in look
-        // like it had one disabled field.
-        className={`w-full flex items-stretch min-h-11 bg-white border rounded-lg ${
-          showError ? "border-rose-300 focus-within:border-rose-500" : "border-slate-300 hover:border-slate-400 focus-within:border-blue-500"
+        // Matches <Input>: white ground, slate-300 edge, 48px tall, and the
+        // same soft focus halo (not the global outline) so the two controls
+        // read as one family in a form that mixes both. It used to be a
+        // grey-filled control, which made every form it appeared in look
+        // like it had one disabled field. The halo sits on this wrapper via
+        // `:focus-within`, not on the button or input alone, so the country
+        // code and the number read as one joined control, not two.
+        className={`w-full flex items-stretch min-h-12 bg-white border rounded-lg transition-[border-color,box-shadow] ${
+          showError
+            ? "border-rose-300 focus-within:border-rose-500 focus-within:ring-4 focus-within:ring-rose-500/10"
+            : "border-slate-300 hover:border-slate-400 focus-within:border-blue-600 focus-within:ring-4 focus-within:ring-blue-600/10"
         } ${disabled ? "opacity-60" : ""}`}
       >
         {/* Country trigger. Flags use the self-hosted Twemoji font (.flag)
@@ -196,7 +202,7 @@ export function PhoneInput({
           aria-haspopup="listbox"
           aria-expanded={open}
           aria-label={`Country code: ${country.name} +${country.dial}`}
-          className="shrink-0 flex items-center gap-1 pl-3 pr-2 py-2.5 text-base text-slate-900 border-r border-slate-200 rounded-l-lg hover:bg-slate-100 transition-colors disabled:cursor-not-allowed"
+          className="shrink-0 flex items-center gap-1 pl-3.5 pr-2.5 text-base text-slate-900 border-r border-slate-200 rounded-l-lg hover:bg-slate-50 transition-colors disabled:cursor-not-allowed"
         >
           <span className="flag">{country.flag}</span>
           <span>+{country.dial}</span>
@@ -215,12 +221,12 @@ export function PhoneInput({
           autoFocus={autoFocus}
           disabled={disabled}
           autoComplete="tel-national"
-          className="flex-1 min-w-0 px-3 py-2.5 bg-transparent text-slate-950 placeholder-slate-400 text-base rounded-r-lg focus:outline-none disabled:cursor-not-allowed"
+          className="flex-1 min-w-0 px-3.5 bg-transparent text-slate-950 placeholder-slate-400 text-base rounded-r-lg focus:outline-none disabled:cursor-not-allowed"
         />
       </div>
 
       {open && (
-        <div className="absolute z-50 left-0 top-full mt-1 w-72 max-w-[calc(100vw-2rem)] bg-white border border-slate-200 rounded-xl shadow-xl overflow-hidden">
+        <div className="animate-scale-in absolute z-50 left-0 top-full mt-1.5 w-72 max-w-[calc(100vw-2rem)] bg-white border border-slate-200 rounded-xl shadow-xl overflow-hidden">
           <div className="flex items-center gap-2 px-3 py-2 border-b border-slate-100">
             <Search size={14} className="text-slate-400 shrink-0" />
             <input
@@ -247,7 +253,7 @@ export function PhoneInput({
                   aria-selected={isSelected}
                   onMouseEnter={() => setHighlight(i)}
                   onClick={() => selectCountry(c)}
-                  className={`px-3 py-2 text-sm flex items-center gap-2 cursor-pointer transition-colors ${
+                  className={`min-h-11 px-3.5 py-2.5 text-sm flex items-center gap-2 cursor-pointer transition-colors ${
                     isHighlighted ? "bg-slate-100" : ""
                   } ${isSelected ? "text-blue-600 font-medium" : "text-slate-700"}`}
                 >
@@ -263,7 +269,8 @@ export function PhoneInput({
       )}
 
       {showError && (
-        <p className="text-rose-600 text-xs mt-1">
+        <p role="alert" className="mt-1.5 flex items-start gap-1.5 text-xs font-medium text-rose-700">
+          <CircleAlert size={14} className="mt-0.5 shrink-0" aria-hidden="true" />
           Enter a valid {country.name} number{rule.example ? ` (e.g. ${rule.example})` : ""}.
         </p>
       )}

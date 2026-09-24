@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { CircleAlert, ShieldCheck } from "lucide-react";
 import { Button } from "@/components/ui/Button";
 
 interface Props {
@@ -37,22 +38,27 @@ export function DiditVerifyButton({
 
   return (
     <div className="space-y-3">
-      <div className="flex items-center gap-3 p-3 bg-slate-100 rounded-xl">
+      <div className="flex items-center gap-3 rounded-xl bg-blue-50/70 p-3.5 ring-1 ring-inset ring-blue-100">
         {/* Didit logo placeholder, replace with <img> if you have their logo asset */}
-        <div className="w-9 h-9 rounded-lg bg-indigo-600 flex items-center justify-center shrink-0 text-slate-900 font-bold text-sm">
-          D
+        <div className="grid h-9 w-9 shrink-0 place-items-center rounded-lg bg-white text-blue-700 ring-1 ring-inset ring-blue-100">
+          <ShieldCheck size={18} aria-hidden="true" />
         </div>
         <div className="text-sm">
-          <p className="text-slate-900 font-medium">Powered by Didit</p>
-          <p className="text-slate-600 text-xs">
+          <p className="font-semibold text-slate-900">Powered by Didit</p>
+          <p className="text-xs leading-5 text-slate-600">
             Secure biometric ID verification, your documents are processed by Didit, not stored by DriveLink.
           </p>
         </div>
       </div>
 
-      {error && <p className="text-rose-600 text-sm">{error}</p>}
+      {error && (
+        <p role="alert" className="flex items-start gap-1.5 text-sm font-medium text-rose-700">
+          <CircleAlert size={15} className="mt-0.5 shrink-0" aria-hidden="true" />
+          {error}
+        </p>
+      )}
 
-      <Button onClick={start} loading={loading} className="w-full">
+      <Button onClick={start} loading={loading} size="lg" block>
         {label}
       </Button>
     </div>

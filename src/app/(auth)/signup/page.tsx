@@ -110,10 +110,10 @@ function SignupForm() {
   }
 
   return (
-    <Card padding="lg" className="space-y-6">
-      <div className="space-y-1">
-        <h1 className="text-xl font-bold text-slate-950">Create your DriveLink account</h1>
-        <p className="text-sm text-slate-600">
+    <Card padding="lg" className="space-y-7">
+      <div className="space-y-1.5">
+        <h1 className="text-2xl font-semibold tracking-tight text-slate-950 sm:text-3xl">Create your DriveLink account</h1>
+        <p className="text-sm text-slate-600 sm:text-base">
           Already have an account?{" "}
           <Link href={loginHref} className="font-medium text-blue-700 hover:text-blue-800">Sign in</Link>
         </p>
@@ -179,7 +179,7 @@ function SignupForm() {
 
           {error && <p role="alert" className="text-sm font-medium text-rose-600">{error}</p>}
 
-          <Button type="submit" loading={loading} className="w-full" size="lg">
+          <Button type="submit" loading={loading} block size="lg">
             Send verification code
           </Button>
 
@@ -200,7 +200,7 @@ function SignupForm() {
             <ArrowLeft size={14} /> Edit details
           </button>
 
-          <div className="flex items-start gap-3 rounded-lg bg-slate-100 p-3.5">
+          <div className="flex items-start gap-3">
             <Phone size={18} className="mt-0.5 shrink-0 text-blue-600" />
             <div className="space-y-0.5 text-sm">
               <p className="text-slate-700">
@@ -222,13 +222,13 @@ function SignupForm() {
                 value={code}
                 onChange={(e) => setCode(e.target.value.replace(/\D/g, ""))}
                 required
-                className="w-full rounded-lg border border-slate-300 bg-white px-4 py-3 text-center font-mono text-2xl tracking-[0.4em] text-slate-950 focus:border-blue-500"
+                className="tabular w-full min-h-14 rounded-xl border border-slate-300 bg-white px-4 py-3 text-center text-3xl font-semibold tracking-[0.5em] text-slate-950 shadow-xs transition-[border-color,box-shadow] focus:border-blue-600 focus:outline-none focus:ring-4 focus:ring-blue-600/10"
               />
             )}
           </Field>
 
           {/* Reassurance about what happens next */}
-          <div className="flex items-start gap-2.5 rounded-lg border border-emerald-200 bg-emerald-50 p-3.5">
+          <div className="flex items-start gap-2.5 rounded-xl border border-emerald-200 bg-emerald-50 p-4">
             <Sparkles size={15} className="mt-0.5 shrink-0 text-emerald-600" />
             <div className="space-y-0.5 text-sm text-emerald-900">
               <p className="font-semibold">One step left</p>
@@ -241,7 +241,7 @@ function SignupForm() {
           {info  && <p className="text-sm text-blue-700">{info}</p>}
           {error && <p role="alert" className="text-sm font-medium text-rose-600">{error}</p>}
 
-          <Button type="submit" loading={loading} disabled={code.length !== 6} className="w-full" size="lg">
+          <Button type="submit" loading={loading} disabled={code.length !== 6} block size="lg">
             Verify and continue
           </Button>
 

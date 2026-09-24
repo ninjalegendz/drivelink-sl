@@ -1,6 +1,6 @@
 import { redirect } from "next/navigation";
 import Link from "next/link";
-import { AlertTriangle, Clock, IdCard, ShieldCheck } from "lucide-react";
+import { AlertTriangle, Camera, Clock, ScanFace, ShieldCheck } from "lucide-react";
 import { createClient, createServiceClient } from "@/lib/supabase/server";
 import { DiditVerifyButton } from "@/components/account/DiditVerifyButton";
 import { SignOutButton } from "@/components/account/SignOutButton";
@@ -57,35 +57,50 @@ export default async function VerifyIdentityPage({ searchParams }: Props) {
   const status = profile?.kyc_status ?? "unverified";
   const firstName = profile?.full_name?.trim().split(/\s+/)[0];
 
+  // The same two facts as before (which documents qualify, and the two-part
+  // photo-then-selfie flow), now read as three short steps instead of a
+  // document list plus a separate timing note.
+  const steps = [
+    { Icon: ShieldCheck, title: "Pick a document", description: "Passport, National Identity Card (NIC), or driving licence." },
+    { Icon: Camera,      title: "Photograph it",    description: "A clear photo of the document, no glare or blur." },
+    { Icon: ScanFace,    title: "Take a quick selfie", description: "So we know the document is yours." },
+  ] as const;
+
   return (
-    <Card padding="lg" className="space-y-6">
+    <Card padding="lg" className="space-y-7">
       <div className="space-y-2">
-        <span className="grid h-11 w-11 place-items-center rounded-full bg-blue-50 text-blue-700">
-          <ShieldCheck size={22} aria-hidden="true" />
+        <span className="grid h-12 w-12 place-items-center rounded-full bg-blue-50 text-blue-700">
+          <ShieldCheck size={24} aria-hidden="true" />
         </span>
-        <h1 className="text-xl font-bold text-slate-950">
+        <h1 className="text-2xl font-semibold tracking-tight text-slate-950 sm:text-3xl">
           {firstName ? `One last step, ${firstName}` : "One last step"}
         </h1>
-        <p className="text-sm leading-6 text-slate-600">
+        <p className="text-sm leading-6 text-slate-600 sm:text-base">
           Verify your identity to start using DriveLink. Every renter and every owner on the
           marketplace is verified, so both sides know who they are dealing with.
         </p>
       </div>
 
-      <div className="rounded-xl border border-slate-200 bg-slate-50 p-4">
-        <p className="flex items-center gap-2 text-sm font-semibold text-slate-900">
-          <IdCard size={16} className="text-blue-700" aria-hidden="true" />
-          Use any one of these
+      <div className="space-y-4">
+        <p className="text-xs font-semibold uppercase tracking-[0.08em] text-blue-700">
+          What happens next, about two minutes
         </p>
-        <ul className="mt-2 space-y-1 text-sm text-slate-600">
-          <li>Passport</li>
-          <li>National Identity Card (NIC)</li>
-          <li>Driving licence</li>
-        </ul>
-        <p className="mt-3 text-xs leading-5 text-slate-500">
-          It takes about two minutes: a photo of the document, then a quick selfie so we know the
-          document is yours.
-        </p>
+        <ol className="space-y-4">
+          {steps.map(({ Icon, title, description }, i) => (
+            <li key={title} className="flex items-start gap-3.5">
+              <span className="relative grid h-9 w-9 shrink-0 place-items-center rounded-full bg-blue-50 text-blue-700">
+                <Icon size={16} aria-hidden="true" />
+                <span className="absolute -bottom-1 -right-1 grid h-4 w-4 place-items-center rounded-full bg-slate-950 text-[9px] font-bold text-white">
+                  {i + 1}
+                </span>
+              </span>
+              <div className="space-y-0.5 pt-1">
+                <p className="text-sm font-semibold text-slate-900">{title}</p>
+                <p className="text-sm text-slate-600">{description}</p>
+              </div>
+            </li>
+          ))}
+        </ol>
       </div>
 
       {status === "pending" && (
