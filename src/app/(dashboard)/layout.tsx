@@ -139,7 +139,7 @@ export default async function DashboardLayout({ children }: { children: React.Re
       </aside>
 
       {/* Content, full width on mobile, offset for sidebar on md+ */}
-      <main className="flex-1 min-w-0 md:ml-56 p-4 md:p-8 pb-24 md:pb-8 pt-[calc(1rem_+_env(safe-area-inset-top))] md:pt-8 min-h-screen">
+      <main className="flex-1 min-w-0 md:ml-56 p-4 md:p-8 pb-28 md:pb-8 pt-[calc(1rem_+_env(safe-area-inset-top))] md:pt-8 min-h-screen">
         {blocker && pageId && <PageNotLiveBanner blocker={blocker} pageId={pageId} />}
         {children}
       </main>

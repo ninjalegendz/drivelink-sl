@@ -11,19 +11,32 @@ export async function Navbar() {
   // into "agency_owner" and hides their personal screens.
   let isAdmin  = false;
   let ownsPages = false;
+  let name: string | null = null;
+  let avatarUrl: string | null = null;
   if (user) {
     // "Owns pages" now means "can operate a page" - owned OR staffed (PAGE-005),
     // so staff members get the same dashboard entry point as owners.
     const [{ data: prof }, { count: owned }, { count: member }] = await Promise.all([
-      supabase.from("profiles").select("role").eq("id", user.id).single(),
+      supabase.from("profiles").select("role, full_name, avatar_url").eq("id", user.id).single(),
       supabase.from("agencies").select("id", { count: "exact", head: true })
         .eq("owner_id", user.id).is("deleted_at", null),
       supabase.from("agency_members").select("id", { count: "exact", head: true })
         .eq("user_id", user.id),
     ]);
-    isAdmin   = (prof as { role?: string } | null)?.role === "admin";
+    const profile = prof as { role?: string; full_name?: string | null; avatar_url?: string | null } | null;
+    isAdmin   = profile?.role === "admin";
     ownsPages = (owned ?? 0) > 0 || (member ?? 0) > 0;
+    name      = profile?.full_name?.trim() || user.email || null;
+    avatarUrl = profile?.avatar_url ?? null;
   }
 
-  return <NavbarShell isAdmin={isAdmin} ownsPages={ownsPages} signedIn={!!user} />;
+  return (
+    <NavbarShell
+      isAdmin={isAdmin}
+      ownsPages={ownsPages}
+      signedIn={!!user}
+      name={name}
+      avatarUrl={avatarUrl}
+    />
+  );
 }

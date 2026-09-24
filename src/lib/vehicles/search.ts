@@ -5,6 +5,7 @@ import { toPublicVehicle } from "@/lib/vehicles/format";
 import { createPublicClient } from "@/lib/supabase/server";
 import type { VehicleRow, AgencySnippet, VehicleWithAgency } from "@/types/queries";
 import { hasCurrentHireInsurance, isCurrentVerifiedVehicle } from "@/lib/vehicles/trust";
+import { isDemoMode, demoSearch } from "@/lib/demo/fixtures";
 
 export const VEHICLES_PAGE_SIZE = 24;
 const CACHE_TTL = 60; // seconds, public browse data can be ~1 min stale
@@ -84,7 +85,9 @@ export async function searchVehiclePageCached(p: VehicleSearchParams): Promise<V
     ["vehicle-search", JSON.stringify(p)],
     { revalidate: CACHE_TTL, tags: ["vehicles"] },
   );
-  return run();
+  const rows = await run();
+  // Local design preview only; see src/lib/demo/fixtures.ts.
+  return rows.length === 0 && isDemoMode() ? demoSearch(p) : rows;
 }
 
 // Cached "newest available, ranked, top 6" for the home page.
@@ -94,5 +97,6 @@ export async function getHomeFeaturedCached(): Promise<VehicleWithAgency[]> {
     ["home-featured"],
     { revalidate: CACHE_TTL, tags: ["vehicles"] },
   );
-  return run();
+  const rows = await run();
+  return rows.length === 0 && isDemoMode() ? demoSearch({ limit: 6 }) : rows;
 }

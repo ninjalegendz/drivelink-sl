@@ -78,22 +78,22 @@ export function DatePicker({ value, onChange, min, max, label, disabled = false,
         onClick={() => setOpen(true)}
         // Matches <Input>: white ground, slate-300 edge. It was grey-filled,
         // which made every date field read as disabled next to the others.
-        className="flex min-h-11 w-full items-center gap-2 rounded-lg border border-slate-300 bg-white px-3 text-left text-base text-slate-950 hover:border-slate-400 focus:border-blue-600 disabled:cursor-not-allowed disabled:bg-slate-50 disabled:opacity-60"
+        className="flex min-h-12 w-full items-center gap-2.5 rounded-lg border border-slate-300 bg-white px-3.5 text-left text-base text-slate-950 shadow-xs transition-[border-color,box-shadow] hover:border-slate-400 focus:border-blue-600 focus:outline-none focus:ring-4 focus:ring-blue-600/10 focus-visible:outline-none disabled:cursor-not-allowed disabled:bg-slate-50 disabled:opacity-60"
         aria-label={`${label}: ${displayDate(value)}`}
         data-datepicker={label}
         data-value={value}
       >
-        <CalendarDays size={16} className="shrink-0 text-slate-500" />
+        <CalendarDays size={17} className="shrink-0 text-slate-400" />
         <span className="min-w-0 truncate">{displayDate(value)}</span>
       </button>
 
       {open && (
         <BottomSheet title={label} closeLabel="Close date picker" onClose={() => setOpen(false)} className="md:max-w-sm">
-          <div className="p-4">
+          <div className="p-4 pb-[max(1rem,env(safe-area-inset-bottom))]">
             <div className="flex items-center justify-between">
-              <button type="button" onClick={() => canPrevious && setVisibleMonth(previousMonth)} disabled={!canPrevious} className="grid h-11 w-11 place-items-center rounded-md text-slate-600 hover:bg-slate-100 disabled:opacity-30" aria-label="Previous month"><ChevronLeft size={19} /></button>
-              <p className="text-sm font-semibold text-slate-900">{monthLabel}</p>
-              <button type="button" onClick={() => canNext && setVisibleMonth(nextMonth)} disabled={!canNext} className="grid h-11 w-11 place-items-center rounded-md text-slate-600 hover:bg-slate-100 disabled:opacity-30" aria-label="Next month"><ChevronRight size={19} /></button>
+              <button type="button" onClick={() => canPrevious && setVisibleMonth(previousMonth)} disabled={!canPrevious} className="grid h-11 w-11 place-items-center rounded-full text-slate-600 hover:bg-slate-100 disabled:opacity-30" aria-label="Previous month"><ChevronLeft size={19} /></button>
+              <p className="text-base font-semibold tracking-tight text-slate-900">{monthLabel}</p>
+              <button type="button" onClick={() => canNext && setVisibleMonth(nextMonth)} disabled={!canNext} className="grid h-11 w-11 place-items-center rounded-full text-slate-600 hover:bg-slate-100 disabled:opacity-30" aria-label="Next month"><ChevronRight size={19} /></button>
             </div>
             <div className="mt-2 grid grid-cols-7" aria-hidden="true">
               {WEEKDAYS.map((weekday, index) => <span key={`${weekday}-${index}`} className="grid h-8 place-items-center text-xs font-semibold text-slate-500">{weekday}</span>)}
@@ -117,7 +117,7 @@ export function DatePicker({ value, onChange, min, max, label, disabled = false,
                     aria-label={fullDate(day)}
                     data-date={day}
                     onClick={() => { onChange(day); setOpen(false); }}
-                    className={`mx-auto grid h-11 w-11 place-items-center rounded-md text-sm font-medium transition-colors disabled:text-slate-300 ${active ? "bg-blue-700 text-white" : "text-slate-700 hover:bg-blue-50 hover:text-blue-800"}`}
+                    className={`mx-auto grid h-11 w-11 place-items-center rounded-full text-sm font-medium tabular transition-colors disabled:text-slate-300 disabled:line-through ${active ? "bg-blue-600 font-semibold text-white shadow-sm" : "text-slate-700 hover:bg-blue-50 hover:text-blue-800"}`}
                   >
                     {Number(day.slice(-2))}
                   </button>

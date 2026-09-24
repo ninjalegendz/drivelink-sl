@@ -64,7 +64,7 @@ export default async function MarketplaceLayout({ children }: { children: React.
   return (
     <>
       <Navbar />
-      <main className="min-h-screen pb-24 md:pb-0">{children}</main>
+      <main className="min-h-screen">{children}</main>
       <Footer />
       <MobileNav primary={primary} secondary={secondary} />
     </>

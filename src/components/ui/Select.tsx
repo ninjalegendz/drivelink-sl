@@ -156,16 +156,16 @@ export function Select({
         aria-expanded={open}
         aria-controls={open ? listboxId : undefined}
         aria-activedescendant={open && highlight >= 0 ? `${listboxId}-${highlight}` : undefined}
-        className={`w-full min-h-11 pl-4 pr-10 py-2.5 bg-white border rounded-xl text-base text-left flex items-center justify-between transition-colors disabled:opacity-50 disabled:cursor-not-allowed ${
-          open ? "border-blue-500" : "border-slate-200 hover:border-slate-300"
-        } focus:border-blue-500`}
+        className={`flex min-h-12 w-full items-center justify-between gap-2 rounded-lg border bg-white py-2.5 pl-3.5 pr-3 text-left text-base shadow-xs transition-[border-color,box-shadow] focus:outline-none focus-visible:outline-none disabled:cursor-not-allowed disabled:opacity-50 ${
+          open ? "border-blue-600 ring-4 ring-blue-600/10" : "border-slate-300 hover:border-slate-400"
+        } focus:border-blue-600 focus:ring-4 focus:ring-blue-600/10`}
       >
-        <span className={selected ? "text-slate-900" : "text-slate-400"}>
+        <span className={`min-w-0 truncate ${selected ? "text-slate-900" : "text-slate-400"}`}>
           {selected?.label ?? placeholder}
         </span>
         <ChevronDown
-          size={14}
-          className={`text-slate-400 transition-transform ${open ? "rotate-180" : ""}`}
+          size={16}
+          className={`shrink-0 text-slate-400 transition-transform duration-200 ${open ? "rotate-180" : ""}`}
         />
       </button>
 
@@ -173,7 +173,7 @@ export function Select({
         <ul
           id={listboxId}
           role="listbox"
-          className="absolute z-50 mt-1 w-full bg-white border border-slate-200 rounded-xl shadow-xl overflow-hidden max-h-60 overflow-y-auto py-1"
+          className="animate-scale-in absolute z-50 mt-1.5 max-h-64 w-full overflow-hidden overflow-y-auto rounded-xl bg-white p-1.5 shadow-xl ring-1 ring-slate-900/[0.08]"
         >
           {options.map((opt, i) => {
             const isSelected    = opt.value === value;
@@ -190,10 +190,10 @@ export function Select({
                   setOpen(false);
                   triggerRef.current?.focus();
                 }}
-                className={`px-4 py-2 text-sm flex items-center justify-between cursor-pointer transition-colors ${
+                className={`flex cursor-pointer items-center justify-between rounded-lg px-3 py-2 text-sm transition-colors ${
                   isHighlighted ? "bg-slate-100" : ""
                 } ${
-                  isSelected ? "text-blue-600 font-medium" : "text-slate-700"
+                  isSelected ? "font-semibold text-blue-700" : "text-slate-700"
                 }`}
               >
                 <span>{opt.label}</span>
@@ -207,14 +207,14 @@ export function Select({
       {open && mobileSheet && (
         <BottomSheet title={label ?? placeholder} closeLabel="Close options" onClose={() => setOpen(false)}>
           {searchable && (
-            <div className="border-b border-slate-200 p-3">
+            <div className="border-b border-slate-100 p-3">
               <input
                 type="search"
                 value={query}
                 onChange={(e) => setQuery(e.target.value)}
                 placeholder="Type to filter"
                 aria-label={`Filter ${(label ?? placeholder).toLowerCase()}`}
-                className="min-h-11 w-full rounded-lg border border-slate-300 bg-white px-3.5 text-base text-slate-950 placeholder:text-slate-400 focus:border-blue-500"
+                className="min-h-12 w-full rounded-lg border border-slate-300 bg-white px-3.5 text-base text-slate-950 placeholder:text-slate-400 focus:border-blue-600 focus:outline-none focus:ring-4 focus:ring-blue-600/10"
               />
             </div>
           )}
@@ -222,7 +222,7 @@ export function Select({
             ref={mobileListRef}
             id={listboxId}
             role="listbox"
-            className="max-h-[62dvh] space-y-1 overflow-y-auto p-2 pb-[max(.75rem,env(safe-area-inset-bottom))]"
+            className="max-h-[62dvh] space-y-0.5 overflow-y-auto p-2 pb-[max(.75rem,env(safe-area-inset-bottom))]"
           >
             {visibleOptions.length === 0 && (
               <p className="px-3 py-6 text-center text-sm text-slate-500">No match for &ldquo;{query.trim()}&rdquo;.</p>
@@ -238,9 +238,9 @@ export function Select({
                   role="option"
                   aria-selected={isSelected}
                   onClick={() => { onChange(opt.value); setOpen(false); triggerRef.current?.focus(); }}
-                  className={`flex min-h-11 w-full items-center justify-between rounded-md px-3 text-left text-base ${isSelected ? "bg-blue-600 font-semibold text-white" : "bg-slate-50 text-slate-700 hover:bg-slate-100"}`}
+                  className={`flex min-h-12 w-full items-center justify-between rounded-xl px-3.5 text-left text-base transition-colors ${isSelected ? "bg-blue-50 font-semibold text-blue-800" : "text-slate-700 hover:bg-slate-50"}`}
                 >
-                  <span>{opt.label}</span>{isSelected && <Check size={16} />}
+                  <span>{opt.label}</span>{isSelected && <Check size={18} className="text-blue-600" />}
                 </button>
               );
             })}

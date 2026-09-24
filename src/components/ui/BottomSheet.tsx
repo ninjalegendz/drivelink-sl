@@ -90,29 +90,37 @@ export function BottomSheet({ title, closeLabel, onClose, children, actions, cla
   if (typeof document === "undefined") return null;
 
   return createPortal(
-    <div className="fixed inset-0 z-50 flex items-end md:items-center md:justify-center">
+    <div className="fixed inset-0 z-50 flex items-end md:items-center md:justify-center md:p-6">
       <button
         type="button"
         aria-label={`Dismiss ${title.toLowerCase()}`}
-        className="absolute inset-0 cursor-default bg-slate-950/45"
+        className="animate-fade-in absolute inset-0 cursor-default bg-slate-950/40 backdrop-blur-[2px]"
         onClick={onClose}
       />
+      {/* Slides up from the bottom edge on a phone, where the thumb already is;
+          scales in centred on desktop, where a bottom sheet would be a long way
+          from the pointer. */}
       <div
         ref={dialogRef}
         role="dialog"
         aria-modal="true"
         aria-labelledby={titleId}
         tabIndex={-1}
-        className={`relative max-h-[85vh] w-full overflow-hidden border border-slate-200 bg-white shadow-2xl md:max-w-lg md:rounded-lg ${className}`}
+        className={`animate-sheet-up md:animate-scale-in relative max-h-[88dvh] w-full overflow-hidden rounded-t-3xl bg-white shadow-2xl ring-1 ring-slate-900/[0.06] focus:outline-none md:max-w-lg md:rounded-3xl ${className}`}
       >
-        <div className="flex min-h-14 items-center justify-between gap-3 border-b border-slate-200 px-4">
-          <h2 id={titleId} className="text-base font-semibold text-slate-950">{title}</h2>
-          <div className="flex items-center gap-2">
+        {/* Grab handle. Decorative: the sheet closes by the button, the
+            backdrop or Escape, never by a gesture someone has to discover. */}
+        <div aria-hidden="true" className="flex justify-center pt-2.5 md:hidden">
+          <span className="h-1 w-10 rounded-full bg-slate-300" />
+        </div>
+        <div className="flex min-h-14 items-center justify-between gap-3 border-b border-slate-100 pl-5 pr-2.5">
+          <h2 id={titleId} className="text-base font-semibold tracking-tight text-slate-950">{title}</h2>
+          <div className="flex items-center gap-1">
             {actions}
             <button
               type="button"
               onClick={onClose}
-              className="grid h-11 w-11 place-items-center rounded-lg text-slate-600 hover:bg-slate-100 hover:text-slate-950"
+              className="grid h-11 w-11 place-items-center rounded-full text-slate-500 transition-colors hover:bg-slate-100 hover:text-slate-950"
               aria-label={closeLabel}
             >
               <X size={19} aria-hidden="true" />

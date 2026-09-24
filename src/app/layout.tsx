@@ -11,10 +11,12 @@ import { PostHogAnalytics } from "@/components/analytics/PostHogAnalytics";
 
 // Poppins is the ONE brand typeface - body, headings and monospace slots all
 // resolve to it (see the --font-* tokens in globals.css). Weights match the
-// utilities actually used across the app: normal/medium/semibold/bold/extrabold.
+// utilities actually used across the app: normal/medium/semibold/bold. There is
+// no 800 file: `font-extrabold` is mapped to 700 in the theme, which saves a
+// font download on every first visit.
 const poppins = Poppins({
   subsets: ["latin"],
-  weight: ["400", "500", "600", "700", "800"],
+  weight: ["400", "500", "600", "700"],
   variable: "--font-poppins",
   display: "swap",
 });
@@ -72,7 +74,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
       </head>
       {/* Body bg + gradient lives in globals.css so the layered radial-
           gradients can be fixed-attached. Font + base text colour here. */}
-      <body className="font-sans bg-slate-50 text-slate-900 antialiased" suppressHydrationWarning>
+      <body className="font-sans bg-canvas text-slate-900 antialiased" suppressHydrationWarning>
         {/* Suspense because NavigationProgress reads useSearchParams; without a
             boundary that would opt every page out of static rendering. */}
         <Suspense fallback={null}>

@@ -1,4 +1,5 @@
 import { useId } from "react";
+import { CircleAlert } from "lucide-react";
 
 // Label, hint, error and the reason a field is required, in one consistent
 // shape. The brief asks that a first-time host is never made to invent an
@@ -22,9 +23,8 @@ export function Field({ label, hint, error, required, requiredReason, children }
   const id = useId();
   const hintId = `${id}-hint`;
   const errorId = `${id}-error`;
-  const describedBy = [hint || requiredReason ? hintId : null, error ? errorId : null]
-    .filter(Boolean)
-    .join(" ") || undefined;
+  // Only one of hint or error is on screen at a time, so only one is referenced.
+  const describedBy = error ? errorId : (hint || requiredReason) ? hintId : undefined;
 
   return (
     <div className="space-y-1.5">
@@ -33,21 +33,22 @@ export function Field({ label, hint, error, required, requiredReason, children }
         {required && <span className="ml-1 text-rose-600" aria-hidden="true">*</span>}
       </label>
 
-      {(hint || requiredReason) && (
+      {children({ id, "aria-describedby": describedBy, "aria-invalid": error ? true : undefined })}
+
+      {/* Hint sits under the control, where the eye goes after typing, and
+          is swapped for the error rather than stacked above it. */}
+      {error ? (
+        <p id={errorId} role="alert" className="flex items-start gap-1.5 text-xs font-medium text-rose-700">
+          <CircleAlert size={14} className="mt-0.5 shrink-0" aria-hidden="true" />
+          {error}
+        </p>
+      ) : (hint || requiredReason) ? (
         <p id={hintId} className="text-xs leading-5 text-slate-500">
           {hint}
           {hint && requiredReason ? " " : ""}
           {requiredReason}
         </p>
-      )}
-
-      {children({ id, "aria-describedby": describedBy, "aria-invalid": error ? true : undefined })}
-
-      {error && (
-        <p id={errorId} role="alert" className="text-xs font-medium text-rose-600">
-          {error}
-        </p>
-      )}
+      ) : null}
     </div>
   );
 }

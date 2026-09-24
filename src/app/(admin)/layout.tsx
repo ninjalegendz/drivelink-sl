@@ -145,7 +145,7 @@ export default async function AdminLayout({ children }: { children: React.ReactN
       </aside>
 
       {/* Content */}
-      <main className="flex-1 min-w-0 md:ml-52 p-4 md:p-8 pb-24 md:pb-8 pt-[calc(1rem_+_env(safe-area-inset-top))] md:pt-8 max-w-full min-h-screen">{children}</main>
+      <main className="flex-1 min-w-0 md:ml-52 p-4 md:p-8 pb-28 md:pb-8 pt-[calc(1rem_+_env(safe-area-inset-top))] md:pt-8 max-w-full min-h-screen">{children}</main>
 
       <MobileNav primary={mobilePrimary} secondary={mobileSecondary} />
 

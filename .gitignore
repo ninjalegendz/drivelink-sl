@@ -44,3 +44,6 @@ deliverables/
 artifacts/
 tmp/
 _*.png
+
+# DriveLink 2.0 revamp screenshots
+revamp-shots/

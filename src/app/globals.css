@@ -14,9 +14,20 @@
   font-family: "Twemoji Country Flags", var(--font-sans);
 }
 
-/* ─── DriveLink theme - cool slate + blue, standard Tailwind scale ───
-   The marketplace theme uses the STANDARD slate scale (slate-50 page,
-   white cards, slate-900 dark surfaces) with a blue-600 primary accent.
+/* ─── DriveLink 2.0 theme ────────────────────────────────────
+   Built from the two colours already in the logo: the navy of "Link"
+   (#001A5A) and the electric blue of the key pin (#006BFE). The old UI blue
+   (#2563eb) matched neither, so the product and its own wordmark never quite
+   looked like the same brand.
+
+   The whole app is written against Tailwind's `slate` and `blue` scales
+   (roughly 2,700 class usages across ~60 screens, admin included). Rather
+   than touch each one, both scales are redefined here:
+
+     slate  a cool neutral carrying a trace of the logo navy, so body text,
+            borders and dark surfaces read as one family with the wordmark
+     blue   anchored on the logo pin at 600, so every existing primary
+            button, link and focus ring lands on the true brand colour
 
    TYPOGRAPHY: Poppins is the single brand typeface, no other font may
    appear anywhere in the product. It's injected by next/font in layout.tsx
@@ -29,19 +40,44 @@
   --font-display: var(--font-poppins), ui-sans-serif, system-ui, sans-serif;
   --font-mono: var(--font-poppins), ui-sans-serif, system-ui, sans-serif;
 
+  /* ─── Neutrals (navy-tinted) ───────────────────────────── */
+  --color-slate-50:  #f6f8fb;
+  --color-slate-100: #eef1f6;
+  --color-slate-200: #e2e7ef;
+  --color-slate-300: #ccd3df;
+  --color-slate-400: #98a3b7;
+  --color-slate-500: #66728a;
+  --color-slate-600: #4a556c;
+  --color-slate-700: #353f57;
+  --color-slate-800: #1f2942;
+  --color-slate-900: #111a31;
+  --color-slate-950: #080f24;
+
+  /* ─── Brand blue (logo pin at 600) ─────────────────────────
+     #006BFE on white is 4.6:1, so it passes AA for text and for white
+     button labels. 700 is the hover and the safe choice for small text. */
+  --color-blue-50:  #eef5ff;
+  --color-blue-100: #d9e9ff;
+  --color-blue-200: #bcd9ff;
+  --color-blue-300: #8ec0ff;
+  --color-blue-400: #589dff;
+  --color-blue-500: #2b7efe;
+  --color-blue-600: #006bfe;
+  --color-blue-700: #0056d6;
+  --color-blue-800: #0746ab;
+  --color-blue-900: #0b3a85;
+  --color-blue-950: #001a5a; /* the logo navy itself */
+
+  /* The logo navy by name, for brand moments (footer, dark heroes). */
+  --color-navy: #001a5a;
+  --color-navy-deep: #000c2e;
+
   /* ─── Type scale ──────────────────────────────────────────
      DriveLink is read on a phone, often outdoors, often by someone who
-     is nervous about the money involved. The product had drifted to a
-     near-uniform 12-14px, which removes hierarchy and makes every screen
-     feel dense: 1,293 usages sat at 12px or below.
-
-     Every step is lifted one notch and given a line-height, so the whole
-     product gains air without editing a thousand call sites. Anything
-     that needs to be smaller than `text-xs` does not belong on screen,
-     which is why 13px is the floor.
-
-     Poppins runs optically small for its point size, so these sit a
-     touch above the Tailwind defaults they replace. */
+     is nervous about the money involved. Every step sits a notch above the
+     Tailwind default and carries its own line-height. Anything that needs
+     to be smaller than `text-xs` does not belong on screen, which is why
+     13px is the floor. Poppins runs optically small for its point size. */
   --text-xs: 0.8125rem;          /* 13px, metadata floor */
   --text-xs--line-height: 1.125rem;
   --text-sm: 0.9375rem;          /* 15px, secondary body */
@@ -56,37 +92,83 @@
   --text-2xl--line-height: 2.125rem;
   --text-3xl: 2rem;              /* 32px, page titles on desktop */
   --text-3xl--line-height: 2.375rem;
+  --text-4xl: 2.5rem;            /* 40px, marketing section heads */
+  --text-4xl--line-height: 2.875rem;
+  --text-5xl: 3.25rem;           /* 52px, hero on desktop */
+  --text-5xl--line-height: 3.5rem;
+  --text-6xl: 4rem;              /* 64px, hero on wide screens */
+  --text-6xl--line-height: 4.25rem;
+
+  /* Poppins at 800 reads as shouting, and it cost a whole extra font file
+     for a handful of headings. Extrabold now renders at bold, so the
+     hierarchy comes from size and spacing instead of sheer weight. */
+  --font-weight-extrabold: 700;
 
   /* ─── Corner radius ───────────────────────────────────────
-     Six different radii were in use across the product (lg, xl, 2xl, md,
-     3xl, sm), which reads as six different design languages. They collapse
-     to two: 12px for controls and small surfaces, 16px for cards and
-     sheets. Existing markup keeps its class names and simply converges. */
-  --radius-md: 0.75rem;
+     A deliberate ladder: 10px inputs, 12px buttons and small tiles,
+     16px cards, 20px feature cards and photos, 28px sheets. */
+  --radius-sm: 0.5rem;
+  --radius-md: 0.625rem;
   --radius-lg: 0.75rem;
   --radius-xl: 1rem;
-  --radius-2xl: 1rem;
-  --radius-3xl: 1rem;
+  --radius-2xl: 1.25rem;
+  --radius-3xl: 1.75rem;
+
+  /* ─── Elevation ───────────────────────────────────────────
+     Soft, navy-tinted, layered shadows. A single flat black shadow is the
+     quickest way to make a UI look like a template. */
+  --shadow-xs: 0 1px 2px 0 rgb(8 15 36 / 0.05);
+  --shadow-sm: 0 1px 3px 0 rgb(8 15 36 / 0.07), 0 1px 2px -1px rgb(8 15 36 / 0.05);
+  --shadow: 0 2px 8px -2px rgb(8 15 36 / 0.08), 0 1px 3px -1px rgb(8 15 36 / 0.05);
+  --shadow-md: 0 8px 20px -6px rgb(8 15 36 / 0.10), 0 2px 6px -2px rgb(8 15 36 / 0.05);
+  --shadow-lg: 0 18px 40px -12px rgb(8 15 36 / 0.16), 0 4px 10px -4px rgb(8 15 36 / 0.06);
+  --shadow-xl: 0 28px 60px -16px rgb(8 15 36 / 0.24), 0 8px 18px -8px rgb(8 15 36 / 0.08);
+  --shadow-2xl: 0 40px 90px -20px rgb(8 15 36 / 0.32);
 
   /* ─── Semantic surfaces ───────────────────────────────────
-     134 distinct hand-rolled white-card class strings existed before
-     these. New work names the role instead of re-deriving the recipe. */
+     New work names the role instead of re-deriving the recipe. */
+  --color-canvas: #f6f8fb;          /* the page ground */
   --color-surface: #ffffff;
-  --color-surface-muted: #f8fafc;   /* slate-50, the page ground */
-  --color-surface-tinted: #eff6ff;  /* blue-50, call-out blocks */
-  --color-line: #e2e8f0;            /* slate-200, real separation */
-  --color-line-soft: #f1f5f9;       /* slate-100, quiet card edge */
+  --color-surface-muted: #f6f8fb;
+  --color-surface-tinted: #eef5ff;  /* blue-50, call-out blocks */
+  --color-line: #e2e7ef;            /* slate-200, real separation */
+  --color-line-soft: #eef1f6;       /* slate-100, quiet card edge */
 
-  /* ─── Bouncy easing tokens ────────────────────────────────
-     Snappy is the everyday transition (most hovers, dropdowns).
-     Bouncy overshoots a touch, for click-presses, modal opens. */
+  /* ─── Motion ──────────────────────────────────────────────
+     Snappy is the everyday transition. Out-expo is for things arriving
+     (sheets, menus, toasts): fast start, long gentle settle, which is
+     what makes an interface feel expensive rather than busy. */
   --ease-snappy: cubic-bezier(0.4, 0, 0.2, 1);
+  --ease-out-expo: cubic-bezier(0.16, 1, 0.3, 1);
   --ease-bouncy: cubic-bezier(0.34, 1.56, 0.64, 1);
+
+  --animate-fade-up: fade-up 0.42s var(--ease-out-expo) both;
+  --animate-fade-in: fade-in 0.24s var(--ease-snappy) both;
+  --animate-scale-in: scale-in 0.28s var(--ease-out-expo) both;
+  --animate-sheet-up: sheet-up 0.42s var(--ease-out-expo) both;
+  --animate-shimmer: shimmer 1.6s linear infinite;
 }
 
 @layer base {
   /* Smooth-scroll for in-page anchor jumps. */
-  html { scroll-behavior: smooth; }
+  html {
+    scroll-behavior: smooth;
+    -webkit-tap-highlight-color: transparent;
+    text-rendering: optimizeLegibility;
+  }
+
+  /* Headings get Poppins' natural tightness back. At display sizes the
+     default tracking leaves visible gaps between letters. */
+  h1, h2, h3 {
+    letter-spacing: -0.02em;
+    text-wrap: balance;
+  }
+  p { text-wrap: pretty; }
+
+  ::selection {
+    background: var(--color-blue-100);
+    color: var(--color-slate-950);
+  }
 
   /* `font-mono` now resolves to Poppins like everything else, so it no longer
      brings monospaced columns with it. Booking refs, NICs, plate numbers and
@@ -97,24 +179,23 @@
     letter-spacing: 0.02em;
   }
 
-  /* Snappier default for every Tailwind transition utility.
-     Components opt into the bouncy spring via the .spring-* classes. */
   *, *::before, *::after {
     transition-timing-function: var(--ease-snappy);
   }
 
   :focus-visible {
-    outline: 3px solid #2563eb;
-    outline-offset: 3px;
+    outline: 2px solid var(--color-blue-600);
+    outline-offset: 2px;
+    border-radius: 6px;
   }
 
   /* Fallback chevron for any native <select> - most are replaced by
-     the custom <Select> component. Slate-500 arrow on light bg. */
+     the custom <Select> component. */
   select {
     appearance: none;
     -webkit-appearance: none;
     -moz-appearance: none;
-    background-image: url("data:image/svg+xml;charset=utf-8,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 20 20' fill='%2364748b'%3E%3Cpath fill-rule='evenodd' d='M5.23 7.21a.75.75 0 011.06.02L10 11.06l3.71-3.83a.75.75 0 011.08 1.04l-4.25 4.39a.75.75 0 01-1.08 0L5.21 8.27a.75.75 0 01.02-1.06z' clip-rule='evenodd'/%3E%3C/svg%3E");
+    background-image: url("data:image/svg+xml;charset=utf-8,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 20 20' fill='%2366728a'%3E%3Cpath fill-rule='evenodd' d='M5.23 7.21a.75.75 0 011.06.02L10 11.06l3.71-3.83a.75.75 0 011.08 1.04l-4.25 4.39a.75.75 0 01-1.08 0L5.21 8.27a.75.75 0 01.02-1.06z' clip-rule='evenodd'/%3E%3C/svg%3E");
     background-repeat: no-repeat;
     background-position: right 0.6rem center;
     background-size: 0.875rem 0.875rem;
@@ -133,7 +214,6 @@
   input[type="password"]::-ms-reveal,
   input[type="password"]::-ms-clear { display: none; }
 
-  /* Date-picker icon - readable on light bg */
   input[type="date"]::-webkit-calendar-picker-indicator {
     opacity: 0.6;
     cursor: pointer;
@@ -141,16 +221,15 @@
   }
   input[type="date"]::-webkit-calendar-picker-indicator:hover { opacity: 1; }
 
-  /* Native <option> rendering for the few selects we haven't replaced. */
   option {
     background-color: #ffffff;
-    color: #0f172a;
+    color: #111a31;
   }
 
-  /* Themed scrollbars - slate thumb */
+  /* Quiet scrollbars */
   * {
     scrollbar-width: thin;
-    scrollbar-color: #cbd5e1 transparent;
+    scrollbar-color: #ccd3df transparent;
   }
   *::-webkit-scrollbar {
     width: 8px;
@@ -158,90 +237,137 @@
   }
   *::-webkit-scrollbar-track { background: transparent; }
   *::-webkit-scrollbar-thumb {
-    background-color: #cbd5e1;
+    background-color: #ccd3df;
     border-radius: 4px;
     border: 2px solid transparent;
     background-clip: padding-box;
   }
-  *::-webkit-scrollbar-thumb:hover { background-color: #94a3b8; }
+  *::-webkit-scrollbar-thumb:hover { background-color: #98a3b7; }
   *::-webkit-scrollbar-corner { background: transparent; }
-}
 
-/* ─── Page background ────────────────────────────────────────
-   Clean cool slate-50 with a barely-there blue tint at the top so
-   glass/sticky surfaces read with a little depth. Fixed attachment
-   so it doesn't scroll out. */
-@layer base {
   body {
-    background: #f8fafc;
+    background: var(--color-canvas);
     min-height: 100vh;
   }
 }
 
 /* ─── Surface utilities ──────────────────────────────────────
-   The theme uses flat white cards. The old glassmorphism class names
-   are kept and REDEFINED to the flat-card look so existing markup that
-   still references .glass / .glass-card upgrades automatically. Only
-   .glass-strong keeps a translucent blur for sticky nav / sheets. */
+   The old glassmorphism class names are kept and REDEFINED so existing
+   markup that still references .glass / .glass-card upgrades
+   automatically. */
 @layer utilities {
   .glass,
   .glass-card {
     background: #ffffff;
-    border: 1px solid #f1f5f9; /* slate-100 */
-    box-shadow: 0 1px 2px 0 rgba(15, 23, 42, 0.05);
+    border: 1px solid var(--color-line-soft);
+    box-shadow: var(--shadow-xs);
   }
   .glass-strong {
     background: #ffffff;
-    border: 1px solid #e2e8f0; /* slate-200 */
-    box-shadow: 0 10px 30px -12px rgba(15, 23, 42, 0.12);
+    border: 1px solid var(--color-line);
+    box-shadow: var(--shadow-lg);
   }
   .glass-tint {
-    background: #eff6ff; /* blue-50 */
-    border: 1px solid #dbeafe; /* blue-100 */
-    box-shadow: 0 1px 2px 0 rgba(15, 23, 42, 0.04);
+    background: var(--color-blue-50);
+    border: 1px solid var(--color-blue-100);
+  }
+
+  /* Frosted chrome for anything that floats over content: the header, the
+     tab bar, sticky action bars. Saturation keeps photos behind it vivid
+     instead of washing them grey. */
+  .glass-bar {
+    background: rgb(255 255 255 / 0.8);
+    -webkit-backdrop-filter: saturate(180%) blur(20px);
+    backdrop-filter: saturate(180%) blur(20px);
+  }
+  .glass-dark {
+    background: rgb(8 15 36 / 0.62);
+    -webkit-backdrop-filter: saturate(160%) blur(16px);
+    backdrop-filter: saturate(160%) blur(16px);
+  }
+
+  /* Prices, counts, dates, anything whose digits should not jitter. */
+  .tabular { font-variant-numeric: tabular-nums; }
+
+  /* Horizontal chip rows and carousels: scroll, but without a scrollbar
+     eating the bottom 8px of a 40px chip. */
+  .scrollbar-none { scrollbar-width: none; }
+  .scrollbar-none::-webkit-scrollbar { display: none; }
+
+  /* Fades the edges of a horizontal scroller so it reads as "there is more"
+     without an arrow button. */
+  .mask-fade-x {
+    -webkit-mask-image: linear-gradient(to right, transparent 0, #000 16px, #000 calc(100% - 24px), transparent 100%);
+    mask-image: linear-gradient(to right, transparent 0, #000 16px, #000 calc(100% - 24px), transparent 100%);
+  }
+
+  /* Signature brand wash for hero and highlight surfaces. */
+  .bg-brand-gradient {
+    background:
+      radial-gradient(120% 90% at 100% 0%, rgb(0 107 254 / 0.35) 0%, transparent 55%),
+      radial-gradient(90% 80% at 0% 100%, rgb(0 107 254 / 0.18) 0%, transparent 60%),
+      linear-gradient(180deg, #001a5a 0%, #000c2e 100%);
+  }
+
+  /* Skeleton shimmer, so a loading screen feels alive rather than frozen. */
+  .skeleton-shimmer {
+    background: linear-gradient(90deg, var(--color-slate-100) 0%, var(--color-slate-50) 50%, var(--color-slate-100) 100%);
+    background-size: 200% 100%;
+    animation: var(--animate-shimmer);
   }
 }
 
-/* ─── Bouncy / bubbly motion utilities ───────────────────────
-   Drop these classes on any element to get the spring feel.
-   Buttons get .spring-press by default via the Button component;
-   cards opt in with .spring-hover. Modals + toasts use
-   .animate-bounce-in for entrance; badges/chips use .animate-pop-in. */
+/* ─── Motion utilities ───────────────────────────────────────
+   Buttons get .spring-press via the Button component; interactive cards
+   opt into .spring-hover. Entrances use the keyframes below. */
 @layer utilities {
   .spring-press {
-    transition: background-color 0.16s var(--ease-snappy), border-color 0.16s var(--ease-snappy), box-shadow 0.16s var(--ease-snappy);
+    transition: background-color 0.16s var(--ease-snappy), border-color 0.16s var(--ease-snappy),
+                box-shadow 0.16s var(--ease-snappy), transform 0.16s var(--ease-snappy), color 0.16s var(--ease-snappy);
   }
-  .spring-press:active:not(:disabled) { box-shadow: inset 0 0 0 999px rgba(15, 23, 42, 0.06); }
+  .spring-press:active:not(:disabled) { transform: scale(0.98); }
 
   .spring-hover {
-    transition: box-shadow 0.22s var(--ease-snappy),
-                border-color 0.2s var(--ease-snappy);
+    transition: box-shadow 0.3s var(--ease-out-expo), border-color 0.2s var(--ease-snappy),
+                transform 0.3s var(--ease-out-expo);
   }
-  .spring-hover:hover {
-    box-shadow: 0 4px 12px -6px rgba(15, 23, 42, 0.16);
+  @media (hover: hover) {
+    .spring-hover:hover {
+      box-shadow: var(--shadow-md);
+      transform: translateY(-2px);
+    }
   }
-
-  @keyframes bounce-in {
-    0%   { opacity: 0; transform: scale(0.92) translateY(8px); }
-    60%  { opacity: 1; transform: scale(1) translateY(0); }
-    100% { opacity: 1; transform: scale(1)    translateY(0); }
-  }
-  .animate-bounce-in { animation: bounce-in 0.32s var(--ease-bouncy) both; }
-
-  @keyframes pop-in {
-    0%   { opacity: 0; transform: scale(0.6); }
-    100% { opacity: 1; transform: scale(1); }
-  }
-  .animate-pop-in { animation: pop-in 0.24s var(--ease-bouncy) both; }
 
   @keyframes fade-up {
-    0%   { opacity: 0; transform: translateY(8px); }
+    0%   { opacity: 0; transform: translateY(10px); }
     100% { opacity: 1; transform: translateY(0); }
   }
-  .animate-fade-up { animation: fade-up 0.26s var(--ease-snappy) both; }
+  @keyframes fade-in {
+    0%   { opacity: 0; }
+    100% { opacity: 1; }
+  }
+  @keyframes scale-in {
+    0%   { opacity: 0; transform: scale(0.96) translateY(6px); }
+    100% { opacity: 1; transform: scale(1) translateY(0); }
+  }
+  @keyframes sheet-up {
+    0%   { transform: translateY(100%); }
+    100% { transform: translateY(0); }
+  }
+  @keyframes shimmer {
+    0%   { background-position: 100% 0; }
+    100% { background-position: -100% 0; }
+  }
 
-  /* ─── Car loader (loading.tsx / <CarLoader/>) ───
-     A little driving car for route-loading states, on theme for a rental app. */
+  /* Legacy names, kept so existing call sites animate with the new curves. */
+  .animate-bounce-in { animation: scale-in 0.32s var(--ease-out-expo) both; }
+  @keyframes pop-in {
+    0%   { opacity: 0; transform: scale(0.85); }
+    100% { opacity: 1; transform: scale(1); }
+  }
+  .animate-pop-in { animation: pop-in 0.22s var(--ease-out-expo) both; }
+
+  /* ─── Car loader (loading.tsx / <CarLoader/>) ─── */
   .car__body { animation: car-shake 0.2s ease-in-out infinite alternate; }
   .car__line {
     transform-origin: center right;

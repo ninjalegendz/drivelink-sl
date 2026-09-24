@@ -27,6 +27,7 @@ import { pageShellClass } from "@/components/ui/PageShell";
 import { ActionBar } from "@/components/ui/ActionBar";
 import { Explanation } from "@/components/ui/Explanation";
 import { HouseRules } from "@/components/vehicles/HouseRules";
+import { isDemoMode, demoVehicleBySlug } from "@/lib/demo/fixtures";
 
 const INSURANCE_HELP =
   "Hire insurance: the provider states this vehicle is insured for rental use. Policies can still have an excess, exclusions and driver conditions. " +
@@ -52,7 +53,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
     .eq("slug", slug)
     .single();
 
-  const v = data as { make: string; model: string; year: number; city: string; daily_rate_lkr: number } | null;
+  const v = (data ?? (isDemoMode() ? demoVehicleBySlug(slug) : null)) as { make: string; model: string; year: number; city: string; daily_rate_lkr: number } | null;
   if (!v) return { title: "Vehicle not found" };
 
   return {
@@ -110,7 +111,10 @@ export default async function VehicleDetailPage({ params, searchParams }: Props)
     throw new Error("Public vehicle detail lookup failed.", { cause: error });
   }
 
-  const data = publicRow ?? (await fetchPreviewIfEntitled(slug));
+  const data = publicRow
+    ?? (await fetchPreviewIfEntitled(slug))
+    // Local design preview only; see src/lib/demo/fixtures.ts.
+    ?? (isDemoMode() ? demoVehicleBySlug(slug) : null);
   if (!data) notFound();
 
   const vehicle = data as unknown as VehicleWithAgency;

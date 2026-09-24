@@ -9,19 +9,25 @@ interface Props {
   title: string;
   description?: string;
   action?: React.ReactNode;
+  /** Drop the dashed frame when the empty state sits inside a card already. */
+  bare?: boolean;
 }
 
-export function EmptyState({ icon, title, description, action }: Props) {
+export function EmptyState({ icon, title, description, action, bare }: Props) {
   return (
-    <div className="flex flex-col items-center rounded-xl border border-dashed border-slate-200 bg-white px-6 py-12 text-center">
+    <div
+      className={`flex flex-col items-center px-6 py-12 text-center ${
+        bare ? "" : "rounded-2xl border border-dashed border-slate-300/80 bg-white/60"
+      }`}
+    >
       {icon && (
-        <span className="mb-3 grid h-11 w-11 place-items-center rounded-full bg-slate-100 text-slate-500">
+        <span className="relative mb-4 grid h-14 w-14 place-items-center rounded-2xl bg-gradient-to-b from-white to-slate-100 text-slate-500 shadow-sm ring-1 ring-slate-900/[0.06]">
           {icon}
         </span>
       )}
       <p className="text-base font-semibold text-slate-900">{title}</p>
-      {description && <p className="mt-1.5 max-w-sm text-sm text-slate-600">{description}</p>}
-      {action && <div className="mt-5">{action}</div>}
+      {description && <p className="mt-1.5 max-w-sm text-sm text-slate-500">{description}</p>}
+      {action && <div className="mt-6">{action}</div>}
     </div>
   );
 }

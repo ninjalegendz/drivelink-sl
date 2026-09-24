@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { ArrowLeft } from "lucide-react";
+import { ChevronLeft } from "lucide-react";
 
 // Every screen answers "where am I, and what is this for" in the same place
 // and the same shape. The description is not decoration: the revamp brief
@@ -20,24 +20,24 @@ interface Props {
 
 export function PageHeader({ title, description, eyebrow, backHref, backLabel, actions }: Props) {
   return (
-    <header className="space-y-3">
+    <header className="animate-fade-up space-y-4">
       {backHref && (
         <Link
           href={backHref}
-          className="inline-flex items-center gap-1.5 text-sm text-slate-600 hover:text-slate-900"
+          className="-ml-2 inline-flex min-h-9 items-center gap-1 rounded-lg px-2 text-sm font-medium text-slate-500 transition-colors hover:bg-slate-100 hover:text-slate-900"
         >
-          <ArrowLeft size={15} aria-hidden="true" /> {backLabel ?? "Back"}
+          <ChevronLeft size={16} aria-hidden="true" /> {backLabel ?? "Back"}
         </Link>
       )}
 
-      <div className="flex flex-wrap items-start justify-between gap-3">
-        <div className="min-w-0 space-y-1">
+      <div className="flex flex-wrap items-end justify-between gap-4">
+        <div className="min-w-0 space-y-1.5">
           {eyebrow && (
-            <p className="text-xs font-semibold uppercase tracking-wide text-blue-700">{eyebrow}</p>
+            <p className="text-xs font-semibold uppercase tracking-[0.08em] text-blue-700">{eyebrow}</p>
           )}
-          <h1 className="text-2xl font-bold text-slate-950 sm:text-3xl">{title}</h1>
+          <h1 className="text-2xl font-semibold tracking-tight text-slate-950 sm:text-3xl">{title}</h1>
           {description && (
-            <p className="max-w-2xl text-sm text-slate-600">{description}</p>
+            <p className="max-w-2xl text-sm text-slate-500 sm:text-base">{description}</p>
           )}
         </div>
         {actions && <div className="flex shrink-0 flex-wrap items-center gap-2">{actions}</div>}

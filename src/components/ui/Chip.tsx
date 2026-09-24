@@ -2,8 +2,8 @@ import Link from "next/link";
 
 // Filter and status pills. Two rules the product kept breaking: a chip must
 // be tappable at 40px even when its text is short, and an active chip must
-// be readable without relying on colour alone, so the active state changes
-// weight and border as well as fill.
+// be readable without relying on colour alone, so the active state flips to
+// solid ink and a heavier weight rather than a slightly different tint.
 
 interface BaseProps {
   children: React.ReactNode;
@@ -13,11 +13,11 @@ interface BaseProps {
   className?: string;
 }
 
-const chipClasses = (active?: boolean) =>
-  `inline-flex min-h-10 items-center gap-1.5 rounded-full border px-3.5 text-sm transition ${
+export const chipClasses = (active?: boolean) =>
+  `spring-press inline-flex min-h-10 shrink-0 items-center gap-1.5 whitespace-nowrap rounded-full px-4 text-sm ${
     active
-      ? "border-blue-600 bg-blue-50 font-semibold text-blue-800"
-      : "border-slate-200 bg-white text-slate-700 hover:border-slate-300 hover:text-slate-900"
+      ? "bg-slate-900 font-semibold text-white shadow-sm"
+      : "bg-white font-medium text-slate-700 ring-1 ring-inset ring-slate-200 hover:bg-slate-50 hover:text-slate-900 hover:ring-slate-300"
   }`;
 
 function Content({ children, count, active }: Pick<BaseProps, "children" | "count" | "active">) {
@@ -26,8 +26,8 @@ function Content({ children, count, active }: Pick<BaseProps, "children" | "coun
       {children}
       {typeof count === "number" && count > 0 && (
         <span
-          className={`grid h-5 min-w-5 place-items-center rounded-full px-1 text-xs font-semibold ${
-            active ? "bg-blue-600 text-white" : "bg-slate-100 text-slate-700"
+          className={`grid h-5 min-w-5 place-items-center rounded-full px-1.5 text-xs font-semibold tabular ${
+            active ? "bg-white/20 text-white" : "bg-blue-600 text-white"
           }`}
         >
           {count}
