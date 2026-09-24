@@ -1,3 +1,4 @@
+import { guardDesignPreview } from "@/app/design/guard";
 import { Suspense } from "react";
 import Link from "next/link";
 import type { Metadata } from "next";
@@ -139,6 +140,7 @@ const SECTIONS = [
 ];
 
 export default function DesignSystemPage() {
+  guardDesignPreview();
   const sampleVehicles = DEMO_VEHICLES.slice(0, 3);
 
   return (

@@ -1,3 +1,4 @@
+import { guardDesignPreview } from "@/app/design/guard";
 import { DashboardShell } from "@/components/dashboard/DashboardShell";
 import { AgencyBookingsList } from "@/components/bookings/AgencyBookingsList";
 import { PageHeader } from "@/components/ui/PageHeader";
@@ -16,6 +17,7 @@ const FILTER_LABELS = ["All", "Pending", "Confirmed", "Active", "Completed"];
 // seeded state). See src/app/design/layout.tsx: this whole area 404s in
 // production.
 export default function DesignBookingsPage() {
+  guardDesignPreview();
   return (
     <DashboardShell
       activePage={DEMO_ACTIVE_PAGE}

@@ -238,8 +238,8 @@ export default async function RentalPageProfile({ params }: Props) {
           {vehicles.length === 0 ? (
             <EmptyState
               icon={<Car size={22} aria-hidden="true" />}
-              title="No vehicles available right now"
-              description="Check back soon, or browse other listings while you wait."
+              title="No vehicles available to book"
+              description="Browse other listings across Sri Lanka."
               action={
                 <Link href="/vehicles" className={buttonClasses({ variant: "secondary" })}>
                   Browse all vehicles

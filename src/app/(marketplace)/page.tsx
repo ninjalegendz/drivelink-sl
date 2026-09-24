@@ -77,7 +77,7 @@ export default async function HomePage() {
             <EmptyState
               icon={<Car size={22} strokeWidth={1.5} className="text-slate-400" />}
               title="No vehicles listed yet"
-              description="Check back soon, or browse everything DriveLink has indexed so far."
+              description="Browse every vehicle, or search by town and dates."
               action={
                 <Link href="/vehicles" className={buttonClasses({ variant: "secondary" })}>
                   Browse all vehicles

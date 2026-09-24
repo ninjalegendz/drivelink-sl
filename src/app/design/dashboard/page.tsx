@@ -1,3 +1,4 @@
+import { guardDesignPreview } from "@/app/design/guard";
 import { DashboardShell } from "@/components/dashboard/DashboardShell";
 import { TodayView } from "@/components/dashboard/TodayView";
 import {
@@ -18,6 +19,7 @@ interface Props {
 }
 
 export default async function DesignDashboardPage({ searchParams }: Props) {
+  guardDesignPreview();
   const { blocker: blockerParam } = await searchParams;
   const blocker: LivenessBlocker | null = blockerParam && blockerParam in DEMO_BLOCKERS ? DEMO_BLOCKERS[blockerParam] : null;
 

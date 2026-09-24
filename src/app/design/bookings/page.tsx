@@ -1,3 +1,4 @@
+import { guardDesignPreview } from "@/app/design/guard";
 import type { Metadata } from "next";
 import Link from "next/link";
 import { ArrowRight } from "lucide-react";
@@ -14,6 +15,7 @@ export const metadata: Metadata = { title: "Design preview: bookings" };
 // data, so the signed-in bookings list can be reviewed without a verified
 // account. See src/app/design/layout.tsx: this whole area 404s in production.
 export default function DesignBookingsPage() {
+  guardDesignPreview();
   return (
     <div className="min-h-screen">
       <NavbarShell isAdmin={false} ownsPages={false} signedIn name="Ayesha Perera" avatarUrl={null} />

@@ -1,3 +1,4 @@
+import { guardDesignPreview } from "@/app/design/guard";
 import type { Metadata } from "next";
 import { NavbarShell } from "@/components/layout/NavbarShell";
 import { Footer } from "@/components/layout/Footer";
@@ -11,6 +12,7 @@ export const metadata: Metadata = { title: "Design preview: booking detail" };
 // account or a real confirmed booking. See src/app/design/layout.tsx: this
 // whole area 404s in production.
 export default function DesignBookingSamplePage() {
+  guardDesignPreview();
   return (
     <div className="min-h-screen">
       <NavbarShell isAdmin={false} ownsPages={false} signedIn name="Ayesha Perera" avatarUrl={null} />

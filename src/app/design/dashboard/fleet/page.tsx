@@ -1,3 +1,4 @@
+import { guardDesignPreview } from "@/app/design/guard";
 import { DashboardShell } from "@/components/dashboard/DashboardShell";
 import { FleetView } from "@/components/dashboard/FleetView";
 import {
@@ -8,6 +9,7 @@ import {
 // Same shell as /design/dashboard, with the Fleet screen as its content.
 // See src/app/design/layout.tsx: this whole area 404s in production.
 export default function DesignFleetPage() {
+  guardDesignPreview();
   return (
     <DashboardShell
       activePage={DEMO_ACTIVE_PAGE}

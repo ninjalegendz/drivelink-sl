@@ -1,3 +1,4 @@
+import { guardDesignPreview } from "@/app/design/guard";
 import { DashboardShell } from "@/components/dashboard/DashboardShell";
 import { VehicleWizard } from "@/components/dashboard/VehicleWizard";
 import { PageHeader } from "@/components/ui/PageHeader";
@@ -10,6 +11,7 @@ import {
 // Nothing here submits: the wizard only saves when its final step is sent,
 // and this preview is never reached in production (src/app/design/layout.tsx).
 export default function DesignNewVehiclePage() {
+  guardDesignPreview();
   return (
     <DashboardShell
       activePage={DEMO_ACTIVE_PAGE}

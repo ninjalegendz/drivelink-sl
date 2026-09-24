@@ -1,3 +1,4 @@
+import { guardDesignPreview } from "@/app/design/guard";
 import type { Metadata } from "next";
 import { AdminShell } from "@/components/admin/shell/AdminShell";
 import { AdminHomeView } from "@/components/admin/shell/AdminHomeView";
@@ -13,6 +14,7 @@ export const metadata: Metadata = { title: "Design preview, Admin" };
 // triage-queue redesign. See src/app/(admin)/layout.tsx and
 // src/app/(admin)/admin/page.tsx for the data-fetching originals.
 export default function AdminDesignPreviewPage() {
+  guardDesignPreview();
   return (
     <AdminShell
       navItems={DEMO_ADMIN_NAV}

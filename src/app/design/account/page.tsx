@@ -1,3 +1,4 @@
+import { guardDesignPreview } from "@/app/design/guard";
 import type { Metadata } from "next";
 import { NavbarShell } from "@/components/layout/NavbarShell";
 import { Footer } from "@/components/layout/Footer";
@@ -18,6 +19,7 @@ export const metadata: Metadata = { title: "Design preview: account" };
 // Rental Pages. Neither is a real route; only /account in the product renders
 // one account at a time.
 export default function DesignAccountPage() {
+  guardDesignPreview();
   return (
     <div className="min-h-screen">
       <NavbarShell isAdmin={false} ownsPages={false} signedIn name="Nadeesha Silva" avatarUrl={null} />
