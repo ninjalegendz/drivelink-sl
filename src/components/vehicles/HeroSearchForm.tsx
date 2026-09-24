@@ -5,13 +5,26 @@ import { useRouter } from "next/navigation";
 import { Search, Plus, Minus } from "lucide-react";
 import { DatePicker } from "@/components/ui/DatePicker";
 import { Select } from "@/components/ui/Select";
+import { buttonClasses } from "@/components/ui/Button";
+import { chipClasses } from "@/components/ui/Chip";
 import { startNavigationProgress } from "@/components/layout/NavigationProgress";
 import { SL_CITIES } from "@/data/cities";
 import { VEHICLE_TYPES } from "@/data/vehicles";
+import type { RentalOption } from "@/data/vehicles";
 import { sriLankaToday, addCalendarDays, isValidSearchDateRange } from "@/lib/dates/sri-lanka";
 
 const CITY_OPTIONS = [{ value: "", label: "Anywhere in Sri Lanka" }, ...SL_CITIES.map((c) => ({ value: c, label: c }))];
 const TYPE_OPTIONS = [{ value: "", label: "Any vehicle" }, ...VEHICLE_TYPES.map((t) => ({ value: t.value, label: t.plural }))];
+
+// The trip-style segmented control sets the same `option` query param the
+// /vehicles filter already reads, so a choice made here lands on an already
+// filtered results page rather than a second filter step.
+const TRIP_OPTIONS: { value: RentalOption | ""; label: string }[] = [
+  { value: "",                label: "Any" },
+  { value: "self-drive",      label: "Self-drive" },
+  { value: "with-driver",     label: "With driver" },
+  { value: "airport-pickup",  label: "Airport" },
+];
 
 // Half-hour slots, the same grid the booking form offers, so a time chosen here
 // is one the booking form can actually accept.
@@ -30,6 +43,7 @@ interface Props {
   initialToTime?: string;
   initialCity?: string;
   initialType?: string;
+  initialOption?: string;
 }
 
 /**
@@ -50,7 +64,7 @@ interface Props {
  */
 export function HeroSearchForm({
   initialFrom = "", initialTo = "", initialFromTime = "", initialToTime = "",
-  initialCity = "", initialType = "",
+  initialCity = "", initialType = "", initialOption = "",
 }: Props) {
   const router = useRouter();
   const today = sriLankaToday();
@@ -63,6 +77,7 @@ export function HeroSearchForm({
   const [toTime, setToTime] = useState(initialToTime || "10:00");
   const [city, setCity] = useState(initialCity);
   const [type, setType] = useState(initialType);
+  const [option, setOption] = useState(initialOption);
   const [error, setError] = useState("");
   // Open only if the visitor already has something in there worth seeing.
   const [showMore, setShowMore] = useState(Boolean(initialType || initialFromTime || initialToTime));
@@ -81,6 +96,7 @@ export function HeroSearchForm({
     const params = new URLSearchParams();
     if (city) params.set("city", city);
     if (type) params.set("type", type);
+    if (option) params.set("option", option);
     if (from && to) {
       params.set("from", from);
       params.set("to", to);
@@ -93,12 +109,34 @@ export function HeroSearchForm({
   }
 
   return (
-    <form onSubmit={submit} className="rounded-2xl bg-white p-3 shadow-xl sm:p-4">
-      {/* One row on desktop, stacked on a phone. Each control is its own
-          labelled cell so nothing has to be guessed at. */}
+    <form onSubmit={submit} className="rounded-3xl bg-white p-4 shadow-xl ring-1 ring-slate-900/[0.06] sm:p-5 lg:p-6">
+      {/* Trip style, single-select. Plain buttons carrying the Chip look, not
+          the <Chip> component itself: this is a one-of-many choice, so it
+          gets radio semantics rather than Chip's toggle (aria-pressed) ones.
+          One row always: it scrolls sideways instead of wrapping to a second
+          row, which is what was eating the phone's fold before the Search
+          button ever came into view. */}
+      <div role="radiogroup" aria-label="Trip style" className="mask-fade-x -mx-4 mb-3 flex gap-2 overflow-x-auto scrollbar-none px-4 sm:mx-0 sm:px-0">
+        {TRIP_OPTIONS.map((opt) => (
+          <button
+            key={opt.value || "any"}
+            type="button"
+            role="radio"
+            aria-checked={option === opt.value}
+            onClick={() => setOption(opt.value)}
+            className={chipClasses(option === opt.value)}
+          >
+            {opt.label}
+          </button>
+        ))}
+      </div>
+
+      {/* One row on desktop, stacked on a phone. Dates stay full width rather
+          than pairing up: once a date is chosen, DatePicker shows something
+          like "Sat, Oct 24, 2026", which only fits legibly at full width. */}
       <div className="grid gap-3 md:grid-cols-[1.2fr_1fr_1fr_auto] md:items-end">
         <Cell label="Where">
-          <Select value={city} onChange={setCity} options={CITY_OPTIONS} label="Where" placeholder="Anywhere in Sri Lanka" className={CONTROL} />
+          <Select value={city} onChange={setCity} options={CITY_OPTIONS} label="Where" placeholder="Anywhere in Sri Lanka" />
         </Cell>
         <Cell label="Pick-up">
           <DatePicker
@@ -106,7 +144,6 @@ export function HeroSearchForm({
             min={earliest}
             onChange={(v) => { setFrom(v); if (to && to <= v) setTo(addCalendarDays(v, 1)); }}
             label="Pick-up date"
-            className={CONTROL}
           />
         </Cell>
         <Cell label="Return">
@@ -115,28 +152,27 @@ export function HeroSearchForm({
             min={from ? addCalendarDays(from, 1) : addCalendarDays(earliest, 1)}
             onChange={setTo}
             label="Return date"
-            className={CONTROL}
           />
         </Cell>
 
         <button
           type="submit"
-          className="inline-flex min-h-12 items-center justify-center gap-2 rounded-xl bg-blue-600 px-6 text-base font-semibold text-white transition-colors hover:bg-blue-700 md:min-w-[7.5rem]"
+          className={buttonClasses({ variant: "primary", size: "xl", className: "w-full gap-2 md:w-auto md:px-8" })}
         >
           <Search size={18} /> Search
         </button>
       </div>
 
       {showMore && (
-        <div className="mt-3 grid gap-3 border-t border-slate-200 pt-3 md:grid-cols-3">
+        <div className="mt-3 grid grid-cols-2 gap-3 border-t border-slate-100 pt-3 md:grid-cols-3">
           <Cell label="Pick-up time">
-            <Select value={fromTime} onChange={setFromTime} options={TIME_OPTIONS} label="Pick-up time" className={CONTROL} />
+            <Select value={fromTime} onChange={setFromTime} options={TIME_OPTIONS} label="Pick-up time" />
           </Cell>
           <Cell label="Return time">
-            <Select value={toTime} onChange={setToTime} options={TIME_OPTIONS} label="Return time" className={CONTROL} />
+            <Select value={toTime} onChange={setToTime} options={TIME_OPTIONS} label="Return time" />
           </Cell>
-          <Cell label="Vehicle type">
-            <Select value={type} onChange={setType} options={TYPE_OPTIONS} label="Vehicle type" placeholder="Any vehicle" className={CONTROL} />
+          <Cell label="Vehicle type" className="col-span-2 md:col-span-1">
+            <Select value={type} onChange={setType} options={TYPE_OPTIONS} label="Vehicle type" placeholder="Any vehicle" />
           </Cell>
         </div>
       )}
@@ -156,17 +192,12 @@ export function HeroSearchForm({
   );
 }
 
-// Select pads with py-2.5 while DatePicker relies on min-height alone, so the
-// two render 2-3px apart and the row's labels end up misaligned. Pinning both
-// triggers to the same height is what makes the bar read as one control strip.
-const CONTROL = "[&>button]:min-h-12 [&>button]:rounded-xl";
-
 /** Label above a control. A plain span, never a <label> wrapper: these hold
  *  Select and DatePicker, which open a sheet that removes itself on tap, and a
  *  <label> ancestor turns that into a reopen loop on iOS. */
-function Cell({ label, children }: { label: string; children: React.ReactNode }) {
+function Cell({ label, children, className = "" }: { label: string; children: React.ReactNode; className?: string }) {
   return (
-    <div className="min-w-0">
+    <div className={`min-w-0 ${className}`}>
       <span className="mb-1 block text-xs font-semibold uppercase tracking-wide text-slate-500">{label}</span>
       {children}
     </div>

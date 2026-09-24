@@ -1,9 +1,17 @@
 import Link from "next/link";
-import { ShieldCheck, Search, MessageSquare, Car, Truck, Bike, Plane } from "lucide-react";
+import { Car } from "lucide-react";
 import { Hero } from "@/components/layout/Hero";
 import { VehiclesBrowser } from "@/components/vehicles/VehiclesBrowser";
 import { HeroSearchForm } from "@/components/vehicles/HeroSearchForm";
 import { InstallPrompt } from "@/components/pwa/InstallPrompt";
+import { BrowseByType } from "@/components/home/BrowseByType";
+import { PopularDestinations } from "@/components/home/PopularDestinations";
+import { HowItWorks } from "@/components/home/HowItWorks";
+import { TrustBand } from "@/components/home/TrustBand";
+import { HostCta } from "@/components/home/HostCta";
+import { PopularSearchChips } from "@/components/home/PopularSearchChips";
+import { EmptyState } from "@/components/ui/EmptyState";
+import { buttonClasses } from "@/components/ui/Button";
 import { getHomeFeaturedCached } from "@/lib/vehicles/search";
 import { LANDINGS } from "@/data/landings";
 import { createClient } from "@/lib/supabase/server";
@@ -16,122 +24,98 @@ export const metadata: Metadata = {
     "Find cars, vans, SUVs, bikes and tuk-tuks across Sri Lanka. DriveLink's booking confirmation fee is Rs. 0.",
 };
 
-const VERTICALS = [
-  { href: "/vehicles?type=car",                 label: "Self-Drive Cars", Icon: Car },
-  { href: "/vehicles?option=with-driver",       label: "With Driver",     Icon: Truck },
-  { href: "/vehicles?option=airport-pickup",    label: "Airport Handover", Icon: Plane },
-  { href: "/vehicles?type=bike",                label: "Bikes & Scooters", Icon: Bike },
-];
-
 export default async function HomePage() {
   const [featured, supabase] = await Promise.all([getHomeFeaturedCached(), createClient()]);
   const { data: { user } } = await supabase.auth.getUser();
 
   return (
     <>
-      {/* Full-bleed: the hero sits outside the page column so the photograph
-          runs the whole width of the screen. */}
       <Hero
-        badge="Sri Lanka vehicle rentals, with clearer records"
-        title={<>Rent a vehicle with the details in one place.<br /><span className="text-blue-200">Send a request for free.</span></>}
-        subtitle="Compare cars, vans, bikes and airport options. Each listing shows the provider, rental mode, terms and the checks recorded for that vehicle."
-      >
-        <div className="space-y-4">
-          <HeroSearchForm />
-          <div className="flex flex-wrap gap-3">
-            <Link
-              href={user ? "/account/pages/new" : "/signup?intent=provider"}
-              className="inline-flex min-h-12 items-center gap-2 rounded-lg border border-white/50 bg-white px-5 py-2.5 font-semibold text-slate-950 hover:bg-slate-100"
-            >
-              List your vehicle for free
-            </Link>
-          </div>
-        </div>
-      </Hero>
+        size="large"
+        badge="Sri Lanka vehicle rentals"
+        title="Rent a vehicle with the details in one place."
+        subtitle="Compare cars, vans, bikes and airport options, with the provider, terms and recorded checks shown on every listing. Sending a request is free."
+      />
 
-      <div className={pageShellClass("wide", "space-y-12")}>
-
-      {/* Verticals strip */}
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-        {VERTICALS.map(({ href, label, Icon }) => (
-          <Link
-            key={href}
-            href={href}
-            className="flex min-h-20 flex-col items-start gap-2 rounded-xl border border-slate-200 bg-white p-4 transition-colors hover:border-blue-300 sm:flex-row sm:items-center sm:gap-3"
-          >
-            <span className="grid h-10 w-10 shrink-0 place-items-center rounded-lg bg-blue-50 text-blue-700">
-              <Icon size={18} />
-            </span>
-            {/* The label sat in a narrow column beside the icon, so at larger
-                text sizes "Airport Handover" spilled outside the tile. */}
-            <span className="min-w-0 break-words text-sm font-semibold text-slate-800">{label}</span>
-          </Link>
-        ))}
+      {/* The search dock overlaps the hero's bottom edge. It is rendered here
+          as a sibling of <Hero>, not passed as its children: a negative top
+          margin pulls it up over the panel, which only reads cleanly because
+          Hero's own section is never clipped (see the comment in Hero.tsx). */}
+      <div className="relative z-10 mx-3 -mt-8 sm:mx-4 sm:-mt-12 lg:mx-auto lg:-mt-16 lg:max-w-5xl lg:px-6">
+        <HeroSearchForm />
       </div>
 
-      {/* Featured vehicles */}
-      <section className="space-y-6">
-        {/* Stacks on a phone. Side by side, the link was squeezed into two
-            lines and sat on top of the description. */}
-        <div className="flex flex-col gap-2 sm:flex-row sm:items-end sm:justify-between sm:gap-6">
-          <div className="max-w-2xl">
-            <h2 className="text-xl font-bold text-slate-800">Featured vehicles</h2>
-            <p className="text-sm text-slate-600">Compare provider, rental mode, price and the checks recorded on each listing.</p>
-          </div>
-          <Link
-            href="/vehicles"
-            className="inline-flex shrink-0 items-center gap-1 self-start whitespace-nowrap text-sm font-semibold text-blue-600 transition-colors hover:text-blue-700"
-          >
-            View all <span aria-hidden="true">&rarr;</span>
-          </Link>
-        </div>
+      <div className={pageShellClass("wide", "space-y-20 pt-10 sm:space-y-28 sm:pt-14")}>
 
-        {featured.length > 0 ? (
-          <VehiclesBrowser vehicles={featured} />
-        ) : (
-          <div className="text-center py-16 text-slate-400 bg-white border border-slate-100 rounded-2xl shadow-sm">
-            <Car size={40} strokeWidth={1.5} className="mx-auto mb-3 text-slate-300" />
-            <p>No vehicles listed yet. Check back soon.</p>
-          </div>
-        )}
-      </section>
+        {/* Browse by type */}
+        <section className="animate-fade-up space-y-5">
+          <h2 className="text-lg font-semibold tracking-tight text-slate-900 sm:text-xl">Browse by type</h2>
+          <BrowseByType />
+        </section>
 
-      {/* How it works */}
-      <section className="space-y-6">
-        <h2 className="text-xl font-bold text-slate-800">How DriveLink works</h2>
-        <ol className="grid sm:grid-cols-3 gap-4">
-          {[
-            { n: 1, Icon: Search, title: "Compare listing details", text: "Filter by type, location and travel style. Open a listing to see its provider, terms and recorded checks." },
-            { n: 2, Icon: ShieldCheck, title: "Send a booking request", text: "Tell the owner your dates. DriveLink's booking confirmation fee is Rs. 0, and DriveLink never holds your deposit." },
-            { n: 3, Icon: MessageSquare, title: "Connect & pick up", text: "Once approved, the owner's contact unlocks so you can sync the handover. You pay the host directly." },
-          ].map((s) => (
-            <li key={s.n} className="border border-slate-200 bg-white p-5">
-              <span className="mb-3 inline-grid h-10 w-10 place-items-center rounded-lg bg-blue-50 text-blue-700">
-                <s.Icon size={18} />
-              </span>
-              <h3 className="font-semibold text-slate-800 mb-1">{s.title}</h3>
-              <p className="text-slate-500 text-sm leading-relaxed">{s.text}</p>
-            </li>
-          ))}
-        </ol>
-      </section>
-
-      {/* Popular searches, internal links to SEO landing pages */}
-      <section className="space-y-3">
-        <h2 className="text-sm font-bold text-slate-800 uppercase tracking-wider">Popular searches</h2>
-        <div className="flex flex-wrap gap-2">
-          {LANDINGS.map((l) => (
+        {/* Featured vehicles */}
+        <section className="animate-fade-up space-y-6">
+          <div className="flex flex-wrap items-end justify-between gap-x-4 gap-y-2">
+            <div className="max-w-2xl space-y-1">
+              <h2 className="text-lg font-semibold tracking-tight text-slate-900 sm:text-xl">Featured vehicles</h2>
+              <p className="text-sm text-slate-500">Compare provider, rental mode, price and the checks recorded on each listing.</p>
+            </div>
             <Link
-              key={l.slug}
-              href={`/sri-lanka/${l.slug}`}
-              className="px-3 py-1.5 rounded-full text-xs font-medium bg-white border border-slate-200 text-slate-600 hover:border-blue-300 hover:text-blue-700 transition-colors"
+              href="/vehicles"
+              className="inline-flex shrink-0 items-center gap-1 self-start whitespace-nowrap text-sm font-semibold text-blue-600 transition-colors hover:text-blue-700"
             >
-              {l.h1}
+              See all <span aria-hidden="true">&rarr;</span>
             </Link>
-          ))}
-        </div>
-      </section>
-    </div>
+          </div>
+
+          {featured.length > 0 ? (
+            <VehiclesBrowser
+              vehicles={featured}
+              gridClassName="grid grid-cols-1 gap-x-6 gap-y-10 sm:grid-cols-2 lg:grid-cols-3"
+            />
+          ) : (
+            <EmptyState
+              icon={<Car size={22} strokeWidth={1.5} className="text-slate-400" />}
+              title="No vehicles listed yet"
+              description="Check back soon, or browse everything DriveLink has indexed so far."
+              action={
+                <Link href="/vehicles" className={buttonClasses({ variant: "secondary" })}>
+                  Browse all vehicles
+                </Link>
+              }
+            />
+          )}
+        </section>
+
+        {/* Popular destinations */}
+        <section className="animate-fade-up space-y-5">
+          <h2 className="text-lg font-semibold tracking-tight text-slate-900 sm:text-xl">Popular destinations</h2>
+          <PopularDestinations />
+        </section>
+
+        {/* How it works */}
+        <section className="animate-fade-up space-y-8">
+          <h2 className="text-lg font-semibold tracking-tight text-slate-900 sm:text-xl">How DriveLink works</h2>
+          <HowItWorks />
+        </section>
+
+        {/* Why DriveLink */}
+        <section className="animate-fade-up space-y-8">
+          <h2 className="text-lg font-semibold tracking-tight text-slate-900 sm:text-xl">Why DriveLink</h2>
+          <TrustBand />
+        </section>
+
+        {/* Host call to action */}
+        <section className="animate-fade-up">
+          <HostCta signedIn={Boolean(user)} />
+        </section>
+
+        {/* Popular searches, internal links to SEO landing pages */}
+        <section className="animate-fade-up space-y-3">
+          <h2 className="text-sm font-semibold uppercase tracking-wider text-slate-800">Popular searches</h2>
+          <PopularSearchChips links={LANDINGS.map((l) => ({ href: `/sri-lanka/${l.slug}`, label: l.h1 }))} />
+        </section>
+      </div>
 
       {/* Fixed position, so it sits outside the page flow. The homepage is the
           honest place to ask: someone who has landed and stayed is far more

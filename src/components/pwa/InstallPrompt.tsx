@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import Image from "next/image";
 import { X, Share, SquarePlus } from "lucide-react";
+import { Button } from "@/components/ui/Button";
 
 /**
  * "Add to home screen", offered on the homepage.
@@ -144,25 +145,24 @@ export function InstallPrompt() {
     <div
       role="dialog"
       aria-label="Add DriveLink to your home screen"
-      className="fixed inset-x-3 bottom-[calc(4.75rem+env(safe-area-inset-bottom))] z-40 rounded-2xl border border-slate-200 bg-white p-4 shadow-xl md:hidden"
+      // Floats above the mobile tab bar (4rem tall, lifted 0.75rem off the
+      // bottom edge or the safe area: see MobileNav). Matches ActionBar's
+      // offset so nothing sticky at the bottom of a phone screen collides.
+      className="glass-bar fixed inset-x-3 bottom-[calc(5.5rem+env(safe-area-inset-bottom))] z-40 animate-fade-up rounded-3xl p-4 shadow-xl ring-1 ring-slate-900/[0.08] md:hidden"
     >
       <button
         type="button"
         onClick={dismiss}
         aria-label="Not now"
-        className="absolute right-2 top-2 grid h-9 w-9 place-items-center rounded-full text-slate-400 hover:bg-slate-100 hover:text-slate-600"
+        className="absolute right-1.5 top-1.5 grid h-11 w-11 place-items-center rounded-full text-slate-400 hover:bg-slate-100 hover:text-slate-600"
       >
         <X size={16} />
       </button>
 
       <div className="flex items-start gap-3 pr-8">
-        <Image
-          src="/icon-192.png"
-          alt=""
-          width={44}
-          height={44}
-          className="h-11 w-11 shrink-0 rounded-xl"
-        />
+        <span className="grid h-11 w-11 shrink-0 place-items-center rounded-2xl bg-blue-50">
+          <Image src="/logo-mark.png" alt="" width={28} height={28} className="h-7 w-7" />
+        </span>
         <div className="min-w-0">
           <p className="font-semibold text-slate-900">Add DriveLink to your home screen</p>
           <p className="mt-0.5 text-sm leading-snug text-slate-600">
@@ -184,21 +184,12 @@ export function InstallPrompt() {
         </ol>
       ) : (
         <div className="mt-3 flex gap-2">
-          <button
-            type="button"
-            onClick={dismiss}
-            className="min-h-11 flex-1 rounded-lg border border-slate-200 px-4 text-sm font-semibold text-slate-700 hover:bg-slate-50"
-          >
+          <Button type="button" variant="secondary" onClick={dismiss} className="flex-1">
             Not now
-          </button>
-          <button
-            type="button"
-            onClick={install}
-            disabled={busy}
-            className="min-h-11 flex-1 rounded-lg bg-blue-600 px-4 text-sm font-semibold text-white hover:bg-blue-700 disabled:opacity-60"
-          >
+          </Button>
+          <Button type="button" variant="primary" onClick={install} loading={busy} className="flex-1">
             {busy ? "Opening…" : "Add"}
-          </button>
+          </Button>
         </div>
       )}
     </div>

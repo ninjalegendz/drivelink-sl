@@ -1,5 +1,7 @@
 import Image from "next/image";
 
+export type HeroSize = "large" | "compact";
+
 interface HeroProps {
   badge?: string;
   title: React.ReactNode;
@@ -7,54 +9,85 @@ interface HeroProps {
   /** CTA buttons, tabs, or a search bar rendered under the copy. */
   children?: React.ReactNode;
   className?: string;
+  /** "large" is the homepage marquee hero. "compact" is for inner pages. */
+  size?: HeroSize;
+  /** Background photo path, or null for the plain navy brand gradient. */
+  image?: string | null;
 }
 
+const SIZES: Record<HeroSize, { pad: string; title: string; wrap: string }> = {
+  large: {
+    pad: "px-5 py-7 sm:px-10 sm:py-16 md:py-20 lg:py-24",
+    title: "text-4xl sm:text-5xl lg:text-6xl",
+    wrap: "max-w-2xl",
+  },
+  compact: {
+    pad: "px-5 py-8 sm:px-8 sm:py-12 md:py-14",
+    title: "text-2xl sm:text-3xl lg:text-4xl",
+    wrap: "max-w-2xl",
+  },
+};
+
 /**
- * Dark image hero matching the marketplace theme, slate-900 panel with the
- * Sri Lanka coastline photo dimmed behind a left-to-right gradient, a blue
- * badge pill, a display-weight headline, and an optional action row.
+ * Inset rounded hero panel: a photo or the navy brand gradient behind a
+ * headline, used at the top of the homepage and every marketing landing page.
+ *
+ * The clip lives on the background layer, not on the section. On the section
+ * it also clipped anything a child opened downwards: the city dropdown and
+ * the date pickers in the search bar were sliced off at the hero's bottom
+ * edge, which reads as the menu hiding behind the next section. On the
+ * homepage the search dock is rendered as a sibling below this component with
+ * a negative top margin so it overlaps the panel's bottom edge; that overlap
+ * only works cleanly because the section itself is never clipped.
  */
-export function Hero({ badge, title, subtitle, children, className = "" }: HeroProps) {
-  // The clip lives on the background layer, not on the section. On the section
-  // it also clipped anything a child opened downwards: the city dropdown and
-  // the date pickers in the search bar were sliced off at the hero's bottom
-  // edge, which reads as the menu hiding behind the next section. The photo and
-  // gradients are inset-0, so they cannot overflow regardless.
+export function Hero({
+  badge,
+  title,
+  subtitle,
+  children,
+  className = "",
+  size = "compact",
+  image = "/hero-sri-lanka.jpg",
+}: HeroProps) {
+  const s = SIZES[size];
   return (
-    <section className={`relative bg-slate-950 px-5 py-10 text-white sm:px-10 sm:py-16 md:py-24 ${className}`}>
-      <div className="absolute inset-0 z-0 overflow-hidden">
-        <Image
-          src="/hero-sri-lanka.jpg"
-          alt="Sri Lanka coastline"
-          fill
-          priority
-          className="object-cover"
-          sizes="100vw"
-        />
-        {/* Weighted to the left, where the words are, instead of a flat wash
-            over the whole photograph. Keeps the headline readable while the
-            image itself stays visible. */}
-        <div className="absolute inset-0 bg-gradient-to-r from-slate-950/85 via-slate-950/60 to-slate-950/25" />
-        <div className="absolute inset-0 bg-gradient-to-t from-slate-950/70 via-transparent to-transparent" />
+    <section
+      className={`relative mx-3 mt-3 text-white sm:mx-4 sm:mt-4 lg:mx-6 lg:mt-6 ${s.pad} ${className}`}
+    >
+      <div className="absolute inset-0 z-0 overflow-hidden rounded-3xl">
+        {image ? (
+          <>
+            <Image
+              src={image}
+              alt=""
+              fill
+              priority
+              className="object-cover"
+              sizes="100vw"
+            />
+            {/* Weighted to the bottom-left, where the words sit, instead of a
+                flat wash over the whole photograph. Two stacked gradients
+                (bottom-heavy, then left-heavy) combine into one dark corner
+                while the rest of the photo stays visible. */}
+            <div className="absolute inset-0 bg-gradient-to-t from-slate-950/85 via-slate-950/35 to-transparent" />
+            <div className="absolute inset-0 bg-gradient-to-r from-slate-950/65 via-transparent to-transparent" />
+          </>
+        ) : (
+          <div className="absolute inset-0 bg-brand-gradient" />
+        )}
       </div>
 
       <div className="relative z-10">
-        {/* Copy stays in a narrow measure so it reads as prose. Anything passed
-            as children (the search bar) gets a wider column, because squeezing
-            a row of controls into a 672px text measure is what makes it look
-            like a form crammed into a banner. */}
-        <div className="max-w-2xl space-y-3 md:space-y-4">
+        <div className={`space-y-3 md:space-y-4 ${s.wrap}`}>
           {badge && (
-            <p className="border-l-2 border-blue-400 pl-3 text-sm font-semibold text-blue-100">{badge}</p>
+            <p className="text-xs font-semibold uppercase tracking-[0.08em] text-blue-200">{badge}</p>
           )}
-          <h1 className="font-display text-2xl font-bold leading-tight sm:text-3xl md:text-5xl">
-            {title}
-          </h1>
+          <h1 className={`font-semibold leading-tight tracking-tight ${s.title}`}>{title}</h1>
           {subtitle && (
-            <p className="text-slate-300 text-sm md:text-base leading-relaxed">{subtitle}</p>
+            <p className="text-sm leading-relaxed text-white/80 md:text-base">{subtitle}</p>
           )}
         </div>
-        {children && <div className="max-w-5xl pt-5 md:pt-6">{children}</div>}
+        {children && <div className="pt-5 md:pt-6">{children}</div>}
       </div>
     </section>
   );

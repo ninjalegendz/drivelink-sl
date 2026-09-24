@@ -1,5 +1,9 @@
 import { Search } from "lucide-react";
-import { VehicleCard } from "@/components/vehicles/VehicleCard";
+import { Hero } from "@/components/layout/Hero";
+import { VehiclesBrowser } from "@/components/vehicles/VehiclesBrowser";
+import { EmptyState } from "@/components/ui/EmptyState";
+import { buttonClasses } from "@/components/ui/Button";
+import { PopularSearchChips } from "@/components/home/PopularSearchChips";
 import { parseRentQuery } from "@/lib/vehicles/slug";
 import { searchVehiclePageCached, VEHICLES_PAGE_SIZE } from "@/lib/vehicles/search";
 import { pageShellClass } from "@/components/ui/PageShell";
@@ -54,61 +58,54 @@ export default async function RentQueryPage({ params }: Props) {
   const displayModel = model.replace(/\b\w/g, (c) => c.toUpperCase());
   const displayCity  = city.replace(/\b\w/g, (c) => c.toUpperCase());
 
+  const otherCities = ["Colombo", "Kandy", "Galle", "Negombo", "Ella"].map((c) => ({
+    href: `/rent/${model.replace(/\s+/g, "-").toLowerCase()}-${c.toLowerCase()}`,
+    label: `${displayModel} in ${c}`,
+  }));
+
   return (
-    <div className={pageShellClass("wide")}>
-      <div className="mb-8">
-        <nav className="text-slate-500 text-sm mb-3 flex items-center gap-1">
-          <Link href="/" className="hover:text-slate-900 transition-colors">Home</Link>
-          <span>/</span>
-          <Link href="/vehicles" className="hover:text-slate-900 transition-colors">Vehicles</Link>
-          <span>/</span>
-          <span className="text-slate-700">{displayModel} in {displayCity}</span>
-        </nav>
+    <div className="space-y-8 sm:space-y-10">
+      <nav aria-label="Breadcrumb" className="mx-auto flex w-full max-w-7xl items-center gap-1 px-4 pt-4 text-sm text-slate-500 sm:px-6 sm:pt-6">
+        <Link href="/" className="transition-colors hover:text-slate-900">Home</Link>
+        <span aria-hidden="true">/</span>
+        <Link href="/vehicles" className="transition-colors hover:text-slate-900">Vehicles</Link>
+        <span aria-hidden="true">/</span>
+        <span className="text-slate-700">{displayModel} in {displayCity}</span>
+      </nav>
 
-        <h1 className="text-3xl font-bold text-slate-900">
-          Rent {displayModel} in {displayCity}
-        </h1>
-        <p className="text-slate-600 mt-2">
-          Compare verified {displayModel} rentals in {displayCity}, Sri Lanka. Check photos, deposit and
-          rules, then send a booking request. DriveLink&apos;s confirmation fee is Rs. 0, with no deposit paid to DriveLink.
-        </p>
-      </div>
+      <Hero
+        size="compact"
+        image={null}
+        title={`Rent ${displayModel} in ${displayCity}`}
+        subtitle={`Compare ${displayModel} rentals in ${displayCity}, Sri Lanka. Check photos, deposit and rules, then send a booking request. DriveLink's confirmation fee is Rs. 0, with no deposit paid to DriveLink.`}
+      />
 
-      {vehicles.length > 0 ? (
-        <>
-          <p className="text-slate-600 text-sm mb-4">{vehicles.length} vehicle{vehicles.length !== 1 ? "s" : ""} found</p>
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-            {vehicles.map((v) => <VehicleCard key={v.id} vehicle={v} />)}
-          </div>
-        </>
-      ) : (
-        <div className="text-center py-20 text-slate-500">
-          <Search size={40} strokeWidth={1.5} className="mx-auto mb-3 text-slate-400" />
-          <p className="text-lg">No {displayModel} rentals listed in {displayCity} yet.</p>
-          <p className="mt-2 text-sm">
-            Try{" "}
-            <Link href="/vehicles" className="text-blue-600 hover:text-blue-500">
-              browsing all available vehicles
-            </Link>
-            .
-          </p>
-        </div>
-      )}
+      <div className={pageShellClass("wide", "space-y-14 sm:space-y-20")}>
+        <section className="animate-fade-up space-y-6">
+          {vehicles.length > 0 ? (
+            <>
+              <p className="text-sm text-slate-500">{vehicles.length} vehicle{vehicles.length !== 1 ? "s" : ""} found</p>
+              <VehiclesBrowser vehicles={vehicles} />
+            </>
+          ) : (
+            <EmptyState
+              icon={<Search size={22} strokeWidth={1.5} className="text-slate-400" />}
+              title={`No ${displayModel || "vehicles"} rentals listed in ${displayCity || "this city"} yet`}
+              description="Try browsing all available vehicles instead."
+              action={
+                <Link href="/vehicles" className={buttonClasses({ variant: "secondary" })}>
+                  Browse all vehicles
+                </Link>
+              }
+            />
+          )}
+        </section>
 
-      {/* Internal linking, boosts SEO by interlinking city pages */}
-      <div className="mt-12 pt-8 border-t border-slate-100">
-        <p className="text-slate-600 text-xs uppercase tracking-widest font-semibold mb-3">Other cities</p>
-        <div className="flex flex-wrap gap-2">
-          {["Colombo", "Kandy", "Galle", "Negombo", "Ella"].map((c) => (
-            <Link
-              key={c}
-              href={`/rent/${model.replace(/\s+/g, "-").toLowerCase()}-${c.toLowerCase()}`}
-              className="px-3 py-1.5 bg-white border border-slate-100 text-sm text-slate-600 hover:text-slate-900 rounded-lg transition-colors"
-            >
-              {displayModel} in {c}
-            </Link>
-          ))}
-        </div>
+        {/* Internal linking, boosts SEO by interlinking city pages */}
+        <section className="animate-fade-up space-y-3">
+          <h2 className="text-sm font-semibold uppercase tracking-wider text-slate-800">Other cities</h2>
+          <PopularSearchChips links={otherCities} />
+        </section>
       </div>
     </div>
   );
