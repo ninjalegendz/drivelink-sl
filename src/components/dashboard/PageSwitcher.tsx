@@ -41,7 +41,7 @@ function Avatar({ page, size = 28 }: { page: PageSwitcherEntry; size?: number })
   );
 }
 
-/** Compact switcher for the sidebar, jump between the account's Rental Pages. */
+/** Prominent switcher card at the top of the sidebar, jump between the account's Rental Pages. */
 export function PageSwitcher({ activePage, pages }: Props) {
   const router = useRouter();
   const [open, setOpen] = useState(false);
@@ -73,20 +73,22 @@ export function PageSwitcher({ activePage, pages }: Props) {
   }
 
   return (
-    <div className="relative mb-4">
+    <div className="relative">
       <button
         type="button"
         onClick={() => setOpen((v) => !v)}
-        className="spring-press w-full flex items-center gap-2 px-2 py-2 rounded-xl glass hover:bg-white/60 transition-colors text-left"
+        aria-haspopup="menu"
+        aria-expanded={open}
+        className="spring-press flex w-full items-center gap-2.5 rounded-2xl bg-white px-3 py-2.5 text-left ring-1 ring-slate-900/[0.06] shadow-xs transition-all hover:shadow-md hover:ring-slate-900/[0.1]"
       >
-        <Avatar page={activePage} />
+        <Avatar page={activePage} size={34} />
         <span className="flex-1 min-w-0">
           <span className="block text-sm font-semibold text-slate-900 truncate">{activePage.name}</span>
           <span className="block text-xs text-slate-500">
             {activePage.page_type === "business" ? "Business" : "Personal"}
           </span>
         </span>
-        <ChevronDown size={14} className={`text-slate-400 shrink-0 transition-transform ${open ? "rotate-180" : ""}`} />
+        <ChevronDown size={15} className={`text-slate-400 shrink-0 transition-transform ${open ? "rotate-180" : ""}`} aria-hidden="true" />
       </button>
 
       {open && (
@@ -97,7 +99,7 @@ export function PageSwitcher({ activePage, pages }: Props) {
             onClick={() => setOpen(false)}
             className="fixed inset-0 z-40 cursor-default"
           />
-          <div className="absolute z-50 top-full left-0 right-0 mt-1.5 bg-white border border-slate-200 rounded-xl shadow-lg p-1.5 text-sm">
+          <div className="animate-scale-in absolute z-50 top-full left-0 right-0 mt-1.5 origin-top bg-white rounded-2xl shadow-xl ring-1 ring-slate-900/[0.08] p-1.5 text-sm">
             {others.length > 0 && (
               <div className="space-y-0.5 mb-1.5 pb-1.5 border-b border-slate-100">
                 {others.map((p) => (

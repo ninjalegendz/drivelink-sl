@@ -1,8 +1,10 @@
 "use client";
 
 import { useCallback } from "react";
-import { ShieldAlert, Check } from "lucide-react";
+import { ShieldAlert, Check, ClipboardList } from "lucide-react";
 import { Badge } from "@/components/ui/Badge";
+import { Card } from "@/components/ui/Card";
+import { EmptyState } from "@/components/ui/EmptyState";
 import { AgencyBookingActions } from "@/components/booking/AgencyBookingActions";
 import { ReportRenterButton } from "@/components/booking/ReportRenterButton";
 import { MessageRenterButton } from "@/components/booking/BookingChat";
@@ -71,9 +73,11 @@ export function AgencyBookingsList({
 
   if (bookings.length === 0) {
     return (
-      <div className="text-center py-20 text-slate-500">
-        <p>No bookings {filterStatus ? `with status "${filterStatus}"` : "yet"}.</p>
-      </div>
+      <EmptyState
+        icon={<ClipboardList size={22} className="text-slate-400" strokeWidth={1.5} />}
+        title="No bookings yet"
+        description={filterStatus ? `Nothing with the status "${BOOKING_STATUS_LABELS[filterStatus] ?? filterStatus}" right now.` : "Requests and rentals for this Rental Page will appear here."}
+      />
     );
   }
 
@@ -93,7 +97,7 @@ export function AgencyBookingsList({
         );
 
         return (
-          <div key={booking.id} className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
+          <Card key={booking.id} padding="md">
             <div className="flex flex-wrap items-start justify-between gap-3">
               <div className="min-w-0">
                 <p className="font-mono text-xs text-slate-500">{booking.id.slice(0, 8).toUpperCase()}</p>
@@ -180,7 +184,7 @@ export function AgencyBookingsList({
                 canManageCases={canManageCases}
               />
             </div>
-          </div>
+          </Card>
         );
       })}
     </div>

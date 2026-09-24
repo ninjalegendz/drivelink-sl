@@ -51,10 +51,12 @@ export function PageNotLiveBanner({ blocker, pageId }: Props) {
   return (
     <div
       role="alert"
-      className="mb-5 rounded-xl border border-amber-300 bg-amber-50 p-4 text-amber-950"
+      className="mb-6 rounded-2xl bg-amber-50 p-4 text-amber-950 ring-1 ring-amber-200 shadow-xs animate-fade-up"
     >
       <div className="flex items-start gap-3">
-        <AlertTriangle size={18} className="mt-0.5 shrink-0 text-amber-700" aria-hidden="true" />
+        <span className="grid h-9 w-9 shrink-0 place-items-center rounded-xl bg-amber-100 text-amber-700">
+          <AlertTriangle size={17} aria-hidden="true" />
+        </span>
         <div className="min-w-0 flex-1">
           <p className="text-sm font-semibold">{copy.title}</p>
           <p className="mt-1 text-sm leading-6">{copy.body}</p>
@@ -71,7 +73,7 @@ export function PageNotLiveBanner({ blocker, pageId }: Props) {
           {copy.cta && (
             <Link
               href={copy.cta.href}
-              className="mt-3 inline-flex min-h-11 items-center rounded-lg bg-amber-900 px-4 text-sm font-semibold text-white hover:bg-amber-950"
+              className="spring-press mt-3 inline-flex min-h-11 items-center rounded-lg bg-amber-900 px-4 text-sm font-semibold text-white transition-colors hover:bg-amber-950"
             >
               {copy.cta.label}
             </Link>
