@@ -1,7 +1,10 @@
 "use client";
 
 import { useState } from "react";
-import { Flag, X } from "lucide-react";
+import { Flag } from "lucide-react";
+import { BottomSheet } from "@/components/ui/BottomSheet";
+import { Textarea } from "@/components/ui/Input";
+import { Button } from "@/components/ui/Button";
 
 const REASONS: { value: string; label: string }[] = [
   { value: "fake_or_stolen", label: "Fake or stolen photos / not a real listing" },
@@ -44,40 +47,41 @@ export function ReportListingButton({ vehicleId }: { vehicleId: string }) {
       </button>
 
       {open && (
-        <div className="fixed inset-0 z-50 bg-black/60 flex items-center justify-center p-4" onClick={() => setOpen(false)}>
-          <div className="glass-card rounded-2xl w-full max-w-sm p-5" onClick={(e) => e.stopPropagation()}>
-            <div className="flex items-center justify-between mb-3">
-              <h2 className="text-slate-900 font-semibold">Report listing</h2>
-              <button onClick={() => setOpen(false)} className="text-slate-400 hover:text-slate-700" aria-label="Close"><X size={18} /></button>
-            </div>
+        <BottomSheet title="Report listing" closeLabel="Close report dialog" onClose={() => setOpen(false)} className="md:max-w-sm">
+          <div className="space-y-3 p-5">
             {done ? (
-              <div className="text-sm text-emerald-700 py-4 text-center">Thanks: our team will review this listing.</div>
+              <p className="py-4 text-center text-sm text-emerald-700">Thanks, our team will review this listing.</p>
             ) : (
-              <div className="space-y-3">
-                <div className="space-y-1.5">
+              <>
+                <div className="space-y-1" role="radiogroup" aria-label="Reason">
                   {REASONS.map((r) => (
-                    <label key={r.value} className="flex items-center gap-2 text-sm text-slate-700 cursor-pointer">
-                      <input type="radio" name="reason" checked={category === r.value} onChange={() => setCat(r.value)} />
+                    <label key={r.value} className="flex min-h-9 cursor-pointer items-center gap-2 text-sm text-slate-700">
+                      <input
+                        type="radio"
+                        name="reason"
+                        checked={category === r.value}
+                        onChange={() => setCat(r.value)}
+                        className="h-4 w-4 accent-blue-600"
+                      />
                       {r.label}
                     </label>
                   ))}
                 </div>
-                <textarea
-                  value={detail} onChange={(e) => setDetail(e.target.value)} rows={2}
+                <Textarea
+                  value={detail}
+                  onChange={(e) => setDetail(e.target.value)}
+                  rows={2}
                   placeholder="Any details (optional)"
-                  className="w-full px-3 py-2 bg-slate-100 border border-slate-200 rounded-lg text-slate-900 text-sm"
+                  className="text-sm"
                 />
-                {error && <p className="text-rose-700 text-xs">{error}</p>}
-                <button
-                  onClick={submit} disabled={busy}
-                  className="w-full py-2 rounded-xl bg-slate-900 text-white text-sm font-semibold hover:bg-slate-800 disabled:opacity-50"
-                >
-                  {busy ? "Submitting…" : "Submit report"}
-                </button>
-              </div>
+                {error && <p className="text-xs text-rose-700">{error}</p>}
+                <Button onClick={submit} loading={busy} className="w-full">
+                  Submit report
+                </Button>
+              </>
             )}
           </div>
-        </div>
+        </BottomSheet>
       )}
     </>
   );

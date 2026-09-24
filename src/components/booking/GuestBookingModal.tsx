@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { startNavigationProgress } from "@/components/layout/NavigationProgress";
 import { ArrowLeft, Phone, X, Mail, Sparkles, Check } from "lucide-react";
 import { Button } from "@/components/ui/Button";
+import { Input } from "@/components/ui/Input";
 import { PhoneInput } from "@/components/ui/PhoneInput";
 import { isValidInternationalPhone } from "@/data/country-codes";
 import { isEmailLike } from "@/lib/auth/identifier";
@@ -255,7 +256,7 @@ export function GuestBookingModal({ draft, onClose }: Props) {
       onClick={() => stage !== "booking" && onClose()}
     >
       <div
-        className="animate-bounce-in glass-card rounded-3xl w-full max-w-md my-8"
+        className="animate-bounce-in glass-card rounded-3xl w-full max-w-md my-8 shadow-2xl"
         onClick={(e) => e.stopPropagation()}
       >
         {/* Header */}
@@ -284,7 +285,7 @@ export function GuestBookingModal({ draft, onClose }: Props) {
 
         {/* Booking summary, visible on every stage so they remember what they're confirming */}
         <div className="px-5 pb-3">
-          <div className="bg-slate-100 border border-slate-200/60 rounded-xl px-3 py-2.5 text-xs">
+          <div className="bg-slate-50 ring-1 ring-slate-900/[0.06] rounded-xl px-3.5 py-3 text-xs">
             <p className="text-slate-900 font-medium">{draft.vehicleName}</p>
             <p className="text-slate-600 mt-0.5">
               {draft.startDate} → {draft.endDate} ·{" "}
@@ -305,9 +306,10 @@ export function GuestBookingModal({ draft, onClose }: Props) {
                 <button
                   type="button"
                   onClick={() => switchMode("signup")}
-                  className={`flex-1 px-3 py-1.5 rounded-lg text-xs font-medium transition-colors ${
+                  aria-pressed={mode === "signup"}
+                  className={`flex-1 min-h-9 rounded-lg text-xs font-medium transition-colors ${
                     mode === "signup"
-                      ? "bg-slate-200 text-slate-900"
+                      ? "bg-white text-slate-900 shadow-sm ring-1 ring-slate-900/[0.05]"
                       : "text-slate-600 hover:text-slate-900"
                   }`}
                 >
@@ -316,9 +318,10 @@ export function GuestBookingModal({ draft, onClose }: Props) {
                 <button
                   type="button"
                   onClick={() => switchMode("login")}
-                  className={`flex-1 px-3 py-1.5 rounded-lg text-xs font-medium transition-colors ${
+                  aria-pressed={mode === "login"}
+                  className={`flex-1 min-h-9 rounded-lg text-xs font-medium transition-colors ${
                     mode === "login"
-                      ? "bg-slate-200 text-slate-900"
+                      ? "bg-white text-slate-900 shadow-sm ring-1 ring-slate-900/[0.05]"
                       : "text-slate-600 hover:text-slate-900"
                   }`}
                 >
@@ -338,7 +341,7 @@ export function GuestBookingModal({ draft, onClose }: Props) {
                   <>
                     <div>
                       <label className="text-slate-600 text-xs mb-1 block">Your full name</label>
-                      <input
+                      <Input
                         type="text"
                         value={fullName}
                         onChange={(e) => setFullName(e.target.value)}
@@ -346,19 +349,19 @@ export function GuestBookingModal({ draft, onClose }: Props) {
                         autoFocus
                         autoComplete="name"
                         placeholder="As on your NIC or passport"
-                        className="w-full px-3 py-2 bg-slate-100 border border-slate-200 rounded-lg text-slate-900 placeholder-slate-400 text-sm focus:border-blue-500"
+                        className="min-h-11 py-2 text-sm"
                       />
                     </div>
                     <div>
                       <label className="text-slate-600 text-xs mb-1 block">Home address</label>
-                      <input
+                      <Input
                         type="text"
                         value={address}
                         onChange={(e) => setAddress(e.target.value)}
                         required
                         autoComplete="street-address"
                         placeholder="House number, street, city"
-                        className="w-full px-3 py-2 bg-slate-100 border border-slate-200 rounded-lg text-slate-900 placeholder-slate-400 text-sm focus:border-blue-500"
+                        className="min-h-11 py-2 text-sm"
                       />
                     </div>
                     <div>
@@ -369,14 +372,14 @@ export function GuestBookingModal({ draft, onClose }: Props) {
                       <label className="text-slate-600 text-xs mb-1 block">
                         Email {!isForeignPhone && <span className="text-slate-400 font-normal">(optional)</span>}
                       </label>
-                      <input
+                      <Input
                         type="email"
                         value={email}
                         onChange={(e) => setEmail(e.target.value)}
                         required={isForeignPhone}
                         autoComplete="email"
                         placeholder="you@example.com"
-                        className="w-full px-3 py-2 bg-slate-100 border border-slate-200 rounded-lg text-slate-900 placeholder-slate-400 text-sm focus:border-blue-500"
+                        className="min-h-11 py-2 text-sm"
                       />
                       <p className="text-slate-400 text-xs mt-1">
                         {isForeignPhone
@@ -407,7 +410,7 @@ export function GuestBookingModal({ draft, onClose }: Props) {
                     {loginMethod === "phone" ? (
                       <PhoneInput value={identifier} onChange={setIdentifier} autoFocus required />
                     ) : (
-                      <input
+                      <Input
                         type="email"
                         value={identifier}
                         onChange={(e) => setIdentifier(e.target.value)}
@@ -415,7 +418,7 @@ export function GuestBookingModal({ draft, onClose }: Props) {
                         autoFocus
                         autoComplete="email"
                         placeholder="you@example.com"
-                        className="w-full px-3 py-2 bg-slate-100 border border-slate-200 rounded-lg text-slate-900 placeholder-slate-400 text-sm focus:border-blue-500"
+                        className="min-h-11 py-2 text-sm"
                       />
                     )}
                   </div>
@@ -424,7 +427,7 @@ export function GuestBookingModal({ draft, onClose }: Props) {
                 {info  && <p className="text-blue-600 text-xs">{info}</p>}
                 {error && <p className="text-rose-600 text-sm">{error}</p>}
 
-                <Button type="submit" loading={loading} className="w-full">
+                <Button type="submit" loading={loading} className="w-full" size="lg">
                   Send verification code
                 </Button>
 
@@ -477,13 +480,13 @@ export function GuestBookingModal({ draft, onClose }: Props) {
                   value={code}
                   onChange={(e) => setCode(e.target.value.replace(/\D/g, ""))}
                   required
-                  className="w-full px-4 py-3 bg-slate-100 border border-slate-200 rounded-xl text-slate-900 text-center font-mono text-2xl tracking-[0.5em] focus:border-blue-500"
+                  className="w-full min-h-14 px-4 py-3 bg-white border border-slate-300 rounded-xl text-slate-950 text-center font-mono text-2xl tracking-[0.5em] shadow-xs focus:border-blue-600 focus:outline-none focus:ring-4 focus:ring-blue-600/10"
                 />
               </div>
 
-              <div className="flex items-start gap-2 p-2.5 bg-emerald-500/5 border border-emerald-500/20 rounded-lg">
+              <div className="flex items-start gap-2 p-2.5 bg-emerald-50 border border-emerald-200 rounded-lg">
                 <Sparkles size={12} className="text-emerald-700 mt-0.5 shrink-0" />
-                <p className="text-xs text-emerald-300/80">
+                <p className="text-xs text-emerald-800">
                   Enter the code to continue. Future sign-ins use a fresh code to keep your account secure.
                 </p>
               </div>
@@ -496,6 +499,7 @@ export function GuestBookingModal({ draft, onClose }: Props) {
                 loading={loading}
                 disabled={code.length !== 6}
                 className="w-full"
+                size="lg"
               >
                 Verify and send request
               </Button>

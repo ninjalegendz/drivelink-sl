@@ -3,13 +3,15 @@ import Link from "next/link";
 import {
   AlertTriangle, Car, User, Plane, ShieldCheck, Star, Info,
   Gauge, Route, Truck, Droplets, Fuel, Clock, Cigarette, CigaretteOff, PawPrint,
-  CarTaxiFront, Users, Ban, IdCard, Satellite, Ticket, Banknote, Moon,
+  CarTaxiFront, Users, Ban, IdCard, Satellite, Ticket, Banknote, Moon, Settings2, Luggage,
   type LucideIcon,
 } from "lucide-react";
 import { createPublicClient, createClient, createServiceClient } from "@/lib/supabase/server";
 import { getActingPages } from "@/lib/pages/active-page";
 import { Badge, VerificationBadge } from "@/components/ui/Badge";
 import { HelpHint } from "@/components/ui/HelpHint";
+import { Card } from "@/components/ui/Card";
+import { Section } from "@/components/ui/Section";
 import { BookingRequestForm } from "@/components/booking/BookingRequestForm";
 import { ReportListingButton } from "@/components/vehicles/ReportListingButton";
 import { VehicleViewTracker } from "@/components/vehicles/VehicleViewTracker";
@@ -233,11 +235,23 @@ export default async function VehicleDetailPage({ params, searchParams }: Props)
   // to be told plainly that this is not what the public sees.
   const isLive = vehicle.status === "available" || vehicle.status === "rented";
 
+  // ── Key specs row, icon + label tiles. Presentation only: same six values
+  // the page has always shown, just grouped for the header instead of a
+  // separate grid further down. ──
+  const specs: { label: string; value: string; Icon: LucideIcon; help?: string }[] = [
+    { label: "Transmission", value: vehicle.transmission, Icon: Settings2 },
+    { label: "Seats",        value: `${vehicle.seats} seats`, Icon: Users },
+    ...(vehicle.fuel_type   ? [{ label: "Fuel type", value: vehicle.fuel_type, Icon: Fuel }] : []),
+    ...(vehicle.luggage != null ? [{ label: "Luggage", value: `${vehicle.luggage} bag${vehicle.luggage === 1 ? "" : "s"}`, Icon: Luggage }] : []),
+    { label: "Fuel policy",  value: fuelPolicyLabel(vehicle.fuel_policy), Icon: Droplets, help: FUEL_POLICY_HELP },
+    { label: "Insurance",    value: insuranceLabel(vehicle.insurance_type), Icon: ShieldCheck, help: INSURANCE_HELP },
+  ];
+
   return (
-    <div className={pageShellClass("standard")}>
+    <div className={pageShellClass("wide")}>
       <VehicleViewTracker vehicleId={vehicle.id} label={`${vehicle.year} ${vehicle.make} ${vehicle.model}`} />
       {!isLive && (
-        <div className="mb-6 flex items-start gap-2 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm leading-6 text-amber-950">
+        <div className="mb-6 flex items-start gap-2 rounded-2xl bg-amber-50 px-4 py-3 text-sm leading-6 text-amber-950 ring-1 ring-amber-200">
           <AlertTriangle size={16} className="mt-1 shrink-0" />
           <span>
             <strong>Preview only.</strong>{" "}
@@ -247,41 +261,95 @@ export default async function VehicleDetailPage({ params, searchParams }: Props)
           </span>
         </div>
       )}
-      <div className="grid lg:grid-cols-5 gap-8">
 
-        {/* Left: photos + details */}
-        <div className="lg:col-span-3 space-y-6">
+      {/* Gallery spans the full width above both columns on desktop. */}
+      <VehicleGallery photos={photos} alt={`${vehicle.year} ${vehicle.make} ${vehicle.model}`} />
 
-          <VehicleGallery photos={photos} alt={`${vehicle.year} ${vehicle.make} ${vehicle.model}`} />
+      <div className="mt-6 grid gap-8 sm:mt-8 lg:grid-cols-12">
 
-          {/* Title + price */}
+        {/* Left: content */}
+        <div className="space-y-8 lg:col-span-7">
+
+          {/* Title block */}
           <div>
-            <div className="flex items-center gap-1.5 text-xs text-slate-500 font-semibold mb-1">
-              <span className="uppercase tracking-wider">{vehicle.make}</span>
-              <span>·</span><span>{vehicle.year}</span>
-              <span>·</span><span>{vehicleTypeLabel(vehicle.vehicle_type)}</span>
+            <p className="text-xs font-semibold uppercase tracking-[0.08em] text-blue-700">
+              {vehicleTypeLabel(vehicle.vehicle_type)} · {vehicle.city}
+            </p>
+            <h1 className="mt-1 text-2xl font-semibold tracking-tight text-slate-950 sm:text-4xl">
+              {vehicle.year} {vehicle.make} {vehicle.model}
+            </h1>
+
+            <div className="mt-2 flex flex-wrap items-center gap-x-2 gap-y-1 text-sm text-slate-600">
+              {agency.rating_avg ? (
+                <span className="inline-flex items-center gap-1 font-medium text-slate-900">
+                  <Star className="h-4 w-4 fill-amber-400 text-amber-400" />
+                  {Number(agency.rating_avg).toFixed(1)}
+                  <span className="font-normal text-slate-500">({agency.rating_count ?? 0} review{(agency.rating_count ?? 0) === 1 ? "" : "s"})</span>
+                </span>
+              ) : (
+                <span className="font-medium text-slate-500">Newly listed</span>
+              )}
+              <span className="text-slate-300" aria-hidden="true">·</span>
+              {(agency as { slug?: string | null }).slug ? (
+                <Link href={`/pages/${(agency as { slug?: string | null }).slug}`} className="font-medium text-slate-900 hover:text-blue-600 hover:underline">
+                  {agency.name}
+                </Link>
+              ) : (
+                <span className="font-medium text-slate-900">{agency.name}</span>
+              )}
+              {responseTimeLabel(agency.avg_response_minutes) && (
+                <>
+                  <span className="text-slate-300" aria-hidden="true">·</span>
+                  <span className="font-medium text-emerald-700">Typically replies in {responseTimeLabel(agency.avg_response_minutes)}</span>
+                </>
+              )}
             </div>
-            <div className="flex items-start justify-between gap-2">
-              <div>
-                <h1 className="font-display text-2xl font-extrabold text-slate-900 tracking-tight">
-                  {vehicle.year} {vehicle.make} {vehicle.model}
-                </h1>
-                <p className="text-slate-600 mt-0.5">{vehicle.city}</p>
-              </div>
-              <div className="text-right shrink-0">
-                <p className="text-2xl font-extrabold text-blue-600">{formatLKR(vehicle.daily_rate_lkr)}</p>
-                <p className="text-slate-500 text-xs">per day{siteConfig.showUsd ? ` (~$${usd})` : ""}</p>
-                {vehicle.monthly_rate_lkr && (
-                  <p className="text-emerald-600 text-xs mt-1 font-medium">or {formatLKR(vehicle.monthly_rate_lkr)} / month</p>
-                )}
-              </div>
+
+            {/* Key specs row: icon + label tiles, hairline dividers instead
+                of heavy boxed tiles. */}
+            <div className="mt-5 grid grid-cols-2 gap-px overflow-hidden rounded-xl bg-slate-200 ring-1 ring-slate-200 sm:grid-cols-3">
+              {specs.map(({ label, value, Icon, help }) => (
+                <div key={label} className="bg-white p-3">
+                  <p className="flex items-center text-xs text-slate-500">
+                    <Icon className="mr-1.5 h-3.5 w-3.5 text-slate-400" />
+                    {label}
+                    {help && <HelpHint text={help} />}
+                  </p>
+                  {/* Sentence case, not title case: only the first letter is raised, so
+                      "automatic" reads "Automatic" but "Hire insurance declared"
+                      does not become "Hire Insurance Declared". */}
+                  <p className="mt-0.5 text-sm font-medium text-slate-900 first-letter:uppercase">{value}</p>
+                </div>
+              ))}
             </div>
+          </div>
+
+          {/* "Before you request": one calm panel with everything that
+              decides whether this listing fits, so nothing here is a
+              surprise once the request is sent. */}
+          <Card variant="tinted" padding="lg" className="space-y-4">
+            <p className="text-xs font-semibold uppercase tracking-[0.08em] text-blue-700">Before you request</p>
+
+            <div className="flex flex-wrap items-baseline justify-between gap-x-4 gap-y-1">
+              <p className="text-sm text-slate-700">Daily rate</p>
+              <p className="text-right">
+                <span className="text-2xl font-bold tabular text-slate-950">{formatLKR(vehicle.daily_rate_lkr)}</span>
+                <span className="text-sm text-slate-500"> / day{siteConfig.showUsd ? ` (~$${usd})` : ""}</span>
+              </p>
+            </div>
+            {vehicle.weekly_rate_lkr && (
+              <p className="text-right text-sm font-medium text-emerald-700">or {formatLKR(vehicle.weekly_rate_lkr)} / week</p>
+            )}
+            {vehicle.monthly_rate_lkr && (
+              <p className="text-right text-sm font-medium text-emerald-700">or {formatLKR(vehicle.monthly_rate_lkr)} / month</p>
+            )}
+
             {/* The deposit is routinely two to three times the daily rate, and
                 it is the number people actually weigh before deciding. Shown at
                 the same weight as the price, with who holds it, because meeting
                 it late reads as concealment even when nothing was concealed. */}
             {vehicle.deposit_lkr > 0 && (
-              <div className="mt-3 rounded-lg border border-slate-200 bg-slate-50 p-3">
+              <div className="border-t border-blue-100 pt-4">
                 <div className="flex flex-wrap items-baseline justify-between gap-x-3 gap-y-1">
                   <p className="text-base font-semibold text-slate-900">
                     {formatLKR(vehicle.deposit_lkr)} refundable deposit
@@ -301,328 +369,317 @@ export default async function VehicleDetailPage({ params, searchParams }: Props)
 
             {/* Rental option chips */}
             {rentalOptions.length > 0 && (
-              <div className="flex flex-wrap gap-2 mt-3">
+              <div className="flex flex-wrap gap-2 border-t border-blue-100 pt-4">
                 {rentalOptions.map(({ label, Icon }) => (
-                  <span key={label} className="inline-flex items-center gap-1.5 px-3 py-1 rounded-lg bg-blue-50 text-blue-700 text-xs font-semibold border border-blue-100">
-                    <Icon className="w-3.5 h-3.5" /> {label}
+                  <span key={label} className="inline-flex items-center gap-1.5 rounded-lg border border-blue-200 bg-white px-3 py-1 text-xs font-semibold text-blue-700">
+                    <Icon className="h-3.5 w-3.5" /> {label}
                   </span>
                 ))}
               </div>
             )}
-          </div>
 
-          {/* Driving requirements (F1/F3), the make-or-break info for tourists */}
-          {(vehicle.self_drive || vehicle.with_driver) && (
-            <div className="rounded-xl border border-blue-100 bg-blue-50/60 p-4 space-y-1.5">
-              <p className="font-semibold text-slate-800 text-sm flex items-center gap-1.5">
-                <Info size={15} className="text-blue-600" /> Driving in Sri Lanka
-              </p>
-              {vehicle.self_drive && (
-                <p className="text-slate-600 text-xs leading-relaxed">
-                  <strong className="text-slate-800">Self-drive:</strong> add your licence and permit details before requesting.
-                  The Rental Page checks the original documents at pickup. Driving and insurance requirements can depend on
-                  your licence, permit and the provider&apos;s policy, so confirm them before travelling.
+            {/* Driving requirements (F1/F3), the make-or-break info for tourists */}
+            {(vehicle.self_drive || vehicle.with_driver) && (
+              <div className="space-y-1.5 border-t border-blue-100 pt-4">
+                <p className="flex items-center gap-1.5 text-sm font-semibold text-slate-800">
+                  <Info size={15} className="text-blue-600" /> Driving in Sri Lanka
                 </p>
-              )}
-              {vehicle.with_driver && (
-                <p className="text-slate-600 text-xs leading-relaxed">
-                  <strong className="text-slate-800">With a driver:</strong> you do not drive the vehicle. Confirm the named
-                  driver, licence, working hours, route limits and extra charges before handover.
-                </p>
-              )}
-            </div>
-          )}
-
-          {/* Trust badges */}
-          {(badges.length > 0 || currentlyVerified) && (
-            <div className="space-y-2">
-              <div className="flex flex-wrap gap-1.5">
-                {currentlyVerified && <VerificationBadge label="Verified Vehicle" />}
-                {badges.map((b) => <VerificationBadge key={b} label={badgeDisplayLabel(b)} />)}
-              </div>
-              {currentlyVerified && (
-                <p className="text-xs leading-5 text-slate-600">DriveLink reviewed the uploaded registration, hire-insurance, and revenue-licence documents for this listing. This is not a guarantee of insurance cover.</p>
-              )}
-              {badges.some((b) => BADGE_DESCRIPTIONS[b]) && (
-                <details className="text-xs">
-                  <summary className="text-slate-500 hover:text-blue-600 cursor-pointer select-none inline-flex items-center gap-1">
-                    <Info size={12} /> What these badges mean
-                  </summary>
-                  <ul className="mt-2 space-y-1.5 pl-0.5">
-                    {badges.filter((b) => BADGE_DESCRIPTIONS[b]).map((b) => (
-                      <li key={b} className="text-slate-600 leading-relaxed">
-                        <span className="font-semibold text-slate-800">{badgeDisplayLabel(b)}:</span> {BADGE_DESCRIPTIONS[b]}
-                      </li>
-                    ))}
-                  </ul>
-                </details>
-              )}
-            </div>
-          )}
-          {!currentlyVerified && (
-            <div className="space-y-1.5">
-              <span className="inline-flex items-center rounded border border-slate-200 bg-slate-50 px-2 py-1 text-xs font-semibold text-slate-700">Basic listing</span>
-              <p className="text-xs leading-5 text-slate-600">The Rental Page declared its right to list this vehicle, and DriveLink reviewed the public listing. The vehicle documents have not completed Verified Vehicle review. Confirm the exact vehicle and insurance conditions before handover.</p>
-            </div>
-          )}
-
-          {/* Specs grid */}
-          <div className="grid grid-cols-2 gap-3">
-            {([
-              { label: "Transmission", value: vehicle.transmission },
-              { label: "Seats",        value: `${vehicle.seats} seats` },
-              ...(vehicle.fuel_type   ? [{ label: "Fuel type", value: vehicle.fuel_type }] : []),
-              ...(vehicle.luggage != null ? [{ label: "Luggage", value: `${vehicle.luggage} bag${vehicle.luggage === 1 ? "" : "s"}` }] : []),
-              { label: "Fuel Policy",  value: fuelPolicyLabel(vehicle.fuel_policy), help: FUEL_POLICY_HELP },
-              { label: "Insurance",    value: insuranceLabel(vehicle.insurance_type), help: INSURANCE_HELP },
-            ] as { label: string; value: string; help?: string }[]).map(({ label, value, help }) => (
-              <div key={label} className="bg-white rounded-xl p-3 border border-slate-100">
-                <p className="text-slate-500 text-xs flex items-center">
-                  {label}{help && <HelpHint text={help} />}
-                </p>
-                <p className="text-slate-900 text-sm font-medium mt-0.5 capitalize">{value}</p>
-              </div>
-            ))}
-          </div>
-
-          {/* Description */}
-          {vehicle.description && (
-            <div>
-              <p className="text-slate-600 text-xs uppercase tracking-widest font-semibold mb-2">About this vehicle</p>
-              <p className="text-slate-700 text-sm whitespace-pre-line leading-relaxed">{vehicle.description}</p>
-            </div>
-          )}
-
-          {/* Handover requirements: the twelve standard rules translate, a
-              host's own wording is shown as theirs. */}
-          <HouseRules rules={rules} />
-
-          {/* Insurance warning */}
-          {vehicle.insurance_type === "private" && (
-            <div className="flex gap-3 p-3 bg-amber-50 border border-amber-200 rounded-xl">
-              <AlertTriangle size={18} className="text-amber-500 shrink-0 mt-0.5" />
-              <p className="text-amber-800 text-sm">
-                This vehicle has Private (P-Number) insurance. Verify coverage with the {provNoun} before renting.
-              </p>
-            </div>
-          )}
-
-          {/* TRUST-023: insurance expiry awareness */}
-          {vehicle.insurance_expiry && new Date(vehicle.insurance_expiry as string) < new Date() && (
-            <div className="flex gap-3 p-3 bg-red-50 border border-red-200 rounded-xl">
-              <AlertTriangle size={18} className="text-rose-700 shrink-0 mt-0.5" />
-              <p className="text-red-800 text-sm">
-                The insurance on file for this vehicle shows as expired ({new Date(vehicle.insurance_expiry as string).toLocaleDateString("en-LK")}).
-                Confirm current, valid coverage with the {provNoun} before you drive.
-              </p>
-            </div>
-          )}
-
-          {/* Features */}
-          {vehicle.features && vehicle.features.length > 0 && (
-            <div>
-              <p className="text-slate-600 text-xs uppercase tracking-widest font-semibold mb-2">Features</p>
-              <div className="flex flex-wrap gap-2">
-                {vehicle.features.map((f: string) => {
-                  const FeatIcon = presetIcon(f);
-                  return (
-                    <Badge key={f} variant="slate">
-                      <span className="inline-flex items-center gap-1"><FeatIcon className="w-3 h-3" />{f}</span>
-                    </Badge>
-                  );
-                })}
-              </div>
-            </div>
-          )}
-
-          {/* Rental terms: trust panel (Terms Engine) */}
-          <div className="rounded-2xl border border-slate-100 bg-white p-4 shadow-sm space-y-4">
-            <div>
-              <h3 className="font-bold text-slate-800 text-sm flex items-center gap-1.5">
-                <ShieldCheck size={15} className="text-blue-600" /> Rental terms
-              </h3>
-              <p className="text-slate-500 text-xs mt-0.5">
-                No surprise charges: these are the terms your request is sent on.
-              </p>
-            </div>
-
-            <div className="grid sm:grid-cols-2 gap-x-6 gap-y-4">
-              {includedRows.length > 0 && (
-                <div>
-                  <p className="text-slate-500 text-xs font-bold uppercase tracking-wider mb-1.5">What&apos;s included</p>
-                  <TermRows rows={includedRows} />
-                </div>
-              )}
-              {feeRows.length > 0 && (
-                <div>
-                  <p className="text-slate-500 text-xs font-bold uppercase tracking-wider mb-1.5">Fees you should know</p>
-                  <TermRows rows={feeRows} />
-                </div>
-              )}
-            </div>
-
-            <div>
-              <p className="text-slate-500 text-xs font-bold uppercase tracking-wider mb-1.5">House rules</p>
-              <div className="flex flex-wrap gap-1.5">
-                {ruleChips.map(({ Icon, text }) => (
-                  <span key={text} className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-slate-50 border border-slate-200 text-slate-600 text-xs font-medium">
-                    <Icon className="w-3 h-3 text-blue-500" /> {text}
-                  </span>
-                ))}
-              </div>
-              {(restrictedText || requirementText) && (
-                <div className="mt-2">
-                  <TermRows
-                    rows={[
-                      ...(restrictedText ? [{ Icon: Ban, text: restrictedText }] : []),
-                      ...(requirementText ? [{ Icon: IdCard, text: requirementText }] : []),
-                    ]}
-                  />
-                </div>
-              )}
-            </div>
-
-            {disclosureRows.length > 0 && (
-              <div>
-                <p className="text-slate-500 text-xs font-bold uppercase tracking-wider mb-1.5">Disclosures</p>
-                <TermRows rows={disclosureRows} />
+                {vehicle.self_drive && (
+                  <p className="text-xs leading-relaxed text-slate-600">
+                    <strong className="text-slate-800">Self-drive:</strong> add your licence and permit details before requesting.
+                    The Rental Page checks the original documents at pickup. Driving and insurance requirements can depend on
+                    your licence, permit and the provider&apos;s policy, so confirm them before travelling.
+                  </p>
+                )}
+                {vehicle.with_driver && (
+                  <p className="text-xs leading-relaxed text-slate-600">
+                    <strong className="text-slate-800">With a driver:</strong> you do not drive the vehicle. Confirm the named
+                    driver, licence, working hours, route limits and extra charges before handover.
+                  </p>
+                )}
               </div>
             )}
 
-            {withDriverRows.length > 0 && (
-              <div>
-                <p className="text-slate-500 text-xs font-bold uppercase tracking-wider mb-1.5">With driver</p>
-                <TermRows rows={withDriverRows} />
-              </div>
+            {/* Licence / age requirement, self-drive only. */}
+            {requirementText && (
+              <p className="flex items-center gap-1.5 border-t border-blue-100 pt-4 text-xs font-medium text-slate-700">
+                <IdCard size={14} className="text-blue-600" /> {requirementText}
+              </p>
             )}
-          </div>
+          </Card>
 
-          {/* Guest reviews */}
-          <div className="space-y-3">
-            <h3 className="font-bold text-slate-800 text-sm">Guest reviews</h3>
-            {reviews.length === 0 ? (
-              <p className="text-xs text-slate-400 italic">No reviews yet, be the first to rent and review this {provNoun}.</p>
-            ) : (
-              <div className="space-y-3">
-                {reviews.map((rev) => (
-                  <div key={rev.id} className="bg-slate-50 p-3 rounded-lg border border-slate-100 space-y-1.5">
-                    <div className="flex justify-between items-center">
-                      <span className="text-xs font-bold text-slate-700">{rev.reviewer?.full_name ?? "Verified renter"}</span>
-                      <span className="text-xs text-slate-400">{new Date(rev.created_at).toLocaleDateString("en-LK", { year: "numeric", month: "short", day: "numeric" })}</span>
-                    </div>
-                    <div className="flex text-amber-400">
-                      {Array.from({ length: rev.rating }).map((_, i) => <Star key={i} className="w-3 h-3 fill-current" />)}
-                    </div>
-                    {rev.comment && <p className="text-xs text-slate-600 italic leading-normal">&ldquo;{rev.comment}&rdquo;</p>}
+          {/* Content sections: headings and whitespace, not cards inside
+              cards. Every section but the first gets a hairline above it. */}
+          <div className="[&>*+*]:mt-8 [&>*+*]:border-t [&>*+*]:border-slate-200 [&>*+*]:pt-8">
+
+            {vehicle.description && (
+              <Section title="About this vehicle">
+                <p className="whitespace-pre-line text-sm leading-relaxed text-slate-700">{vehicle.description}</p>
+              </Section>
+            )}
+
+            {/* Rental terms: trust panel (Terms Engine) */}
+            <Section title="Rental terms" description="No surprise charges: these are the terms your request is sent on.">
+              <div className="grid gap-x-6 gap-y-5 sm:grid-cols-2">
+                {includedRows.length > 0 && (
+                  <div>
+                    <p className="mb-1.5 text-xs font-semibold uppercase tracking-wider text-slate-500">What&apos;s included</p>
+                    <TermRows rows={includedRows} />
                   </div>
-                ))}
+                )}
+                {feeRows.length > 0 && (
+                  <div>
+                    <p className="mb-1.5 text-xs font-semibold uppercase tracking-wider text-slate-500">Fees you should know</p>
+                    <TermRows rows={feeRows} />
+                  </div>
+                )}
+              </div>
+
+              <div>
+                <p className="mb-1.5 text-xs font-semibold uppercase tracking-wider text-slate-500">House rules</p>
+                <div className="flex flex-wrap gap-1.5">
+                  {ruleChips.map(({ Icon, text }) => (
+                    <span key={text} className="inline-flex items-center gap-1 rounded-full bg-slate-50 px-2.5 py-1 text-xs font-medium text-slate-600 ring-1 ring-slate-200">
+                      <Icon className="h-3 w-3 text-blue-500" /> {text}
+                    </span>
+                  ))}
+                </div>
+                {(restrictedText || requirementText) && (
+                  <div className="mt-2">
+                    <TermRows
+                      rows={[
+                        ...(restrictedText ? [{ Icon: Ban, text: restrictedText }] : []),
+                        ...(requirementText ? [{ Icon: IdCard, text: requirementText }] : []),
+                      ]}
+                    />
+                  </div>
+                )}
+              </div>
+
+              {disclosureRows.length > 0 && (
+                <div>
+                  <p className="mb-1.5 text-xs font-semibold uppercase tracking-wider text-slate-500">Disclosures</p>
+                  <TermRows rows={disclosureRows} />
+                </div>
+              )}
+
+              {withDriverRows.length > 0 && (
+                <div>
+                  <p className="mb-1.5 text-xs font-semibold uppercase tracking-wider text-slate-500">With driver</p>
+                  <TermRows rows={withDriverRows} />
+                </div>
+              )}
+            </Section>
+
+            {vehicle.features && vehicle.features.length > 0 && (
+              <Section title="Features">
+                <div className="grid grid-cols-2 gap-x-4 gap-y-3 sm:grid-cols-3">
+                  {vehicle.features.map((f: string) => {
+                    const FeatIcon = presetIcon(f);
+                    return (
+                      <div key={f} className="flex items-center gap-2 text-sm text-slate-700">
+                        <FeatIcon className="h-4 w-4 shrink-0 text-blue-500" /> {f}
+                      </div>
+                    );
+                  })}
+                </div>
+              </Section>
+            )}
+
+            {/* Handover requirements: the twelve standard rules translate, a
+                host's own wording is shown as theirs. */}
+            {rules.length > 0 && <HouseRules rules={rules} />}
+
+            <Section title="Trust">
+              {(badges.length > 0 || currentlyVerified) && (
+                <div className="space-y-2">
+                  <div className="flex flex-wrap gap-1.5">
+                    {currentlyVerified && <VerificationBadge label="Verified Vehicle" />}
+                    {badges.map((b) => <VerificationBadge key={b} label={badgeDisplayLabel(b)} />)}
+                  </div>
+                  {currentlyVerified && (
+                    <p className="text-xs leading-5 text-slate-600">DriveLink reviewed the uploaded registration, hire-insurance, and revenue-licence documents for this listing. This is not a guarantee of insurance cover.</p>
+                  )}
+                  {badges.some((b) => BADGE_DESCRIPTIONS[b]) && (
+                    <details className="text-xs">
+                      <summary className="inline-flex cursor-pointer select-none items-center gap-1 text-slate-500 hover:text-blue-600">
+                        <Info size={12} /> What these badges mean
+                      </summary>
+                      <ul className="mt-2 space-y-1.5 pl-0.5">
+                        {badges.filter((b) => BADGE_DESCRIPTIONS[b]).map((b) => (
+                          <li key={b} className="leading-relaxed text-slate-600">
+                            <span className="font-semibold text-slate-800">{badgeDisplayLabel(b)}:</span> {BADGE_DESCRIPTIONS[b]}
+                          </li>
+                        ))}
+                      </ul>
+                    </details>
+                  )}
+                </div>
+              )}
+              {!currentlyVerified && (
+                <div className="space-y-1.5">
+                  <span className="inline-flex items-center rounded border border-slate-200 bg-slate-50 px-2 py-1 text-xs font-semibold text-slate-700">Basic listing</span>
+                  <p className="text-xs leading-5 text-slate-600">The Rental Page declared its right to list this vehicle, and DriveLink reviewed the public listing. The vehicle documents have not completed Verified Vehicle review. Confirm the exact vehicle and insurance conditions before handover.</p>
+                </div>
+              )}
+            </Section>
+
+            {/* Insurance warning */}
+            {vehicle.insurance_type === "private" && (
+              <div className="flex gap-3 rounded-2xl bg-amber-50 p-4 ring-1 ring-amber-200">
+                <AlertTriangle size={18} className="mt-0.5 shrink-0 text-amber-500" />
+                <p className="text-sm text-amber-800">
+                  This vehicle has Private (P-Number) insurance. Verify coverage with the {provNoun} before renting.
+                </p>
               </div>
             )}
+
+            {/* TRUST-023: insurance expiry awareness */}
+            {vehicle.insurance_expiry && new Date(vehicle.insurance_expiry as string) < new Date() && (
+              <div className="flex gap-3 rounded-2xl bg-rose-50 p-4 ring-1 ring-rose-200">
+                <AlertTriangle size={18} className="mt-0.5 shrink-0 text-rose-700" />
+                <p className="text-sm text-rose-800">
+                  The insurance on file for this vehicle shows as expired ({new Date(vehicle.insurance_expiry as string).toLocaleDateString("en-LK")}).
+                  Confirm current, valid coverage with the {provNoun} before you drive.
+                </p>
+              </div>
+            )}
+
+            <Section title={provNounCap === "Host" ? "Vehicle host" : "Rental Page"}>
+              <div className="flex items-start justify-between gap-4">
+                <div className="flex items-center gap-3">
+                  <span className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-blue-600 text-sm font-semibold text-white">
+                    {initials(agency.name)}
+                  </span>
+                  <div>
+                    {(agency as { slug?: string | null }).slug ? (
+                      <Link href={`/pages/${(agency as { slug?: string | null }).slug}`} className="font-semibold text-slate-900 hover:text-blue-600 hover:underline">{agency.name}</Link>
+                    ) : (
+                      <p className="font-semibold text-slate-900">{agency.name}</p>
+                    )}
+                    <p className="mt-0.5 text-sm text-slate-600">{agency.city}</p>
+                    {responseTimeLabel(agency.avg_response_minutes) && (
+                      <p className="mt-0.5 text-xs font-medium text-emerald-700">Typically replies in {responseTimeLabel(agency.avg_response_minutes)}</p>
+                    )}
+                  </div>
+                </div>
+                {agency.is_verified && <Badge variant="green">Verified</Badge>}
+              </div>
+
+              <div className="grid grid-cols-3 gap-2 rounded-xl bg-slate-50 p-3 text-center ring-1 ring-slate-900/[0.05]">
+                <div>
+                  <p className={`text-lg font-semibold ${reliabilityColor(agency.reliability_pct, rentalsDone)}`}>{reliabilityLabel(agency.reliability_pct, rentalsDone)}</p>
+                  <p className="inline-flex items-center justify-center text-xs text-slate-500">Reliability <HelpHint text={RELIABILITY_HELP} /></p>
+                </div>
+                <div>
+                  <p className="text-lg font-semibold text-slate-900">{agency.rating_avg ? Number(agency.rating_avg).toFixed(1) : "-"}</p>
+                  <p className="inline-flex items-center justify-center text-xs text-slate-500">Rating <HelpHint text={RATING_HELP} /></p>
+                </div>
+                <div>
+                  <p className="text-lg font-semibold text-slate-900">{agency.rating_count ?? 0}</p>
+                  <p className="inline-flex items-center justify-center text-xs text-slate-500">Reviews <HelpHint text={REVIEW_COUNT_HELP} /></p>
+                </div>
+              </div>
+            </Section>
+
+            <Section title="Guest reviews">
+              {reviews.length === 0 ? (
+                <p className="text-xs italic text-slate-400">No reviews yet, be the first to rent and review this {provNoun}.</p>
+              ) : (
+                <div className="space-y-3">
+                  {reviews.map((rev) => (
+                    <div key={rev.id} className="space-y-1.5 rounded-xl bg-slate-50 p-4 ring-1 ring-slate-900/[0.05]">
+                      <div className="flex items-center justify-between">
+                        <span className="text-sm font-semibold text-slate-700">{rev.reviewer?.full_name ?? "Verified renter"}</span>
+                        <span className="text-xs text-slate-400">{new Date(rev.created_at).toLocaleDateString("en-LK", { year: "numeric", month: "short", day: "numeric" })}</span>
+                      </div>
+                      <div className="flex text-amber-400">
+                        {Array.from({ length: rev.rating }).map((_, i) => <Star key={i} className="h-3.5 w-3.5 fill-current" />)}
+                      </div>
+                      {rev.comment && <p className="text-sm italic leading-normal text-slate-600">&ldquo;{rev.comment}&rdquo;</p>}
+                    </div>
+                  ))}
+                </div>
+              )}
+            </Section>
+
+            <Section title="How it works">
+              <ol className="space-y-3">
+                {[
+                  "You send a booking request, free, no payment",
+                  "DriveLink verifies your details (licence for self-drive)",
+                  `The ${provNoun} confirms availability`,
+                  `${provNounCap} contact unlocks so you can sync the handover`,
+                  `Pickup & return, pay the ${provNoun} directly`,
+                ].map((step, i) => (
+                  <li key={i} className="flex gap-3 text-sm text-slate-600">
+                    <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-blue-50 text-xs font-semibold text-blue-600">{i + 1}</span>
+                    {step}
+                  </li>
+                ))}
+              </ol>
+            </Section>
           </div>
         </div>
 
-        {/* Right: provider + booking */}
-        <div className="lg:col-span-2 space-y-4">
-
-          {/* Provider card */}
-          <div className="bg-white rounded-2xl border border-slate-100 p-4 shadow-sm">
-            <div className="flex items-center justify-between mb-3">
-              <div>
-                <p className="text-xs text-slate-400 font-semibold uppercase tracking-wider">{provNounCap === "Host" ? "Vehicle host" : "Rental Page"}</p>
-                {(agency as { slug?: string | null }).slug ? (
-                  <Link href={`/pages/${(agency as { slug?: string | null }).slug}`} className="font-semibold text-slate-900 hover:text-blue-600 hover:underline">{agency.name}</Link>
-                ) : (
-                  <p className="font-semibold text-slate-900">{agency.name}</p>
-                )}
-                <p className="text-slate-600 text-xs mt-0.5">{agency.city}</p>
-                {responseTimeLabel(agency.avg_response_minutes) && (
-                  <p className="text-emerald-600 text-xs font-medium mt-0.5">Typically replies in {responseTimeLabel(agency.avg_response_minutes)}</p>
-                )}
-              </div>
-              {agency.is_verified && <Badge variant="green">Verified</Badge>}
+        {/* Right: sticky booking panel */}
+        <div className="lg:col-span-5">
+          <div id="request" className="scroll-mt-24 rounded-3xl bg-white p-5 shadow-xl ring-1 ring-slate-900/[0.06] sm:p-6 lg:sticky lg:top-24">
+            <div className="flex items-baseline gap-1.5">
+              <span className="text-2xl font-bold tabular text-slate-950">{formatLKR(vehicle.daily_rate_lkr)}</span>
+              <span className="text-sm text-slate-500">/ day{siteConfig.showUsd ? ` (~$${usd})` : ""}</span>
             </div>
-
-            <div className="grid grid-cols-3 gap-2 text-center">
-              <div>
-                <p className={`text-lg font-bold ${reliabilityColor(agency.reliability_pct, rentalsDone)}`}>{reliabilityLabel(agency.reliability_pct, rentalsDone)}</p>
-                <p className="text-slate-500 text-xs inline-flex items-center justify-center">Reliability <HelpHint text={RELIABILITY_HELP} /></p>
-              </div>
-              <div>
-                <p className="text-lg font-bold text-slate-900">{agency.rating_avg ? Number(agency.rating_avg).toFixed(1) : "-"}</p>
-                <p className="text-slate-500 text-xs inline-flex items-center justify-center">Rating <HelpHint text={RATING_HELP} /></p>
-              </div>
-              <div>
-                <p className="text-lg font-bold text-slate-900">{agency.rating_count ?? 0}</p>
-                <p className="text-slate-500 text-xs inline-flex items-center justify-center">Reviews <HelpHint text={REVIEW_COUNT_HELP} /></p>
-              </div>
-            </div>
-          </div>
-
-          {/* Booking card. "Send booking inquiry" read as something short of
-              entering the booking flow, so the brief replaces it with the
-              action plus the exact next state underneath. */}
-          <div id="request" className="scroll-mt-20 bg-white rounded-2xl border border-slate-100 p-4 shadow-sm">
-            {!isLive ? (
-              <>
-                <h2 className="font-semibold text-slate-900 mb-1">Not accepting bookings</h2>
-                <p className="text-slate-600 text-sm">
-                  {vehicle.status === "pending_review"
-                    ? "Once DriveLink approves this listing, the request form appears here and renters can send dates."
-                    : "This listing is not published. Publish it from your fleet to start receiving booking requests."}
-                </p>
-              </>
-            ) : (
-            <>
-            <h2 className="font-semibold text-slate-900 mb-1">Request this vehicle</h2>
-            <p className="text-slate-600 text-sm mb-1">
-              The {provNoun} will review your dates.
-            </p>
-            <p className="text-slate-600 text-xs mb-4">
-              DriveLink&apos;s booking confirmation fee is Rs. 0. Once they confirm availability, their contact unlocks.
-            </p>
-            <BookingRequestForm
-              vehicleId={vehicle.id}
-              agencyId={vehicle.agency_id}
-              vehicleName={`${vehicle.year} ${vehicle.make} ${vehicle.model}`}
-              dailyRateLkr={vehicle.daily_rate_lkr}
-              weeklyRateLkr={vehicle.weekly_rate_lkr}
-              monthlyRateLkr={vehicle.monthly_rate_lkr}
-              selfDrive={vehicle.self_drive}
-              withDriver={vehicle.with_driver}
-              deliveryAvailable={vehicle.delivery_available}
-              deliveryFeeLkr={vehicle.delivery_fee_lkr}
-              perKmRateLkr={vehicle.per_km_rate_lkr}
-              driverBataLkr={vehicle.driver_bata_lkr}
-              bookedRanges={bookedRanges}
-              initialStartDate={from ?? null}
-              initialEndDate={to ?? null}
-              initialStartTime={from_time ?? null}
-              initialEndTime={to_time ?? null}
-            />
-            </>
+            {vehicle.deposit_lkr > 0 && (
+              <p className="mt-1 text-xs text-slate-500">{formatLKR(vehicle.deposit_lkr)} refundable deposit</p>
             )}
-            <div className="mt-2 text-right">
+
+            <div className="mt-5 border-t border-slate-100 pt-5">
+              {!isLive ? (
+                <>
+                  <h2 className="text-base font-semibold text-slate-900">Not accepting bookings</h2>
+                  <p className="mt-1 text-sm text-slate-600">
+                    {vehicle.status === "pending_review"
+                      ? "Once DriveLink approves this listing, the request form appears here and renters can send dates."
+                      : "This listing is not published. Publish it from your fleet to start receiving booking requests."}
+                  </p>
+                </>
+              ) : (
+                <>
+                  <h2 className="text-base font-semibold text-slate-900">Request this vehicle</h2>
+                  <p className="mt-1 text-sm text-slate-600">
+                    The {provNoun} will review your dates.
+                  </p>
+                  <div className="mt-4">
+                    <BookingRequestForm
+                      vehicleId={vehicle.id}
+                      agencyId={vehicle.agency_id}
+                      vehicleName={`${vehicle.year} ${vehicle.make} ${vehicle.model}`}
+                      dailyRateLkr={vehicle.daily_rate_lkr}
+                      weeklyRateLkr={vehicle.weekly_rate_lkr}
+                      monthlyRateLkr={vehicle.monthly_rate_lkr}
+                      selfDrive={vehicle.self_drive}
+                      withDriver={vehicle.with_driver}
+                      deliveryAvailable={vehicle.delivery_available}
+                      deliveryFeeLkr={vehicle.delivery_fee_lkr}
+                      perKmRateLkr={vehicle.per_km_rate_lkr}
+                      driverBataLkr={vehicle.driver_bata_lkr}
+                      bookedRanges={bookedRanges}
+                      initialStartDate={from ?? null}
+                      initialEndDate={to ?? null}
+                      initialStartTime={from_time ?? null}
+                      initialEndTime={to_time ?? null}
+                    />
+                  </div>
+                  <p className="mt-4 text-xs leading-5 text-slate-500">
+                    DriveLink&apos;s booking confirmation fee is Rs. 0. Once they confirm availability, their contact unlocks.
+                  </p>
+                </>
+              )}
+            </div>
+
+            <div className="mt-4 text-right">
               <ReportListingButton vehicleId={vehicle.id} />
             </div>
-          </div>
-
-          {/* How it works */}
-          <div className="bg-white rounded-2xl border border-slate-100 p-4 shadow-sm">
-            <p className="text-slate-600 text-xs font-semibold uppercase tracking-widest mb-3">How it works</p>
-            <ol className="space-y-2">
-              {[
-                "You send a booking request, free, no payment",
-                "DriveLink verifies your details (licence for self-drive)",
-                `The ${provNoun} confirms availability`,
-                `${provNounCap} contact unlocks so you can sync the handover`,
-                `Pickup & return, pay the ${provNoun} directly`,
-              ].map((step, i) => (
-                <li key={i} className="flex gap-3 text-sm text-slate-600">
-                  <span className="w-5 h-5 rounded-full bg-blue-50 text-blue-600 font-bold text-xs flex items-center justify-center shrink-0">{i + 1}</span>
-                  {step}
-                </li>
-              ))}
-            </ol>
           </div>
         </div>
       </div>
@@ -635,9 +692,13 @@ export default async function VehicleDetailPage({ params, searchParams }: Props)
       {isLive && (
       <ActionBar
         summary={
-          <span>
-            <strong className="text-slate-900">{formatLKR(vehicle.daily_rate_lkr)}</strong> per day
-            {vehicle.deposit_lkr ? ` · ${formatLKR(vehicle.deposit_lkr)} refundable deposit` : ""}
+          <span className="block">
+            <span className="block">
+              <strong className="tabular text-base text-slate-950">{formatLKR(vehicle.daily_rate_lkr)}</strong> / day
+            </span>
+            {vehicle.deposit_lkr ? (
+              <span className="block text-xs text-slate-500">{formatLKR(vehicle.deposit_lkr)} refundable deposit</span>
+            ) : null}
           </span>
         }
       >
@@ -667,4 +728,9 @@ function TermRows({ rows }: { rows: TermItem[] }) {
       ))}
     </ul>
   );
+}
+
+// Two-letter initial avatar for a provider without a logo image.
+function initials(name: string): string {
+  return name.split(/\s+/).filter(Boolean).slice(0, 2).map((w) => w[0]?.toUpperCase()).join("") || "DL";
 }

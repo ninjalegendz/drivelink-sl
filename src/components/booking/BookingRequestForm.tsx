@@ -256,207 +256,226 @@ export function BookingRequestForm({ vehicleId, agencyId, vehicleName, dailyRate
 
   return (
     <>
-    <form onSubmit={handleSubmit} className="space-y-3">
-      <div className="space-y-2">
+    <form onSubmit={handleSubmit} className="space-y-5">
+
+      {/* ── Dates ── */}
+      <div className="space-y-2.5">
+        <p className="text-xs font-semibold uppercase tracking-[0.08em] text-blue-700">Dates</p>
+
         {/* Date gets more room than time so neither field is cramped on a phone */}
-        <div className="grid grid-cols-[minmax(0,1fr)_8.75rem] gap-2">
-          <div className="min-w-0">
-            <label className="text-slate-600 text-xs mb-1 block">Pick-up date</label>
-            <DatePicker value={startDate} min={today} onChange={onStartDateChange} label="Pick-up date" />
+        <div className="space-y-2">
+          <div className="grid grid-cols-[minmax(0,1fr)_8.75rem] gap-2">
+            <div className="min-w-0">
+              <label className="mb-1.5 block text-sm font-medium text-slate-800">Pick-up date</label>
+              <DatePicker value={startDate} min={today} onChange={onStartDateChange} label="Pick-up date" />
+            </div>
+            <div className="min-w-0">
+              <label className="mb-1.5 block text-sm font-medium text-slate-800">Pick-up time</label>
+              <Select value={startTime} onChange={setStartTime} options={startTimeOptions} placeholder="Pick-up time" label="Pick-up time" />
+            </div>
           </div>
-          <div className="min-w-0">
-            <label className="text-slate-600 text-xs mb-1 block">Pick-up time</label>
-            <Select value={startTime} onChange={setStartTime} options={startTimeOptions} placeholder="Pick-up time" label="Pick-up time" className="[&_button]:bg-slate-100 [&_button]:rounded-lg" />
+          <div className="grid grid-cols-[minmax(0,1fr)_8.75rem] gap-2">
+            <div className="min-w-0">
+              <label className="mb-1.5 block text-sm font-medium text-slate-800">Return date</label>
+              <DatePicker value={endDate} min={startDate || today} onChange={setEndDate} label="Return date" />
+            </div>
+            <div className="min-w-0">
+              <label className="mb-1.5 block text-sm font-medium text-slate-800">Return time</label>
+              <Select value={endTime} onChange={setEndTime} options={endTimeOptions} placeholder="Return time" label="Return time" />
+            </div>
           </div>
         </div>
-        <div className="grid grid-cols-[minmax(0,1fr)_8.75rem] gap-2">
-          <div className="min-w-0">
-            <label className="text-slate-600 text-xs mb-1 block">Return date</label>
-            <DatePicker value={endDate} min={startDate || today} onChange={setEndDate} label="Return date" />
+        <p className="text-xs text-slate-500">Billed in 24-hour blocks, a later return time can add a day.</p>
+
+        {/* Shown only when the chosen pick-up is under 24h away */}
+        {within24h && (
+          <div className="flex items-start gap-2 rounded-lg border border-amber-200 bg-amber-50 p-2.5">
+            <CalendarClock size={14} className="mt-0.5 shrink-0 text-amber-600" />
+            <p className="text-xs leading-relaxed text-amber-800">
+              That pick-up is under 24 hours away, online bookings need at least {LEAD_HOURS} hours&apos; notice.
+              Choose a later pick-up time to continue.
+            </p>
           </div>
-          <div className="min-w-0">
-            <label className="text-slate-600 text-xs mb-1 block">Return time</label>
-            <Select value={endTime} onChange={setEndTime} options={endTimeOptions} placeholder="Return time" label="Return time" className="[&_button]:bg-slate-100 [&_button]:rounded-lg" />
+        )}
+
+        {/* Already-booked ranges */}
+        {bookedRanges.length > 0 && (
+          <div className="rounded-lg bg-slate-50 p-3 ring-1 ring-slate-900/[0.05]">
+            <p className="mb-1.5 text-xs font-medium text-slate-600">Unavailable dates</p>
+            <ul className="space-y-0.5">
+              {bookedRanges.map((r) => (
+                <li key={`${r.start}-${r.end}`} className="text-xs text-slate-500">
+                  {formatRange(r.start, r.end)}
+                </li>
+              ))}
+            </ul>
           </div>
-        </div>
+        )}
+
+        {/* Live conflict warning */}
+        {conflict && (
+          <div className="rounded-lg border border-rose-200 bg-rose-50 p-3">
+            <p className="text-sm text-rose-600">
+              Your selected dates overlap with {formatRange(conflict.start, conflict.end)}.
+            </p>
+          </div>
+        )}
       </div>
-      <p className="text-slate-400 text-xs -mt-1">Billed in 24-hour blocks, a later return time can add a day.</p>
 
-      {/* BOOK-011: choose the drive mode when the vehicle offers both. */}
-      {bothModes && (
-        <div>
-          <label className="text-slate-600 text-xs mb-1 block">How do you want to rent?</label>
-          <div className="grid grid-cols-2 gap-2">
-            {([["self_drive", "Self-drive"], ["with_driver", "With driver"]] as const).map(([val, label]) => (
-              <button
-                key={val}
-                type="button"
-                onClick={() => setMode(val)}
-                className={`px-3 py-2 rounded-lg text-sm font-medium border transition-colors ${
-                  mode === val ? "bg-blue-600 text-white border-blue-600" : "bg-slate-100 text-slate-700 border-slate-200 hover:bg-slate-200"
-                }`}
-              >
-                {label}
-              </button>
-            ))}
-          </div>
+      {/* ── Trip ── */}
+      {(bothModes || isSelfDrive) && (
+        <div className="space-y-2.5">
+          <p className="text-xs font-semibold uppercase tracking-[0.08em] text-blue-700">Trip</p>
+
+          {/* BOOK-011: choose the drive mode when the vehicle offers both. */}
+          {bothModes && (
+            <div>
+              <label className="mb-1.5 block text-sm font-medium text-slate-800">How do you want to rent?</label>
+              <div className="grid grid-cols-2 gap-1 rounded-xl bg-slate-100 p-1">
+                {([["self_drive", "Self-drive"], ["with_driver", "With driver"]] as const).map(([val, label]) => (
+                  <button
+                    key={val}
+                    type="button"
+                    onClick={() => setMode(val)}
+                    aria-pressed={mode === val}
+                    className={`min-h-9 rounded-lg text-sm font-medium transition-colors ${
+                      mode === val ? "bg-white text-slate-900 shadow-sm ring-1 ring-slate-900/[0.06]" : "text-slate-600 hover:text-slate-900"
+                    }`}
+                  >
+                    {label}
+                  </button>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* DriveLink no longer reviews licences in advance. The owner inspects the
+              original at handover, which was always the check that counted. */}
+          {isSelfDrive && (
+            <p className="rounded-lg border border-blue-200 bg-blue-50 p-3 text-xs leading-5 text-blue-900">
+              Self-drive names you, the verified account holder, as the only driver. Bring your original
+              driving licence to the handover. If it was issued outside Sri Lanka, bring an International
+              Driving Permit or an AA Ceylon endorsement too. The owner checks both before handing over the keys.
+            </p>
+          )}
         </div>
       )}
 
-      {/* DriveLink no longer reviews licences in advance. The owner inspects the
-          original at handover, which was always the check that counted. */}
-      {isSelfDrive && (
-        <p className="rounded-lg border border-blue-200 bg-blue-50 p-2.5 text-xs leading-5 text-blue-900">
-          Self-drive names you, the verified account holder, as the only driver. Bring your original
-          driving licence to the handover. If it was issued outside Sri Lanka, bring an International
-          Driving Permit or an AA Ceylon endorsement too. The owner checks both before handing over the keys.
-        </p>
-      )}
+      {/* ── Details ── */}
+      <div className="space-y-2.5">
+        <p className="text-xs font-semibold uppercase tracking-[0.08em] text-blue-700">Details</p>
 
-      {/* Shown only when the chosen pick-up is under 24h away */}
-      {within24h && (
-        <div className="flex items-start gap-2 p-2.5 bg-amber-50 border border-amber-200 rounded-lg">
-          <CalendarClock size={14} className="text-amber-600 mt-0.5 shrink-0" />
-          <p className="text-amber-800 text-xs leading-relaxed">
-            That pick-up is under 24 hours away, online bookings need at least {LEAD_HOURS} hours&apos; notice.
-            Choose a later pick-up time to continue.
-          </p>
-        </div>
-      )}
-
-      {/* Already-booked ranges */}
-      {bookedRanges.length > 0 && (
-        <div className="bg-slate-100 rounded-lg p-3">
-          <p className="text-slate-600 text-xs font-medium mb-1.5">Unavailable dates</p>
-          <ul className="space-y-0.5">
-            {bookedRanges.map((r) => (
-              <li key={`${r.start}-${r.end}`} className="text-slate-500 text-xs">
-                {formatRange(r.start, r.end)}
-              </li>
-            ))}
-          </ul>
-        </div>
-      )}
-
-      {/* Live conflict warning */}
-      {conflict && (
-        <div className="p-3 bg-rose-50 border border-rose-200 rounded-lg">
-          <p className="text-rose-600 text-sm">
-            Your selected dates overlap with {formatRange(conflict.start, conflict.end)}.
-          </p>
-        </div>
-      )}
-
-      {/* Price breakdown */}
-      {days > 0 && !conflict && (
-        <div className="bg-slate-100 rounded-lg p-3 space-y-1 text-sm">
-          {price.fullMonths > 0 && (
-            <div className="flex justify-between text-slate-600">
-              <span>
-                {formatLKR(monthlyRateLkr ?? 0)} × {price.fullMonths} month{price.fullMonths !== 1 ? "s" : ""}
+        {/* Price breakdown */}
+        {days > 0 && !conflict && (
+          <div className="space-y-1.5 rounded-xl bg-slate-50 p-3.5 text-sm ring-1 ring-slate-900/[0.05]">
+            {price.fullMonths > 0 && (
+              <div className="flex justify-between text-slate-600">
+                <span>
+                  {formatLKR(monthlyRateLkr ?? 0)} × {price.fullMonths} month{price.fullMonths !== 1 ? "s" : ""}
+                </span>
+                <span className="tabular">{formatLKR(price.monthsCost)}</span>
+              </div>
+            )}
+            {price.fullWeeks > 0 && (
+              <div className="flex justify-between text-slate-600">
+                <span>
+                  {formatLKR(weeklyRateLkr ?? 0)} × {price.fullWeeks} week{price.fullWeeks !== 1 ? "s" : ""}
+                </span>
+                <span className="tabular">{formatLKR(price.weeksCost)}</span>
+              </div>
+            )}
+            {price.remainingDays > 0 && (
+              <div className="flex justify-between text-slate-600">
+                <span>{formatLKR(dailyRateLkr)} × {price.remainingDays} day{price.remainingDays !== 1 ? "s" : ""}</span>
+                <span className="tabular">{formatLKR(price.daysCost)}</span>
+              </div>
+            )}
+            {savings > 0 && (
+              <div className="flex justify-between text-xs text-emerald-700">
+                <span>Monthly-rate discount</span>
+                <span className="tabular">: {formatLKR(savings)}</span>
+              </div>
+            )}
+            <div className="mt-1 flex justify-between border-t border-slate-200 pt-1.5 font-semibold text-slate-900">
+              <span>Base rental estimate</span>
+              <span className="tabular">
+                {formatLKR(price.subtotal)}
+                {siteConfig.showUsd && (
+                  <span className="ml-1 text-xs font-normal text-slate-400">~${usdFromLkr(price.subtotal)}</span>
+                )}
               </span>
-              <span>{formatLKR(price.monthsCost)}</span>
             </div>
-          )}
-          {price.fullWeeks > 0 && (
-            <div className="flex justify-between text-slate-600">
-              <span>
-                {formatLKR(weeklyRateLkr ?? 0)} × {price.fullWeeks} week{price.fullWeeks !== 1 ? "s" : ""}
-              </span>
-              <span>{formatLKR(price.weeksCost)}</span>
-            </div>
-          )}
-          {price.remainingDays > 0 && (
-            <div className="flex justify-between text-slate-600">
-              <span>{formatLKR(dailyRateLkr)} × {price.remainingDays} day{price.remainingDays !== 1 ? "s" : ""}</span>
-              <span>{formatLKR(price.daysCost)}</span>
-            </div>
-          )}
-          {savings > 0 && (
-            <div className="flex justify-between text-emerald-700 text-xs">
-              <span>Monthly-rate discount</span>
-              <span>: {formatLKR(savings)}</span>
-            </div>
-          )}
-          <div className="flex justify-between text-slate-900 font-semibold border-t border-slate-200 pt-1 mt-1">
-            <span>Base rental estimate</span>
-            <span>
-              {formatLKR(price.subtotal)}
-              {siteConfig.showUsd && (
-                <span className="text-slate-400 font-normal text-xs ml-1">~${usdFromLkr(price.subtotal)}</span>
-              )}
-            </span>
+            <p className="text-xs font-medium text-blue-700">
+              DriveLink&apos;s booking confirmation fee is Rs. 0. You arrange rental and deposit payment directly with the provider.
+            </p>
+            {deliveryAvailable && (
+              <p className="text-xs text-amber-800">
+                Optional delivery is not included{deliveryFeeLkr ? ` (${formatLKR(deliveryFeeLkr)} when agreed)` : ""}. Confirm it inside the booking first.
+              </p>
+            )}
+            {effectiveMode === "with_driver" && (perKmRateLkr || driverBataLkr) && (
+              <p className="text-xs text-amber-800">
+                Driver extras are not included in this base estimate: {[
+                  perKmRateLkr ? `${formatLKR(perKmRateLkr)}/km` : null,
+                  driverBataLkr ? `${formatLKR(driverBataLkr)}/overnight` : null,
+                ].filter(Boolean).join(" and ")}. Confirm the route and final amount inside the booking.
+              </p>
+            )}
           </div>
-          <p className="text-blue-700 text-xs font-medium">
-            DriveLink&apos;s booking confirmation fee is Rs. 0. You arrange rental and deposit payment directly with the provider.
-          </p>
-          {deliveryAvailable && (
-            <p className="text-amber-800 text-xs">
-              Optional delivery is not included{deliveryFeeLkr ? ` (${formatLKR(deliveryFeeLkr)} when agreed)` : ""}. Confirm it inside the booking first.
-            </p>
-          )}
-          {effectiveMode === "with_driver" && (perKmRateLkr || driverBataLkr) && (
-            <p className="text-amber-800 text-xs">
-              Driver extras are not included in this base estimate: {[
-                perKmRateLkr ? `${formatLKR(perKmRateLkr)}/km` : null,
-                driverBataLkr ? `${formatLKR(driverBataLkr)}/overnight` : null,
-              ].filter(Boolean).join(" and ")}. Confirm the route and final amount inside the booking.
-            </p>
-          )}
-        </div>
-      )}
+        )}
 
-      {error && !conflict && (
-        <p className="text-rose-600 text-sm">{error}</p>
-      )}
+        {error && !conflict && (
+          <p className="text-sm text-rose-600">{error}</p>
+        )}
 
-      {resumed && !needsVerify && !verifyPending && (
-        <div className="flex items-start gap-2 p-2.5 bg-emerald-50 border border-emerald-200 rounded-lg">
-          <ShieldCheck size={14} className="text-emerald-600 mt-0.5 shrink-0" />
-          <p className="text-emerald-800 text-xs leading-relaxed">
-            Welcome back: your dates are saved. Send your request below.
-          </p>
-        </div>
-      )}
-
-      {needsVerify ? (
-        <div className="p-3.5 bg-blue-50 border border-blue-200 rounded-xl space-y-2.5">
-          <div className="flex items-start gap-2">
-            <ShieldCheck size={16} className="text-blue-600 mt-0.5 shrink-0" />
-            <p className="text-slate-700 text-xs leading-relaxed">
-              One quick step first: verify your identity to send this request. DriveLink only passes
-              <span className="font-semibold"> verified renters</span> to owners. It takes about two minutes and you only do it once.
+        {resumed && !needsVerify && !verifyPending && (
+          <div className="flex items-start gap-2 rounded-lg border border-emerald-200 bg-emerald-50 p-2.5">
+            <ShieldCheck size={14} className="mt-0.5 shrink-0 text-emerald-600" />
+            <p className="text-xs leading-relaxed text-emerald-800">
+              Welcome back: your dates are saved. Send your request below.
             </p>
           </div>
-          <Button type="button" onClick={verifyThenBook} className="w-full" size="lg">
-            <ShieldCheck size={15} /> Verify my identity
-          </Button>
-        </div>
-      ) : (
-        <>
-          {verifyPending && (
-            <div className="flex items-start gap-2 p-2.5 bg-amber-50 border border-amber-200 rounded-lg">
-              <ShieldCheck size={14} className="text-amber-600 mt-0.5 shrink-0" />
-              <p className="text-amber-800 text-xs leading-relaxed">
-                Your identity check is still being reviewed. This usually takes a minute. Try sending again shortly.
+        )}
+
+        {needsVerify ? (
+          <div className="space-y-2.5 rounded-xl border border-blue-200 bg-blue-50 p-3.5">
+            <div className="flex items-start gap-2">
+              <ShieldCheck size={16} className="mt-0.5 shrink-0 text-blue-600" />
+              <p className="text-xs leading-relaxed text-slate-700">
+                One quick step first: verify your identity to send this request. DriveLink only passes
+                <span className="font-semibold"> verified renters</span> to owners. It takes about two minutes and you only do it once.
               </p>
             </div>
-          )}
-          <Button
-            type="submit"
-            loading={loading}
-            disabled={!!conflict || within24h}
-            className="w-full"
-            size="lg"
-          >
-            Send booking request
-          </Button>
-        </>
-      )}
+            <Button type="button" onClick={verifyThenBook} className="w-full" size="lg">
+              <ShieldCheck size={15} /> Verify my identity
+            </Button>
+          </div>
+        ) : (
+          <>
+            {verifyPending && (
+              <div className="flex items-start gap-2 rounded-lg border border-amber-200 bg-amber-50 p-2.5">
+                <ShieldCheck size={14} className="mt-0.5 shrink-0 text-amber-600" />
+                <p className="text-xs leading-relaxed text-amber-800">
+                  Your identity check is still being reviewed. This usually takes a minute. Try sending again shortly.
+                </p>
+              </div>
+            )}
+            <Button
+              type="submit"
+              loading={loading}
+              disabled={!!conflict || within24h}
+              className="w-full"
+              size="lg"
+            >
+              Request this vehicle
+            </Button>
+          </>
+        )}
 
-      <p className="text-slate-500 text-xs text-center">
-        No payment to DriveLink. The provider confirms availability first.
-      </p>
+        <p className="text-center text-xs text-slate-500">
+          No payment to DriveLink. The provider confirms availability first.
+        </p>
+      </div>
 
     </form>
 

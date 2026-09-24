@@ -56,7 +56,11 @@ export function HelpHint({ text, className = "" }: Props) {
         onPointerLeave={close}
         onFocus={open}
         onBlur={close}
-        className="ml-1 text-slate-400 hover:text-blue-600 transition-colors cursor-help align-middle"
+        // The visible glyph stays small so it doesn't widen a label's line,
+        // but the actual tap target is grown to 44px with an invisible
+        // pseudo-element rather than real padding, so it stays reachable on
+        // a phone without pushing surrounding text apart.
+        className="relative ml-1 inline-flex cursor-help align-middle text-slate-400 transition-colors hover:text-blue-600 before:absolute before:-inset-[15px] before:content-['']"
         aria-label="Help"
       >
         <HelpCircle size={14} />

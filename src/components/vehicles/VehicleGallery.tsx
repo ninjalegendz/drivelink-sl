@@ -2,7 +2,7 @@
 
 import Image from "next/image";
 import { useEffect, useRef, useState } from "react";
-import { Car, X, ChevronLeft, ChevronRight, ZoomIn } from "lucide-react";
+import { Car, X, ChevronLeft, ChevronRight, Images } from "lucide-react";
 
 interface Props {
   photos: string[];
@@ -17,21 +17,49 @@ export function VehicleGallery({ photos, alt }: Props) {
 
   const touchStartX = useRef<number | null>(null);
   const didSwipe    = useRef(false);
+  const scrollerRef = useRef<HTMLDivElement>(null); // mobile edge-to-edge carousel
 
   const next = () => setActive((i) => (i === photos.length - 1 ? 0 : i + 1));
   const prev = () => setActive((i) => (i === 0 ? photos.length - 1 : i - 1));
 
+  function openLightboxAt(index: number) {
+    setActive(index);
+    setZoomed(true);
+  }
+
   // Reset pan + magnification when toggling zoom or switching image
   useEffect(() => { setPan({ x: 50, y: 50 }); setZoomLevel(1); }, [zoomed, active]);
 
-  // Swipe left/right on the main image (touch). Sets didSwipe so the tap that
-  // follows a swipe doesn't also open the lightbox.
+  // Keep the mobile carousel's scroll position matched to `active` once the
+  // lightbox closes, so stepping through photos with the lightbox's own
+  // arrows or the keyboard doesn't leave the carousel showing whatever photo
+  // it had when the lightbox was opened.
+  useEffect(() => {
+    if (zoomed) return;
+    const el = scrollerRef.current;
+    if (!el) return;
+    el.scrollLeft = active * el.clientWidth;
+  }, [zoomed, active]);
+
+  // Swipe on the lightbox canvas (touch), only while it is not magnified,
+  // dx > 40 steps to the next/previous photo. Sets didSwipe so the tap that
+  // follows a swipe doesn't also toggle magnification.
   function onTouchStart(e: React.TouchEvent) { touchStartX.current = e.touches[0].clientX; didSwipe.current = false; }
   function onTouchEnd(e: React.TouchEvent) {
     if (touchStartX.current === null || photos.length < 2) return;
     const dx = e.changedTouches[0].clientX - touchStartX.current;
     if (Math.abs(dx) > 40) { didSwipe.current = true; if (dx < 0) next(); else prev(); }
     touchStartX.current = null;
+  }
+
+  // Which photo the mobile carousel is showing, read from native scroll
+  // position, so the "1 / 5" pill and a tap-to-open-lightbox agree with what
+  // is actually on screen.
+  function onScroll() {
+    const el = scrollerRef.current;
+    if (!el || el.clientWidth === 0) return;
+    const index = Math.round(el.scrollLeft / el.clientWidth);
+    setActive(Math.min(photos.length - 1, Math.max(0, index)));
   }
 
   // Lock body scroll while lightbox is open + Escape/arrow keys
@@ -53,7 +81,7 @@ export function VehicleGallery({ photos, alt }: Props) {
 
   if (photos.length === 0) {
     return (
-      <div className="rounded-2xl overflow-hidden bg-white aspect-[16/9] relative flex items-center justify-center text-slate-300">
+      <div className="relative flex aspect-[16/9] items-center justify-center overflow-hidden rounded-3xl bg-white text-slate-300 ring-1 ring-slate-900/[0.06]">
         <Car size={64} strokeWidth={1.5} />
       </div>
     );
@@ -69,149 +97,196 @@ export function VehicleGallery({ photos, alt }: Props) {
     setPan({ x, y });
   }
 
+  // Bento grid: one large photo at 2/3 width, up to four smaller tiles in a
+  // 2x2 grid filling the remaining 1/3. Fewer photos just means fewer small
+  // tiles, and a single photo fills the whole frame.
+  const smallTiles = photos.slice(1, 5);
+  const hiddenCount = photos.length - 5;
+
   return (
     <>
-      {/* Main image, tap to open lightbox; swipe or arrows step through inline */}
-      <div
-        className="rounded-2xl overflow-hidden bg-white aspect-[16/9] relative w-full group"
-        onTouchStart={onTouchStart}
-        onTouchEnd={onTouchEnd}
-      >
-        <button
-          type="button"
-          onClick={() => { if (didSwipe.current) { didSwipe.current = false; return; } setZoomed(true); }}
-          className="absolute inset-0 cursor-zoom-in"
-          aria-label="Zoom photo"
-        >
-          <Image
-            src={main}
-            alt={alt}
-            fill
-            className="object-cover transition-transform duration-200 group-hover:scale-[1.02]"
-            priority
-            sizes="(max-width: 1024px) 100vw, 60vw"
-          />
-          {/* Visible by default on touch, hover-reveal on desktop */}
-          <span className="absolute top-3 right-3 inline-flex items-center gap-1 bg-black/60 text-white text-xs px-2 py-1 rounded-full opacity-100 md:opacity-0 md:group-hover:opacity-100 transition-opacity">
-            <ZoomIn size={12} /> Tap to zoom
-          </span>
-        </button>
+      {/* Desktop bento grid */}
+      <div className="relative hidden md:block">
+        <div className="grid aspect-[16/9] grid-cols-3 grid-rows-2 gap-1 overflow-hidden rounded-3xl">
+          <button
+            type="button"
+            onClick={() => openLightboxAt(0)}
+            className={`group relative overflow-hidden ${smallTiles.length > 0 ? "col-span-2 row-span-2" : "col-span-3 row-span-2"}`}
+            aria-label="Open full-screen photos"
+          >
+            <Image
+              src={photos[0]}
+              alt={alt}
+              fill
+              priority
+              className="object-cover transition-[filter] duration-200 group-hover:brightness-90"
+              sizes="(max-width: 1280px) 66vw, 800px"
+            />
+          </button>
+
+          {smallTiles.length > 0 && (
+            <div className="col-span-1 row-span-2 grid grid-cols-2 grid-rows-2 gap-1">
+              {smallTiles.map((url, i) => {
+                const index = i + 1;
+                const isLastVisible = i === smallTiles.length - 1 && hiddenCount > 0;
+                return (
+                  <button
+                    key={url}
+                    type="button"
+                    onClick={() => openLightboxAt(index)}
+                    className="group relative overflow-hidden"
+                    aria-label={isLastVisible ? `Open full-screen photos, ${hiddenCount} more` : `Open full-screen photos, photo ${index + 1}`}
+                  >
+                    <Image src={url} alt="" fill className="object-cover transition-[filter] duration-200 group-hover:brightness-90" sizes="17vw" />
+                    {isLastVisible && (
+                      <span className="absolute inset-0 flex items-center justify-center bg-slate-950/45 text-sm font-semibold text-white">
+                        +{hiddenCount}
+                      </span>
+                    )}
+                  </button>
+                );
+              })}
+            </div>
+          )}
+        </div>
 
         {photos.length > 1 && (
-          <>
-            <button
-              type="button"
-              onClick={prev}
-              className="absolute left-3 top-1/2 -translate-y-1/2 w-10 h-10 rounded-full bg-black/55 hover:bg-black/75 text-white flex items-center justify-center backdrop-blur-sm transition md:opacity-0 md:group-hover:opacity-100 z-10"
-              aria-label="Previous photo"
-            >
-              <ChevronLeft size={20} />
-            </button>
-            <button
-              type="button"
-              onClick={next}
-              className="absolute right-3 top-1/2 -translate-y-1/2 w-10 h-10 rounded-full bg-black/55 hover:bg-black/75 text-white flex items-center justify-center backdrop-blur-sm transition md:opacity-0 md:group-hover:opacity-100 z-10"
-              aria-label="Next photo"
-            >
-              <ChevronRight size={20} />
-            </button>
-            <span className="absolute bottom-3 right-3 bg-black/60 text-white text-xs px-2 py-1 rounded-full pointer-events-none">
-              {active + 1} / {photos.length}
-            </span>
-          </>
+          <button
+            type="button"
+            onClick={() => openLightboxAt(active)}
+            className="absolute bottom-4 right-4 inline-flex items-center gap-1.5 rounded-full bg-white px-3.5 py-2 text-xs font-semibold text-slate-900 shadow-md ring-1 ring-slate-900/[0.08] transition-colors hover:bg-slate-50"
+          >
+            <Images size={14} /> Show all photos
+          </button>
         )}
       </div>
 
-      {/* Thumbnail strip */}
-      {photos.length > 1 && (
-        <div className="flex gap-2 overflow-x-auto pb-1 mt-3">
+      {/* Mobile: edge-to-edge swipe carousel. Native scroll-snap, no custom
+          swipe animation code to keep in sync with the browser's own. */}
+      <div className="relative -mx-4 md:hidden">
+        <div
+          ref={scrollerRef}
+          onScroll={onScroll}
+          className="flex snap-x snap-mandatory overflow-x-auto scrollbar-none"
+        >
           {photos.map((url, i) => (
             <button
-              key={i}
+              key={url}
               type="button"
-              onClick={() => setActive(i)}
-              className={`relative w-24 h-16 shrink-0 rounded-lg overflow-hidden border-2 transition-colors ${
-                i === active
-                  ? "border-blue-500"
-                  : "border-transparent hover:border-slate-300"
-              }`}
-              aria-label={`Show photo ${i + 1}`}
+              onClick={() => openLightboxAt(i)}
+              className="relative aspect-[4/3] w-full shrink-0 snap-center"
+              aria-label={`Photo ${i + 1} of ${photos.length}, open full-screen`}
             >
-              <Image src={url} alt={`Photo ${i + 1}`} fill className="object-cover" sizes="96px" />
+              <Image
+                src={url}
+                alt={i === 0 ? alt : ""}
+                fill
+                priority={i === 0}
+                className="object-cover"
+                sizes="100vw"
+              />
             </button>
           ))}
         </div>
-      )}
+        {photos.length > 1 && (
+          <span className="pointer-events-none absolute bottom-3 right-3 rounded-full bg-black/60 px-2.5 py-1 text-xs font-medium text-white">
+            {active + 1} / {photos.length}
+          </span>
+        )}
+      </div>
 
-      {/* Lightbox */}
+      {/* Lightbox: full-screen dark viewer. Tap/click toggles 2x magnify
+          (pans with the cursor on desktop). Swipe changes photo when fit,
+          and a thumbnail strip lets a desktop visitor jump straight to a
+          photo instead of stepping one at a time. */}
       {zoomed && (
         <div
-          className="fixed inset-0 z-50 bg-black/95 flex items-center justify-center"
+          className="fixed inset-0 z-50 flex flex-col bg-slate-950/95"
           onClick={() => setZoomed(false)}
         >
-          <button
-            type="button"
-            onClick={(e) => { e.stopPropagation(); setZoomed(false); }}
-            className="absolute top-4 right-4 z-10 w-10 h-10 rounded-full bg-white/90 hover:bg-white text-slate-900 flex items-center justify-center shadow-lg"
-            aria-label="Close"
-          >
-            <X size={20} />
-          </button>
-
-          {photos.length > 1 && (
-            <>
-              <button
-                type="button"
-                onClick={(e) => { e.stopPropagation(); setActive((i) => Math.max(0, i - 1)); }}
-                disabled={active === 0}
-                className="absolute left-4 top-1/2 -translate-y-1/2 z-10 w-10 h-10 rounded-full bg-white/90 hover:bg-white text-slate-900 flex items-center justify-center shadow-lg disabled:opacity-30 disabled:cursor-not-allowed"
-                aria-label="Previous"
-              >
-                <ChevronLeft size={22} />
-              </button>
-              <button
-                type="button"
-                onClick={(e) => { e.stopPropagation(); setActive((i) => Math.min(photos.length - 1, i + 1)); }}
-                disabled={active === photos.length - 1}
-                className="absolute right-4 top-1/2 -translate-y-1/2 z-10 w-10 h-10 rounded-full bg-white/90 hover:bg-white text-slate-900 flex items-center justify-center shadow-lg disabled:opacity-30 disabled:cursor-not-allowed"
-                aria-label="Next"
-              >
-                <ChevronRight size={22} />
-              </button>
-            </>
-          )}
-
-          {/* Zoom canvas, starts fit-to-screen; tap/click toggles 2× magnify
-              (pans with the cursor on desktop). Swipe changes photo when fit. */}
-          <div
-            className={`relative w-full h-full max-w-6xl max-h-[90vh] mx-4 overflow-hidden ${zoomLevel > 1 ? "cursor-zoom-out" : "cursor-zoom-in"}`}
-            onClick={(e) => {
-              e.stopPropagation();
-              if (didSwipe.current) { didSwipe.current = false; return; }
-              const rect = e.currentTarget.getBoundingClientRect();
-              setPan({ x: ((e.clientX - rect.left) / rect.width) * 100, y: ((e.clientY - rect.top) / rect.height) * 100 });
-              setZoomLevel((z) => (z > 1 ? 1 : 2));
-            }}
-            onMouseMove={onMouseMove}
-            onTouchStart={onTouchStart}
-            onTouchEnd={(e) => { if (zoomLevel === 1) onTouchEnd(e); }}
-          >
-            {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img
-              src={main}
-              alt={alt}
-              className="absolute inset-0 w-full h-full object-contain transition-transform duration-150 select-none"
-              style={{
-                transform: `scale(${zoomLevel})`,
-                transformOrigin: `${pan.x}% ${pan.y}%`,
-              }}
-              draggable={false}
-            />
+          <div className="flex items-center justify-between p-4">
+            <span className="text-xs font-medium text-white/70">{active + 1} / {photos.length}</span>
+            <button
+              type="button"
+              onClick={(e) => { e.stopPropagation(); setZoomed(false); }}
+              className="grid h-10 w-10 place-items-center rounded-full bg-white/90 text-slate-900 shadow-lg hover:bg-white"
+              aria-label="Close"
+            >
+              <X size={20} />
+            </button>
           </div>
 
+          <div className="relative flex min-h-0 flex-1 items-center justify-center">
+            {photos.length > 1 && (
+              <>
+                <button
+                  type="button"
+                  onClick={(e) => { e.stopPropagation(); setActive((i) => Math.max(0, i - 1)); }}
+                  disabled={active === 0}
+                  className="absolute left-4 top-1/2 z-10 flex h-10 w-10 -translate-y-1/2 items-center justify-center rounded-full bg-white/90 text-slate-900 shadow-lg hover:bg-white disabled:cursor-not-allowed disabled:opacity-30"
+                  aria-label="Previous"
+                >
+                  <ChevronLeft size={22} />
+                </button>
+                <button
+                  type="button"
+                  onClick={(e) => { e.stopPropagation(); setActive((i) => Math.min(photos.length - 1, i + 1)); }}
+                  disabled={active === photos.length - 1}
+                  className="absolute right-4 top-1/2 z-10 flex h-10 w-10 -translate-y-1/2 items-center justify-center rounded-full bg-white/90 text-slate-900 shadow-lg hover:bg-white disabled:cursor-not-allowed disabled:opacity-30"
+                  aria-label="Next"
+                >
+                  <ChevronRight size={22} />
+                </button>
+              </>
+            )}
+
+            {/* Zoom canvas, starts fit-to-screen; tap/click toggles 2x
+                magnify (pans with the cursor on desktop). Swipe changes
+                photo when fit. */}
+            <div
+              className={`relative mx-4 h-full w-full max-w-6xl overflow-hidden ${zoomLevel > 1 ? "cursor-zoom-out" : "cursor-zoom-in"}`}
+              onClick={(e) => {
+                e.stopPropagation();
+                if (didSwipe.current) { didSwipe.current = false; return; }
+                const rect = e.currentTarget.getBoundingClientRect();
+                setPan({ x: ((e.clientX - rect.left) / rect.width) * 100, y: ((e.clientY - rect.top) / rect.height) * 100 });
+                setZoomLevel((z) => (z > 1 ? 1 : 2));
+              }}
+              onMouseMove={onMouseMove}
+              onTouchStart={onTouchStart}
+              onTouchEnd={(e) => { if (zoomLevel === 1) onTouchEnd(e); }}
+            >
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img
+                src={main}
+                alt={alt}
+                className="absolute inset-0 h-full w-full select-none object-contain transition-transform duration-150"
+                style={{
+                  transform: `scale(${zoomLevel})`,
+                  transformOrigin: `${pan.x}% ${pan.y}%`,
+                }}
+                draggable={false}
+              />
+            </div>
+          </div>
+
+          {/* Thumbnail strip, desktop only: a phone screen is too narrow to
+              spare for it, and swipe already covers browsing there. */}
           {photos.length > 1 && (
-            <div className="absolute bottom-4 left-1/2 -translate-x-1/2 text-white/70 text-xs text-center px-4">
-              {active + 1} / {photos.length}
+            <div className="hidden justify-center gap-2 overflow-x-auto p-4 md:flex" onClick={(e) => e.stopPropagation()}>
+              {photos.map((url, i) => (
+                <button
+                  key={url}
+                  type="button"
+                  onClick={() => setActive(i)}
+                  className={`relative h-14 w-20 shrink-0 overflow-hidden rounded-lg ring-2 transition-colors ${
+                    i === active ? "ring-blue-500" : "opacity-70 ring-transparent hover:opacity-100"
+                  }`}
+                  aria-label={`Show photo ${i + 1}`}
+                >
+                  <Image src={url} alt={`Photo ${i + 1}`} fill className="object-cover" sizes="80px" />
+                </button>
+              ))}
             </div>
           )}
         </div>
