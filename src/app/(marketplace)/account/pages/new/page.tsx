@@ -1,11 +1,12 @@
 import { redirect } from "next/navigation";
 import { requireVerifiedIdentity } from "@/lib/auth/require-verified-identity";
-import Link from "next/link";
-import { ArrowLeft, ShieldCheck } from "lucide-react";
+import { ShieldCheck } from "lucide-react";
 import { createClient, createServiceClient } from "@/lib/supabase/server";
 import { DiditVerifyButton } from "@/components/account/DiditVerifyButton";
 import { PageCreateForm } from "@/components/account/PageCreateForm";
 import { pageShellClass } from "@/components/ui/PageShell";
+import { PageHeader } from "@/components/ui/PageHeader";
+import { Card } from "@/components/ui/Card";
 import { isPlaceholderEmail } from "@/lib/auth/placeholder-email";
 
 export const metadata = {
@@ -40,33 +41,29 @@ export default async function NewRentalPagePage() {
   const realEmail = profile.email && !isPlaceholderEmail(profile.email) ? profile.email : "";
 
   return (
-    <div className={pageShellClass("narrow")}>
-      <Link
-        href="/account"
-        className="inline-flex items-center gap-1.5 text-slate-600 hover:text-slate-900 text-sm mb-4"
-      >
-        <ArrowLeft size={14} /> Back to my account
-      </Link>
-
+    <div className={pageShellClass("narrow", "space-y-6")}>
       {!isVerified ? (
-        <div className="bg-white border border-slate-200 rounded-2xl shadow-sm p-5">
-          <div className="w-10 h-10 rounded-full bg-blue-50 text-blue-600 flex items-center justify-center mb-4">
-            <ShieldCheck size={20} />
-          </div>
-          <h1 className="text-xl font-bold text-slate-900 mb-1">Verify your identity first</h1>
-          <p className="text-slate-600 text-sm mb-5">
-            Every host on DriveLink is identity-verified. It takes about 2 minutes.
-          </p>
-          <DiditVerifyButton redirectPath="/account/pages/new" label="Verify my identity" />
-        </div>
+        <>
+          <PageHeader title="Verify your identity first" backHref="/account" backLabel="Back to my account" />
+          <Card padding="lg">
+            <div className="mb-4 grid h-11 w-11 place-items-center rounded-full bg-blue-50 text-blue-600">
+              <ShieldCheck size={20} />
+            </div>
+            <p className="mb-5 text-sm leading-6 text-slate-600">
+              Every host on DriveLink is identity-verified. It takes about 2 minutes.
+            </p>
+            <DiditVerifyButton redirectPath="/account/pages/new" label="Verify my identity" />
+          </Card>
+        </>
       ) : (
         <>
-          <h1 className="text-2xl font-bold text-slate-900 mb-1">Set up your Rental Page</h1>
-          <p className="text-slate-600 text-sm mb-6">
-            This is the page renters see your vehicles on. We filled in what we already know, so pick
-            your city and check the rest.
-          </p>
-          <div className="bg-white border border-slate-200 rounded-2xl shadow-sm p-5">
+          <PageHeader
+            title="Set up your Rental Page"
+            description="This is the page renters see your vehicles on. We filled in what we already know, so pick your city and check the rest."
+            backHref="/account"
+            backLabel="Back to my account"
+          />
+          <Card padding="lg">
             <PageCreateForm
               defaults={{
                 name: profile.full_name?.trim() ?? "",
@@ -75,7 +72,7 @@ export default async function NewRentalPagePage() {
                 verifiedPhone,
               }}
             />
-          </div>
+          </Card>
         </>
       )}
     </div>

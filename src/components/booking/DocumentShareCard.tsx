@@ -37,7 +37,7 @@ export function DocumentShareCard({ bookingId, pageName, consentGranted, canRevo
 
   if (consentGranted) {
     return (
-      <section className="mb-4 border-y border-emerald-200 bg-emerald-50 px-4 py-4">
+      <section className="rounded-2xl bg-emerald-50 p-4 ring-1 ring-emerald-200 sm:p-5">
         <div className="flex items-start gap-3">
           <ShieldCheck size={19} className="mt-0.5 shrink-0 text-emerald-700" />
           <div className="min-w-0 flex-1">
@@ -46,7 +46,7 @@ export function DocumentShareCard({ bookingId, pageName, consentGranted, canRevo
               The page owner and staff who were separately granted renter-document permission may request your approved government ID and driving licence for this booking. Your liveness selfie is never shared. DriveLink watermarks and logs each server request. Screenshots and photographs cannot be completely prevented.
             </p>
             <div className="mt-3 flex flex-wrap items-center gap-x-4 gap-y-2">
-              <Link href="/account/documents" className="inline-flex items-center gap-1.5 text-xs font-medium text-emerald-800 underline underline-offset-2">
+              <Link href="/account/documents" className="inline-flex min-h-9 items-center gap-1.5 text-xs font-medium text-emerald-800 underline underline-offset-2">
                 <Eye size={13} /> See access history
               </Link>
               {canRevoke && (
@@ -54,7 +54,7 @@ export function DocumentShareCard({ bookingId, pageName, consentGranted, canRevo
                   type="button"
                   onClick={() => call("DELETE")}
                   disabled={loading}
-                  className="text-xs font-medium text-rose-700 hover:text-rose-800 disabled:opacity-50"
+                  className="min-h-9 text-xs font-medium text-rose-700 hover:text-rose-800 disabled:opacity-50"
                 >
                   {loading ? "Stopping..." : "Stop future access"}
                 </button>
@@ -70,7 +70,7 @@ export function DocumentShareCard({ bookingId, pageName, consentGranted, canRevo
   if (dismissed) return null;
 
   return (
-    <section className="mb-4 border-y border-slate-200 bg-white px-4 py-4">
+    <section className="rounded-2xl bg-surface p-4 shadow-xs ring-1 ring-slate-900/[0.06] sm:p-5">
       <div className="flex items-start gap-3">
         <FileKey2 size={19} className="mt-0.5 shrink-0 text-blue-700" />
         <div className="min-w-0 flex-1">
@@ -85,7 +85,7 @@ export function DocumentShareCard({ bookingId, pageName, consentGranted, canRevo
             <Button size="sm" onClick={() => call("POST")} loading={loading}>
               <ShieldCheck size={14} /> Share for this booking
             </Button>
-            <button type="button" onClick={() => setDismissed(true)} className="text-xs font-medium text-slate-500 hover:text-slate-700">
+            <button type="button" onClick={() => setDismissed(true)} className="min-h-9 text-xs font-medium text-slate-500 hover:text-slate-700">
               Not now
             </button>
           </div>

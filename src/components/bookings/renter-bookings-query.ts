@@ -17,10 +17,10 @@ export interface RenterBookingRow {
   subtotal_lkr:    number;
   booking_fee_lkr: number;
   created_at:      string;
-  vehicles: { make: string; model: string; year: number; city: string } | null;
+  vehicles: { make: string; model: string; year: number; city: string; photos?: string[] | null } | null;
   agencies: { name: string } | null;
 }
 
 export const RENTER_BOOKINGS_SELECT =
   "id, status, start_date, end_date, start_time, end_time, total_days, subtotal_lkr, booking_fee_lkr, created_at, " +
-  "vehicles(make, model, year, city), agencies(name)";
+  "vehicles(make, model, year, city, photos), agencies(name)";

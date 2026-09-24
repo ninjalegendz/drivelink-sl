@@ -6,6 +6,8 @@ import { createClient } from "@/lib/supabase/client";
 import { Button } from "@/components/ui/Button";
 import { Select } from "@/components/ui/Select";
 import { PhoneInput } from "@/components/ui/PhoneInput";
+import { Field } from "@/components/ui/Field";
+import { Input, Textarea } from "@/components/ui/Input";
 import { SL_CITIES } from "@/data/cities";
 import { containsPublicContactDetails, PUBLIC_CONTACT_ERROR } from "@/lib/content/public-contact";
 import type { RentalPageRow } from "@/types/queries";
@@ -95,17 +97,14 @@ export function PageDetailsForm({ page }: Props) {
 
   return (
     <form onSubmit={handleSubmit} className="space-y-4">
-      <div>
-        <label className="text-slate-600 text-xs mb-1 block">Page name</label>
-        <input
-          type="text" value={name} onChange={(e) => { setName(e.target.value); setSuccess(false); }}
-          required
-          className="w-full px-4 py-2.5 bg-slate-100 border border-slate-200 rounded-xl text-slate-900 text-sm focus:border-blue-500"
-        />
-      </div>
+      <Field label="Page name" required>
+        {(field) => (
+          <Input {...field} type="text" value={name} onChange={(e) => { setName(e.target.value); setSuccess(false); }} required />
+        )}
+      </Field>
 
       <div>
-        <label className="text-slate-600 text-xs mb-1 block">City</label>
+        <label className="mb-1.5 block text-sm font-medium text-slate-800">City</label>
         <Select
           value={city}
           onChange={(v) => { setCity(v); setSuccess(false); }}
@@ -115,83 +114,90 @@ export function PageDetailsForm({ page }: Props) {
         />
       </div>
 
-      <div>
-        <label className="text-slate-600 text-xs mb-1 block">Address</label>
-        <input
-          type="text" value={address} onChange={(e) => { setAddress(e.target.value); setSuccess(false); }}
-          placeholder="No. 12, Main Street, Colombo 3"
-          className="w-full px-4 py-2.5 bg-slate-100 border border-slate-200 rounded-xl text-slate-900 text-sm focus:border-blue-500"
-        />
-      </div>
+      <Field label="Address" hint="Optional">
+        {(field) => (
+          <Input
+            {...field}
+            type="text"
+            value={address}
+            onChange={(e) => { setAddress(e.target.value); setSuccess(false); }}
+            placeholder="No. 12, Main Street, Colombo 3"
+          />
+        )}
+      </Field>
 
       <div>
-        <label className="text-slate-600 text-xs mb-1 block">Mobile number for booking alerts</label>
+        <label className="mb-1.5 block text-sm font-medium text-slate-800">Mobile number for booking alerts</label>
         <PhoneInput
           value={whatsapp}
           onChange={(v) => { setWhatsapp(v); setSuccess(false); }}
           required
         />
-        <p className="text-slate-500 text-xs mt-1">Booking alerts arrive here as an SMS, tap the link to confirm in your dashboard.</p>
-        {phoneChanged && <p className="text-amber-700 text-xs mt-1">Saving a new number means you will need to verify it again.</p>}
+        <p className="mt-1.5 text-xs leading-5 text-slate-500">Booking alerts arrive here as an SMS, tap the link to confirm in your dashboard.</p>
+        {phoneChanged && <p className="mt-1 text-xs font-medium text-amber-700">Saving a new number means you will need to verify it again.</p>}
       </div>
 
-      <div>
-        <label className="text-slate-600 text-xs mb-1 block">
-          Email <span className="text-slate-400 font-normal">(optional)</span>
-        </label>
-        <input
-          type="email" value={email} onChange={(e) => { setEmail(e.target.value); setSuccess(false); }}
-          placeholder="you@example.com"
-          className="w-full px-4 py-2.5 bg-slate-100 border border-slate-200 rounded-xl text-slate-900 placeholder-slate-400 text-sm focus:border-blue-500"
-        />
-      </div>
+      <Field label="Email" hint="Optional">
+        {(field) => (
+          <Input
+            {...field}
+            type="email"
+            value={email}
+            onChange={(e) => { setEmail(e.target.value); setSuccess(false); }}
+            placeholder="you@example.com"
+          />
+        )}
+      </Field>
 
-      <div>
-        <label className="text-slate-600 text-xs mb-1 block">
-          Business hours <span className="text-slate-400 font-normal">(optional)</span>
-        </label>
-        <input
-          type="text" value={businessHours} onChange={(e) => { setBusinessHours(e.target.value); setSuccess(false); }}
-          placeholder="e.g. Mon-Sat, 8am-6pm"
-          className="w-full px-4 py-2.5 bg-slate-100 border border-slate-200 rounded-xl text-slate-900 placeholder-slate-400 text-sm focus:border-blue-500"
-        />
-      </div>
+      <Field label="Business hours" hint="Optional, e.g. Mon-Sat, 8am-6pm">
+        {(field) => (
+          <Input
+            {...field}
+            type="text"
+            value={businessHours}
+            onChange={(e) => { setBusinessHours(e.target.value); setSuccess(false); }}
+            placeholder="e.g. Mon-Sat, 8am-6pm"
+          />
+        )}
+      </Field>
 
-      <div>
-        <label className="text-slate-600 text-xs mb-1 block">Description</label>
-        <textarea
-          value={description} onChange={(e) => { setDescription(e.target.value); setSuccess(false); }}
-          rows={3} maxLength={500}
-          placeholder="Tell renters about your fleet..."
-          className="w-full px-4 py-2.5 bg-slate-100 border border-slate-200 rounded-xl text-slate-900 placeholder-slate-400 text-sm focus:border-blue-500 resize-none"
-        />
-        <span className="text-slate-400 text-xs mt-1 block">{description.length}/500</span>
-      </div>
+      <Field label="Description" hint={`${description.length}/500`}>
+        {(field) => (
+          <Textarea
+            {...field}
+            value={description}
+            onChange={(e) => { setDescription(e.target.value); setSuccess(false); }}
+            rows={3}
+            maxLength={500}
+            placeholder="Tell renters about your fleet..."
+          />
+        )}
+      </Field>
 
-      <div className="pt-3 border-t border-slate-100">
-        <p className="text-slate-600 text-xs mb-2 font-medium">Booking alerts for this page</p>
-        <label className="flex items-center gap-2 py-1 text-sm text-slate-700 cursor-pointer">
+      <div className="border-t border-slate-100 pt-4">
+        <p className="mb-2 text-xs font-semibold uppercase tracking-[0.06em] text-slate-500">Booking alerts for this page</p>
+        <label className="flex min-h-10 cursor-pointer items-center gap-2.5 text-sm text-slate-700">
           <input
             type="checkbox"
             checked={smsAlerts}
             onChange={(e) => { setSmsAlerts(e.target.checked); setSuccess(false); }}
-            className="accent-blue-600"
+            className="h-4 w-4 rounded border-slate-300 accent-blue-600"
           />
           SMS alerts for new bookings
         </label>
-        <label className="flex items-center gap-2 py-1 text-sm text-slate-700 cursor-pointer">
+        <label className="flex min-h-10 cursor-pointer items-center gap-2.5 text-sm text-slate-700">
           <input
             type="checkbox"
             checked={waAlerts}
             onChange={(e) => { setWaAlerts(e.target.checked); setSuccess(false); }}
-            className="accent-blue-600"
+            className="h-4 w-4 rounded border-slate-300 accent-blue-600"
           />
           WhatsApp alerts for new bookings
         </label>
       </div>
 
-      {error   && <p className="text-rose-600 text-sm">{error}</p>}
-      {success && <p className="text-emerald-700 text-sm">{phoneChanged ? "Saved. Verify the new number below." : "Saved."}</p>}
+      {error   && <p className="text-sm text-rose-600">{error}</p>}
+      {success && <p className="text-sm text-emerald-700">{phoneChanged ? "Saved. Verify the new number below." : "Saved."}</p>}
 
       <Button type="submit" loading={loading} disabled={!dirty}>
         Save changes

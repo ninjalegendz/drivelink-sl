@@ -4,6 +4,8 @@ import { useState } from "react";
 import { Flag } from "lucide-react";
 import { Button } from "@/components/ui/Button";
 import { BottomSheet } from "@/components/ui/BottomSheet";
+import { Field } from "@/components/ui/Field";
+import { Textarea } from "@/components/ui/Input";
 
 const MIN_REASON = 20;
 const MAX_REASON = 2000;
@@ -31,7 +33,7 @@ export function ReportRenterButton({ bookingId, reportable }: Props) {
   if (!reportable) return null;
 
   if (done && !open) {
-    return <p className="text-emerald-600 text-xs font-medium text-right">Report submitted for review.</p>;
+    return <p className="text-right text-xs font-medium text-emerald-600">Report submitted for review.</p>;
   }
 
   return (
@@ -39,7 +41,7 @@ export function ReportRenterButton({ bookingId, reportable }: Props) {
       <button
         type="button"
         onClick={() => setOpen(true)}
-        className="inline-flex min-h-10 items-center gap-1.5 rounded-lg border border-slate-200 bg-slate-100 px-3 py-1.5 text-xs font-semibold text-slate-600 hover:bg-slate-200 hover:text-slate-800"
+        className="inline-flex min-h-10 items-center gap-1.5 rounded-lg bg-slate-100 px-3 text-xs font-semibold text-slate-600 hover:bg-slate-200 hover:text-slate-800"
       >
         <Flag size={12} /> Report renter
       </button>
@@ -99,30 +101,25 @@ function ReportRenterModal({
           </div>
         ) : (
           <form onSubmit={submit} className="space-y-4">
-            <p className="text-slate-500 text-xs bg-slate-50 border border-slate-200 rounded-lg px-3 py-2 leading-normal">
+            <p className="rounded-lg bg-slate-50 px-3 py-2.5 text-xs leading-normal text-slate-500 ring-1 ring-slate-200">
               For serious issues only: non-return, fraud, damage with refusal to settle. Reports are
               reviewed by DriveLink against the booking record and this account&apos;s history
               before any action. False reports affect your page&apos;s standing.
             </p>
 
-            <div>
-              <div className="flex items-center justify-between mb-1.5">
-                <label className="text-slate-700 text-xs font-medium">
-                  What happened <span className="text-amber-600">*</span>
-                </label>
-                <span className={`text-xs ${reason.length > MAX_REASON ? "text-rose-700" : "text-slate-400"}`}>
-                  {reason.length}/{MAX_REASON}
-                </span>
-              </div>
-              <textarea
-                value={reason}
-                onChange={(e) => setReason(e.target.value)}
-                rows={5}
-                required
-                placeholder="Describe the non-return, fraud, or unresolved damage in detail."
-                className="w-full px-3 py-2 bg-slate-100 border border-slate-200 rounded-lg text-slate-900 text-sm focus:border-blue-500"
-              />
-            </div>
+            <Field label="What happened" required hint={`${reason.length}/${MAX_REASON}`}>
+              {(field) => (
+                <Textarea
+                  {...field}
+                  value={reason}
+                  onChange={(e) => setReason(e.target.value)}
+                  rows={5}
+                  required
+                  invalid={reason.length > MAX_REASON}
+                  placeholder="Describe the non-return, fraud, or unresolved damage in detail."
+                />
+              )}
+            </Field>
 
             {error && <p role="alert" className="text-sm text-red-700">{error}</p>}
 

@@ -1,9 +1,13 @@
 import { redirect } from "next/navigation";
 import { requireVerifiedIdentity } from "@/lib/auth/require-verified-identity";
 import Link from "next/link";
-import { ArrowLeft, ChevronLeft, ChevronRight, Download, Eye, ShieldCheck, ShieldX } from "lucide-react";
+import { ChevronLeft, ChevronRight, Download, Eye, ShieldCheck, ShieldX } from "lucide-react";
 import { createClient, createServiceClient } from "@/lib/supabase/server";
 import { Badge } from "@/components/ui/Badge";
+import { Card } from "@/components/ui/Card";
+import { Section } from "@/components/ui/Section";
+import { PageHeader } from "@/components/ui/PageHeader";
+import { EmptyState } from "@/components/ui/EmptyState";
 import { DOCUMENT_LABELS, DOCUMENT_PURPOSES, type DocumentPurpose, type RenterDocumentType } from "@/lib/storage/document-access";
 import { pageShellClass } from "@/components/ui/PageShell";
 
@@ -90,134 +94,117 @@ export default async function AccountDocumentsPage({ searchParams }: Props) {
   const hasError = Boolean(sharingResult.error || logResult.error || exportResult.error);
 
   return (
-    <main className={pageShellClass("standard")}>
-      <Link href="/account" className="inline-flex items-center gap-1.5 text-sm text-slate-600 hover:text-slate-900">
-        <ArrowLeft size={15} /> Back to account
-      </Link>
-
-      <header className="mt-5 max-w-2xl">
-        <h1 className="text-2xl font-bold text-slate-950">Document sharing history</h1>
-        <p className="mt-2 text-sm leading-6 text-slate-600">
-          See which booking can currently use your identity documents, every file request, and every booking record exported about you.
-        </p>
-      </header>
+    <main className={pageShellClass("standard", "space-y-10")}>
+      <PageHeader
+        title="Document sharing history"
+        description="See which booking can currently use your identity documents, every file request, and every booking record exported about you."
+        backHref="/account"
+        backLabel="Back to account"
+      />
 
       {hasError && (
-        <div role="alert" className="mt-6 border-l-4 border-rose-500 bg-rose-50 px-4 py-3 text-sm text-rose-800">
+        <div role="alert" className="rounded-2xl bg-rose-50 px-4 py-3 text-sm text-rose-800 ring-1 ring-rose-200">
           DriveLink could not load the complete sharing history. Refresh this page before relying on the list below.
         </div>
       )}
 
-      <section className="mt-8 border-t border-slate-200 pt-6">
-        <div className="flex items-center justify-between gap-3">
-          <div>
-            <h2 className="text-base font-semibold text-slate-900">Currently shared</h2>
-            <p className="mt-1 text-xs text-slate-500">Access ends when you stop sharing or the booking leaves its active access stages.</p>
-          </div>
-          <Badge variant={sharing.length > 0 ? "green" : "slate"}>{sharing.length} active</Badge>
-        </div>
-
+      <Section
+        title="Currently shared"
+        description="Access ends when you stop sharing or the booking leaves its active access stages."
+        action={<Badge variant={sharing.length > 0 ? "green" : "slate"}>{sharing.length} active</Badge>}
+      >
         {sharing.length === 0 ? (
-          <div className="mt-4 border-y border-slate-200 bg-white py-8 text-center">
-            <ShieldCheck size={22} className="mx-auto text-slate-400" />
-            <p className="mt-2 text-sm font-medium text-slate-800">No booking can view your documents now</p>
-            <p className="mt-1 text-xs text-slate-500">Past access remains in the history below.</p>
-          </div>
+          <Card padding="lg">
+            <EmptyState bare icon={<ShieldCheck size={22} />} title="No booking can view your documents now" description="Past access remains in the history below." />
+          </Card>
         ) : (
-          <ul className="mt-4 divide-y divide-slate-200 border-y border-slate-200 bg-white">
+          <Card padding="none" className="divide-y divide-slate-100">
             {sharing.map((booking) => (
-              <li key={booking.id} className="py-4 sm:flex sm:items-center sm:justify-between sm:gap-4">
+              <div key={booking.id} className="p-4 sm:flex sm:items-center sm:justify-between sm:gap-4 sm:p-5">
                 <div>
                   <p className="text-sm font-medium text-slate-900">{booking.agencies?.name ?? "Rental Page"}</p>
                   <p className="mt-1 text-xs text-slate-500">
                     Booking {booking.id.slice(0, 8).toUpperCase()} - {booking.vehicles ? `${booking.vehicles.year} ${booking.vehicles.make} ${booking.vehicles.model}` : "Vehicle"}
                   </p>
-                  <p className="mt-0.5 text-xs text-slate-500">{booking.start_date} to {booking.end_date}</p>
+                  <p className="mt-0.5 text-xs tabular text-slate-500">{booking.start_date} to {booking.end_date}</p>
                 </div>
-                <Link href={`/bookings/${booking.id}`} className="mt-3 inline-flex text-sm font-medium text-blue-700 hover:text-blue-800 sm:mt-0">Manage sharing</Link>
-              </li>
+                <Link href={`/bookings/${booking.id}`} className="mt-3 inline-flex min-h-9 items-center text-sm font-medium text-blue-700 hover:text-blue-800 sm:mt-0">Manage sharing</Link>
+              </div>
             ))}
-          </ul>
+          </Card>
         )}
-      </section>
+      </Section>
 
-      <section className="mt-10 border-t border-slate-200 pt-6">
-        <div>
-          <h2 className="inline-flex items-center gap-2 text-base font-semibold text-slate-900"><Download size={17} className="text-blue-700" /> Booking record exports</h2>
-          <p className="mt-1 text-xs text-slate-500">The stated reason is saved before a PDF summary or full case pack can be downloaded.</p>
-        </div>
+      <Section
+        title="Booking record exports"
+        description="The stated reason is saved before a PDF summary or full case pack can be downloaded."
+      >
         {exports.length === 0 ? (
-          <div className="mt-4 border-y border-slate-200 bg-white py-8 text-center">
-            <p className="text-sm font-medium text-slate-800">No booking record has been exported</p>
-          </div>
+          <Card padding="lg">
+            <EmptyState bare icon={<Download size={22} />} title="No booking record has been exported" />
+          </Card>
         ) : (
-          <ul className="mt-4 divide-y divide-slate-200 border-y border-slate-200 bg-white">
+          <Card padding="none" className="divide-y divide-slate-100">
             {exports.map((row) => (
-              <li key={row.id} className="py-4 sm:flex sm:items-start sm:justify-between sm:gap-4">
+              <div key={row.id} className="p-4 sm:flex sm:items-start sm:justify-between sm:gap-4 sm:p-5">
                 <div>
                   <p className="text-sm font-medium text-slate-900">{row.export_kind === "full" ? "Full case pack" : "Booking summary"} · {row.bookings?.agencies?.name ?? "DriveLink"}</p>
                   <p className="mt-1 text-xs leading-5 text-slate-600">Booking {row.booking_id.slice(0, 8).toUpperCase()} · Reason: {row.reason}</p>
                   {row.export_kind === "full" && <p className="mt-1 text-xs text-slate-500">{exportStatusLabel(row.preparation_status, row.available_until)}</p>}
                 </div>
-                <p className="mt-2 shrink-0 text-xs text-slate-500 sm:mt-0">{new Date(row.created_at).toLocaleString("en-LK", { dateStyle: "medium", timeStyle: "short" })}</p>
-              </li>
+                <p className="mt-2 shrink-0 text-xs tabular text-slate-500 sm:mt-0">{new Date(row.created_at).toLocaleString("en-LK", { dateStyle: "medium", timeStyle: "short" })}</p>
+              </div>
             ))}
-          </ul>
+          </Card>
         )}
-      </section>
+      </Section>
 
-      <section className="mt-10 border-t border-slate-200 pt-6">
-        <div className="flex items-end justify-between gap-3">
-          <div>
-            <h2 className="inline-flex items-center gap-2 text-base font-semibold text-slate-900"><Eye size={17} className="text-blue-700" /> Access history</h2>
-            <p className="mt-1 text-xs text-slate-500">Newest requests first. A blocked request did not receive the file.</p>
-          </div>
-          {totalRows > 0 && <p className="text-xs text-slate-500">{totalRows} requests</p>}
-        </div>
-
+      <Section
+        title="Access history"
+        description="Newest requests first. A blocked request did not receive the file."
+        action={totalRows > 0 ? <p className="text-xs text-slate-500">{totalRows} requests</p> : undefined}
+      >
         {log.length === 0 ? (
-          <div className="mt-4 border-y border-slate-200 bg-white py-10 text-center">
-            <Eye size={22} className="mx-auto text-slate-400" />
-            <p className="mt-2 text-sm font-medium text-slate-800">No document requests recorded</p>
-            <p className="mt-1 text-xs text-slate-500">When an authorised person opens a document, their name and booking will appear here.</p>
-          </div>
+          <Card padding="lg">
+            <EmptyState bare icon={<Eye size={22} />} title="No document requests recorded" description="When an authorised person opens a document, their name and booking will appear here." />
+          </Card>
         ) : (
           <>
-            <div className="mt-4 hidden overflow-x-auto border-y border-slate-200 bg-white md:block">
+            <Card padding="none" className="hidden overflow-x-auto md:block">
               <table className="w-full text-left text-sm">
-                <thead className="border-b border-slate-200 bg-slate-50 text-xs text-slate-500">
+                <thead className="border-b border-slate-100 bg-slate-50/70 text-xs text-slate-500">
                   <tr>
-                    <th className="px-3 py-2.5 font-medium">Time</th>
-                    <th className="px-3 py-2.5 font-medium">Document</th>
-                    <th className="px-3 py-2.5 font-medium">Viewer</th>
-                    <th className="px-3 py-2.5 font-medium">Booking and reason</th>
-                    <th className="px-3 py-2.5 font-medium">Result</th>
+                    <th className="px-4 py-2.5 font-medium">Time</th>
+                    <th className="px-4 py-2.5 font-medium">Document</th>
+                    <th className="px-4 py-2.5 font-medium">Viewer</th>
+                    <th className="px-4 py-2.5 font-medium">Booking and reason</th>
+                    <th className="px-4 py-2.5 font-medium">Result</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-slate-100">
                   {log.map((row) => <AccessTableRow key={row.id} row={row} />)}
                 </tbody>
               </table>
-            </div>
+            </Card>
 
-            <ul className="mt-4 divide-y divide-slate-200 border-y border-slate-200 bg-white md:hidden">
+            <Card padding="none" className="divide-y divide-slate-100 md:hidden">
               {log.map((row) => <AccessMobileRow key={row.id} row={row} />)}
-            </ul>
+            </Card>
           </>
         )}
 
         {totalPages > 1 && (
-          <nav aria-label="Document access history pages" className="mt-5 flex items-center justify-between">
+          <nav aria-label="Document access history pages" className="flex items-center justify-between pt-1">
             {page > 1
-              ? <Link href={`/account/documents?page=${page - 1}`} className="inline-flex items-center gap-1 text-sm font-medium text-blue-700"><ChevronLeft size={15} /> Newer</Link>
+              ? <Link href={`/account/documents?page=${page - 1}`} className="inline-flex min-h-9 items-center gap-1 text-sm font-medium text-blue-700 hover:text-blue-800"><ChevronLeft size={15} /> Newer</Link>
               : <span />}
             <span className="text-xs text-slate-500">Page {Math.min(page, totalPages)} of {totalPages}</span>
             {page < totalPages
-              ? <Link href={`/account/documents?page=${page + 1}`} className="inline-flex items-center gap-1 text-sm font-medium text-blue-700">Older <ChevronRight size={15} /></Link>
+              ? <Link href={`/account/documents?page=${page + 1}`} className="inline-flex min-h-9 items-center gap-1 text-sm font-medium text-blue-700 hover:text-blue-800">Older <ChevronRight size={15} /></Link>
               : <span />}
           </nav>
         )}
-      </section>
+      </Section>
     </main>
   );
 }
@@ -271,11 +258,11 @@ function AccessTableRow({ row }: { row: Row }) {
 
 function AccessMobileRow({ row }: { row: Row }) {
   return (
-    <li className="py-4">
+    <div className="p-4">
       <div className="flex items-start justify-between gap-3"><p className="text-sm font-medium text-slate-900">{documentLabel(row.document)}</p><ResultBadge outcome={row.outcome} /></div>
       <p className="mt-2 text-sm text-slate-700">{row.viewer_name ?? "Named account unavailable"} <span className="text-xs text-slate-500">({roleLabel(row.viewer_role)})</span></p>
       <p className="mt-1 text-xs leading-5 text-slate-500">{row.bookings?.agencies?.name ?? "DriveLink"}{row.booking_id ? ` - booking ${row.booking_id.slice(0, 8).toUpperCase()}` : ""}<br />{purposeLabel(row.purpose)}<br />{new Date(row.created_at).toLocaleString("en-LK", { dateStyle: "medium", timeStyle: "short" })}</p>
-    </li>
+    </div>
   );
 }
 

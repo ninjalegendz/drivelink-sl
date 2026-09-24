@@ -2,11 +2,13 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { Building2, User, Sparkles, BadgeCheck } from "lucide-react";
+import { Building2, User, BadgeCheck } from "lucide-react";
 import { Button } from "@/components/ui/Button";
 import { startNavigationProgress } from "@/components/layout/NavigationProgress";
 import { Select } from "@/components/ui/Select";
 import { PhoneInput } from "@/components/ui/PhoneInput";
+import { Field } from "@/components/ui/Field";
+import { Input, Textarea } from "@/components/ui/Input";
 import { SL_CITIES } from "@/data/cities";
 import { toInternationalSL } from "@/lib/auth/phone-format";
 import { containsPublicContactDetails, PUBLIC_CONTACT_ERROR } from "@/lib/content/public-contact";
@@ -14,9 +16,6 @@ import { containsPublicContactDetails, PUBLIC_CONTACT_ERROR } from "@/lib/conten
 const CITY_OPTIONS = SL_CITIES.map((c) => ({ value: c, label: c }));
 
 type PageType = "personal" | "business";
-
-const inputClass =
-  "w-full min-h-11 px-4 py-2.5 bg-slate-100 border border-slate-200 rounded-xl text-base text-slate-900 placeholder-slate-400 focus:border-blue-500";
 
 export interface PageCreateDefaults {
   name: string;
@@ -128,91 +127,80 @@ export function PageCreateForm({ defaults }: { defaults?: PageCreateDefaults }) 
       </div>
 
       {pageType === "business" && (
-        <div>
-          <label htmlFor="page-reg-no" className="text-slate-600 text-sm mb-1 block">
-            Business registration number <span className="text-slate-400 font-normal">(optional for now)</span>
-          </label>
-          <input
-            id="page-reg-no"
-            type="text"
-            value={businessRegNo}
-            onChange={(e) => setBusinessRegNo(e.target.value)}
-            placeholder="e.g. PV 00123456"
-            className={inputClass}
-          />
-          <p className="text-slate-400 text-xs mt-1 flex items-start gap-1.5">
-            <Sparkles size={12} className="text-blue-500 mt-0.5 shrink-0" />
-            Add your certificate when you are ready to apply for the Verified Business badge.
-          </p>
-        </div>
+        <Field
+          label="Business registration number"
+          hint="Optional for now. Add your certificate when you are ready to apply for the Verified Business badge."
+        >
+          {(field) => (
+            <Input
+              {...field}
+              type="text"
+              value={businessRegNo}
+              onChange={(e) => setBusinessRegNo(e.target.value)}
+              placeholder="e.g. PV 00123456"
+            />
+          )}
+        </Field>
       )}
 
-      <div>
-        <label htmlFor="page-name" className="text-slate-600 text-sm mb-1 block">Page name</label>
-        <input
-          id="page-name"
-          type="text"
-          value={name}
-          onChange={(e) => setName(e.target.value)}
-          required
-          placeholder={pageType === "business" ? "e.g. Perera Car Rentals" : "e.g. Kasun's Cars"}
-          className={inputClass}
-        />
-        <p className="text-slate-400 text-xs mt-1">Renters see this name. You can change it later.</p>
-      </div>
+      <Field label="Page name" required hint="Renters see this name. You can change it later.">
+        {(field) => (
+          <Input
+            {...field}
+            type="text"
+            value={name}
+            onChange={(e) => setName(e.target.value)}
+            required
+            placeholder={pageType === "business" ? "e.g. Perera Car Rentals" : "e.g. Kasun's Cars"}
+          />
+        )}
+      </Field>
 
       <div>
-        <span className="text-slate-600 text-sm mb-1 block">City</span>
+        <label className="mb-1.5 block text-sm font-medium text-slate-800">City</label>
         <Select value={city} onChange={setCity} options={CITY_OPTIONS} placeholder="Pick a city" label="City" />
       </div>
 
       <div>
-        <span className="text-slate-600 text-sm mb-1 block">WhatsApp number</span>
+        <label className="mb-1.5 block text-sm font-medium text-slate-800">WhatsApp number</label>
         <PhoneInput value={whatsapp} onChange={setWhatsapp} required />
         {usesVerifiedPhone ? (
-          <p className="text-emerald-700 text-xs mt-1 flex items-center gap-1.5">
+          <p className="mt-1.5 flex items-center gap-1.5 text-xs font-medium text-emerald-700">
             <BadgeCheck size={13} className="shrink-0" aria-hidden="true" />
             You already verified this number, so there is no extra code.
           </p>
         ) : (
-          <p className="text-slate-400 text-xs mt-1">Booking alerts arrive here. A different number gets a one-time code.</p>
+          <p className="mt-1.5 text-xs leading-5 text-slate-500">Booking alerts arrive here. A different number gets a one-time code.</p>
         )}
       </div>
 
-      <div>
-        <label htmlFor="page-email" className="text-slate-600 text-sm mb-1 block">
-          Email <span className="text-slate-400 font-normal">(optional)</span>
-        </label>
-        <input
-          id="page-email"
-          type="email"
-          value={email}
-          onChange={(e) => setEmail(e.target.value)}
-          autoComplete="email"
-          placeholder="you@example.com"
-          className={inputClass}
-        />
-        <p className="text-slate-400 text-xs mt-1">
-          Booking records are also sent here when you add one.
-        </p>
-      </div>
+      <Field label="Email" hint="Optional. Booking records are also sent here when you add one.">
+        {(field) => (
+          <Input
+            {...field}
+            type="email"
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
+            autoComplete="email"
+            placeholder="you@example.com"
+          />
+        )}
+      </Field>
 
-      <div>
-        <label htmlFor="page-description" className="text-slate-600 text-sm mb-1 block">
-          Description <span className="text-slate-400 font-normal">(optional)</span>
-        </label>
-        <textarea
-          id="page-description"
-          value={description}
-          onChange={(e) => setDescription(e.target.value)}
-          rows={3}
-          maxLength={500}
-          placeholder="Tell renters about your vehicles..."
-          className={`${inputClass} resize-none`}
-        />
-      </div>
+      <Field label="Description" hint="Optional">
+        {(field) => (
+          <Textarea
+            {...field}
+            value={description}
+            onChange={(e) => setDescription(e.target.value)}
+            rows={3}
+            maxLength={500}
+            placeholder="Tell renters about your vehicles..."
+          />
+        )}
+      </Field>
 
-      {error && <p role="alert" className="text-rose-600 text-sm font-medium">{error}</p>}
+      {error && <p role="alert" className="text-sm font-medium text-rose-600">{error}</p>}
 
       <Button type="submit" loading={loading} className="w-full" size="lg">
         {usesVerifiedPhone ? "Create page and list a vehicle" : "Create Rental Page"}

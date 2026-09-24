@@ -5,6 +5,8 @@ import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import { Button } from "@/components/ui/Button";
 import { PhoneInput } from "@/components/ui/PhoneInput";
+import { Field } from "@/components/ui/Field";
+import { Input } from "@/components/ui/Input";
 
 interface Props {
   userId:           string;
@@ -69,26 +71,24 @@ export function ProfileDetailsForm({ userId, initialFullName, initialPhone, emai
 
   return (
     <form onSubmit={handleSubmit} className="space-y-4">
-      <div>
-        <label className="text-slate-600 text-xs mb-1 block">Email</label>
-        <input
-          type="email" value={email} disabled
-          className="w-full px-4 py-2.5 bg-slate-100/70 border border-slate-100 rounded-xl text-slate-500 text-sm cursor-not-allowed"
-        />
-        <p className="text-slate-500 text-xs mt-1">Email changes aren&apos;t supported yet, contact support if you need to update yours.</p>
-      </div>
+      <Field label="Email" hint="Email changes aren't supported yet, contact support if you need to update yours.">
+        {(field) => <Input {...field} type="email" value={email} disabled />}
+      </Field>
+
+      <Field label="Full name" required>
+        {(field) => (
+          <Input
+            {...field}
+            type="text"
+            value={fullName}
+            onChange={(e) => { setFullName(e.target.value); setSuccess(false); }}
+            required
+          />
+        )}
+      </Field>
 
       <div>
-        <label className="text-slate-600 text-xs mb-1 block">Full name</label>
-        <input
-          type="text" value={fullName} onChange={(e) => { setFullName(e.target.value); setSuccess(false); }}
-          required
-          className="w-full px-4 py-2.5 bg-slate-100 border border-slate-200 rounded-xl text-slate-900 text-sm focus:border-blue-500"
-        />
-      </div>
-
-      <div>
-        <label className="text-slate-600 text-xs mb-1 block">Mobile number</label>
+        <label className="mb-1.5 block text-sm font-medium text-slate-800">Mobile number</label>
         <PhoneInput
           value={phone}
           onChange={(v) => { setPhone(v); setSuccess(false); }}
@@ -96,8 +96,8 @@ export function ProfileDetailsForm({ userId, initialFullName, initialPhone, emai
         />
       </div>
 
-      {error   && <p className="text-rose-600 text-sm">{error}</p>}
-      {success && <p className="text-emerald-700 text-sm">Saved.</p>}
+      {error   && <p className="text-sm text-rose-600">{error}</p>}
+      {success && <p className="text-sm text-emerald-700">Saved.</p>}
 
       <Button type="submit" loading={loading} disabled={!dirty}>
         Save changes

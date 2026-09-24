@@ -13,6 +13,7 @@ import { Stat } from "@/components/ui/Stat";
 import { formatLKR } from "@/lib/vehicles/format";
 import { formatTimeLeft, isResponseOverdue } from "@/lib/booking/response-window";
 import type { BookingStatus } from "@/types/database";
+import { formatSlot } from "@/lib/dates/display";
 
 export type BookingLite = {
   id: string; status: string; created_at: string; start_date: string; end_date: string;
@@ -73,23 +74,6 @@ export interface TodayViewProps {
  * strip. Presentation only: every query, capability check and prop this
  * receives comes from (dashboard)/dashboard/page.tsx unchanged.
  */
-/**
- * "2026-10-02" + "09:00:00" as "Fri 2 Oct, 9:00 AM". Booking dates are calendar
- * days with a separate clock time, not instants, so they are formatted in UTC
- * to stop the reader's own timezone shifting the day.
- */
-function formatSlot(date: string, time?: string | null): string {
-  const [y, m, d] = date.split("-").map(Number);
-  // Assembled from parts: en-GB alone writes September as "Sept".
-  const parts = new Intl.DateTimeFormat("en-US", { weekday: "short", day: "numeric", month: "short", timeZone: "UTC" })
-    .formatToParts(new Date(Date.UTC(y, m - 1, d)));
-  const part = (type: Intl.DateTimeFormatPartTypes) => parts.find((p) => p.type === type)?.value ?? "";
-  const day = `${part("weekday")} ${part("day")} ${part("month")}`;
-  if (!time) return day;
-  const [h, min] = time.split(":").map(Number);
-  return `${day}, ${h % 12 === 0 ? 12 : h % 12}:${String(min).padStart(2, "0")} ${h < 12 ? "AM" : "PM"}`;
-}
-
 export function TodayView({
   pageName, city, isVerified, responseLabel, reliabilityPct,
   pending, active, fleet, monthCount,

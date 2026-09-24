@@ -4,7 +4,6 @@ import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { Send, Headphones, Building2, User } from "lucide-react";
 import { createClient, realtimeReady } from "@/lib/supabase/client";
-import { Button } from "@/components/ui/Button";
 
 export interface SupportMessage {
   id:           string;
@@ -120,14 +119,14 @@ export function SupportChat({ threadId, initial, currentRole, currentUserId, aud
   }
 
   return (
-    <div className="flex flex-col h-[calc(100vh-12rem)] min-h-[400px] bg-white border border-slate-200 rounded-2xl shadow-sm overflow-hidden">
+    <div className="flex h-[calc(100vh-12rem)] min-h-[400px] flex-col overflow-hidden rounded-2xl bg-surface shadow-xs ring-1 ring-slate-900/[0.06]">
       {/* Messages */}
-      <div ref={scrollRef} className="flex-1 overflow-y-auto p-4 space-y-3">
+      <div ref={scrollRef} className="flex-1 space-y-3 overflow-y-auto bg-slate-50/60 p-4">
         {messages.length === 0 ? (
-          <div className="h-full flex flex-col items-center justify-center text-center text-slate-500 text-sm">
+          <div className="flex h-full flex-col items-center justify-center text-center text-sm text-slate-500">
             <Headphones size={32} strokeWidth={1.5} className="mb-2 text-slate-400" />
             <p>{audience === "admin" ? "No messages yet." : "Tell us how we can help."}</p>
-            <p className="text-xs text-slate-400 mt-1">
+            <p className="mt-1 text-xs text-slate-400">
               {audience === "admin" ? "Wait for the Rental Page to start the thread." : "An admin will respond as soon as possible."}
             </p>
           </div>
@@ -138,7 +137,7 @@ export function SupportChat({ threadId, initial, currentRole, currentUserId, aud
               <div key={m.id} className={`flex ${mine ? "justify-end" : "justify-start"}`}>
                 <div className="max-w-[85%]">
                   {!mine && (
-                    <p className="text-xs text-slate-500 mb-0.5 inline-flex items-center gap-1">
+                    <p className="mb-0.5 inline-flex items-center gap-1 text-xs text-slate-500">
                       {m.sender_role === "admin"
                         ? <><Headphones size={10} /> DriveLink Support</>
                         : m.sender_role === "renter"
@@ -146,14 +145,14 @@ export function SupportChat({ threadId, initial, currentRole, currentUserId, aud
                           : <><Building2 size={10} /> Rental Page</>}
                     </p>
                   )}
-                  <div className={`px-3 py-2 rounded-2xl text-sm leading-snug whitespace-pre-wrap break-words ${
+                  <div className={`whitespace-pre-wrap break-words rounded-2xl px-3.5 py-2.5 text-sm leading-snug ${
                     mine
-                      ? "bg-blue-600 text-white rounded-br-md"
-                      : "bg-slate-100 text-slate-900 rounded-bl-md"
+                      ? "rounded-br-md bg-blue-600 text-white"
+                      : "rounded-bl-md bg-white text-slate-900 ring-1 ring-slate-900/[0.06]"
                   }`}>
                     {m.body}
                   </div>
-                  <p className={`text-xs mt-0.5 text-slate-400 ${mine ? "text-right" : ""}`}>
+                  <p className={`mt-1 text-xs text-slate-400 ${mine ? "text-right" : ""}`}>
                     {formatTime(m.created_at)}
                   </p>
                 </div>
@@ -163,9 +162,9 @@ export function SupportChat({ threadId, initial, currentRole, currentUserId, aud
         )}
       </div>
 
-      {/* Input */}
-      <form onSubmit={send} className="border-t border-slate-100 p-3 bg-white/80">
-        {error && <p className="text-rose-600 text-xs mb-2">{error}</p>}
+      {/* Input, sticky at the bottom of the chat card */}
+      <form onSubmit={send} className="border-t border-slate-100 bg-surface p-3">
+        {error && <p className="mb-2 text-xs text-rose-600">{error}</p>}
         <div className="flex items-end gap-2">
           <textarea
             value={draft}
@@ -179,13 +178,20 @@ export function SupportChat({ threadId, initial, currentRole, currentUserId, aud
             rows={1}
             maxLength={4000}
             placeholder="Type a message…"
-            className="flex-1 px-3 py-2 bg-slate-100 border border-slate-200 rounded-xl text-slate-900 placeholder-slate-400 text-sm focus:border-blue-500 resize-none max-h-32"
+            className="max-h-32 min-h-11 flex-1 resize-none rounded-full border border-slate-300 bg-white px-4 py-2.5 text-sm text-slate-950 placeholder-slate-400 focus:border-blue-600 focus:outline-none focus:ring-4 focus:ring-blue-600/10"
           />
-          <Button type="submit" loading={sending} disabled={!draft.trim()}>
-            <Send size={14} />
-          </Button>
+          <button
+            type="submit"
+            disabled={sending || !draft.trim()}
+            aria-label="Send"
+            className="spring-press grid h-11 w-11 shrink-0 place-items-center rounded-full bg-blue-600 text-white transition-colors hover:bg-blue-700 disabled:opacity-50"
+          >
+            {sending
+              ? <span aria-hidden="true" className="h-4 w-4 animate-spin rounded-full border-2 border-current border-t-transparent" />
+              : <Send size={16} aria-hidden="true" />}
+          </button>
         </div>
-        <p className="text-xs text-slate-400 mt-1">Enter to send · Shift+Enter for new line</p>
+        <p className="mt-1 text-xs text-slate-400">Enter to send · Shift+Enter for new line</p>
       </form>
     </div>
   );

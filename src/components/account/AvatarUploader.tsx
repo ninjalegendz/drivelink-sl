@@ -71,27 +71,34 @@ export function AvatarUploader({ userId, initialAvatarUrl, fullName }: Props) {
     .join("") || null;
 
   return (
-    <div className="flex items-center gap-4">
-      <div className="relative w-20 h-20 rounded-full overflow-hidden bg-slate-100 border border-slate-200 shrink-0">
+    <div className="flex items-center gap-5">
+      <div className="relative h-20 w-20 shrink-0 overflow-hidden rounded-full bg-gradient-to-br from-blue-500 to-blue-800 shadow-xs ring-2 ring-white">
         {avatarUrl ? (
           <Image src={avatarUrl} alt="Profile" fill className="object-cover" sizes="80px" />
         ) : initials ? (
-          <div className="w-full h-full flex items-center justify-center text-slate-700 text-xl font-bold">
+          <div className="flex h-full w-full items-center justify-center text-xl font-semibold text-white">
             {initials}
           </div>
         ) : (
-          <div className="w-full h-full flex items-center justify-center text-slate-500">
+          <div className="flex h-full w-full items-center justify-center text-white/80">
             <User size={32} />
           </div>
         )}
         {loading && (
-          <div className="absolute inset-0 bg-slate-900/70 flex items-center justify-center">
-            <Loader2 size={20} className="text-blue-500 animate-spin" />
+          <div className="absolute inset-0 flex items-center justify-center bg-slate-950/60">
+            <Loader2 size={20} className="animate-spin text-white" />
           </div>
         )}
+        <label
+          htmlFor="avatar-upload-input"
+          className={`absolute bottom-0 right-0 grid h-7 w-7 cursor-pointer place-items-center rounded-full bg-white text-slate-700 shadow-md ring-1 ring-slate-900/[0.06] transition-colors hover:bg-slate-50 ${loading ? "pointer-events-none opacity-50" : ""}`}
+          aria-hidden="true"
+        >
+          <Camera size={13} />
+        </label>
       </div>
 
-      <div className="flex-1 min-w-0">
+      <div className="min-w-0 flex-1">
         <input
           id="avatar-upload-input"
           type="file" accept="image/*"
@@ -106,12 +113,12 @@ export function AvatarUploader({ userId, initialAvatarUrl, fullName }: Props) {
         />
         <label
           htmlFor="avatar-upload-input"
-          className={`inline-flex items-center gap-1.5 px-3 py-1.5 text-sm bg-slate-100 hover:bg-slate-200 border border-slate-200 text-slate-900 rounded-lg cursor-pointer transition-colors ${loading ? "opacity-50 pointer-events-none" : ""}`}
+          className={`inline-flex min-h-10 cursor-pointer items-center gap-1.5 rounded-lg bg-slate-100 px-3.5 text-sm font-medium text-slate-800 transition-colors hover:bg-slate-200 ${loading ? "pointer-events-none opacity-50" : ""}`}
         >
           <Camera size={14} /> {avatarUrl ? "Change photo" : "Upload photo"}
         </label>
-        <p className="text-slate-500 text-xs mt-1.5">JPG or PNG, up to 5 MB.</p>
-        {error && <p className="text-rose-600 text-xs mt-1">{error}</p>}
+        <p className="mt-1.5 text-xs text-slate-500">JPG or PNG, up to 5 MB.</p>
+        {error && <p className="mt-1 text-xs text-rose-600">{error}</p>}
       </div>
     </div>
   );

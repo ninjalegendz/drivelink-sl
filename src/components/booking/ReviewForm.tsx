@@ -5,6 +5,8 @@ import { useRouter } from "next/navigation";
 import { Star } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 import { Button } from "@/components/ui/Button";
+import { Field } from "@/components/ui/Field";
+import { Textarea } from "@/components/ui/Input";
 import { containsPublicContactDetails, PUBLIC_CONTACT_ERROR } from "@/lib/content/public-contact";
 
 interface Props {
@@ -70,9 +72,9 @@ export function ReviewForm({ bookingId, revieweeId, subjectName, onSubmitted }: 
   const display = hover || rating;
 
   return (
-    <form onSubmit={handleSubmit} className="space-y-3">
+    <form onSubmit={handleSubmit} className="space-y-4">
       <div>
-        <p className="text-slate-600 text-xs mb-2">How was {subjectName}?</p>
+        <p className="mb-2 text-xs font-medium text-slate-600">How was {subjectName}?</p>
         <div className="flex gap-1">
           {[1, 2, 3, 4, 5].map((n) => (
             <button
@@ -81,32 +83,31 @@ export function ReviewForm({ bookingId, revieweeId, subjectName, onSubmitted }: 
               onMouseEnter={() => setHover(n)}
               onMouseLeave={() => setHover(0)}
               onClick={() => setRating(n)}
-              className={`transition-transform hover:scale-110 ${
+              className={`min-h-11 min-w-11 transition-transform hover:scale-110 ${
                 n <= display ? "text-amber-400" : "text-slate-300"
               }`}
               aria-label={`${n} star${n === 1 ? "" : "s"}`}
             >
-              <Star size={28} fill={n <= display ? "currentColor" : "transparent"} />
+              <Star size={28} fill={n <= display ? "currentColor" : "transparent"} className="mx-auto" />
             </button>
           ))}
         </div>
       </div>
 
-      <div>
-        <label className="text-slate-600 text-xs mb-1 block">
-          Comment <span className="text-slate-400">(optional)</span>
-        </label>
-        <textarea
-          value={comment}
-          onChange={(e) => setComment(e.target.value)}
-          rows={3}
-          maxLength={500}
-          placeholder="What did you like or wish was better?"
-          className="w-full px-3 py-2 bg-slate-100 border border-slate-200 rounded-lg text-slate-900 placeholder-slate-400 text-sm focus:border-blue-500 resize-none"
-        />
-      </div>
+      <Field label="Comment" hint="Optional">
+        {(field) => (
+          <Textarea
+            {...field}
+            value={comment}
+            onChange={(e) => setComment(e.target.value)}
+            rows={3}
+            maxLength={500}
+            placeholder="What did you like or wish was better?"
+          />
+        )}
+      </Field>
 
-      {error && <p className="text-rose-600 text-sm">{error}</p>}
+      {error && <p className="text-sm text-rose-600">{error}</p>}
 
       <Button type="submit" loading={loading} size="md">
         Submit review

@@ -119,35 +119,35 @@ export function DeleteAccountSection() {
   const canDelete   = !previewError && blockers && blockers.length === 0 && hasRecoveryEmail !== null && challengeState === "verified" && confirm === "DELETE";
 
   return (
-    <section className="bg-rose-50 border border-rose-200 rounded-2xl p-5">
-      <h2 className="text-rose-700 font-semibold flex items-center gap-2 mb-2">
-        <AlertTriangle size={16} /> Danger zone
+    <section className="rounded-2xl bg-rose-50/70 p-5 ring-1 ring-rose-200 sm:p-6">
+      <h2 className="flex items-center gap-2 text-base font-semibold text-rose-800">
+        <AlertTriangle size={17} /> Danger zone
       </h2>
-      <p className="text-slate-600 text-sm mb-4">
+      <p className="mt-2 text-sm leading-6 text-slate-600">
         Deleting your account removes your personal details and signs you out. Booking records
         are anonymised so each rental party can keep its evidence. We ask for a fresh phone code
         before deleting. Accounts with a usable email
         receive a 30-day recovery link; without one, deletion is permanent.
       </p>
-      <Button variant="danger" size="sm" onClick={() => setOpen(true)}>
+      <Button variant="danger" size="sm" className="mt-4" onClick={() => setOpen(true)}>
         <Trash2 size={14} /> Delete my account
       </Button>
 
       {open && (
         <div
-          className="fixed inset-0 z-50 bg-black/70 flex items-center justify-center p-4"
+          className="animate-fade-in fixed inset-0 z-50 flex items-center justify-center bg-slate-950/40 p-4 backdrop-blur-[2px]"
           onClick={() => setOpen(false)}
         >
           <div
-            className="animate-bounce-in bg-white border border-slate-200 shadow-xl rounded-lg w-full max-w-md p-5 my-8 max-h-[90vh] overflow-y-auto"
+            className="animate-scale-in my-8 max-h-[90vh] w-full max-w-md overflow-y-auto rounded-3xl bg-white p-5 shadow-2xl ring-1 ring-slate-900/[0.06] sm:p-6"
             onClick={(e) => e.stopPropagation()}
           >
-            <div className="flex items-start justify-between mb-4">
-              <h3 className="text-slate-900 font-semibold">Delete account</h3>
+            <div className="mb-4 flex items-start justify-between">
+              <h3 className="text-base font-semibold text-slate-950">Delete account</h3>
               <button
                 type="button"
                 onClick={() => setOpen(false)}
-                className="text-slate-500 hover:text-slate-900"
+                className="grid h-9 w-9 place-items-center rounded-full text-slate-500 transition-colors hover:bg-slate-100 hover:text-slate-900"
                 aria-label="Close"
               >
                 <X size={18} />
@@ -155,30 +155,30 @@ export function DeleteAccountSection() {
             </div>
 
             {previewError ? (
-              <div role="alert" className="border-l-4 border-red-500 pl-3 py-1">
-                <p className="text-slate-900 text-sm font-semibold">We could not check whether deletion is safe.</p>
-                <p className="text-slate-600 text-sm mt-1">Close this window and try again. Your account has not changed.</p>
+              <div role="alert" className="rounded-xl bg-rose-50 p-3 text-sm ring-1 ring-rose-200">
+                <p className="font-semibold text-slate-900">We could not check whether deletion is safe.</p>
+                <p className="mt-1 text-slate-600">Close this window and try again. Your account has not changed.</p>
               </div>
             ) : blockers === null ? (
-              <p className="text-slate-500 text-sm">Checking…</p>
+              <p className="text-sm text-slate-500">Checking…</p>
             ) : hasBlockers ? (
               <>
-                <p className="text-slate-700 text-sm mb-3">
+                <p className="mb-3 text-sm text-slate-700">
                   You have unresolved items that block deletion:
                 </p>
-                <ul className="space-y-2 mb-4">
+                <ul className="mb-4 space-y-2">
                   {blockers.map((b, i) => (
                     <li
                       key={i}
-                      className="flex items-start gap-2 p-3 bg-blue-50 border border-blue-200 rounded-lg text-xs text-blue-900"
+                      className="flex items-start gap-2 rounded-xl bg-blue-50 p-3 text-xs text-blue-900 ring-1 ring-blue-200"
                     >
-                      <AlertTriangle size={14} className="text-blue-600 shrink-0 mt-0.5" />
+                      <AlertTriangle size={14} className="mt-0.5 shrink-0 text-blue-600" />
                       <div className="flex-1">
                         <p>{b.message}</p>
                         {b.fix_url && (
                           <Link
                             href={b.fix_url}
-                            className="text-blue-600 hover:text-blue-500 text-xs font-medium mt-1 inline-block"
+                            className="mt-1 inline-block text-xs font-medium text-blue-700 hover:text-blue-800"
                           >
                             Take care of it →
                           </Link>
@@ -187,15 +187,15 @@ export function DeleteAccountSection() {
                     </li>
                   ))}
                 </ul>
-                <p className="text-slate-400 text-xs">
+                <p className="text-xs text-slate-400">
                   Once these are resolved, come back and try again.
                 </p>
               </>
             ) : (
               <>
-                <div className="border-y border-slate-200 py-3 mb-4 text-xs space-y-1.5 text-slate-700">
-                  <p className="text-slate-900 font-medium mb-1">What happens on delete:</p>
-                  <ul className="list-disc pl-4 space-y-0.5">
+                <div className="mb-4 space-y-1.5 rounded-xl bg-slate-50 p-3.5 text-xs text-slate-700">
+                  <p className="mb-1 font-medium text-slate-900">What happens on delete:</p>
+                  <ul className="list-disc space-y-0.5 pl-4">
                     <li>Name shown as &quot;Deleted user&quot; everywhere</li>
                     <li>Email, licence, NIC photos, selfie and avatar removed</li>
                     <li>A limited phone/ID-number safety record may remain private to prevent ban evasion</li>
@@ -206,16 +206,16 @@ export function DeleteAccountSection() {
                 </div>
 
                 {hasRecoveryEmail ? (
-                  <div className="border-l-4 border-blue-500 pl-3 py-1 mb-4 text-sm text-slate-700">
+                  <div className="mb-4 rounded-xl bg-blue-50 p-3.5 text-sm text-slate-700 ring-1 ring-blue-200">
                     DriveLink will email a recovery link before deleting anything. If that email fails, deletion stops. The link lasts 30 days and restores the account shell, not identity or licence files that were deleted.
                   </div>
                 ) : (
-                  <div className="border-l-4 border-red-500 pl-3 py-1 mb-4 text-sm text-slate-700">
+                  <div className="mb-4 rounded-xl bg-rose-50 p-3.5 text-sm text-slate-700 ring-1 ring-rose-200">
                     This account has no usable email for a recovery link. Once deleted, it cannot be restored.
                   </div>
                 )}
 
-                <div className="mb-4 border border-amber-200 bg-amber-50 px-3 py-3 text-sm text-slate-700" aria-live="polite">
+                <div className="mb-4 rounded-xl bg-amber-50 p-3.5 text-sm text-slate-700 ring-1 ring-amber-200" aria-live="polite">
                   {challengeState === "idle" && (
                     <div className="space-y-2">
                       <p className="font-medium text-slate-900">Confirm with your phone</p>
@@ -226,15 +226,15 @@ export function DeleteAccountSection() {
                   {challengeState === "sent" && (
                     <div className="space-y-3">
                       <div><p className="font-medium text-slate-900">Enter the code from your phone</p><p className="text-xs leading-5">The code expires in 10 minutes. After verification, finish deletion within five minutes.</p></div>
-                      <label className="block"><span className="sr-only">Six digit confirmation code</span><input type="text" inputMode="numeric" autoComplete="one-time-code" maxLength={6} value={challengeCode} onChange={(event) => setChallengeCode(event.target.value.replace(/\D/g, ""))} className="w-full rounded-lg border border-amber-300 bg-white px-3 py-2 text-center font-mono text-lg tracking-[0.3em] text-slate-900 focus:border-amber-600" /></label>
-                      <div className="flex flex-wrap gap-3"><Button type="button" size="sm" loading={challengeLoading} disabled={challengeCode.length !== 6} onClick={verifyChallenge}>Verify code</Button><button type="button" disabled={challengeLoading || challengeCooldown > 0} onClick={sendChallenge} className="text-xs font-medium text-amber-800 hover:text-amber-950 disabled:opacity-50">{challengeCooldown > 0 ? `Send again in ${challengeCooldown}s` : "Send another code"}</button></div>
+                      <label className="block"><span className="sr-only">Six digit confirmation code</span><input type="text" inputMode="numeric" autoComplete="one-time-code" maxLength={6} value={challengeCode} onChange={(event) => setChallengeCode(event.target.value.replace(/\D/g, ""))} className="min-h-12 w-full rounded-lg border border-amber-300 bg-white px-3 text-center font-mono text-lg tracking-[0.3em] text-slate-900 focus:border-amber-600 focus:outline-none focus:ring-4 focus:ring-amber-500/10" /></label>
+                      <div className="flex flex-wrap gap-3"><Button type="button" size="sm" loading={challengeLoading} disabled={challengeCode.length !== 6} onClick={verifyChallenge}>Verify code</Button><button type="button" disabled={challengeLoading || challengeCooldown > 0} onClick={sendChallenge} className="min-h-9 text-xs font-medium text-amber-800 hover:text-amber-950 disabled:opacity-50">{challengeCooldown > 0 ? `Send again in ${challengeCooldown}s` : "Send another code"}</button></div>
                     </div>
                   )}
                   {challengeState === "verified" && <p className="font-medium text-emerald-800">Phone confirmation complete. Type DELETE below within five minutes to finish.</p>}
                 </div>
 
                 <label className="block">
-                  <span className="text-slate-700 text-xs mb-1.5 block font-medium">
+                  <span className="mb-1.5 block text-xs font-medium text-slate-700">
                     Type <span className="font-mono text-rose-600">DELETE</span> to confirm
                   </span>
                   <input
@@ -243,13 +243,13 @@ export function DeleteAccountSection() {
                     onChange={(e) => setConfirm(e.target.value)}
                     autoFocus
                     autoComplete="off"
-                    className="w-full px-3 py-2 bg-slate-100 border border-slate-200 rounded-lg text-slate-900 text-sm font-mono focus:border-red-500"
+                    className="min-h-12 w-full rounded-lg border border-slate-300 bg-white px-3.5 text-sm font-mono text-slate-950 focus:border-rose-500 focus:outline-none focus:ring-4 focus:ring-rose-500/10"
                   />
                 </label>
 
-                {error && <p className="text-rose-600 text-sm mt-3">{error}</p>}
+                {error && <p className="mt-3 text-sm text-rose-600">{error}</p>}
 
-                <div className="flex gap-2 justify-end mt-5">
+                <div className="mt-5 flex justify-end gap-2">
                   <Button type="button" size="sm" variant="ghost" onClick={() => setOpen(false)}>
                     Cancel
                   </Button>

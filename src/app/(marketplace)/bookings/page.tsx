@@ -1,4 +1,6 @@
 import { redirect } from "next/navigation";
+import Link from "next/link";
+import { ArrowRight } from "lucide-react";
 import { requireVerifiedIdentity } from "@/lib/auth/require-verified-identity";
 import { createClient, createServiceClient } from "@/lib/supabase/server";
 import { RenterBookingsList } from "@/components/bookings/RenterBookingsList";
@@ -29,6 +31,11 @@ export default async function MyBookingsPage() {
       <PageHeader
         title="Your bookings"
         description="Every request you have sent, and every rental in progress."
+        actions={
+          <Link href="/vehicles" className="inline-flex min-h-9 items-center gap-1.5 text-sm font-medium text-blue-700 hover:text-blue-800">
+            Browse vehicles <ArrowRight size={14} aria-hidden="true" />
+          </Link>
+        }
       />
       <RenterBookingsList initial={bookings} />
     </PageShell>

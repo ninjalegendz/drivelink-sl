@@ -1,12 +1,14 @@
 import { redirect } from "next/navigation";
 import Link from "next/link";
-import { ArrowLeft, ArrowRight } from "lucide-react";
+import { ArrowRight } from "lucide-react";
 import { createClient, createServiceClient } from "@/lib/supabase/server";
 import { AvatarUploader } from "@/components/account/AvatarUploader";
 import { ProfileDetailsForm } from "@/components/account/ProfileDetailsForm";
 import { DeleteAccountSection } from "@/components/account/DeleteAccountSection";
 import type { Database } from "@/types/database";
 import { pageShellClass } from "@/components/ui/PageShell";
+import { PageHeader } from "@/components/ui/PageHeader";
+import { Card } from "@/components/ui/Card";
 
 type ProfileRow = Database["public"]["Tables"]["profiles"]["Row"];
 
@@ -39,65 +41,56 @@ export default async function AccountSettingsPage() {
                                       "/account";
 
   return (
-    <div className={pageShellClass("narrow")}>
-      <Link
-        href={backHref}
-        className="inline-flex items-center gap-1.5 text-slate-600 hover:text-slate-900 text-sm mb-4"
-      >
-        <ArrowLeft size={14} /> Back
-      </Link>
+    <div className={pageShellClass("narrow", "space-y-6")}>
+      <PageHeader
+        title="Account settings"
+        description="Update your contact and personal details."
+        backHref={backHref}
+      />
 
-      <h1 className="text-2xl font-bold text-slate-900 mb-1">Account settings</h1>
-      <p className="text-slate-600 text-sm mb-8">
-        Update your contact and personal details.
-      </p>
+      {/* Profile picture */}
+      <Section title="Profile picture">
+        <AvatarUploader
+          userId={user.id}
+          initialAvatarUrl={profile.avatar_url}
+          fullName={profile.full_name}
+        />
+      </Section>
 
-      <div className="space-y-6">
+      {/* Profile details */}
+      <Section title="Personal details">
+        <ProfileDetailsForm
+          userId={user.id}
+          initialFullName={profile.full_name}
+          initialPhone={profile.phone}
+          email={user.email ?? ""}
+        />
+      </Section>
 
-        {/* Profile picture */}
-        <Section title="Profile picture">
-          <AvatarUploader
-            userId={user.id}
-            initialAvatarUrl={profile.avatar_url}
-            fullName={profile.full_name}
-          />
-        </Section>
+      {/* Rental Pages, managed per-page from each page's own dashboard */}
+      <Section title="Rental Pages">
+        <p className="mb-3 text-sm text-slate-600">
+          Page details are managed from each page&apos;s dashboard.
+        </p>
+        <Link
+          href="/account"
+          className="inline-flex min-h-9 items-center gap-1.5 text-sm font-medium text-blue-700 hover:text-blue-800"
+        >
+          Manage my Rental Pages <ArrowRight size={14} />
+        </Link>
+      </Section>
 
-        {/* Profile details */}
-        <Section title="Personal details">
-          <ProfileDetailsForm
-            userId={user.id}
-            initialFullName={profile.full_name}
-            initialPhone={profile.phone}
-            email={user.email ?? ""}
-          />
-        </Section>
-
-        {/* Rental Pages, managed per-page from each page's own dashboard */}
-        <Section title="Rental Pages">
-          <p className="text-slate-600 text-sm mb-3">
-            Page details are managed from each page&apos;s dashboard.
-          </p>
-          <Link
-            href="/account"
-            className="inline-flex items-center gap-1.5 text-blue-600 hover:text-blue-500 text-sm"
-          >
-            Manage my Rental Pages <ArrowRight size={14} />
-          </Link>
-        </Section>
-
-        {/* Danger zone, admins can't self-delete */}
-        {profile.role !== "admin" && <DeleteAccountSection />}
-      </div>
+      {/* Danger zone, admins can't self-delete */}
+      {profile.role !== "admin" && <DeleteAccountSection />}
     </div>
   );
 }
 
 function Section({ title, children }: { title: string; children: React.ReactNode }) {
   return (
-    <section className="bg-white border border-slate-200 rounded-2xl shadow-sm p-5">
-      <h2 className="text-slate-900 font-semibold mb-4">{title}</h2>
+    <Card padding="lg">
+      <h2 className="mb-4 text-base font-semibold text-slate-900">{title}</h2>
       {children}
-    </section>
+    </Card>
   );
 }

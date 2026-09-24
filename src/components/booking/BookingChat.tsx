@@ -3,7 +3,6 @@
 import { useEffect, useRef, useState } from "react";
 import { ChevronDown, ChevronUp, MessageCircle, Send, X } from "lucide-react";
 import { createClient, realtimeReady } from "@/lib/supabase/client";
-import { Button } from "@/components/ui/Button";
 
 export interface BookingMessage {
   id:         string;
@@ -151,16 +150,16 @@ export function BookingChat({
   return (
     <div className={`flex flex-col ${className}`}>
       {/* Messages */}
-      <div ref={scrollRef} className="flex-1 overflow-y-auto p-3 space-y-3 bg-slate-50 border border-slate-100 rounded-xl">
+      <div ref={scrollRef} className="flex-1 space-y-3 overflow-y-auto rounded-2xl bg-slate-50 p-3 ring-1 ring-slate-900/[0.04]">
         {!hydrated && messages.length === 0 ? (
-          <div className="h-full flex items-center justify-center text-slate-400 text-sm">
+          <div className="flex h-full items-center justify-center text-sm text-slate-400">
             Loading messages…
           </div>
         ) : messages.length === 0 ? (
-          <div className="h-full flex flex-col items-center justify-center text-center text-slate-500 text-sm px-4">
+          <div className="flex h-full flex-col items-center justify-center px-4 text-center text-sm text-slate-500">
             <MessageCircle size={32} strokeWidth={1.5} className="mb-2 text-slate-400" />
             <p>No messages yet.</p>
-            <p className="text-xs text-slate-400 mt-1">
+            <p className="mt-1 text-xs text-slate-400">
               {side === "renter"
                 ? `Ask ${counterpartyName} about pick-up, the vehicle, or your dates.`
                 : `Message ${counterpartyName} about this booking.`}
@@ -173,16 +172,16 @@ export function BookingChat({
               <div key={m.id} className={`flex ${mine ? "justify-end" : "justify-start"}`}>
                 <div className="max-w-[85%]">
                   {!mine && (
-                    <p className="text-xs text-slate-500 mb-0.5">{counterpartyName}</p>
+                    <p className="mb-0.5 text-xs text-slate-500">{counterpartyName}</p>
                   )}
-                  <div className={`px-3 py-2 rounded-2xl text-sm leading-snug whitespace-pre-wrap break-words ${
+                  <div className={`whitespace-pre-wrap break-words rounded-2xl px-3.5 py-2.5 text-sm leading-snug ${
                     mine
-                      ? "bg-blue-600 text-white rounded-br-md"
-                      : "bg-white text-slate-900 border border-slate-200 rounded-bl-md"
+                      ? "rounded-br-md bg-blue-600 text-white"
+                      : "rounded-bl-md bg-white text-slate-900 ring-1 ring-slate-900/[0.06]"
                   }`}>
                     {m.body}
                   </div>
-                  <p className={`text-xs mt-0.5 text-slate-400 ${mine ? "text-right" : ""}`}>
+                  <p className={`mt-1 text-xs text-slate-400 ${mine ? "text-right" : ""}`}>
                     {formatTime(m.created_at)}
                   </p>
                 </div>
@@ -192,14 +191,14 @@ export function BookingChat({
         )}
       </div>
 
-      {/* Composer / closed line */}
+      {/* Composer / closed line, sticky at the bottom of the chat card */}
       {readOnly ? (
-        <p className="text-slate-500 text-xs text-center pt-3">
+        <p className="pt-3 text-center text-xs text-slate-500">
           {closedNote ?? DEFAULT_CLOSED_NOTE}
         </p>
       ) : (
         <form onSubmit={send} className="pt-3">
-          {error && <p className="text-rose-600 text-xs mb-2">{error}</p>}
+          {error && <p className="mb-2 text-xs text-rose-600">{error}</p>}
           <div className="flex items-end gap-2">
             <textarea
               value={draft}
@@ -213,13 +212,20 @@ export function BookingChat({
               rows={1}
               maxLength={2000}
               placeholder="Type a message…"
-              className="flex-1 px-3 py-2 bg-slate-100 border border-slate-200 rounded-xl text-slate-900 placeholder-slate-400 text-sm focus:border-blue-500 resize-none max-h-32"
+              className="max-h-32 min-h-11 flex-1 resize-none rounded-full border border-slate-300 bg-white px-4 py-2.5 text-sm text-slate-950 placeholder-slate-400 focus:border-blue-600 focus:outline-none focus:ring-4 focus:ring-blue-600/10"
             />
-            <Button type="submit" loading={sending} disabled={!draft.trim()}>
-              <Send size={14} />
-            </Button>
+            <button
+              type="submit"
+              disabled={sending || !draft.trim()}
+              aria-label="Send"
+              className="spring-press grid h-11 w-11 shrink-0 place-items-center rounded-full bg-blue-600 text-white transition-colors hover:bg-blue-700 disabled:opacity-50"
+            >
+              {sending
+                ? <span aria-hidden="true" className="h-4 w-4 animate-spin rounded-full border-2 border-current border-t-transparent" />
+                : <Send size={16} aria-hidden="true" />}
+            </button>
           </div>
-          <p className="text-xs text-slate-400 mt-1">
+          <p className="mt-1 text-xs text-slate-400">
             Enter to send · Shift+Enter for new line · Messages stay on the booking record
           </p>
         </form>
@@ -263,39 +269,41 @@ export function BookingMessagesCard({
       <button
         type="button"
         onClick={() => { setOpen(true); setEverOpened(true); }}
-        className="w-full bg-white rounded-2xl border border-slate-100 p-4 mb-4 flex items-center justify-between gap-3 text-left hover:border-blue-300 transition-colors"
+        className="spring-hover flex w-full items-center justify-between gap-3 rounded-2xl bg-surface p-4 text-left shadow-xs ring-1 ring-slate-900/[0.06] transition-colors hover:ring-blue-200 sm:p-5"
       >
-        <span className="flex items-center gap-3 min-w-0">
-          <MessageCircle size={16} className="text-blue-600 shrink-0" />
+        <span className="flex min-w-0 items-center gap-3">
+          <span className="grid h-9 w-9 shrink-0 place-items-center rounded-full bg-blue-50 text-blue-600">
+            <MessageCircle size={16} />
+          </span>
           <span className="min-w-0">
-            <span className="block text-slate-900 font-semibold text-sm">Messages</span>
-            <span className="block text-slate-500 text-xs mt-0.5 truncate">
+            <span className="block text-sm font-semibold text-slate-900">Messages</span>
+            <span className="mt-0.5 block truncate text-xs text-slate-500">
               Chat with {counterpartyName} about this booking
             </span>
           </span>
         </span>
         {showBadge ? (
-          <span className="shrink-0 min-w-5 h-5 px-1.5 rounded-full bg-blue-600 text-white text-xs font-bold flex items-center justify-center">
+          <span className="flex h-5 min-w-5 shrink-0 items-center justify-center rounded-full bg-blue-600 px-1.5 text-xs font-bold text-white">
             {unreadCount}
           </span>
         ) : (
-          <ChevronDown size={16} className="text-slate-400 shrink-0" />
+          <ChevronDown size={16} className="shrink-0 text-slate-400" />
         )}
       </button>
     );
   }
 
   return (
-    <div className="bg-white rounded-2xl border border-slate-100 p-4 mb-4">
-      <div className="flex items-center justify-between mb-3">
-        <p className="text-slate-900 font-semibold text-sm inline-flex items-center gap-1.5">
+    <div className="rounded-2xl bg-surface p-4 shadow-xs ring-1 ring-slate-900/[0.06] sm:p-5">
+      <div className="mb-3 flex items-center justify-between">
+        <p className="inline-flex items-center gap-1.5 text-sm font-semibold text-slate-900">
           <MessageCircle size={14} className="text-blue-600" /> Messages
-          <span className="text-slate-400 font-normal text-xs">· {counterpartyName}</span>
+          <span className="text-xs font-normal text-slate-400">· {counterpartyName}</span>
         </p>
         <button
           type="button"
           onClick={() => setOpen(false)}
-          className="text-slate-400 hover:text-slate-700"
+          className="grid h-8 w-8 place-items-center rounded-full text-slate-400 transition-colors hover:bg-slate-100 hover:text-slate-700"
           aria-label="Collapse messages"
         >
           <ChevronUp size={16} />
@@ -347,12 +355,12 @@ export function MessageRenterButton({
       <button
         type="button"
         onClick={() => { setOpen(true); setEverOpened(true); }}
-        className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold border bg-slate-100 text-slate-700 border-slate-200 hover:bg-slate-200 transition-colors"
+        className="inline-flex min-h-9 items-center gap-1.5 rounded-lg bg-slate-100 px-3 text-xs font-semibold text-slate-700 transition-colors hover:bg-slate-200"
       >
         <MessageCircle size={12} /> Message renter
         {showDot && (
           <span
-            className="w-1.5 h-1.5 rounded-full bg-blue-600"
+            className="h-1.5 w-1.5 rounded-full bg-blue-600"
             title="New messages from the renter"
             aria-label="Unread messages"
           />
@@ -396,18 +404,18 @@ function MessageRenterModal({
   }, [onClose]);
 
   return (
-    <div className="fixed inset-0 z-50 bg-black/70 flex items-center justify-center p-4" onClick={onClose}>
-      <div className="glass-card rounded-3xl w-full max-w-md p-5" onClick={(e) => e.stopPropagation()}>
-        <div className="flex items-start justify-between mb-4">
+    <div className="animate-fade-in fixed inset-0 z-50 flex items-center justify-center bg-slate-950/40 p-4 backdrop-blur-[2px]" onClick={onClose}>
+      <div className="animate-scale-in w-full max-w-md rounded-3xl bg-white p-5 shadow-2xl ring-1 ring-slate-900/[0.06]" onClick={(e) => e.stopPropagation()}>
+        <div className="mb-4 flex items-start justify-between">
           <div>
-            <h2 className="text-slate-900 font-semibold flex items-center gap-2">
+            <h2 className="flex items-center gap-2 text-base font-semibold text-slate-950">
               <MessageCircle size={16} className="text-blue-600" /> Messages
             </h2>
-            <p className="text-slate-500 text-xs mt-0.5">
+            <p className="mt-0.5 text-xs text-slate-500">
               {renterName} · Booking {bookingId.slice(0, 8).toUpperCase()}
             </p>
           </div>
-          <button type="button" onClick={onClose} className="text-slate-500 hover:text-slate-900" aria-label="Close">
+          <button type="button" onClick={onClose} className="grid h-9 w-9 place-items-center rounded-full text-slate-500 transition-colors hover:bg-slate-100 hover:text-slate-900" aria-label="Close">
             <X size={18} />
           </button>
         </div>
