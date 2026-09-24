@@ -3,6 +3,8 @@
 import { useCallback, useEffect, useState } from "react";
 import { VehicleCard } from "@/components/vehicles/VehicleCard";
 import { VehicleDetailModal } from "@/components/vehicles/VehicleDetailModal";
+import { SkeletonVehicleCard } from "@/components/ui/Skeleton";
+import { buttonClasses } from "@/components/ui/Button";
 import type { VehicleWithAgency } from "@/types/queries";
 
 interface LoadMore {
@@ -74,6 +76,11 @@ export function VehiclesBrowser({
         {vehicles.map((v) => (
           <VehicleCard key={v.id} vehicle={v} onOpen={setSelected} />
         ))}
+        {/* Placeholders shaped like the real cards, so the grid does not
+            visibly jump the moment the next page lands. */}
+        {loading && Array.from({ length: Math.min(loadMore?.pageSize ?? 0, 4) }, (_, i) => (
+          <SkeletonVehicleCard key={`more-skeleton-${i}`} />
+        ))}
       </div>
 
       {loadMore && hasMore && (
@@ -82,9 +89,9 @@ export function VehiclesBrowser({
             type="button"
             onClick={onLoadMore}
             disabled={loading}
-            className="px-5 py-2.5 rounded-xl text-sm font-semibold bg-white border border-slate-200 text-slate-700 hover:bg-slate-50 hover:border-blue-300 disabled:opacity-60 transition-colors shadow-sm"
+            className={buttonClasses({ variant: "secondary", size: "lg" })}
           >
-            {loading ? "Loading..." : loadError ? "Try loading again" : "Load more vehicles"}
+            {loading ? "Loading…" : loadError ? "Try loading again" : "Show more vehicles"}
           </button>
           {loadError && <p role="alert" className="text-sm text-rose-700 text-center">{loadError}</p>}
         </div>

@@ -109,7 +109,7 @@ export function NavbarShell({ isAdmin, ownsPages, signedIn, name, avatarUrl }: P
           {signedIn ? (
             <>
               {ownsPages && !isAdmin && (
-                <Link href="/dashboard" className={buttonClasses({ variant: "secondary", size: "sm", className: "hidden md:inline-flex" })}>
+                <Link href="/dashboard" className={buttonClasses({ variant: "secondary", size: "sm", className: "max-md:hidden" })}>
                   <LayoutGrid size={15} aria-hidden="true" /> Dashboard
                 </Link>
               )}
@@ -123,7 +123,7 @@ export function NavbarShell({ isAdmin, ownsPages, signedIn, name, avatarUrl }: P
               >
                 Log in
               </Link>
-              <Link href="/signup?intent=provider" className={buttonClasses({ variant: "dark", size: "sm", className: "hidden md:inline-flex" })}>
+              <Link href="/signup?intent=provider" className={buttonClasses({ variant: "dark", size: "sm", className: "max-md:hidden" })}>
                 List your vehicle
               </Link>
             </>

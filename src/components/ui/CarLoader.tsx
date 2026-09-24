@@ -17,7 +17,7 @@ export function CarLoader({
       >
         <g
           transform="translate(2 1)"
-          stroke="#002742"
+          stroke="#006bfe"
           fill="none"
           fillRule="evenodd"
           strokeLinecap="round"

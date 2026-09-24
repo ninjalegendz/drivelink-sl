@@ -1,9 +1,12 @@
+import Link from "next/link";
 import { Search } from "lucide-react";
 import { VehiclesBrowser } from "@/components/vehicles/VehiclesBrowser";
 import { VehiclesFilter } from "@/components/vehicles/VehiclesFilter";
-import { Hero } from "@/components/layout/Hero";
+import { EmptyState } from "@/components/ui/EmptyState";
+import { buttonClasses } from "@/components/ui/Button";
 import { searchVehiclePageCached, VEHICLES_PAGE_SIZE } from "@/lib/vehicles/search";
 import { isValidSearchDateRange } from "@/lib/dates/sri-lanka";
+import { VEHICLE_TYPES } from "@/data/vehicles";
 import type { Metadata } from "next";
 import { pageShellClass } from "@/components/ui/PageShell";
 
@@ -15,6 +18,37 @@ export async function generateMetadata({ searchParams }: Props): Promise<Metadat
   const { q, city } = await searchParams;
   const title = [q, city, "Vehicle Rentals Sri Lanka"].filter(Boolean).join(" · ");
   return { title };
+}
+
+// Sentence-case words for the page title. RENTAL_OPTIONS' own labels
+// ("Self-Drive", "With Driver") are title-cased for chips and buttons, not
+// for reading inline in a sentence like "Self-drive vehicles".
+const OPTION_TITLE_WORD: Record<string, string> = {
+  "self-drive": "Self-drive",
+  "with-driver": "With driver",
+  "airport-pickup": "Airport handover",
+};
+
+/**
+ * Builds the compact header's headline from whatever the renter is
+ * currently filtering by, e.g. "Vans & Minibuses in Kandy", "Self-drive
+ * vehicles", or the default "Vehicles across Sri Lanka" when nothing narrows
+ * the fleet down yet. The free-text query is deliberately left out: it
+ * already shows up in the count line below, and folding it in here made the
+ * headline unreadable for anything longer than a couple of words.
+ */
+function resultsTitle(type: string, city: string, option: string): string {
+  const typeNoun = type ? VEHICLE_TYPES.find((t) => t.value === type)?.plural : null;
+  const optionWord = option ? OPTION_TITLE_WORD[option] : null;
+
+  const subject = optionWord && typeNoun
+    ? `${optionWord} ${typeNoun.toLowerCase()}`
+    : optionWord
+      ? `${optionWord} vehicles`
+      : typeNoun ?? "Vehicles";
+
+  if (city) return `${subject} in ${city}`;
+  return subject === "Vehicles" ? "Vehicles across Sri Lanka" : subject;
 }
 
 export default async function VehiclesPage({ searchParams }: Props) {
@@ -49,63 +83,59 @@ export default async function VehiclesPage({ searchParams }: Props) {
   const bookableCount = vehicles.length - unavailableCount;
 
   return (
-    <div className={pageShellClass("wide", "space-y-8")}>
-      <Hero
-        badge="Sri Lanka vehicle rentals"
-        title={<>Find a vehicle that fits your trip.<br /><span className="text-blue-200">Send a request for free.</span></>}
-        subtitle="Compare self-drive, with-driver and airport options. Each listing shows its provider, rental terms and recorded checks."
+    <>
+      {/* No marketing hero here: results come first, right under the sticky
+          filter bar that replaces it. */}
+      <VehiclesFilter
+        initialQ={q ?? ""}
+        initialCity={city ?? ""}
+        initialType={type ?? ""}
+        initialOption={option ?? ""}
+        initialMaxPrice={max_price ?? ""}
+        initialFrom={from ?? ""}
+        initialTo={to ?? ""}
+        initialFromTime={from_time ?? ""}
+        initialToTime={to_time ?? ""}
+        initialInsurance={insurance ?? ""}
       />
 
-      <div className="grid grid-cols-1 lg:grid-cols-4 gap-8">
-        <div className="lg:col-span-1">
-          <VehiclesFilter
-            initialQ={q ?? ""}
-            initialCity={city ?? ""}
-            initialType={type ?? ""}
-            initialOption={option ?? ""}
-            initialMaxPrice={max_price ?? ""}
-            initialFrom={from ?? ""}
-            initialTo={to ?? ""}
-            initialFromTime={from_time ?? ""}
-            initialToTime={to_time ?? ""}
-            initialInsurance={insurance ?? ""}
-          />
+      <div className={pageShellClass("wide", "space-y-6")}>
+        <div>
+          <h1 className="text-2xl font-semibold tracking-tight text-slate-950 sm:text-3xl">
+            {resultsTitle(type ?? "", city ?? "", option ?? "")}
+          </h1>
+          {hasDateFilter && !dateOk ? (
+            <p className="mt-1 text-sm text-slate-600">Update the dates below to check which vehicles are available.</p>
+          ) : (
+            <p className="mt-1 text-sm text-slate-600">
+              {dateOk && unavailableCount > 0 ? (
+                <>
+                  {bookableCount} available for your dates
+                  {city ? ` in ${city}` : ""}
+                  {q ? ` matching "${q}"` : ""}
+                  {", "}
+                  {unavailableCount} already taken (shown below, greyed out)
+                </>
+              ) : (
+                <>
+                  Showing {vehicles.length} option{vehicles.length === 1 ? "" : "s"}
+                  {city ? ` in ${city}` : ""}
+                  {q ? ` matching "${q}"` : ""}
+                </>
+              )}
+            </p>
+          )}
         </div>
 
-        <div className="lg:col-span-3 space-y-6">
-          <div>
-            <h2 className="text-xl font-bold text-slate-800">Available vehicles</h2>
-            {hasDateFilter && !dateOk ? (
-              <p className="text-sm text-slate-600">Update the dates below to check which vehicles are available.</p>
-            ) : (
-              <p className="text-sm text-slate-600">
-                {dateOk && unavailableCount > 0 ? (
-                  <>
-                    {bookableCount} available for your dates
-                    {city ? ` in ${city}` : ""}
-                    {q ? ` matching "${q}"` : ""}
-                    {", "}
-                    {unavailableCount} already taken (shown below, greyed out)
-                  </>
-                ) : (
-                  <>
-                    Showing {vehicles.length} option{vehicles.length === 1 ? "" : "s"}
-                    {city ? ` in ${city}` : ""}
-                    {q ? ` matching "${q}"` : ""}
-                  </>
-                )}
-              </p>
-            )}
+        {hasDateFilter && !dateOk ? (
+          <div role="alert" className="rounded-2xl bg-amber-50 p-5 text-sm text-amber-950 ring-1 ring-amber-200">
+            Choose a real pick-up date from tomorrow onward and a later return date to check availability.
           </div>
-
-          {hasDateFilter && !dateOk ? (
-            <div role="alert" className="border border-amber-200 bg-amber-50 p-5 text-sm text-amber-950">
-              Choose a real pick-up date from tomorrow onward and a later return date to check availability.
-            </div>
-          ) : vehicles.length > 0 ? (
+        ) : vehicles.length > 0 ? (
+          <div className="animate-fade-in">
             <VehiclesBrowser
               vehicles={vehicles}
-              gridClassName="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6"
+              gridClassName="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 2xl:grid-cols-4 gap-x-6 gap-y-10"
               loadMore={{
                 pageSize: VEHICLES_PAGE_SIZE,
                 params: {
@@ -122,19 +152,18 @@ export default async function VehiclesPage({ searchParams }: Props) {
                 },
               }}
             />
-          ) : (
-            <div className="flex flex-col items-center justify-center p-12 bg-white rounded-xl border border-slate-100 text-center space-y-3">
-              <div className="h-16 w-16 rounded-full bg-slate-50 flex items-center justify-center text-slate-400">
-                <Search className="w-8 h-8" />
-              </div>
-              <div>
-                <h3 className="font-semibold text-slate-700">No vehicles match your filters</h3>
-                <p className="text-xs text-slate-400 max-w-sm mt-1">Try widening the location, vehicle type, or rental option.</p>
-              </div>
-            </div>
-          )}
-        </div>
+          </div>
+        ) : (
+          <EmptyState
+            icon={<Search size={22} />}
+            title="No vehicles match these filters"
+            description="Try a wider location, a different vehicle type, or fewer filters at once."
+            action={
+              <Link href="/vehicles" className={buttonClasses({ variant: "secondary" })}>Clear filters</Link>
+            }
+          />
+        )}
       </div>
-    </div>
+    </>
   );
 }
