@@ -1,10 +1,13 @@
 "use client";
 
 import { useState } from "react";
-import { HelpCircle, Plus } from "lucide-react";
+import { ChevronDown } from "lucide-react";
 import { WhatsAppIcon } from "@/components/icons/WhatsAppIcon";
 import { siteConfig, whatsappLink } from "@/lib/site-config";
-import { PageShell } from "@/components/ui/PageShell";
+import { pageShellClass } from "@/components/ui/PageShell";
+import { ContentHero } from "@/components/content/ContentHero";
+import { chipClasses } from "@/components/ui/Chip";
+import { buttonClasses } from "@/components/ui/Button";
 
 interface QA {
   q: string;
@@ -226,32 +229,14 @@ const AGENCY_FAQS: QA[] = [
 type TabKey = "renters" | "agencies";
 
 function AccordionItem({ q, a }: { q: string; a: React.ReactNode }) {
-  const [open, setOpen] = useState(false);
   return (
-    <div className="bg-white border border-slate-200 rounded-2xl shadow-sm overflow-hidden">
-      <button
-        type="button"
-        onClick={() => setOpen((o) => !o)}
-        aria-expanded={open}
-        className="spring-press w-full text-left px-5 py-4 flex items-start justify-between gap-3"
-      >
-        <span className="text-slate-900 font-medium text-sm">{q}</span>
-        <Plus
-          size={16}
-          className={`text-slate-500 shrink-0 mt-0.5 transition-transform duration-300 ${open ? "rotate-45" : ""}`}
-        />
-      </button>
-      <div
-        className="grid transition-[grid-template-rows] duration-300 ease-out"
-        style={{ gridTemplateRows: open ? "1fr" : "0fr" }}
-      >
-        <div className="overflow-hidden min-h-0">
-          <div className="text-slate-600 text-sm leading-relaxed px-5 pb-4 pt-3 border-t border-slate-200">
-            {a}
-          </div>
-        </div>
-      </div>
-    </div>
+    <details className="group px-5">
+      <summary className="flex min-h-14 cursor-pointer list-none items-center justify-between gap-3 py-3 text-sm font-medium text-slate-900 [&::-webkit-details-marker]:hidden">
+        {q}
+        <ChevronDown size={16} className="shrink-0 text-slate-500 transition-transform duration-300 group-open:rotate-180" aria-hidden="true" />
+      </summary>
+      <div className="pb-4 pr-8 text-sm leading-relaxed text-slate-600">{a}</div>
+    </details>
   );
 }
 
@@ -260,19 +245,13 @@ export default function FAQPage() {
   const items = tab === "renters" ? RENTER_FAQS : AGENCY_FAQS;
 
   return (
-    <PageShell width="prose" flush>
-      <header className="text-center mb-10">
-        <div className="inline-flex items-center gap-2 mb-3">
-          <HelpCircle size={20} className="text-blue-600" />
-          <span className="text-blue-700 text-xs font-semibold uppercase tracking-wider">FAQ</span>
-        </div>
-        <h1 className="font-display text-3xl sm:text-4xl font-extrabold text-slate-900">Frequently asked questions</h1>
-      </header>
+    <div className={pageShellClass("prose", "space-y-10")}>
+      <ContentHero eyebrow="FAQ" title="Frequently asked questions" lead="Answers on booking, pricing, verification and how requests work." />
 
-      {/* Tabs */}
-      <div role="tablist" className="flex gap-1 justify-center mb-8 p-1 bg-white border border-slate-200 rounded-full w-fit mx-auto shadow-sm">
+      {/* Category jump row */}
+      <div role="tablist" className="flex flex-wrap justify-center gap-2">
         {([
-          { key: "renters",  label: "For renters" },
+          { key: "renters", label: "For renters" },
           { key: "agencies", label: "For Rental Page owners" },
         ] as const).map((t) => (
           <button
@@ -280,38 +259,37 @@ export default function FAQPage() {
             role="tab"
             aria-selected={tab === t.key}
             onClick={() => setTab(t.key)}
-            className={`spring-press px-5 py-2 rounded-full text-sm font-medium transition-all ${
-              tab === t.key
-                ? "bg-blue-600 text-white shadow-sm"
-                : "text-slate-600 hover:text-slate-900"
-            }`}
+            className={chipClasses(tab === t.key)}
           >
             {t.label}
           </button>
         ))}
       </div>
 
-      <div className="space-y-2 animate-fade-up" key={tab}>
+      <div key={tab} className="animate-fade-up divide-y divide-slate-900/[0.06] overflow-hidden rounded-2xl bg-white ring-1 ring-slate-900/[0.06] shadow-xs">
         {items.map((item, i) => (
           <AccordionItem key={`${tab}-${i}`} q={item.q} a={item.a} />
         ))}
       </div>
 
-      {/* Still have questions → WhatsApp */}
-      <div className="text-center mt-12 p-6 bg-slate-900 text-white rounded-2xl">
-        <p className="font-display text-lg font-extrabold">Still have a question?</p>
-        <p className="text-slate-300 text-sm mt-1 mb-4">
-          Message our team on WhatsApp. We will reply as soon as a support person is available.
-        </p>
-        <a
-          href={whatsappLink("Hi DriveLink, I have a question about ")}
-          target="_blank"
-          rel="noopener noreferrer"
-          className="inline-flex items-center gap-2 px-5 py-2.5 bg-blue-600 hover:bg-blue-700 text-white font-semibold rounded-xl text-sm transition-colors"
-        >
-          <WhatsAppIcon size={16} /> WhatsApp {siteConfig.whatsappDisplay}
-        </a>
+      {/* Still have questions -> WhatsApp */}
+      <div className="relative overflow-hidden rounded-3xl p-6 text-center text-white md:p-8">
+        <div aria-hidden="true" className="absolute inset-0 bg-brand-gradient" />
+        <div className="relative">
+          <p className="text-lg font-semibold tracking-tight">Still have a question?</p>
+          <p className="mx-auto mt-1.5 mb-5 max-w-md text-sm text-white/80">
+            Message our team on WhatsApp. We will reply as soon as a support person is available.
+          </p>
+          <a
+            href={whatsappLink("Hi DriveLink, I have a question about ")}
+            target="_blank"
+            rel="noopener noreferrer"
+            className={buttonClasses({ variant: "primary", size: "lg" })}
+          >
+            <WhatsAppIcon size={16} /> WhatsApp {siteConfig.whatsappDisplay}
+          </a>
+        </div>
       </div>
-    </PageShell>
+    </div>
   );
 }

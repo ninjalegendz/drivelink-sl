@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import Link from "next/link";
+import { chipClasses } from "@/components/ui/Chip";
 
 type RoleTab = "renters" | "owners";
 
@@ -21,12 +22,10 @@ export function RoleTermsTabs() {
   const [tab, setTab] = useState<RoleTab>("renters");
 
   return (
-    <section>
+    <section id="role-terms">
       <div className="flex items-center justify-between gap-3 mb-3 flex-wrap">
-        <h2 className="text-xl font-semibold text-slate-900">
-          4. {tab === "renters" ? "Renter terms" : "Rental Page owner terms"}
-        </h2>
-        <div role="tablist" className="flex gap-1 p-1 glass-card rounded-full">
+        <h2>4. {tab === "renters" ? "Renter terms" : "Rental Page owner terms"}</h2>
+        <div role="tablist" className="flex gap-2">
           {([
             { key: "renters", label: "For renters" },
             { key: "owners", label: "For owners" },
@@ -36,11 +35,7 @@ export function RoleTermsTabs() {
               role="tab"
               aria-selected={tab === t.key}
               onClick={() => setTab(t.key)}
-              className={`spring-press px-4 py-1.5 rounded-full text-xs font-medium transition-all ${
-                tab === t.key
-                  ? "bg-blue-600 text-white shadow-sm"
-                  : "text-slate-600 hover:text-slate-900"
-              }`}
+              className={chipClasses(tab === t.key)}
             >
               {t.label}
             </button>
