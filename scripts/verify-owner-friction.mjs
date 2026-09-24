@@ -140,11 +140,21 @@ try {
   const page2 = p2.body.page.id;
 
   await sOwner.db.from("agencies").update({ whatsapp_number: phone(1) }).eq("id", page2);
-  let { data: row } = await service.from("agencies").select("whatsapp_verified_at").eq("id", page2).single();
+  let { data: row } = await service.from("agencies").select("whatsapp_verified_at, deactivated_at").eq("id", page2).single();
   chk("page: switching to the verified phone verifies it", Boolean(row?.whatsapp_verified_at));
+  chk("page: and does not pause the page", !row?.deactivated_at);
   await sOwner.db.from("agencies").update({ whatsapp_number: phone(4) }).eq("id", page2);
-  ({ data: row } = await service.from("agencies").select("whatsapp_verified_at").eq("id", page2).single());
+  ({ data: row } = await service.from("agencies").select("whatsapp_verified_at, deactivated_at").eq("id", page2).single());
   chk("page: switching to another number resets it", !row?.whatsapp_verified_at);
+  // Migration 128 rebuilt the phone rule from an old version and lost this.
+  chk("page: and pauses the page until that number is verified", Boolean(row?.deactivated_at));
+
+  // Deleting a page clears its phone number. Migration 128 made that illegal,
+  // which broke every page deletion (admin Delete and owner account deletion).
+  const { error: deleteError } = await service.rpc("soft_delete_rental_page", { p_agency_id: page2, p_source: "admin" });
+  ({ data: row } = await service.from("agencies").select("deleted_at, whatsapp_number").eq("id", page2).single());
+  chk("page: a Rental Page can be deleted",
+    !deleteError && Boolean(row?.deleted_at) && row?.whatsapp_number === null, deleteError?.message ?? "");
 
   // ── 2. The forms ──
   const form = await fetch(`${BASE}/account/pages/new`, { headers: { Cookie: sOwner.header } }).then((r) => r.text());
