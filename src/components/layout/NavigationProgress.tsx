@@ -120,6 +120,12 @@ export function NavigationProgress() {
       if (!isPlainLeftClick(event) || event.defaultPrevented) return;
       const anchor = (event.target as HTMLElement | null)?.closest?.("a");
       if (!anchor) return;
+      // An anchor that opens something in place (the vehicle quick view) keeps
+      // a real href for new tabs and search engines but never navigates on a
+      // plain click. This listener runs before that click handler can cancel
+      // the navigation, so without the opt-out the bar and its "Loading" pill
+      // hung on screen until their own timeout over an open dialog.
+      if (anchor.hasAttribute("data-no-progress")) return;
       if (!navigatesInApp(anchor as HTMLAnchorElement, window.location.pathname + window.location.search)) return;
       start();
     }

@@ -28,8 +28,11 @@ export default function AuthLayout({ children }: { children: React.ReactNode }) 
           between the logo and the footer line, so it sits in the same
           spot whether it's a one-field identifier stage or a longer
           signup form. */}
-      <div className="flex w-full flex-col px-6 py-8 sm:px-10 lg:w-1/2 lg:px-14 lg:py-10 xl:w-[46%] xl:px-20">
-        <Link href="/" className="inline-flex w-fit">
+      {/* flex-1 on phones too: without it the column only takes its content's
+          height, so "centred between logo and footer" had no room to centre
+          in and the card sat high on the screen. */}
+      <div className="flex w-full flex-1 flex-col px-6 py-8 sm:px-10 lg:w-1/2 lg:flex-none lg:px-14 lg:py-10 xl:w-[46%] xl:px-20">
+        <Link href="/" className="mx-auto inline-flex w-fit lg:mx-0">
           <Image
             src="/logo-horizontal.png"
             alt="DriveLink"
@@ -41,11 +44,11 @@ export default function AuthLayout({ children }: { children: React.ReactNode }) 
           />
         </Link>
 
-        <div className="flex flex-1 items-center py-10">
+        <div className="flex flex-1 items-center justify-center py-10">
           <div className="w-full max-w-md">{children}</div>
         </div>
 
-        <footer className="flex items-center justify-center gap-4 text-xs text-slate-500 lg:justify-start">
+        <footer className="flex items-center justify-center gap-4 text-xs text-slate-500">
           <Link href="/terms" className="hover:text-slate-700">Terms</Link>
           <span aria-hidden="true" className="text-slate-300">{"·"}</span>
           <Link href="/privacy" className="hover:text-slate-700">Privacy</Link>

@@ -7,6 +7,8 @@ import Link from "next/link";
 import { AlertTriangle, Trash2, X } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 import { Button } from "@/components/ui/Button";
+import { Portal } from "@/components/ui/Portal";
+import { useEscapeLayer } from "@/components/ui/useEscapeLayer";
 
 interface Blocker {
   type:     "active_booking" | "is_admin";
@@ -52,10 +54,9 @@ export function DeleteAccountSection() {
         setHasRecoveryEmail(d.hasRecoveryEmail === true);
       })
       .catch(() => setPreviewError(true));
-    function onKey(e: KeyboardEvent) { if (e.key === "Escape") setOpen(false); }
-    window.addEventListener("keydown", onKey);
-    return () => { document.body.style.overflow = prev; window.removeEventListener("keydown", onKey); };
+    return () => { document.body.style.overflow = prev; };
   }, [open]);
+  useEscapeLayer(() => setOpen(false), open);
 
   useEffect(() => {
     if (challengeCooldown <= 0) return;
@@ -134,8 +135,9 @@ export function DeleteAccountSection() {
       </Button>
 
       {open && (
+        <Portal>
         <div
-          className="animate-fade-in fixed inset-0 z-50 flex items-center justify-center bg-slate-950/40 p-4 backdrop-blur-[2px]"
+          className="animate-fade-in fixed inset-0 z-[60] flex items-center justify-center bg-slate-950/40 p-4 backdrop-blur-[2px]"
           onClick={() => setOpen(false)}
         >
           <div
@@ -268,6 +270,7 @@ export function DeleteAccountSection() {
             )}
           </div>
         </div>
+        </Portal>
       )}
     </section>
   );

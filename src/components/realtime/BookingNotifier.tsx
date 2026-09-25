@@ -125,7 +125,7 @@ export function BookingNotifier({ agencyId, viewHref }: Props) {
   if (toasts.length === 0) return null;
 
   return (
-    <div className="fixed top-4 inset-x-4 sm:inset-x-auto sm:right-4 sm:max-w-md z-[60] space-y-2">
+    <div className="fixed top-4 inset-x-4 sm:inset-x-auto sm:right-4 sm:max-w-md z-[95] space-y-2">
       {toasts.map((t) => (
         <div
           key={t.id}

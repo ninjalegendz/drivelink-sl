@@ -11,6 +11,8 @@ import { isValidInternationalPhone } from "@/data/country-codes";
 import { isEmailLike } from "@/lib/auth/identifier";
 import { startVerificationForBooking } from "@/lib/booking/pending-booking";
 import { formatLKR } from "@/lib/vehicles/format";
+import { Portal } from "@/components/ui/Portal";
+import { useEscapeLayer } from "@/components/ui/useEscapeLayer";
 
 type Mode  = "signup" | "login";
 type Stage = "identity" | "code" | "booking";
@@ -57,19 +59,16 @@ export function GuestBookingModal({ draft, onClose }: Props) {
 
   const codeRef = useRef<HTMLInputElement>(null);
 
-  // Lock body scroll while open + Escape to close
+  // Escape closes this sign-in step only (top layer), and never while the
+  // booking itself is being sent.
+  useEscapeLayer(() => { if (stage !== "booking") onClose(); });
+
+  // Lock body scroll while open
   useEffect(() => {
     const prev = document.body.style.overflow;
     document.body.style.overflow = "hidden";
-    function onKey(e: KeyboardEvent) {
-      if (e.key === "Escape" && stage !== "booking") onClose();
-    }
-    window.addEventListener("keydown", onKey);
-    return () => {
-      document.body.style.overflow = prev;
-      window.removeEventListener("keydown", onKey);
-    };
-  }, [onClose, stage]);
+    return () => { document.body.style.overflow = prev; };
+  }, []);
 
   // Tick the resend cooldown
   useEffect(() => {
@@ -251,8 +250,9 @@ export function GuestBookingModal({ draft, onClose }: Props) {
 
   // ─── Render ─────────────────────────────────────────────────────────
   return (
+    <Portal>
     <div
-      className="fixed inset-0 z-50 bg-black/70 flex items-center justify-center p-4 overflow-y-auto"
+      className="fixed inset-0 z-[70] bg-black/70 flex items-center justify-center p-4 overflow-y-auto"
       onClick={() => stage !== "booking" && onClose()}
     >
       <div
@@ -540,5 +540,6 @@ export function GuestBookingModal({ draft, onClose }: Props) {
         </div>
       </div>
     </div>
+    </Portal>
   );
 }

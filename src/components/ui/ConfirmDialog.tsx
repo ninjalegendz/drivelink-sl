@@ -3,6 +3,8 @@
 import { useEffect, useRef, useState } from "react";
 import { TriangleAlert } from "lucide-react";
 import { Button } from "@/components/ui/Button";
+import { Portal } from "@/components/ui/Portal";
+import { useEscapeLayer } from "@/components/ui/useEscapeLayer";
 
 // Replaces window.confirm() for actions that cannot be undone.
 //
@@ -43,19 +45,19 @@ export function ConfirmDialog({
   useEffect(() => {
     if (!open) { setTyped(""); return; }
     panelRef.current?.focus();
-    function onKey(event: KeyboardEvent) {
-      if (event.key === "Escape" && !busy) onCancel();
-    }
-    window.addEventListener("keydown", onKey);
-    return () => window.removeEventListener("keydown", onKey);
-  }, [open, busy, onCancel]);
+  }, [open]);
+
+  // Escape cancels this confirmation only, never the sheet or dialog it was
+  // opened from, and not while the action is already running.
+  useEscapeLayer(() => { if (!busy) onCancel(); }, open);
 
   if (!open) return null;
 
   const unlocked = !requireTyped || typed.trim() === requireTyped.trim();
 
   return (
-    <div className="animate-fade-in fixed inset-0 z-[60] flex items-end justify-center bg-slate-950/40 p-3 backdrop-blur-[2px] sm:items-center sm:p-6">
+    <Portal>
+    <div className="animate-fade-in fixed inset-0 z-[80] flex items-end justify-center bg-slate-950/40 p-3 backdrop-blur-[2px] sm:items-center sm:p-6">
       <div
         ref={panelRef}
         tabIndex={-1}
@@ -102,5 +104,6 @@ export function ConfirmDialog({
         </div>
       </div>
     </div>
+    </Portal>
   );
 }

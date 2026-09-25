@@ -3,6 +3,8 @@
 import Image from "next/image";
 import { useEffect, useRef, useState } from "react";
 import { Car, X, ChevronLeft, ChevronRight, Images } from "lucide-react";
+import { Portal } from "@/components/ui/Portal";
+import { useEscapeLayer } from "@/components/ui/useEscapeLayer";
 
 interface Props {
   photos: string[];
@@ -62,13 +64,15 @@ export function VehicleGallery({ photos, alt }: Props) {
     setActive(Math.min(photos.length - 1, Math.max(0, index)));
   }
 
-  // Lock body scroll while lightbox is open + Escape/arrow keys
+  // Escape closes the viewer only (not the quick view it may sit in).
+  useEscapeLayer(() => setZoomed(false), zoomed);
+
+  // Lock body scroll while lightbox is open + arrow keys
   useEffect(() => {
     if (!zoomed) return;
     const prevOverflow = document.body.style.overflow;
     document.body.style.overflow = "hidden";
     function onKey(e: KeyboardEvent) {
-      if (e.key === "Escape")     setZoomed(false);
       if (e.key === "ArrowLeft")  setActive((i) => Math.max(0, i - 1));
       if (e.key === "ArrowRight") setActive((i) => Math.min(photos.length - 1, i + 1));
     }
@@ -200,11 +204,17 @@ export function VehicleGallery({ photos, alt }: Props) {
           and a thumbnail strip lets a desktop visitor jump straight to a
           photo instead of stepping one at a time. */}
       {zoomed && (
+        // Portalled: inside the quick view this used to be trapped by the
+        // dialog's own transform and only filled the dialog. See Portal.
+        <Portal>
         <div
-          className="fixed inset-0 z-50 flex flex-col bg-slate-950/95"
+          role="dialog"
+          aria-modal="true"
+          aria-label={`${alt}, photo viewer`}
+          className="animate-fade-in fixed inset-0 z-[85] flex flex-col bg-slate-950/95 pb-[env(safe-area-inset-bottom)] pt-[env(safe-area-inset-top)] backdrop-blur-sm"
           onClick={() => setZoomed(false)}
         >
-          <div className="flex items-center justify-between p-4">
+          <div className="flex items-center justify-between px-4 py-3 sm:px-6">
             <span className="text-xs font-medium text-white/70">{active + 1} / {photos.length}</span>
             <button
               type="button"
@@ -290,6 +300,7 @@ export function VehicleGallery({ photos, alt }: Props) {
             </div>
           )}
         </div>
+        </Portal>
       )}
     </>
   );

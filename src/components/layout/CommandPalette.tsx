@@ -11,6 +11,7 @@ import {
 import { SL_CITIES } from "@/data/cities";
 import { VEHICLE_TYPES } from "@/data/vehicles";
 import { startNavigationProgress } from "@/components/layout/NavigationProgress";
+import { useEscapeLayer } from "@/components/ui/useEscapeLayer";
 
 // One box that goes anywhere. A renter who knows they want "a van in Kandy"
 // should not have to find a filter panel, and a host answering a customer
@@ -157,6 +158,10 @@ export function CommandPalette({ context }: { context: CommandContext }) {
     };
   }, [open]);
 
+  // Registered as the top Escape layer while open, so Escape from the
+  // palette never also closes a dialog underneath it.
+  useEscapeLayer(close, open);
+
   const items = useMemo<Item[]>(() => {
     const q = query.trim().toLowerCase();
     const out: Item[] = [];
@@ -221,7 +226,7 @@ export function CommandPalette({ context }: { context: CommandContext }) {
 
   let lastGroup = "";
   return createPortal(
-    <div className="fixed inset-0 z-[70] flex items-start justify-center sm:px-4 sm:pt-[12vh]">
+    <div className="fixed inset-0 z-[90] flex items-start justify-center sm:px-4 sm:pt-[12vh]">
       <button
         type="button"
         aria-label="Close search"

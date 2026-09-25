@@ -3,6 +3,7 @@
 import { X } from "lucide-react";
 import { type ReactNode, useEffect, useId, useRef } from "react";
 import { createPortal } from "react-dom";
+import { useEscapeLayer } from "@/components/ui/useEscapeLayer";
 
 interface BottomSheetProps {
   title: string;
@@ -37,6 +38,10 @@ export function BottomSheet({ title, closeLabel, onClose, children, actions, cla
     onCloseRef.current = onClose;
   }, [onClose]);
 
+  // Escape goes to the top layer only, so closing a picker opened from a
+  // dialog does not close the dialog too. See useEscapeLayer.
+  useEscapeLayer(() => onCloseRef.current());
+
   useEffect(() => {
     returnFocusRef.current = document.activeElement instanceof HTMLElement ? document.activeElement : null;
     const previousOverflow = document.body.style.overflow;
@@ -52,12 +57,6 @@ export function BottomSheet({ title, closeLabel, onClose, children, actions, cla
     (firstFocusable ?? dialogRef.current)?.focus();
 
     function onKeyDown(event: KeyboardEvent) {
-      if (event.key === "Escape") {
-        event.preventDefault();
-        onCloseRef.current();
-        return;
-      }
-
       if (event.key !== "Tab") return;
       const elements = focusable();
       if (elements.length === 0) {
@@ -90,7 +89,7 @@ export function BottomSheet({ title, closeLabel, onClose, children, actions, cla
   if (typeof document === "undefined") return null;
 
   return createPortal(
-    <div className="fixed inset-0 z-50 flex items-end md:items-center md:justify-center md:p-6">
+    <div className="fixed inset-0 z-[70] flex items-end md:items-center md:justify-center md:p-6">
       <button
         type="button"
         aria-label={`Dismiss ${title.toLowerCase()}`}

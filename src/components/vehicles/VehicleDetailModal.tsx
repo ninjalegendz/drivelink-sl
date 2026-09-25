@@ -14,6 +14,7 @@ import { siteConfig } from "@/lib/site-config";
 import type { VehicleWithAgency } from "@/types/queries";
 import { trackTrafficEvent } from "@/lib/analytics/client";
 import { isCurrentVerifiedVehicle } from "@/lib/vehicles/trust";
+import { useEscapeLayer } from "@/components/ui/useEscapeLayer";
 
 type ModalReview = {
   id: string; rating: number; comment: string | null; created_at: string;
@@ -49,6 +50,10 @@ export function VehicleDetailModal({ vehicle, onClose }: { vehicle: VehicleWithA
   const [reviews, setReviews] = useState<ModalReview[]>([]);
 
   // Body scroll lock + Esc to close
+  // Escape closes only the top layer: a date picker or the photo viewer
+  // opened from here closes first, this dialog on the next press.
+  useEscapeLayer(onClose);
+
   useEffect(() => {
     trackTrafficEvent({
       event: "vehicle_view",
@@ -61,10 +66,6 @@ export function VehicleDetailModal({ vehicle, onClose }: { vehicle: VehicleWithA
     document.body.style.overflow = "hidden";
     closeRef.current?.focus();
     function onKey(e: KeyboardEvent) {
-      if (e.key === "Escape") {
-        onClose();
-        return;
-      }
       if (e.key !== "Tab") return;
       const focusable = Array.from(modalRef.current?.querySelectorAll<HTMLElement>('button:not([disabled]), a[href], input:not([disabled]), [tabindex]:not([tabindex="-1"])') ?? []);
       if (!focusable.length) return;
@@ -130,7 +131,7 @@ export function VehicleDetailModal({ vehicle, onClose }: { vehicle: VehicleWithA
       // filter bar's own children kept winning the hit-test over this
       // dialog's close button even at z-[70]/z-[80]). Portalling to body
       // sidesteps the quirk entirely rather than fighting it with z-index.
-      className="fixed inset-0 z-[70] overflow-hidden bg-slate-950/60 backdrop-blur-md md:flex md:items-center md:justify-center md:p-4"
+      className="fixed inset-0 z-[60] overflow-hidden bg-slate-950/60 backdrop-blur-md md:flex md:items-center md:justify-center md:p-4"
       onClick={onClose}
     >
       <div
@@ -148,7 +149,7 @@ export function VehicleDetailModal({ vehicle, onClose }: { vehicle: VehicleWithA
           ref={closeRef}
           type="button"
           onClick={onClose}
-          className="fixed right-3 top-[max(.75rem,env(safe-area-inset-top))] z-[80] grid h-11 w-11 place-items-center rounded-full bg-white/95 text-slate-700 shadow-md ring-1 ring-slate-900/[0.06] backdrop-blur hover:bg-slate-100 md:absolute md:top-3"
+          className="fixed right-3 top-[max(.75rem,env(safe-area-inset-top))] z-20 grid h-11 w-11 place-items-center rounded-full bg-white/95 text-slate-700 shadow-md ring-1 ring-slate-900/[0.06] backdrop-blur hover:bg-slate-100 md:absolute md:top-3"
           aria-label="Close vehicle details"
         >
           <X className="h-5 w-5" />

@@ -3,6 +3,8 @@
 import { useEffect, useRef, useState } from "react";
 import { ChevronDown, ChevronUp, MessageCircle, Send, X } from "lucide-react";
 import { createClient, realtimeReady } from "@/lib/supabase/client";
+import { Portal } from "@/components/ui/Portal";
+import { useEscapeLayer } from "@/components/ui/useEscapeLayer";
 
 export interface BookingMessage {
   id:         string;
@@ -398,13 +400,13 @@ function MessageRenterModal({
   useEffect(() => {
     const prev = document.body.style.overflow;
     document.body.style.overflow = "hidden";
-    function onKey(e: KeyboardEvent) { if (e.key === "Escape") onClose(); }
-    window.addEventListener("keydown", onKey);
-    return () => { document.body.style.overflow = prev; window.removeEventListener("keydown", onKey); };
+    return () => { document.body.style.overflow = prev; };
   }, [onClose]);
+  useEscapeLayer(onClose);
 
   return (
-    <div className="animate-fade-in fixed inset-0 z-50 flex items-center justify-center bg-slate-950/40 p-4 backdrop-blur-[2px]" onClick={onClose}>
+    <Portal>
+    <div className="animate-fade-in fixed inset-0 z-[60] flex items-center justify-center bg-slate-950/40 p-4 backdrop-blur-[2px]" onClick={onClose}>
       <div className="animate-scale-in w-full max-w-md rounded-3xl bg-white p-5 shadow-2xl ring-1 ring-slate-900/[0.06]" onClick={(e) => e.stopPropagation()}>
         <div className="mb-4 flex items-start justify-between">
           <div>
@@ -432,5 +434,6 @@ function MessageRenterModal({
         />
       </div>
     </div>
+    </Portal>
   );
 }

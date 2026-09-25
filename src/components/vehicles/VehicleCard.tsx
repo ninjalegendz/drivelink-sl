@@ -241,6 +241,8 @@ export function VehicleCard({ vehicle, onOpen }: Props) {
     <a
       href={href}
       className={cardClass}
+      // Opens the quick view in place, so the page-loading bar must not start.
+      data-no-progress=""
       onClick={(e) => {
         if (e.metaKey || e.ctrlKey || e.shiftKey || e.altKey || e.button !== 0) return;
         e.preventDefault();

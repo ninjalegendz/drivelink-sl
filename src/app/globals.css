@@ -338,9 +338,14 @@
     }
   }
 
+  /* Every entrance ends on `transform: none`, not on a zero translate or a
+     scale of 1. With fill-mode "both" the last frame stays applied, and any
+     transform other than none makes the element a containing block for its
+     fixed-position descendants: a dialog opened from inside a faded-in
+     section would then be pinned to that section instead of the screen. */
   @keyframes fade-up {
     0%   { opacity: 0; transform: translateY(10px); }
-    100% { opacity: 1; transform: translateY(0); }
+    100% { opacity: 1; transform: none; }
   }
   @keyframes fade-in {
     0%   { opacity: 0; }
@@ -348,11 +353,11 @@
   }
   @keyframes scale-in {
     0%   { opacity: 0; transform: scale(0.96) translateY(6px); }
-    100% { opacity: 1; transform: scale(1) translateY(0); }
+    100% { opacity: 1; transform: none; }
   }
   @keyframes sheet-up {
     0%   { transform: translateY(100%); }
-    100% { transform: translateY(0); }
+    100% { transform: none; }
   }
   @keyframes shimmer {
     0%   { background-position: 100% 0; }
@@ -363,7 +368,7 @@
   .animate-bounce-in { animation: scale-in 0.32s var(--ease-out-expo) both; }
   @keyframes pop-in {
     0%   { opacity: 0; transform: scale(0.85); }
-    100% { opacity: 1; transform: scale(1); }
+    100% { opacity: 1; transform: none; }
   }
   .animate-pop-in { animation: pop-in 0.22s var(--ease-out-expo) both; }
 
