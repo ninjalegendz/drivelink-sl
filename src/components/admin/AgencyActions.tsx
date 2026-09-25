@@ -4,11 +4,11 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { Ban, Undo2, Trash2, Pencil, Gauge, Activity } from "lucide-react";
-import { Button } from "@/components/ui/Button";
 import { EditAgencyModal } from "@/components/admin/EditAgencyModal";
 import { RatingAdjustModal } from "@/components/admin/RatingAdjustModal";
 import { ConfirmDialog } from "@/components/ui/ConfirmDialog";
-import { ADMIN_ACTION_ROW, ADMIN_ICON_ACTION } from "@/components/admin/action-row";
+import { ADMIN_ICON_ACTION } from "@/components/admin/action-row";
+import { OverflowMenu } from "@/components/ui/OverflowMenu";
 
 interface Props {
   agencyId:        string;
@@ -85,30 +85,24 @@ export function AgencyActions({ agencyId, name, city, address, whatsapp_number, 
 
   return (
     <div className="flex w-full flex-col items-stretch gap-1.5 sm:w-auto sm:items-end">
-      <div className="flex items-center justify-end gap-1">
+      {/* Timeline stays one tap away; rarer and riskier actions share one
+          menu. Each still opens the same confirmation it always did. */}
+      <div className="flex items-center justify-end gap-1.5">
+        {loading && <span className="text-xs text-slate-500" role="status">Working</span>}
         <Link href={`/admin/agencies/${agencyId}/timeline`} aria-label="View timeline" title="Timeline" className={ADMIN_ICON_ACTION}>
           <Activity size={16} aria-hidden="true" />
         </Link>
-        <button type="button" aria-label="Adjust reliability" title="Reliability" className={ADMIN_ICON_ACTION} onClick={() => setRatingOpen(true)}>
-          <Gauge size={16} aria-hidden="true" />
-        </button>
-        <button type="button" aria-label="Edit Rental Page" title="Edit" className={ADMIN_ICON_ACTION} onClick={() => setEditOpen(true)}>
-          <Pencil size={16} aria-hidden="true" />
-        </button>
-      </div>
-      <div className={ADMIN_ACTION_ROW}>
-        {isBlocked ? (
-          <Button size="sm" variant="secondary" loading={loading === "unblock"} onClick={unblock}>
-            <Undo2 size={14} /> Unblock
-          </Button>
-        ) : (
-          <Button size="sm" variant="secondary" loading={loading === "block"} onClick={() => setConfirming("block")}>
-            <Ban size={14} /> Block
-          </Button>
-        )}
-        <Button size="sm" variant="danger" loading={loading === "delete"} onClick={() => setConfirming("delete")}>
-          <Trash2 size={14} /> Delete
-        </Button>
+        <OverflowMenu
+          label={`More actions for ${name}`}
+          items={[
+            { label: "Adjust reliability", icon: Gauge, onSelect: () => setRatingOpen(true) },
+            { label: "Edit Rental Page", icon: Pencil, onSelect: () => setEditOpen(true) },
+            isBlocked
+              ? { label: "Unblock", icon: Undo2, onSelect: () => { void unblock(); }, disabled: loading === "unblock" }
+              : { label: "Block", icon: Ban, onSelect: () => setConfirming("block"), danger: true, disabled: loading === "block" },
+            { label: "Delete Rental Page", icon: Trash2, onSelect: () => setConfirming("delete"), danger: true, disabled: loading === "delete" },
+          ]}
+        />
       </div>
       {error && <p className="text-rose-600 text-xs">{error}</p>}
 

@@ -11,7 +11,8 @@ import { useEscapeLayer } from "@/components/ui/useEscapeLayer";
 import { EditRenterModal } from "@/components/admin/EditRenterModal";
 import { RatingAdjustModal } from "@/components/admin/RatingAdjustModal";
 import { ConfirmDialog } from "@/components/ui/ConfirmDialog";
-import { ADMIN_ACTION_ROW, ADMIN_ICON_ACTION } from "@/components/admin/action-row";
+import { ADMIN_ICON_ACTION } from "@/components/admin/action-row";
+import { OverflowMenu } from "@/components/ui/OverflowMenu";
 
 interface Props {
   userId:         string;
@@ -117,30 +118,25 @@ export function RenterActions({ userId, fullName, phone, email, role, isBlacklis
 
   return (
     <div className="flex w-full flex-col items-stretch gap-1.5 sm:w-auto sm:items-end">
-      <div className="flex items-center justify-end gap-1">
+      {/* The timeline stays one tap away; the rarer and riskier actions sit
+          in one menu so the row reads at a glance. Every action still opens
+          the same dialog or confirmation it always did. */}
+      <div className="flex items-center justify-end gap-1.5">
+        {loading && <span className="text-xs text-slate-500" role="status">Working</span>}
         <Link href={`/admin/users/${userId}/timeline`} aria-label="View timeline" title="Timeline" className={ADMIN_ICON_ACTION}>
           <Activity size={16} aria-hidden="true" />
         </Link>
-        <button type="button" aria-label="Adjust reliability" title="Reliability" className={ADMIN_ICON_ACTION} onClick={() => setRatingOpen(true)}>
-          <Gauge size={16} aria-hidden="true" />
-        </button>
-        <button type="button" aria-label="Edit renter" title="Edit" className={ADMIN_ICON_ACTION} onClick={() => setEditOpen(true)}>
-          <Pencil size={16} aria-hidden="true" />
-        </button>
-      </div>
-      <div className={ADMIN_ACTION_ROW}>
-        {isBlacklisted ? (
-          <Button size="sm" variant="secondary" loading={loading === "unblock"} onClick={unblock}>
-            <Undo2 size={14} /> Unblock
-          </Button>
-        ) : (
-          <Button size="sm" variant="secondary" onClick={() => setModalOpen(true)}>
-            <Ban size={14} /> Block
-          </Button>
-        )}
-        <Button size="sm" variant="danger" loading={loading === "delete"} onClick={() => setConfirmingDelete(true)}>
-          <Trash2 size={14} /> Delete
-        </Button>
+        <OverflowMenu
+          label={`More actions for ${fullName || "this renter"}`}
+          items={[
+            { label: "Adjust reliability", icon: Gauge, onSelect: () => setRatingOpen(true) },
+            { label: "Edit details", icon: Pencil, onSelect: () => setEditOpen(true) },
+            isBlacklisted
+              ? { label: "Unblock", icon: Undo2, onSelect: () => { void unblock(); }, disabled: loading === "unblock" }
+              : { label: "Block", icon: Ban, onSelect: () => setModalOpen(true), danger: true },
+            { label: "Delete account", icon: Trash2, onSelect: () => setConfirmingDelete(true), danger: true, disabled: loading === "delete" },
+          ]}
+        />
       </div>
       {editOpen && (
         <EditRenterModal

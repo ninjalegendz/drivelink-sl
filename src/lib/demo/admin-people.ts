@@ -218,7 +218,9 @@ export const DEMO_AGENCIES: AgencyRow[] = [
     is_blocked: false,
     page_type: "business",
     business_reg_no: "PV 00214587",
-    business_reg_url: "/api/docs/demo/serendib-cr.pdf",
+    // Preview only: a real certificate is served by the signed-in /api/docs
+    // route, which cannot answer here, so the sample shows the not-uploaded state.
+    business_reg_url: null,
     reliability_pct: 94,
     confirmed_count: 40,
     cancellation_count: 2,
@@ -284,7 +286,7 @@ export const DEMO_AGENCIES: AgencyRow[] = [
     is_blocked: true,
     page_type: "business",
     business_reg_no: "PV 00198322",
-    business_reg_url: "/api/docs/demo/islandhop-cr.pdf",
+    business_reg_url: null,
     reliability_pct: 55,
     confirmed_count: 18,
     cancellation_count: 9,
