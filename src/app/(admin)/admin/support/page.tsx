@@ -1,7 +1,5 @@
-import Link from "next/link";
-import { Headphones, ChevronRight } from "lucide-react";
 import { createClient } from "@/lib/supabase/server";
-import { Badge } from "@/components/ui/Badge";
+import { SupportInboxView, type SupportThreadSummary } from "@/components/admin/ops/SupportInboxView";
 
 export default async function AdminSupportListPage() {
   const supabase = await createClient();
@@ -42,56 +40,16 @@ export default async function AdminSupportListPage() {
     }
   }
 
-  const unreadCount = threads.filter((t) => t.has_unread_admin).length;
+  const summaries: SupportThreadSummary[] = threads.map((t) => ({
+    id: t.id,
+    name: t.agencies?.name ?? t.profiles?.full_name ?? "Unknown",
+    kind: t.renter_id ? "renter" : "page",
+    city: t.agencies?.city ?? null,
+    lastMessage: lastByThread.get(t.id) ?? null,
+    lastMessageAt: t.last_message_at,
+    createdAt: t.created_at,
+    hasUnread: t.has_unread_admin,
+  }));
 
-  return (
-    <div>
-      <div className="flex items-center gap-2 mb-1">
-        <Headphones size={22} className="text-blue-600" strokeWidth={1.75} />
-        <h1 className="text-2xl font-bold text-slate-900">Support</h1>
-      </div>
-      <p className="text-slate-600 text-sm mb-6">
-        Rental Page support threads. {threads.length} total{unreadCount > 0 ? ` · ${unreadCount} need a reply` : ""}.
-      </p>
-
-      {threads.length === 0 ? (
-        <div className="bg-white border border-slate-200 rounded-2xl shadow-sm p-8 text-center text-slate-500 text-sm">
-          No support threads yet. Agencies open a thread by sending their first message from /dashboard/support.
-        </div>
-      ) : (
-        <div className="space-y-2">
-          {threads.map((t) => {
-            const last = lastByThread.get(t.id);
-            return (
-              <Link
-                key={t.id}
-                href={`/admin/support/${t.id}`}
-                className="block spring-hover bg-white border border-slate-200 shadow-sm hover:border-blue-300 rounded-2xl p-4 transition-colors"
-              >
-                <div className="flex items-center justify-between gap-3">
-                  <div className="min-w-0 flex-1">
-                    <div className="flex items-center gap-2 flex-wrap">
-                      <p className="font-semibold text-slate-900">{t.agencies?.name ?? t.profiles?.full_name ?? "Unknown"}</p>
-                      <Badge variant="slate">{t.renter_id ? "Renter" : "Rental Page"}</Badge>
-                      {t.agencies?.city && <span className="text-slate-500 text-xs">{t.agencies.city}</span>}
-                      {t.has_unread_admin && <Badge variant="red">New</Badge>}
-                    </div>
-                    {last && (
-                      <p className="text-slate-600 text-sm mt-1 line-clamp-1">{last}</p>
-                    )}
-                    <p className="text-slate-400 text-xs mt-1">
-                      {t.last_message_at
-                        ? `Last message ${new Date(t.last_message_at).toLocaleString("en-LK")}`
-                        : `Opened ${new Date(t.created_at).toLocaleDateString("en-LK")}`}
-                    </p>
-                  </div>
-                  <ChevronRight size={18} className="text-slate-500 shrink-0" />
-                </div>
-              </Link>
-            );
-          })}
-        </div>
-      )}
-    </div>
-  );
+  return <SupportInboxView threads={summaries} />;
 }

@@ -102,14 +102,14 @@ export function TrafficAnalyticsPanel({ initial, range }: Props) {
   const dailyViews = useMemo(() => snapshot.daily.map((day) => day.views), [snapshot.daily]);
 
   return (
-    <section aria-labelledby="traffic-heading" className="mb-10">
-      <div className="flex flex-wrap items-end justify-between gap-3 border-b border-slate-200 pb-4">
+    <section aria-labelledby="traffic-heading" className="space-y-4">
+      <div className="flex flex-wrap items-end justify-between gap-3">
         <div>
           <div className="flex items-center gap-2">
-            <Activity size={18} className="text-emerald-600" />
-            <h2 id="traffic-heading" className="text-lg font-semibold text-slate-950">Traffic and customer journeys</h2>
+            <Activity size={18} className="text-blue-600" aria-hidden="true" />
+            <h2 id="traffic-heading" className="text-lg font-semibold tracking-tight text-slate-900">Traffic and customer journeys</h2>
           </div>
-          <p className="mt-1 flex flex-wrap items-center gap-1.5 text-sm text-slate-600">
+          <p className="mt-1 flex flex-wrap items-center gap-1.5 text-sm text-slate-500">
             First-party activity only. Live means active within the last five minutes.
             <HelpHint text={COUNTING_NOTE} />
           </p>
@@ -124,7 +124,7 @@ export function TrafficAnalyticsPanel({ initial, range }: Props) {
               href={POSTHOG_URL}
               target="_blank"
               rel="noreferrer noopener"
-              className="inline-flex h-10 items-center gap-2 rounded-md border border-slate-300 bg-white px-3 text-sm font-medium text-slate-700 hover:bg-slate-50"
+              className="inline-flex min-h-10 items-center gap-2 rounded-lg bg-white px-3 text-sm font-medium text-slate-700 shadow-xs ring-1 ring-slate-900/[0.06] transition-colors hover:bg-slate-50"
             >
               View in PostHog
               <ExternalLink size={14} aria-hidden="true" />
@@ -133,9 +133,9 @@ export function TrafficAnalyticsPanel({ initial, range }: Props) {
         </div>
       </div>
 
-      {error && <p role="alert" className="border-b border-red-200 bg-red-50 px-3 py-2 text-sm text-red-800">{error}</p>}
+      {error && <p role="alert" className="rounded-xl bg-rose-50 px-3.5 py-2.5 text-sm text-rose-800 ring-1 ring-rose-200">{error}</p>}
 
-      <div className="grid grid-cols-2 border-x border-b border-slate-200 bg-white sm:grid-cols-4 lg:grid-cols-8">
+      <div className="grid grid-cols-2 gap-3 sm:grid-cols-4 lg:grid-cols-8">
         <Metric label="Live now" value={snapshot.active_now} Icon={Activity} live />
         <Metric label="Signed in now" value={snapshot.signed_in_now} Icon={UsersRound} />
         <Metric label="Visitors" value={snapshot.visitors} Icon={UsersRound} />
@@ -146,8 +146,8 @@ export function TrafficAnalyticsPanel({ initial, range }: Props) {
         <Metric label="Guides opened" value={snapshot.guide_plays} Icon={BookOpen} />
       </div>
 
-      <div className="grid border-x border-b border-slate-200 bg-white lg:grid-cols-[minmax(0,1.4fr)_minmax(18rem,.6fr)]">
-        <div className="border-b border-slate-200 p-4 lg:border-b-0 lg:border-r">
+      <div className="grid gap-4 lg:grid-cols-[minmax(0,1.4fr)_minmax(18rem,.6fr)]">
+        <div className="rounded-2xl bg-white p-4 shadow-xs ring-1 ring-slate-900/[0.06]">
           <div className="mb-3 flex items-center justify-between">
             <h3 className="text-sm font-semibold text-slate-900">Daily visits</h3>
             <span className="text-xs text-slate-500">{snapshot.daily.length} days</span>
@@ -161,7 +161,7 @@ export function TrafficAnalyticsPanel({ initial, range }: Props) {
             </>
           ) : <Empty text="Traffic will appear after the first recorded visit." />}
         </div>
-        <div className="p-4">
+        <div className="rounded-2xl bg-white p-4 shadow-xs ring-1 ring-slate-900/[0.06]">
           <h3 className="text-sm font-semibold text-slate-900">Vehicle-to-request journey</h3>
           <div className="mt-4 space-y-3">
             <JourneyRow label="Vehicle views" value={snapshot.vehicle_views} max={funnelMax} />
@@ -171,26 +171,26 @@ export function TrafficAnalyticsPanel({ initial, range }: Props) {
         </div>
       </div>
 
-      <div className="grid border-x border-b border-slate-200 bg-white lg:grid-cols-2">
+      <div className="grid gap-4 lg:grid-cols-2">
         <TableSection title="Where visitors came from" headers={["Source", "Visitors"]} empty="No source data yet.">
           {snapshot.sources.map((row) => <TableRow key={row.source} cells={[SOURCE_LABELS[row.source] ?? row.source, row.visitors.toLocaleString("en-LK")]} />)}
         </TableSection>
-        <TableSection title="Devices" headers={["Device", "Visitors"]} empty="No device data yet." rightBorder={false}>
+        <TableSection title="Devices" headers={["Device", "Visitors"]} empty="No device data yet.">
           {snapshot.devices.map((row) => <TableRow key={row.device} cells={[row.device.replace(/^./, (letter) => letter.toUpperCase()), row.visitors.toLocaleString("en-LK")]} />)}
         </TableSection>
       </div>
 
-      <div className="grid border-x border-b border-slate-200 bg-white lg:grid-cols-2">
+      <div className="grid gap-4 lg:grid-cols-2">
         <TableSection title="Most visited pages" headers={["Page", "Views"]} empty="No page views yet.">
           {snapshot.top_paths.map((row) => <TableRow key={row.path} cells={[row.path, row.views.toLocaleString("en-LK")]} mono />)}
         </TableSection>
-        <TableSection title="Most viewed vehicles" headers={["Vehicle", "Views"]} empty="No vehicle views yet." rightBorder={false}>
+        <TableSection title="Most viewed vehicles" headers={["Vehicle", "Views"]} empty="No vehicle views yet.">
           {snapshot.top_vehicles.map((row) => <TableRow key={row.id} cells={[row.label ?? row.id, row.views.toLocaleString("en-LK")]} />)}
         </TableSection>
       </div>
 
-      <div className="border-x border-b border-slate-200 bg-white">
-        <div className="flex items-center justify-between border-b border-slate-200 px-4 py-3">
+      <div className="rounded-2xl bg-white shadow-xs ring-1 ring-slate-900/[0.06]">
+        <div className="flex items-center justify-between border-b border-slate-100 px-4 py-3">
           <h3 className="text-sm font-semibold text-slate-900">Recent journey activity</h3>
           <span className="text-xs text-slate-500">Anonymous visitor labels</span>
         </div>
@@ -200,7 +200,7 @@ export function TrafficAnalyticsPanel({ initial, range }: Props) {
               <div key={event.id} className="grid grid-cols-[minmax(7rem,.8fr)_minmax(0,1.7fr)_auto] gap-3 border-b border-slate-100 px-4 py-3 text-xs last:border-b-0">
                 <div>
                   <p className="font-semibold text-slate-800">Visitor {event.visitor}</p>
-                  <p className="mt-0.5 text-slate-500">{event.signed_in ? "Signed in" : "Visitor"} · {event.device}</p>
+                  <p className="mt-0.5 text-slate-500">{event.signed_in ? "Signed in" : "Visitor"} &middot; {event.device}</p>
                 </div>
                 <div className="min-w-0">
                   <p className="font-medium text-slate-800">{EVENT_LABELS[event.event_name] ?? event.event_name}</p>
@@ -221,28 +221,51 @@ export function TrafficAnalyticsPanel({ initial, range }: Props) {
 
 function Metric({ label, value, Icon, live = false }: { label: string; value: number; Icon: typeof Activity; live?: boolean }) {
   return (
-    <div className="min-w-0 border-b border-r border-slate-200 p-3 last:border-r-0 sm:min-h-24">
-      <div className="flex items-center justify-between gap-2 text-slate-500">
-        <span className="truncate text-xs font-medium">{label}</span>
-        <Icon size={14} className={live && value > 0 ? "text-emerald-600" : "text-slate-400"} />
+    <div className="min-w-0 rounded-2xl bg-white p-3.5 shadow-xs ring-1 ring-slate-900/[0.06] sm:min-h-24">
+      <div className="flex items-start justify-between gap-2 text-slate-500">
+        <span className="text-xs font-medium leading-tight">{label}</span>
+        <Icon size={14} className={`shrink-0 ${live && value > 0 ? "text-emerald-600" : "text-slate-400"}`} aria-hidden="true" />
       </div>
-      <p className="mt-2 text-xl font-semibold text-slate-950">{value.toLocaleString("en-LK")}</p>
+      <p className="tabular mt-2 text-xl font-semibold text-slate-950">{value.toLocaleString("en-LK")}</p>
     </div>
   );
 }
 
 function JourneyRow({ label, value, max }: { label: string; value: number; max: number }) {
   const width = Math.max(value > 0 ? 3 : 0, Math.round((value / max) * 100));
-  return <div><div className="mb-1 flex justify-between text-xs"><span className="text-slate-600">{label}</span><span className="font-semibold text-slate-900">{value}</span></div><div className="h-2 overflow-hidden rounded-sm bg-slate-100"><div className="h-full bg-blue-600" style={{ width: `${width}%` }} /></div></div>;
+  return (
+    <div>
+      <div className="mb-1 flex justify-between text-xs">
+        <span className="text-slate-600">{label}</span>
+        <span className="tabular font-semibold text-slate-900">{value}</span>
+      </div>
+      <div className="h-2 overflow-hidden rounded-full bg-slate-100">
+        <div className="h-full rounded-full bg-blue-600" style={{ width: `${width}%` }} />
+      </div>
+    </div>
+  );
 }
 
-function TableSection({ title, headers, empty, rightBorder = true, children }: { title: string; headers: string[]; empty: string; rightBorder?: boolean; children: React.ReactNode }) {
+function TableSection({ title, headers, empty, children }: { title: string; headers: string[]; empty: string; children: React.ReactNode }) {
   const hasChildren = Array.isArray(children) ? children.length > 0 : Boolean(children);
-  return <div className={rightBorder ? "border-b border-slate-200 lg:border-b-0 lg:border-r" : ""}><h3 className="border-b border-slate-200 px-4 py-3 text-sm font-semibold text-slate-900">{title}</h3><div className="grid grid-cols-[minmax(0,1fr)_auto] gap-3 bg-slate-50 px-4 py-2 text-xs font-semibold uppercase text-slate-500"><span>{headers[0]}</span><span>{headers[1]}</span></div>{hasChildren ? children : <Empty text={empty} />}</div>;
+  return (
+    <div className="overflow-hidden rounded-2xl bg-white shadow-xs ring-1 ring-slate-900/[0.06]">
+      <h3 className="border-b border-slate-100 px-4 py-3 text-sm font-semibold text-slate-900">{title}</h3>
+      <div className="grid grid-cols-[minmax(0,1fr)_auto] gap-3 bg-slate-50/80 px-4 py-2 text-xs font-medium text-slate-500">
+        <span>{headers[0]}</span><span>{headers[1]}</span>
+      </div>
+      {hasChildren ? <div className="divide-y divide-slate-100">{children}</div> : <Empty text={empty} />}
+    </div>
+  );
 }
 
 function TableRow({ cells, mono = false }: { cells: [string, string]; mono?: boolean }) {
-  return <div className="grid grid-cols-[minmax(0,1fr)_auto] gap-3 border-t border-slate-100 px-4 py-2.5 text-xs"><span className={`truncate text-slate-700 ${mono ? "font-mono" : ""}`}>{cells[0]}</span><span className="font-semibold text-slate-900">{cells[1]}</span></div>;
+  return (
+    <div className="grid grid-cols-[minmax(0,1fr)_auto] gap-3 px-4 py-2.5 text-xs">
+      <span className={`truncate text-slate-700 ${mono ? "font-mono" : ""}`}>{cells[0]}</span>
+      <span className="tabular font-semibold text-slate-900">{cells[1]}</span>
+    </div>
+  );
 }
 
 function Empty({ text }: { text: string }) {

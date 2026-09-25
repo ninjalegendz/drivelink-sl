@@ -4,6 +4,7 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { Save, ShieldAlert, MessageSquare } from "lucide-react";
 import { Button } from "@/components/ui/Button";
+import { Card } from "@/components/ui/Card";
 
 interface Initial {
   sms_signup_renter_enabled:               boolean;
@@ -102,16 +103,16 @@ export function NotificationSettingsForm({ initial, updatedAt }: Props) {
         ))}
       </Section>
 
-      {error && <p className="text-rose-600 text-sm">{error}</p>}
-      {info  && <p className="text-emerald-700 text-sm">{info}</p>}
+      {error && <p className="text-sm text-rose-600">{error}</p>}
+      {info  && <p className="text-sm text-emerald-700">{info}</p>}
       {updatedAt && (
-        <p className="text-slate-400 text-xs">
+        <p className="text-xs text-slate-400">
           Last updated {new Date(updatedAt).toLocaleString("en-LK")}.
         </p>
       )}
 
       <Button type="submit" loading={saving}>
-        <Save size={14} /> Save
+        <Save size={14} aria-hidden="true" /> Save
       </Button>
     </form>
   );
@@ -121,14 +122,18 @@ function Section({ icon, title, sub, children }: {
   icon: React.ReactNode; title: string; sub: string; children: React.ReactNode;
 }) {
   return (
-    <div className="bg-white border border-slate-200 rounded-2xl shadow-sm p-5">
-      <div className="flex items-center gap-2 mb-1">
-        {icon}
-        <h2 className="text-slate-900 font-semibold text-sm">{title}</h2>
+    <Card padding="lg">
+      <div className="sm:grid sm:grid-cols-[minmax(0,13rem)_minmax(0,1fr)] sm:gap-6">
+        <div className="mb-4 sm:mb-0">
+          <div className="flex items-center gap-2">
+            {icon}
+            <h2 className="text-sm font-semibold text-slate-900">{title}</h2>
+          </div>
+          <p className="mt-1.5 text-xs leading-5 text-slate-500">{sub}</p>
+        </div>
+        <div className="space-y-3">{children}</div>
       </div>
-      <p className="text-slate-500 text-xs mb-4">{sub}</p>
-      <div className="space-y-3">{children}</div>
-    </div>
+    </Card>
   );
 }
 
@@ -136,18 +141,28 @@ function ToggleRow({ label, hint, checked, onChange }: {
   label: string; hint: string; checked: boolean; onChange: (v: boolean) => void;
 }) {
   return (
-    <label className="flex items-start gap-3 cursor-pointer group">
-      <input
-        type="checkbox"
-        checked={checked}
-        onChange={(e) => onChange(e.target.checked)}
-        className="mt-0.5 w-4 h-4 rounded border-slate-300 bg-slate-100 text-blue-600 focus:ring-blue-500/40"
-      />
+    <label className="group flex cursor-pointer items-start justify-between gap-4 rounded-lg py-1">
       <span className="flex-1">
         <span className={`block text-sm font-medium ${checked ? "text-slate-900" : "text-slate-500"}`}>
           {label}
         </span>
-        <span className="block text-xs text-slate-500">{hint}</span>
+        <span className="block text-xs leading-5 text-slate-500">{hint}</span>
+      </span>
+      <span className="relative mt-0.5 shrink-0">
+        <input
+          type="checkbox"
+          checked={checked}
+          onChange={(e) => onChange(e.target.checked)}
+          className="peer sr-only"
+        />
+        <span
+          aria-hidden="true"
+          className="block h-6 w-11 rounded-full bg-slate-200 transition-colors peer-checked:bg-blue-600 peer-focus-visible:outline peer-focus-visible:outline-2 peer-focus-visible:outline-offset-2 peer-focus-visible:outline-blue-600"
+        />
+        <span
+          aria-hidden="true"
+          className="absolute left-0.5 top-0.5 h-5 w-5 rounded-full bg-white shadow-xs transition-transform peer-checked:translate-x-5"
+        />
       </span>
     </label>
   );

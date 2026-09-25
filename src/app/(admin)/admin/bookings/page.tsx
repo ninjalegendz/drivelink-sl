@@ -1,4 +1,6 @@
 import { createServiceClient } from "@/lib/supabase/server";
+import { PageHeader } from "@/components/ui/PageHeader";
+import { ChipLink } from "@/components/ui/Chip";
 import { AdminBookingsList } from "@/components/bookings/AdminBookingsList";
 import { ADMIN_BOOKINGS_SELECT, type AdminBookingRow } from "@/components/bookings/admin-bookings-query";
 import type { BookingStatus } from "@/types/database";
@@ -33,22 +35,18 @@ export default async function AdminBookingsPage({ searchParams }: Props) {
   const bookings = (data ?? []) as unknown as AdminBookingRow[];
 
   return (
-    <div>
-      <h1 className="text-2xl font-bold text-slate-900 mb-6">All Bookings</h1>
+    <div className="max-w-6xl">
+      <PageHeader title="All bookings" description="Every request and rental across the marketplace, newest first." />
 
-      <div className="flex gap-1 mb-6 bg-white rounded-xl p-1 w-fit max-w-full flex-wrap">
+      <div className="my-6 flex flex-wrap gap-2">
         {TABS.map(({ label, value }) => (
-          <a
+          <ChipLink
             key={value}
             href={value ? `/admin/bookings?status=${value}` : "/admin/bookings"}
-            className={`px-3 py-1.5 rounded-lg text-sm transition-colors ${
-              filterStatus === value || (!filterStatus && !value)
-                ? "bg-slate-200 text-slate-900 font-medium"
-                : "text-slate-600 hover:text-slate-900"
-            }`}
+            active={filterStatus === value || (!filterStatus && !value)}
           >
             {label}
-          </a>
+          </ChipLink>
         ))}
       </div>
 

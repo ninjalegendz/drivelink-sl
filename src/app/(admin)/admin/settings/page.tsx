@@ -1,5 +1,5 @@
 import { createClient } from "@/lib/supabase/server";
-import { Settings } from "lucide-react";
+import { PageHeader } from "@/components/ui/PageHeader";
 import { AdminSettingsTabs } from "@/components/admin/AdminSettingsTabs";
 
 interface Props {
@@ -39,28 +39,27 @@ export default async function AdminSettingsPage({ searchParams }: Props) {
 
   return (
     <div className="max-w-2xl">
-      <div className="flex items-center gap-3 mb-6">
-        <Settings size={24} className="text-blue-600" strokeWidth={1.75} />
-        <h1 className="text-2xl font-bold text-slate-900">Settings</h1>
-      </div>
+      <PageHeader title="Settings" description="Delivery channels for signup, booking and listing notifications." />
 
-      <AdminSettingsTabs
-        initialTab={initialTab}
-        email={{ configured, fromEmail, fromName }}
-        sms={{
-          initial: {
-            sms_signup_renter_enabled:               bool("sms_signup_renter_enabled"),
-            sms_signup_agency_enabled:               bool("sms_signup_agency_enabled"),
-            sms_login_enabled:                       bool("sms_login_enabled"),
-            sms_phone_verify_enabled:                bool("sms_phone_verify_enabled"),
-            sms_new_booking_agency_enabled:          bool("sms_new_booking_agency_enabled"),
-            sms_booking_status_renter_enabled:       bool("sms_booking_status_renter_enabled"),
-            sms_admin_booking_status_renter_enabled: bool("sms_admin_booking_status_renter_enabled"),
-            sms_listing_moderation_enabled:          bool("sms_listing_moderation_enabled"),
-          },
-          updatedAt,
-        }}
-      />
+      <div className="mt-6">
+        <AdminSettingsTabs
+          initialTab={initialTab}
+          email={{ configured, fromEmail, fromName }}
+          sms={{
+            initial: {
+              sms_signup_renter_enabled:               bool("sms_signup_renter_enabled"),
+              sms_signup_agency_enabled:               bool("sms_signup_agency_enabled"),
+              sms_login_enabled:                       bool("sms_login_enabled"),
+              sms_phone_verify_enabled:                bool("sms_phone_verify_enabled"),
+              sms_new_booking_agency_enabled:          bool("sms_new_booking_agency_enabled"),
+              sms_booking_status_renter_enabled:       bool("sms_booking_status_renter_enabled"),
+              sms_admin_booking_status_renter_enabled: bool("sms_admin_booking_status_renter_enabled"),
+              sms_listing_moderation_enabled:          bool("sms_listing_moderation_enabled"),
+            },
+            updatedAt,
+          }}
+        />
+      </div>
     </div>
   );
 }

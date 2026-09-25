@@ -3,6 +3,8 @@
 import { useState } from "react";
 import { Send } from "lucide-react";
 import { Button } from "@/components/ui/Button";
+import { Input } from "@/components/ui/Input";
+import { Card } from "@/components/ui/Card";
 
 interface Props {
   disabled: boolean;
@@ -35,29 +37,29 @@ export function EmailTestSender({ disabled }: Props) {
   }
 
   return (
-    <div className="bg-white border border-slate-200 rounded-2xl shadow-sm p-5">
-      <h2 className="text-slate-900 font-semibold text-sm mb-1">Send test email</h2>
-      <p className="text-slate-500 text-xs mb-3">
+    <Card padding="lg">
+      <h2 className="mb-1 text-sm font-semibold text-slate-900">Send test email</h2>
+      <p className="mb-3 text-xs leading-5 text-slate-500">
         Sends a one-line confirmation to the address below. Use your own email so
         you can verify deliverability + the &quot;from&quot; address looks right.
       </p>
 
-      <div className="flex gap-2">
-        <input
+      <div className="flex flex-col gap-2 sm:flex-row">
+        <Input
           type="email"
           value={to}
           onChange={(e) => setTo(e.target.value)}
           disabled={disabled}
           placeholder="you@example.com"
-          className="flex-1 px-3 py-2 bg-slate-100 border border-slate-200 rounded-lg text-slate-900 placeholder-slate-400 text-sm focus:border-blue-500 disabled:opacity-50"
+          className="flex-1"
         />
         <Button type="button" variant="secondary" loading={sending} disabled={disabled} onClick={send}>
-          <Send size={14} /> Send
+          <Send size={14} aria-hidden="true" /> Send
         </Button>
       </div>
 
-      {error && <p className="text-rose-600 text-sm mt-2">{error}</p>}
-      {info  && <p className="text-emerald-700 text-sm mt-2">{info}</p>}
-    </div>
+      {error && <p className="mt-2 text-sm text-rose-600">{error}</p>}
+      {info  && <p className="mt-2 text-sm text-emerald-700">{info}</p>}
+    </Card>
   );
 }

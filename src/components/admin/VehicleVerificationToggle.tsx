@@ -45,13 +45,13 @@ export function VehicleVerificationToggle({ vehicleId, initial, eligible }: Prop
         onClick={toggle}
         disabled={busy}
         aria-pressed={verified}
-        className={`inline-flex min-h-10 items-center gap-1.5 rounded-lg border px-3 py-1.5 text-xs font-semibold transition-colors disabled:opacity-50 ${
+        className={`spring-press inline-flex min-h-10 items-center gap-1.5 rounded-lg px-3 text-xs font-semibold ring-1 ring-inset transition-colors disabled:opacity-50 ${
           verified
-            ? "border-emerald-300 bg-emerald-50 text-emerald-800 hover:bg-emerald-100"
-            : "border-slate-200 bg-white text-slate-700 hover:bg-slate-50"
+            ? "bg-emerald-50 text-emerald-800 ring-emerald-600/20 hover:bg-emerald-100"
+            : "bg-white text-slate-700 ring-slate-200 hover:bg-slate-50"
         }`}
       >
-        {verified ? <Check size={14} /> : <ShieldCheck size={14} />}
+        {verified ? <Check size={14} aria-hidden="true" /> : <ShieldCheck size={14} aria-hidden="true" />}
         {verified ? "Verified Vehicle" : "Mark Verified Vehicle"}
       </button>
       {!verified && !eligible && (

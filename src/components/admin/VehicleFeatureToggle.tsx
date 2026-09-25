@@ -30,14 +30,15 @@ export function VehicleFeatureToggle({ vehicleId, initial }: { vehicleId: string
       type="button"
       onClick={toggle}
       disabled={busy}
-      className={`inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold rounded-lg border transition-colors disabled:opacity-50 ${
+      aria-pressed={on}
+      className={`spring-press inline-flex min-h-10 items-center gap-1.5 rounded-lg px-3 text-xs font-semibold ring-1 ring-inset transition-colors disabled:opacity-50 ${
         on
-          ? "bg-amber-500 text-slate-950 border-amber-500 hover:bg-amber-400"
-          : "bg-white text-slate-600 border-slate-200 hover:bg-slate-50"
+          ? "bg-amber-400 text-slate-950 ring-amber-400 hover:bg-amber-300"
+          : "bg-white text-slate-600 ring-slate-200 hover:bg-slate-50"
       }`}
       title="Featured listings rank first and show a ribbon"
     >
-      <Star size={13} className={on ? "fill-current" : ""} /> {on ? "Featured" : "Make featured"}
+      <Star size={13} className={on ? "fill-current" : ""} aria-hidden="true" /> {on ? "Featured" : "Make featured"}
     </button>
   );
 }

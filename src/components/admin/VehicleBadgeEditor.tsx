@@ -48,17 +48,18 @@ export function VehicleBadgeEditor({ vehicleId, initialBadges }: Props) {
   }
 
   return (
-    <div className="bg-slate-100/60 border border-slate-200/60 rounded-lg px-3 py-3">
-      <div className="flex items-center justify-between mb-2">
-        <p className="text-slate-500 text-xs uppercase tracking-wider flex items-center gap-1.5">
-          <ShieldCheck size={12} className="text-blue-600" /> Trust badges
+    <div className="rounded-xl bg-slate-50 px-3.5 py-3 ring-1 ring-slate-900/[0.05]">
+      <div className="mb-2 flex items-center justify-between gap-2">
+        <p className="flex items-center gap-1.5 text-xs font-semibold uppercase tracking-wider text-slate-500">
+          <ShieldCheck size={12} className="text-blue-600" aria-hidden="true" /> Trust badges
         </p>
         <button
+          type="button"
           onClick={save}
           disabled={!dirty || saving}
-          className="text-xs font-semibold px-3 py-1 rounded-lg bg-blue-600 text-white hover:bg-blue-700 disabled:opacity-40 disabled:cursor-not-allowed transition-colors inline-flex items-center gap-1"
+          className="spring-press inline-flex min-h-8 items-center gap-1 rounded-lg bg-blue-600 px-3 py-1 text-xs font-semibold text-white transition-colors hover:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-40"
         >
-          {saving ? "Saving…" : saved && !dirty ? (<><Check size={12} /> Saved</>) : "Save badges"}
+          {saving ? "Saving…" : saved && !dirty ? (<><Check size={12} aria-hidden="true" /> Saved</>) : "Save badges"}
         </button>
       </div>
       <div className="flex flex-wrap gap-1.5">
@@ -71,13 +72,14 @@ export function VehicleBadgeEditor({ vehicleId, initialBadges }: Props) {
               onClick={() => { toggle(badge); setActiveBadge(badge); }}
               onMouseEnter={() => setActiveBadge(badge)}
               onFocus={() => setActiveBadge(badge)}
-              className={`inline-flex items-center gap-1 px-2 py-1 rounded text-xs font-semibold border transition-all ${
+              aria-pressed={on}
+              className={`inline-flex min-h-8 items-center gap-1 rounded-full px-2.5 py-1 text-xs font-semibold ring-1 ring-inset transition-colors ${
                 on
-                  ? "bg-blue-50 text-blue-700 border-blue-200"
-                  : "bg-white text-slate-500 border-slate-200 hover:bg-slate-50"
+                  ? "bg-blue-50 text-blue-700 ring-blue-600/20"
+                  : "bg-white text-slate-600 ring-slate-200 hover:bg-slate-50"
               }`}
             >
-              {on && <Check size={11} />} {badgeDisplayLabel(badge)}
+              {on && <Check size={11} aria-hidden="true" />} {badgeDisplayLabel(badge)}
             </button>
           );
         })}
@@ -85,9 +87,9 @@ export function VehicleBadgeEditor({ vehicleId, initialBadges }: Props) {
       {/* Description of the last tapped/hovered badge, visible on touch (the
           old hover-only `title` never appeared on phones). */}
       {activeBadge && BADGE_DESCRIPTIONS[activeBadge] && (
-        <p className="text-xs text-slate-500 mt-2 leading-snug">{BADGE_DESCRIPTIONS[activeBadge]}</p>
+        <p className="mt-2 text-xs leading-snug text-slate-500">{BADGE_DESCRIPTIONS[activeBadge]}</p>
       )}
-      {error && <p className="text-rose-600 text-xs mt-2">{error}</p>}
+      {error && <p className="mt-2 text-xs text-rose-600">{error}</p>}
     </div>
   );
 }

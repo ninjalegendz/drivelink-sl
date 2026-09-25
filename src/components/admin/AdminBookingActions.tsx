@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { Ban, Check, X } from "lucide-react";
+import { Button } from "@/components/ui/Button";
 import type { BookingStatus } from "@/types/database";
 
 interface Props {
@@ -50,27 +51,34 @@ export function AdminBookingActions({ bookingId, status }: Props) {
   if (targets.length === 0) return null;
 
   const icons: Record<Target, React.ReactNode> = {
-    confirmed: <Check size={12} />,
-    declined: <X size={12} />,
-    cancelled: <Ban size={12} />,
+    confirmed: <Check size={13} aria-hidden="true" />,
+    declined: <X size={13} aria-hidden="true" />,
+    cancelled: <Ban size={13} aria-hidden="true" />,
+  };
+  const variant: Record<Target, "primary" | "secondary" | "danger"> = {
+    confirmed: "primary",
+    declined: "danger",
+    cancelled: "danger",
   };
 
   return (
-    <div className="flex flex-col items-start gap-1">
-      <div className="flex flex-wrap gap-1">
+    <div className="flex flex-col items-start gap-1.5">
+      <div className="flex flex-wrap gap-1.5">
         {targets.map((target) => (
-          <button
+          <Button
             key={target}
             type="button"
-            onClick={() => transition(target)}
+            size="sm"
+            variant={variant[target]}
+            loading={loading === target}
             disabled={loading !== null}
-            className={`spring-press inline-flex items-center gap-1 rounded-md border px-2 py-1 text-xs font-medium disabled:opacity-50 ${target === "confirmed" ? "border-emerald-300 bg-emerald-50 text-emerald-700" : "border-red-300 bg-red-50 text-red-700"}`}
+            onClick={() => transition(target)}
           >
-            {icons[target]} {loading === target ? "Working..." : LABEL[target]}
-          </button>
+            {icons[target]} {LABEL[target]}
+          </Button>
         ))}
       </div>
-      {error && <p className="max-w-[160px] text-xs text-red-700">{error}</p>}
+      {error && <p className="max-w-[180px] text-xs text-rose-700">{error}</p>}
     </div>
   );
 }
