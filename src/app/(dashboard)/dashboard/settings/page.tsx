@@ -1,14 +1,10 @@
 import { redirect } from "next/navigation";
 import { createClient, createServiceClient } from "@/lib/supabase/server";
 import { getActivePage } from "@/lib/pages/active-page";
-import { PageDetailsForm } from "@/components/account/PageDetailsForm";
-import { PageWhatsappVerify } from "@/components/dashboard/PageWhatsappVerify";
-import { BusinessCertUpload } from "@/components/dashboard/BusinessCertUpload";
-import { PageTeamSection } from "@/components/dashboard/PageTeamSection";
-import { PageLifecycleControls, type PendingPageTransfer } from "@/components/dashboard/PageLifecycleControls";
 import { getPageAccess } from "@/lib/pages/access";
-import { PageHeader } from "@/components/ui/PageHeader";
-import { Card } from "@/components/ui/Card";
+import { PageSettingsView } from "@/components/dashboard/PageSettingsView";
+import type { PendingPageTransfer } from "@/components/dashboard/PageLifecycleControls";
+import type { TeamMember, PendingTeamInvitation } from "@/components/dashboard/PageTeamManager";
 
 export default async function DashboardSettingsPage() {
   const supabase = await createClient();
@@ -23,64 +19,41 @@ export default async function DashboardSettingsPage() {
   const isOwner = page.owner_id === user.id;
   const pageAccess = await getPageAccess(supabase, user.id, page.id);
   if (!pageAccess.capabilities.includes("manage_page")) redirect("/dashboard");
-  // Transfer records are intentionally service-only. Ownership was already
-  // established from the caller-bound page above, so this cannot expose a
-  // different page's handoff details.
+  // Transfer records, and the team roster, are intentionally service-only.
+  // Ownership was already established from the caller-bound page above, so
+  // this cannot expose a different page's handoff details or staff list.
   const service = await createServiceClient();
-  const { data: transferRow } = isOwner
-    ? await service.from("rental_page_transfers").select("id,status,to_owner_email,cooling_off_until,expires_at").eq("agency_id", page.id).in("status", ["awaiting_recipient", "cooling_off"]).maybeSingle()
-    : { data: null };
+  const [{ data: transferRow }, membersResult, invitationsResult] = await Promise.all([
+    isOwner
+      ? service.from("rental_page_transfers").select("id,status,to_owner_email,cooling_off_until,expires_at").eq("agency_id", page.id).in("status", ["awaiting_recipient", "cooling_off"]).maybeSingle()
+      : Promise.resolve({ data: null }),
+    isOwner
+      ? service.from("agency_members").select("user_id, role, invited_email, created_at, can_view_renter_documents, document_permission_granted_at, profiles:user_id(full_name, email)").eq("agency_id", page.id).order("created_at", { ascending: true })
+      : Promise.resolve({ data: null }),
+    isOwner
+      ? service.from("agency_member_invitations").select("id, invited_email, expires_at, profiles:invitee_id(full_name, email)").eq("agency_id", page.id).eq("status", "pending").gt("expires_at", new Date().toISOString()).order("created_at", { ascending: true })
+      : Promise.resolve({ data: null }),
+  ]);
+
   const transfer = transferRow as { id: string; status: "awaiting_recipient" | "cooling_off"; to_owner_email: string; cooling_off_until: string | null; expires_at: string } | null;
   const pendingTransfer: PendingPageTransfer | null = transfer ? { id: transfer.id, status: transfer.status, recipientEmail: transfer.to_owner_email, coolingOffUntil: transfer.cooling_off_until, expiresAt: transfer.expires_at } : null;
 
+  const teamMembers: TeamMember[] = (membersResult.data ?? []).map((value) => {
+    const row = value as unknown as { user_id: string; invited_email: string | null; profiles: { full_name: string | null; email: string | null } | null; role: string; can_view_renter_documents: boolean; document_permission_granted_at: string | null };
+    return { userId: row.user_id, name: row.profiles?.full_name ?? null, email: row.profiles?.email ?? row.invited_email ?? null, role: row.role, canViewRenterDocuments: row.can_view_renter_documents, documentPermissionGrantedAt: row.document_permission_granted_at };
+  });
+  const teamPending: PendingTeamInvitation[] = (invitationsResult.data ?? []).map((value) => {
+    const row = value as unknown as { id: string; invited_email: string; expires_at: string; profiles: { full_name: string | null; email: string | null } | null };
+    return { id: row.id, name: row.profiles?.full_name ?? null, email: row.profiles?.email ?? row.invited_email, expiresAt: row.expires_at };
+  });
+
   return (
-    <div>
-      <div className="mb-5">
-        <PageHeader
-          title="Page settings"
-          description="These details are shown to renters on your listings."
-        />
-      </div>
-
-      <Card padding="lg">
-        <PageDetailsForm page={page} />
-      </Card>
-
-      {/* PAGE-012: verify the number that receives bookings + is shown to renters */}
-      {isOwner && (
-        <Card padding="lg" className="mt-4">
-          <p className="text-slate-900 font-semibold text-sm">Page phone verification</p>
-          <p className="text-slate-500 text-xs mt-0.5 mb-3">
-            {page.whatsapp_number
-              ? <>Confirm you control {page.whatsapp_number}: it&apos;s where booking alerts go and what renters use to reach you.</>
-              : <>Add and verify a phone number before this restored page can accept bookings again.</>}
-          </p>
-          <PageWhatsappVerify agencyId={page.id} verified={!!(page as { whatsapp_verified_at?: string | null }).whatsapp_verified_at} />
-        </Card>
-      )}
-
-      {/* PAGE-006: business registration certificate (business pages) */}
-      {isOwner && page.page_type === "business" && (
-        <Card padding="lg" className="mt-4">
-          <p className="text-slate-900 font-semibold text-sm">Business registration certificate</p>
-          <p className="text-slate-500 text-xs mt-0.5 mb-3">
-            Upload your business registration certificate. An admin reviews it before your page is marked a verified business. Private, only you and DriveLink admin can view it.
-          </p>
-          <BusinessCertUpload agencyId={page.id} existingUrl={page.business_reg_url} existingRegNo={page.business_reg_no} />
-        </Card>
-      )}
-
-      {isOwner && page.page_type === "business" && !page.is_verified && (
-        <div className="mt-4 p-4 bg-amber-50 border border-amber-200 rounded-2xl text-sm text-amber-800">
-          This page is pending review. An admin may contact you for your business registration certificate.
-        </div>
-      )}
-
-      {/* PAGE-005: staff/team management (owner only) */}
-      {isOwner && <PageTeamSection agencyId={page.id} />}
-
-      {/* PAGE-005: page lifecycle: pause/resume + transfer (owner only) */}
-      {isOwner && <PageLifecycleControls agencyId={page.id} deactivated={!!page.deactivated_at} transfer={pendingTransfer} />}
-    </div>
+    <PageSettingsView
+      page={page}
+      isOwner={isOwner}
+      pendingTransfer={pendingTransfer}
+      teamMembers={teamMembers}
+      teamPending={teamPending}
+    />
   );
 }

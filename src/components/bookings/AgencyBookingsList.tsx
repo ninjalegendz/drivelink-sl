@@ -11,6 +11,8 @@ import { MessageRenterButton } from "@/components/booking/BookingChat";
 import { BOOKING_STATUS_LABELS } from "@/lib/booking/state-machine";
 import { formatLKR, reliabilityColor, reliabilityLabel } from "@/lib/vehicles/format";
 import { FOREIGN_PERMIT_LABELS } from "@/lib/booking/self-drive-eligibility";
+import { formatTimeLeft, isResponseOverdue } from "@/lib/booking/response-window";
+import { formatSlot } from "@/lib/dates/display";
 import { usePolledRows } from "@/lib/realtime/usePolledRows";
 import { createClient } from "@/lib/supabase/client";
 import type { BookingStatus } from "@/types/database";
@@ -82,111 +84,228 @@ export function AgencyBookingsList({
   }
 
   return (
-    <div className="space-y-3">
-      {bookings.map((booking) => {
-        const vehicle = booking.vehicles;
-        const renter  = booking.profiles;
-        const status  = booking.status;
-        const blocked = renter?.is_blacklisted ?? false;
-        const verified = renter?.kyc_status === "verified";
-        const deposit = booking.deposit_lkr ?? vehicle?.deposit_lkr ?? 0;
-
-        const readCursor = booking.page_msgs_read_at ? Date.parse(booking.page_msgs_read_at) : 0;
-        const hasUnread = (booking.booking_messages ?? []).some(
-          (m) => m.sender_id !== currentUserId && Date.parse(m.created_at) > readCursor,
-        );
-
-        return (
-          <Card key={booking.id} padding="md">
-            <div className="flex flex-wrap items-start justify-between gap-3">
-              <div className="min-w-0">
-                <p className="font-mono text-xs text-slate-500">{booking.id.slice(0, 8).toUpperCase()}</p>
-                <h3 className="mt-0.5 font-semibold text-slate-900">
-                  {vehicle ? `${vehicle.year} ${vehicle.make} ${vehicle.model}` : "Vehicle"}
-                  {vehicle?.plate_number ? <span className="ml-1.5 font-normal text-slate-500">{vehicle.plate_number}</span> : null}
-                </h3>
-                <p className="mt-1 text-sm text-slate-600">
-                  {booking.start_date} to {booking.end_date}
-                  <span className="text-slate-400"> · </span>
-                  {booking.start_time?.slice(0, 5)} pick-up
-                </p>
-              </div>
-              <Badge variant={statusVariant[status]}>{BOOKING_STATUS_LABELS[status]}</Badge>
-            </div>
-
-            {/* Who is asking. This is the decision the owner is actually making. */}
-            <div className="mt-3 rounded-lg bg-slate-50 p-3">
-              <div className="flex flex-wrap items-center gap-x-2 gap-y-1">
-                <span className="font-medium text-slate-900">{renter?.full_name ?? "Renter"}</span>
-                {verified
-                  ? <span className="inline-flex items-center gap-1 text-xs font-semibold text-emerald-700"><Check size={12} /> Identity verified</span>
-                  : <span className="inline-flex items-center gap-1 text-xs font-semibold text-amber-700"><ShieldAlert size={12} /> Not verified</span>}
-                {renter?.reliability_pct !== null && renter?.reliability_pct !== undefined && (
-                  <span className={`text-xs font-semibold ${reliabilityColor(renter.reliability_pct)}`}>
-                    {reliabilityLabel(renter.reliability_pct)}
-                  </span>
-                )}
-              </div>
-              {blocked && (
-                <p className="mt-1.5 text-xs font-medium text-rose-700">
-                  This renter is blocked on DriveLink{renter?.blacklist_reason_public ? `: ${renter.blacklist_reason_public}` : "."}
-                </p>
-              )}
-              {booking.is_foreign_renter && booking.rental_mode === "self_drive" && (
-                <p className="mt-1.5 text-xs text-slate-600">
-                  Foreign licence, permit declared: {FOREIGN_PERMIT_LABELS[booking.foreign_permit_type ?? "none"]}
-                </p>
-              )}
-              {booking.doc_share_consent_at && (
-                <p className="mt-1.5 text-xs text-slate-600">The renter has shared their documents with you.</p>
-              )}
-            </div>
-
-            {/* What they pay you, in person. */}
-            <div className="mt-3 flex flex-wrap items-baseline gap-x-4 gap-y-1 text-sm">
-              <span className="font-semibold text-slate-900">
-                {formatLKR(booking.subtotal_lkr)}
-                <span className="ml-1 font-normal text-slate-500">for {booking.total_days} day{booking.total_days === 1 ? "" : "s"}</span>
-              </span>
-              {deposit > 0 && (
-                <span className="text-slate-600">Deposit {formatLKR(deposit)}</span>
-              )}
-              <span className="text-xs text-slate-500">Collected by you at handover</span>
-            </div>
-
-            <div className="mt-4 flex flex-wrap items-center justify-between gap-3 border-t border-slate-100 pt-3">
-              <div className="flex flex-wrap items-center gap-2">
-                {canCommunicate && (
-                  <MessageRenterButton
-                    bookingId={booking.id}
-                    currentUserId={currentUserId}
-                    renterName={renter?.full_name ?? "Renter"}
-                    hasUnread={hasUnread}
-                    readOnly={["declined", "cancelled"].includes(status)}
-                    closedNote="This conversation is closed."
-                  />
-                )}
-                {canManageCases && (
-                  <ReportRenterButton
-                    bookingId={booking.id}
-                    reportable={status === "completed"}
-                  />
-                )}
-              </div>
-
-              <AgencyBookingActions
-                bookingId={booking.id}
-                status={status}
-                startAt={booking.start_at}
-
+    <>
+      {/* md+: a real table. Reference, vehicle, renter and their ID status,
+          dates, total, status, then the one set of actions the owner needs. */}
+      <div className="hidden overflow-hidden rounded-2xl bg-white ring-1 ring-slate-900/[0.06] shadow-xs md:block">
+        <table className="w-full text-left text-sm">
+          <thead className="bg-slate-50/80 text-xs font-medium text-slate-500">
+            <tr>
+              <th scope="col" className="px-4 py-3 font-medium">Reference</th>
+              <th scope="col" className="px-4 py-3 font-medium">Vehicle</th>
+              <th scope="col" className="px-4 py-3 font-medium">Renter</th>
+              <th scope="col" className="px-4 py-3 font-medium">Dates</th>
+              <th scope="col" className="px-4 py-3 text-right font-medium">Total</th>
+              <th scope="col" className="px-4 py-3 font-medium">Status</th>
+              <th scope="col" className="px-4 py-3 text-right font-medium"><span className="sr-only">Actions</span></th>
+            </tr>
+          </thead>
+          <tbody className="divide-y divide-slate-100">
+            {bookings.map((booking) => (
+              <BookingTableRow
+                key={booking.id}
+                booking={booking}
+                currentUserId={currentUserId}
                 canManageBooking={canManageBooking}
                 canManageHandover={canManageHandover}
+                canCommunicate={canCommunicate}
                 canManageCases={canManageCases}
               />
-            </div>
-          </Card>
-        );
-      })}
+            ))}
+          </tbody>
+        </table>
+      </div>
+
+      {/* Phones: the same rows as stacked cards, actions full width at the bottom. */}
+      <div className="space-y-3 md:hidden">
+        {bookings.map((booking) => (
+          <BookingCard
+            key={booking.id}
+            booking={booking}
+            currentUserId={currentUserId}
+            canManageBooking={canManageBooking}
+            canManageHandover={canManageHandover}
+            canCommunicate={canCommunicate}
+            canManageCases={canManageCases}
+          />
+        ))}
+      </div>
+    </>
+  );
+}
+
+interface RowProps {
+  booking: AgencyBookingRow;
+  currentUserId: string;
+  canManageBooking: boolean;
+  canManageHandover: boolean;
+  canCommunicate: boolean;
+  canManageCases: boolean;
+}
+
+/** Per-row facts shared by the table and card layouts, computed once. */
+function computeBookingFacts(booking: AgencyBookingRow, currentUserId: string) {
+  const vehicle = booking.vehicles;
+  const renter = booking.profiles;
+  const status = booking.status;
+  const blocked = renter?.is_blacklisted ?? false;
+  const verified = renter?.kyc_status === "verified";
+  const deposit = booking.deposit_lkr ?? vehicle?.deposit_lkr ?? 0;
+  const pending = status === "pending_confirmation";
+  const overdue = pending && isResponseOverdue(booking.created_at);
+
+  const readCursor = booking.page_msgs_read_at ? Date.parse(booking.page_msgs_read_at) : 0;
+  const hasUnread = (booking.booking_messages ?? []).some(
+    (m) => m.sender_id !== currentUserId && Date.parse(m.created_at) > readCursor,
+  );
+
+  return { vehicle, renter, status, blocked, verified, deposit, pending, overdue, hasUnread };
+}
+
+function IdStatus({ verified }: { verified: boolean }) {
+  return verified
+    ? <span className="inline-flex items-center gap-1 text-xs font-semibold text-emerald-700"><Check size={12} /> ID verified</span>
+    : <span className="inline-flex items-center gap-1 text-xs font-semibold text-amber-700"><ShieldAlert size={12} /> Not verified</span>;
+}
+
+function RowActions({ booking, currentUserId, canManageBooking, canManageHandover, canCommunicate, canManageCases, renterName, hasUnread, align = "end" }: RowProps & { renterName: string; hasUnread: boolean; align?: "end" | "stretch" }) {
+  return (
+    <div className={`flex flex-col gap-2 ${align === "end" ? "items-stretch sm:items-end" : "items-stretch"}`}>
+      <AgencyBookingActions
+        bookingId={booking.id}
+        status={booking.status}
+        startAt={booking.start_at}
+        canManageBooking={canManageBooking}
+        canManageHandover={canManageHandover}
+        canManageCases={canManageCases}
+      />
+      <div className={`flex flex-wrap gap-2 ${align === "end" ? "justify-start sm:justify-end" : ""}`}>
+        {canCommunicate && (
+          <MessageRenterButton
+            bookingId={booking.id}
+            currentUserId={currentUserId}
+            renterName={renterName}
+            hasUnread={hasUnread}
+            readOnly={["declined", "cancelled"].includes(booking.status)}
+            closedNote="This conversation is closed."
+          />
+        )}
+        {canManageCases && (
+          <ReportRenterButton bookingId={booking.id} reportable={booking.status === "completed"} />
+        )}
+      </div>
     </div>
+  );
+}
+
+function BookingTableRow(props: RowProps) {
+  const { booking, currentUserId } = props;
+  const { vehicle, renter, status, blocked, verified, deposit, pending, overdue, hasUnread } = computeBookingFacts(booking, currentUserId);
+
+  return (
+    <tr className={overdue ? "bg-amber-50/50" : undefined}>
+      <td className="px-4 py-3.5 align-top">
+        <p className="font-mono text-xs text-slate-500">{booking.id.slice(0, 8).toUpperCase()}</p>
+        {pending && (
+          <p className={`mt-1 text-xs font-semibold ${overdue ? "text-amber-700" : "text-blue-700"}`}>{formatTimeLeft(booking.created_at)}</p>
+        )}
+      </td>
+      <td className="px-4 py-3.5 align-top">
+        <p className="font-medium text-slate-900">{vehicle ? `${vehicle.year} ${vehicle.make} ${vehicle.model}` : "Vehicle"}</p>
+        {vehicle?.plate_number && <p className="mt-0.5 text-xs text-slate-500">{vehicle.plate_number}</p>}
+      </td>
+      <td className="px-4 py-3.5 align-top">
+        <p className="font-medium text-slate-900">{renter?.full_name ?? "Renter"}</p>
+        <p className="mt-0.5"><IdStatus verified={verified} /></p>
+        {blocked && <p className="mt-1 text-xs font-medium text-rose-700">Blocked renter{renter?.blacklist_reason_public ? `: ${renter.blacklist_reason_public}` : ""}</p>}
+        {renter?.reliability_pct !== null && renter?.reliability_pct !== undefined && (
+          <p className={`mt-1 text-xs font-semibold ${reliabilityColor(renter.reliability_pct)}`}>{reliabilityLabel(renter.reliability_pct)}</p>
+        )}
+      </td>
+      <td className="px-4 py-3.5 align-top text-slate-700">
+        <p>{formatSlot(booking.start_date, booking.start_time)}</p>
+        <p className="mt-0.5 text-slate-400">to {formatSlot(booking.end_date, booking.end_time)}</p>
+      </td>
+      <td className="px-4 py-3.5 align-top text-right">
+        <p className="tabular font-semibold text-slate-900">{formatLKR(booking.subtotal_lkr)}</p>
+        {deposit > 0 && <p className="tabular text-xs text-slate-500">+{formatLKR(deposit)} deposit</p>}
+      </td>
+      <td className="px-4 py-3.5 align-top"><Badge variant={statusVariant[status]}>{BOOKING_STATUS_LABELS[status]}</Badge></td>
+      <td className="px-4 py-3.5 align-top">
+        <RowActions {...props} renterName={renter?.full_name ?? "Renter"} hasUnread={hasUnread} />
+      </td>
+    </tr>
+  );
+}
+
+function BookingCard(props: RowProps) {
+  const { booking, currentUserId } = props;
+  const { vehicle, renter, status, blocked, verified, deposit, pending, overdue, hasUnread } = computeBookingFacts(booking, currentUserId);
+
+  return (
+    <Card padding="md" className={overdue ? "border-l-4 border-l-amber-400" : undefined}>
+      <div className="flex flex-wrap items-start justify-between gap-3">
+        <div className="min-w-0">
+          <div className="flex flex-wrap items-center gap-x-2 gap-y-1">
+            <p className="font-mono text-xs text-slate-500">{booking.id.slice(0, 8).toUpperCase()}</p>
+            {pending && (
+              <span className={`text-xs font-semibold ${overdue ? "text-amber-700" : "text-blue-700"}`}>{formatTimeLeft(booking.created_at)}</span>
+            )}
+          </div>
+          <h3 className="mt-0.5 font-semibold text-slate-900">
+            {vehicle ? `${vehicle.year} ${vehicle.make} ${vehicle.model}` : "Vehicle"}
+            {vehicle?.plate_number ? <span className="ml-1.5 font-normal text-slate-500">{vehicle.plate_number}</span> : null}
+          </h3>
+          <p className="mt-1 flex items-center gap-1.5 text-sm text-slate-600">
+            {formatSlot(booking.start_date, booking.start_time)}
+            <span aria-hidden="true" className="text-slate-400">&rarr;</span>
+            <span className="sr-only">to</span>{formatSlot(booking.end_date, booking.end_time)}
+          </p>
+        </div>
+        <Badge variant={statusVariant[status]}>{BOOKING_STATUS_LABELS[status]}</Badge>
+      </div>
+
+      {/* Who is asking. This is the decision the owner is actually making. */}
+      <div className="mt-3 rounded-lg bg-slate-50 p-3">
+        <div className="flex flex-wrap items-center gap-x-2 gap-y-1">
+          <span className="font-medium text-slate-900">{renter?.full_name ?? "Renter"}</span>
+          <IdStatus verified={verified} />
+          {renter?.reliability_pct !== null && renter?.reliability_pct !== undefined && (
+            <span className={`text-xs font-semibold ${reliabilityColor(renter.reliability_pct)}`}>
+              {reliabilityLabel(renter.reliability_pct)}
+            </span>
+          )}
+        </div>
+        {blocked && (
+          <p className="mt-1.5 text-xs font-medium text-rose-700">
+            This renter is blocked on DriveLink{renter?.blacklist_reason_public ? `: ${renter.blacklist_reason_public}` : "."}
+          </p>
+        )}
+        {booking.is_foreign_renter && booking.rental_mode === "self_drive" && (
+          <p className="mt-1.5 text-xs text-slate-600">
+            Foreign licence, permit declared: {FOREIGN_PERMIT_LABELS[booking.foreign_permit_type ?? "none"]}
+          </p>
+        )}
+        {booking.doc_share_consent_at && (
+          <p className="mt-1.5 text-xs text-slate-600">The renter has shared their documents with you.</p>
+        )}
+      </div>
+
+      {/* What they pay you, in person. */}
+      <div className="mt-3 flex flex-wrap items-baseline gap-x-4 gap-y-1 text-sm">
+        <span className="tabular font-semibold text-slate-900">
+          {formatLKR(booking.subtotal_lkr)}
+          <span className="ml-1 font-normal text-slate-500">for {booking.total_days} day{booking.total_days === 1 ? "" : "s"}</span>
+        </span>
+        {deposit > 0 && (
+          <span className="tabular text-slate-600">Deposit {formatLKR(deposit)}</span>
+        )}
+        <span className="text-xs text-slate-500">Collected by you at handover</span>
+      </div>
+
+      <div className="mt-4 border-t border-slate-100 pt-3">
+        <RowActions {...props} renterName={renter?.full_name ?? "Renter"} hasUnread={hasUnread} align="stretch" />
+      </div>
+    </Card>
   );
 }

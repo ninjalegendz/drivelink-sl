@@ -5,6 +5,8 @@ import { getPageAccess } from "@/lib/pages/access";
 import { getOrCreateThreadForAgency } from "@/lib/support/thread";
 import { SupportChat, type SupportMessage } from "@/components/support/SupportChat";
 import { PageHeader } from "@/components/ui/PageHeader";
+import { EmptyState } from "@/components/ui/EmptyState";
+import { Headphones } from "lucide-react";
 
 export default async function AgencySupportPage() {
   const supabase = await createClient();
@@ -19,7 +21,12 @@ export default async function AgencySupportPage() {
   const thread = await getOrCreateThreadForAgency(supabase, page.id);
   if (!thread) {
     return (
-      <div className="text-slate-500 text-sm">Couldn&apos;t open a support thread. Try again later.</div>
+      <div>
+        <PageHeader title="Support" description="Direct line to the DriveLink team for booking issues, safety concerns and listing review questions." />
+        <div className="mt-6">
+          <EmptyState icon={<Headphones size={22} className="text-slate-400" strokeWidth={1.5} />} title="Couldn't open a support thread" description="Try again in a moment." />
+        </div>
+      </div>
     );
   }
 
@@ -31,13 +38,11 @@ export default async function AgencySupportPage() {
   const messages = (messagesData ?? []) as unknown as SupportMessage[];
 
   return (
-    <div>
-      <div className="mb-5">
-        <PageHeader
-          title="Support"
-          description="Direct line to the DriveLink admin team for booking issues, safety concerns and listing review questions."
-        />
-      </div>
+    <div className="space-y-5">
+      <PageHeader
+        title="Support"
+        description="Direct line to the DriveLink team for booking issues, safety concerns and listing review questions. A member of the team replies from here."
+      />
 
       <SupportChat
         threadId={thread.id}

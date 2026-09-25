@@ -30,8 +30,8 @@ export function PageWhatsappVerify({ agencyId, verified }: { agencyId: string; v
 
   if (verified) {
     return (
-      <p className="inline-flex items-center gap-1.5 text-emerald-700 text-xs font-semibold">
-        <ShieldCheck size={13} /> Number verified
+      <p className="inline-flex items-center gap-1.5 text-xs font-semibold text-emerald-700">
+        <ShieldCheck size={13} aria-hidden="true" /> Number verified
       </p>
     );
   }
@@ -64,13 +64,16 @@ export function PageWhatsappVerify({ agencyId, verified }: { agencyId: string; v
     <div className="space-y-2">
       {stage === "idle" ? (
         <Button size="sm" variant="secondary" loading={busy} onClick={send}>
-          <ShieldCheck size={13} /> Verify this number
+          <ShieldCheck size={13} aria-hidden="true" /> Verify this number
         </Button>
       ) : (
         <div className="flex flex-wrap items-center gap-2">
           <input
-            value={code} onChange={(e) => setCode(e.target.value)} inputMode="numeric" placeholder="6-digit code"
-            className="w-28 px-2 py-1.5 bg-slate-100 border border-slate-200 rounded-lg text-slate-900 text-sm"
+            value={code}
+            onChange={(e) => setCode(e.target.value)}
+            inputMode="numeric"
+            placeholder="6-digit code"
+            className="h-10 w-28 rounded-lg border border-slate-300 bg-white px-3 text-sm text-slate-900 shadow-xs focus:border-blue-600 focus:outline-none focus:ring-4 focus:ring-blue-600/10"
           />
           <Button size="sm" loading={busy} onClick={verify}>Verify</Button>
           <Button size="sm" variant="secondary" disabled={busy || secondsLeft > 0} onClick={send}>
@@ -78,8 +81,8 @@ export function PageWhatsappVerify({ agencyId, verified }: { agencyId: string; v
           </Button>
         </div>
       )}
-      {info  && <p className="text-slate-500 text-xs">{info}</p>}
-      {error && <p className="text-rose-700 text-xs">{error}</p>}
+      {info  && <p className="text-xs text-slate-500">{info}</p>}
+      {error && <p className="text-xs font-medium text-rose-700">{error}</p>}
     </div>
   );
 }

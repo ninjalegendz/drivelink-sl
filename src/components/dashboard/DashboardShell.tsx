@@ -81,7 +81,11 @@ export function DashboardShell({
   const activeHref = useMemo(() => {
     let best: string | null = null;
     for (const item of navItems) {
-      const matches = pathname === item.href || pathname.startsWith(item.href + "/");
+      // Today is the workspace root, a prefix of every dashboard path. It only
+      // counts on an exact match, so pages outside the nav (Page settings)
+      // highlight nothing instead of wrongly highlighting Today.
+      const isRoot = item.href === "/dashboard" || item.href === "/design/dashboard";
+      const matches = pathname === item.href || (!isRoot && pathname.startsWith(item.href + "/"));
       if (matches && (best === null || item.href.length > best.length)) best = item.href;
     }
     return best;

@@ -31,32 +31,34 @@ export function RangeTabs({ tabs, active, basePath }: Props) {
   const [pending, startTransition] = useTransition();
 
   return (
-    <div className="mb-6 flex w-fit flex-wrap items-center gap-2">
-      {tabs.map((tab) => {
-        const selected = tab.key === active;
-        return (
-          <button
-            key={tab.key}
-            type="button"
-            aria-pressed={selected}
-            disabled={pending}
-            onClick={() => {
-              if (selected) return;
-              startTransition(() => {
-                router.push(`${basePath}?range=${tab.key}`, { scroll: false });
-                router.refresh();
-              });
-            }}
-            className={`min-h-10 rounded-lg px-3.5 text-sm transition-colors disabled:opacity-60 ${
-              selected
-                ? "bg-slate-200 font-medium text-slate-900"
-                : "bg-white text-slate-600 hover:text-slate-900"
-            }`}
-          >
-            {tab.label}
-          </button>
-        );
-      })}
+    <div className="mb-6 flex flex-wrap items-center gap-3">
+      <div className="inline-flex flex-wrap items-center gap-1 rounded-full bg-slate-100 p-1">
+        {tabs.map((tab) => {
+          const selected = tab.key === active;
+          return (
+            <button
+              key={tab.key}
+              type="button"
+              aria-pressed={selected}
+              disabled={pending}
+              onClick={() => {
+                if (selected) return;
+                startTransition(() => {
+                  router.push(`${basePath}?range=${tab.key}`, { scroll: false });
+                  router.refresh();
+                });
+              }}
+              className={`min-h-9 whitespace-nowrap rounded-full px-3.5 text-sm font-medium transition-colors disabled:opacity-60 ${
+                selected
+                  ? "bg-white text-slate-950 shadow-xs"
+                  : "text-slate-500 hover:text-slate-900"
+              }`}
+            >
+              {tab.label}
+            </button>
+          );
+        })}
+      </div>
       <span
         aria-live="polite"
         className={`text-xs text-slate-500 transition-opacity ${pending ? "opacity-100" : "opacity-0"}`}
