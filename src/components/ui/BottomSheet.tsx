@@ -4,6 +4,7 @@ import { X } from "lucide-react";
 import { type ReactNode, useEffect, useId, useRef } from "react";
 import { createPortal } from "react-dom";
 import { useEscapeLayer } from "@/components/ui/useEscapeLayer";
+import { useSheetDrag } from "@/components/ui/useSheetDrag";
 
 interface BottomSheetProps {
   title: string;
@@ -30,6 +31,7 @@ interface BottomSheetProps {
  */
 export function BottomSheet({ title, closeLabel, onClose, children, actions, className = "" }: BottomSheetProps) {
   const dialogRef = useRef<HTMLDivElement>(null);
+  const backdropRef = useRef<HTMLButtonElement>(null);
   const returnFocusRef = useRef<HTMLElement | null>(null);
   const onCloseRef = useRef(onClose);
   const titleId = useId();
@@ -41,6 +43,9 @@ export function BottomSheet({ title, closeLabel, onClose, children, actions, cla
   // Escape goes to the top layer only, so closing a picker opened from a
   // dialog does not close the dialog too. See useEscapeLayer.
   useEscapeLayer(() => onCloseRef.current());
+
+  // Drag down to dismiss on a phone, with an elastic pull upwards.
+  useSheetDrag(dialogRef, { onClose: () => onCloseRef.current(), backdropRef });
 
   useEffect(() => {
     returnFocusRef.current = document.activeElement instanceof HTMLElement ? document.activeElement : null;
@@ -91,6 +96,7 @@ export function BottomSheet({ title, closeLabel, onClose, children, actions, cla
   return createPortal(
     <div className="fixed inset-0 z-[70] flex items-end md:items-center md:justify-center md:p-6">
       <button
+        ref={backdropRef}
         type="button"
         aria-label={`Dismiss ${title.toLowerCase()}`}
         className="animate-fade-in absolute inset-0 cursor-default bg-slate-950/40 backdrop-blur-[2px]"
@@ -107,12 +113,13 @@ export function BottomSheet({ title, closeLabel, onClose, children, actions, cla
         tabIndex={-1}
         className={`animate-sheet-up md:animate-scale-in relative max-h-[88dvh] w-full overflow-hidden rounded-t-3xl bg-white shadow-2xl ring-1 ring-slate-900/[0.06] focus:outline-none md:max-w-lg md:rounded-3xl ${className}`}
       >
-        {/* Grab handle. Decorative: the sheet closes by the button, the
-            backdrop or Escape, never by a gesture someone has to discover. */}
-        <div aria-hidden="true" className="flex justify-center pt-2.5 md:hidden">
+        {/* Grab handle and header: dragging either moves the sheet on a
+            phone. The gesture is a shortcut only; the close button, the
+            backdrop and Escape all still close it. */}
+        <div data-sheet-handle aria-hidden="true" className="flex touch-none justify-center pb-1 pt-2.5 md:hidden">
           <span className="h-1 w-10 rounded-full bg-slate-300" />
         </div>
-        <div className="flex min-h-14 items-center justify-between gap-3 border-b border-slate-100 pl-5 pr-2.5">
+        <div data-sheet-handle className="flex min-h-14 touch-none items-center justify-between gap-3 border-b border-slate-100 pl-5 pr-2.5 md:touch-auto">
           <h2 id={titleId} className="text-base font-semibold tracking-tight text-slate-950">{title}</h2>
           <div className="flex items-center gap-1">
             {actions}

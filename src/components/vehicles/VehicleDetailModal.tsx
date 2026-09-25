@@ -15,6 +15,7 @@ import type { VehicleWithAgency } from "@/types/queries";
 import { trackTrafficEvent } from "@/lib/analytics/client";
 import { isCurrentVerifiedVehicle } from "@/lib/vehicles/trust";
 import { useEscapeLayer } from "@/components/ui/useEscapeLayer";
+import { useSheetDrag } from "@/components/ui/useSheetDrag";
 
 type ModalReview = {
   id: string; rating: number; comment: string | null; created_at: string;
@@ -28,6 +29,11 @@ function initials(name: string): string {
 export function VehicleDetailModal({ vehicle, onClose }: { vehicle: VehicleWithAgency; onClose: () => void }) {
   const titleId = useId();
   const modalRef = useRef<HTMLDivElement>(null);
+  // On a phone this is a full-screen sheet: pulling down from the top of the
+  // content closes it, the same gesture as every other sheet in the app. No
+  // backdrop fade here: the dim layer wraps the sheet, so fading it would
+  // fade the sheet with it.
+  useSheetDrag(modalRef, { onClose });
   const closeRef = useRef<HTMLButtonElement>(null);
   const agency = vehicle.agencies;
   // BUILD 2: page rating, not the owner's personal rating.
