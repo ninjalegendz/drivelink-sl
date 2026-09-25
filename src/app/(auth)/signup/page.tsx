@@ -25,7 +25,6 @@ function SignupForm() {
 
   const [stage,    setStage]    = useState<Stage>("details");
   const [fullName, setFullName] = useState("");
-  const [address,  setAddress]  = useState("");
   // Prefill from a login → signup handoff ("no account, create one").
   const [phone,    setPhone]    = useState(() => params.get("phone") ?? "");
   const [email,    setEmail]    = useState(() => params.get("email") ?? "");
@@ -60,7 +59,6 @@ function SignupForm() {
 
     const nameProblem = checkPersonName(fullName);
     if (nameProblem)                       { setError(NAME_PROBLEM_MESSAGE[nameProblem]); return; }
-    if (address.trim().length < 5)         { setError("Enter your residential address."); return; }
     if (!isValidInternationalPhone(phone)) { setError("Enter a valid mobile number for the selected country."); return; }
     if (isForeignPhone && !email.trim())   { setError("Add an email. SMS doesn't reach non-Sri Lankan numbers, so your verification code and booking documents go there."); return; }
     if (email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) { setError("That email doesn't look right."); return; }
@@ -72,7 +70,6 @@ function SignupForm() {
       headers: { "Content-Type": "application/json" },
       body:    JSON.stringify({
         full_name: fullName.trim(),
-        address:   address.trim(),
         phone:     phone.trim(),
         email:     email.trim() || undefined,
       }),
@@ -133,20 +130,6 @@ function SignupForm() {
                 autoFocus
                 autoComplete="name"
                 placeholder="As on your NIC or passport"
-              />
-            )}
-          </Field>
-
-          <Field label="Residential address" required>
-            {(field) => (
-              <Input
-                {...field}
-                type="text"
-                value={address}
-                onChange={(e) => setAddress(e.target.value)}
-                required
-                autoComplete="street-address"
-                placeholder="House number, street, city"
               />
             )}
           </Field>

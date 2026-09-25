@@ -25,19 +25,16 @@ import { NAME_PROBLEM_MESSAGE, checkPersonName } from "@/lib/auth/person-name";
 export async function POST(req: NextRequest) {
   const body = (await req.json().catch(() => ({}))) as {
     full_name?: string;
-    address?:   string;
     phone?:     string;
     email?:     string;
   };
 
   const fullName  = body.full_name?.trim() ?? "";
-  const addressIn = body.address?.trim()   ?? "";
   const phoneIn   = body.phone?.trim()      ?? "";
   const emailIn   = body.email?.trim().toLowerCase() || null;
 
   const nameProblem = checkPersonName(fullName);
   if (nameProblem)                    return NextResponse.json({ error: NAME_PROBLEM_MESSAGE[nameProblem] }, { status: 400 });
-  if (addressIn.length < 5)           return NextResponse.json({ error: "Enter your residential address." }, { status: 400 });
   if (!isValidSLPhone(phoneIn))       return NextResponse.json({ error: "Enter a valid mobile number. For a non-Sri-Lankan number, include the country code (e.g. +44 7911 123456)." }, { status: 400 });
   if (emailIn && !isEmailLike(emailIn)) return NextResponse.json({ error: "That email doesn't look right." }, { status: 400 });
 
@@ -111,11 +108,10 @@ export async function POST(req: NextRequest) {
     phone:           intl,
     full_name:       fullName,
     email:           emailIn,
-    // Reuses the `agency_address` column to stash the residential address
-    // for the pending window (the agency-signup flow that column was built
-    // for was removed in the Rental Pages revamp). Written to
-    // profiles.address in /verify, no schema change needed.
-    agency_address:  addressIn,
+    // A residential address is no longer collected: the identity check that
+    // follows signup establishes who someone is. Cleared so a stale value
+    // from an older pending signup can never be carried into a profile.
+    agency_address:  null,
     otp_hash:        otpHash,
     otp_expires_at:  expiresAt,
     otp_attempts:    0,
