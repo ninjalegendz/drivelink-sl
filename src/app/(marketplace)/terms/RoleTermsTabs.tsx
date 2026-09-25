@@ -53,7 +53,9 @@ export function RoleTermsTabs() {
           <ul className="list-disc pl-5 space-y-2 text-sm">
             <li><strong>Booking is a request, not a reservation:</strong> sending a request
                 does not guarantee availability. The Owner confirms first, then contact details
-                are unlocked so the two of you can arrange the handover.</li>
+                are unlocked so the two of you can arrange the handover. If the Owner does not
+                answer within 24 hours, or by the pickup time if that comes first, the request
+                closes automatically at no cost to you, and you can book another vehicle.</li>
             <li><strong>Booking confirmation fee is Rs. 0:</strong> there is no payment to
                 DriveLink to place or confirm a booking.</li>
             <li><strong>Direct payment to the Owner:</strong> the rental cost and any security
@@ -129,8 +131,10 @@ export function RoleTermsTabs() {
                 </Link>{" "}
                 protect your insurance position. Get a police report, photograph everything, and
                 speak to your insurer before agreeing anything with the Renter.</li>
-            <li><strong>Confirmation and cancellation:</strong> confirm or decline requests within
-                a reasonable timeframe. Requests pending too long auto-cancel. Once confirmed, you
+            <li><strong>Confirmation and cancellation:</strong> confirm or decline each request
+                within 24 hours. A request you have not answered closes automatically 24 hours after
+                it was sent, or at its pickup time if that comes first, and we remind you before it
+                does. Once confirmed, you
                 may not cancel without genuine cause, such as a mechanical breakdown. Repeated
                 cancellations harm your reliability score and ranking.</li>
             <li><strong>Verification:</strong> you must complete ID verification before using your

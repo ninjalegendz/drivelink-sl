@@ -1,7 +1,7 @@
 import { notFound, redirect } from "next/navigation";
 import { requireVerifiedIdentity } from "@/lib/auth/require-verified-identity";
 import Link from "next/link";
-import { Phone, ShieldCheck, ShieldAlert, Sparkles } from "lucide-react";
+import { Clock, Phone, ShieldCheck, ShieldAlert, Sparkles } from "lucide-react";
 import { createClient, createServiceClient } from "@/lib/supabase/server";
 import { Badge } from "@/components/ui/Badge";
 import { ReviewForm } from "@/components/booking/ReviewForm";
@@ -14,6 +14,7 @@ import { Card } from "@/components/ui/Card";
 import { Timeline, TimelineStep, type StepState } from "@/components/ui/Timeline";
 import { BookingRefresher } from "@/components/realtime/BookingRefresher";
 import { BOOKING_STATUS_LABELS } from "@/lib/booking/state-machine";
+import { NO_REPLY_REASON, formatReplyDeadline, requestReplyDeadline } from "@/lib/booking/request-expiry";
 import { RESPONSE_WINDOW_HOURS, formatDeadline, isResponseOverdue } from "@/lib/booking/response-window";
 import { formatLKR } from "@/lib/vehicles/format";
 import type { BookingWithRelations } from "@/types/queries";
@@ -83,6 +84,12 @@ export default async function BookingDetailPage({ params, searchParams }: Props)
   const verified  = kycStatus === "verified";
   const closed    = ["declined", "cancelled"].includes(status);
   const cancellationReason = (booking as { cancellation_reason?: string | null }).cancellation_reason ?? null;
+  // The older wording is what the booking route stored before migration 130.
+  const closedWithoutReply = status === "declined"
+    && (cancellationReason === NO_REPLY_REASON || cancellationReason === "Request expired, agency did not respond in time");
+  const replyDeadline = status === "pending_confirmation"
+    ? requestReplyDeadline(booking.created_at, (booking as { start_at?: string | null }).start_at ?? null)
+    : null;
 
   const agencyPhone  = agency.whatsapp_number?.trim() ?? "";
   const agencyWaText =
@@ -226,16 +233,31 @@ export default async function BookingDetailPage({ params, searchParams }: Props)
               );
             })}
           </Timeline>
+          {/* Without a deadline a renter could wait days on an owner who never
+              answers. Say when it ends, so they can plan around it. */}
+          {status === "pending_confirmation" && replyDeadline && (
+            <p className="mt-4 flex items-start gap-2 rounded-lg bg-slate-50 p-3 text-xs leading-5 text-slate-600">
+              <Clock size={14} className="mt-0.5 shrink-0 text-slate-500" aria-hidden="true" />
+              <span>
+                {agency.name} has until <strong className="font-semibold text-slate-800">{formatReplyDeadline(replyDeadline)}</strong> to
+                reply. If they don&apos;t, this request closes automatically and you can book another vehicle.
+              </span>
+            </p>
+          )}
         </Card>
       )}
 
       {closed && (
         <Card className="mb-5">
           <h2 className="text-base font-semibold text-slate-950">
-            {status === "declined" ? "This request was declined" : "This booking was cancelled"}
+            {closedWithoutReply
+              ? "This request closed without a reply"
+              : status === "declined" ? "This request was declined" : "This booking was cancelled"}
           </h2>
           <p className="mt-1 text-sm leading-6 text-slate-600">
-            {cancellationReason ?? "Nothing was charged."}{" "}
+            {closedWithoutReply
+              ? `${agency.name} didn't reply in time, so the request closed automatically. Nothing was charged.`
+              : (cancellationReason ?? "Nothing was charged.")}{" "}
             <Link href="/vehicles" className="font-medium text-blue-700 hover:text-blue-800">Browse other vehicles</Link>.
           </p>
         </Card>

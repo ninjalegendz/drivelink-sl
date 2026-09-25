@@ -27,6 +27,8 @@ export interface AgencyBookingRow {
   start_at:     string;
   end_at:       string;
   completed_at: string | null;
+  /** Why a request closed, e.g. the owner never replied in time (migration 130). */
+  cancellation_reason: string | null;
   deposit_lkr:  number | null;
   /** Chosen drive mode plus the reviewed foreign-licence permit declaration. */
   rental_mode:       "self_drive" | "with_driver" | null;
@@ -54,7 +56,7 @@ export interface AgencyBookingRow {
 }
 
 export const AGENCY_BOOKINGS_SELECT =
-  "id, renter_id, status, start_date, end_date, start_time, end_time, start_at, end_at, total_days, subtotal_lkr, created_at, completed_at, deposit_lkr, rental_mode, is_foreign_renter, foreign_permit_type, doc_share_consent_at, page_msgs_read_at, " +
+  "id, renter_id, status, start_date, end_date, start_time, end_time, start_at, end_at, total_days, subtotal_lkr, created_at, completed_at, cancellation_reason, deposit_lkr, rental_mode, is_foreign_renter, foreign_permit_type, doc_share_consent_at, page_msgs_read_at, " +
   "vehicles(make, model, year, plate_number, deposit_lkr), " +
   "profiles(full_name, reliability_pct, kyc_status, is_blacklisted, blacklist_reason_public), " +
   "booking_messages(sender_id, created_at)";

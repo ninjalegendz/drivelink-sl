@@ -49,6 +49,24 @@ export async function GET(req: NextRequest) {
     else trafficSessionsPruned = typeof pruneCount === "number" ? pruneCount : 0;
   }
 
+  // Booking requests the owner never answered close at 24 hours or at pickup,
+  // whichever is first, and owners get a reminder beforehand. The rule and the
+  // texts live in the database (migration 130); see lib/booking/request-expiry.
+  // Runs before the outbox below so those texts go out in this same run.
+  let requestsClosed = 0;
+  let requestsClosedQuietly = 0;
+  let requestRemindersSent = 0;
+  try {
+    const { data, error } = await service.rpc("expire_unanswered_booking_requests");
+    if (error) throw error;
+    const result = (data ?? {}) as { closed?: number; closed_quietly?: number; reminded?: number };
+    requestsClosed = result.closed ?? 0;
+    requestsClosedQuietly = result.closed_quietly ?? 0;
+    requestRemindersSent = result.reminded ?? 0;
+  } catch (error) {
+    console.error("[cron expire-bookings] closing unanswered requests failed", error);
+  }
+
   // Expired staff invitations must never remain an apparently live route to
   // page access. This only changes pending invitations into a visible expired
   // state; it never removes existing active staff memberships.
@@ -283,6 +301,9 @@ export async function GET(req: NextRequest) {
     notificationsDelivered,
     notificationsFailed,
     notificationsDead,
+    requestsClosed,
+    requestsClosedQuietly,
+    requestRemindersSent,
     expiredTeamInvitations,
     expiredPageTransfers,
     expiredVehicleVerifications,
@@ -298,7 +319,7 @@ export async function GET(req: NextRequest) {
     updated_at: finishedAt,
   });
 
-  console.log(`[cron expire-bookings] awaiting_closure=${awaitingClosure} overdue_s1=${overdueNotified} review_prompts=${overdueReviewPrompted} team_invites_expired=${expiredTeamInvitations} page_transfers_expired=${expiredPageTransfers} msg_nudged=${msgNudged} delivered=${notificationsDelivered} failed=${notificationsFailed} dead=${notificationsDead} orphans_swept=${avatarsRemoved + kycRemoved + licencesRemoved + pendingRemoved}`);
+  console.log(`[cron expire-bookings] requests_closed=${requestsClosed} requests_closed_quietly=${requestsClosedQuietly} request_reminders=${requestRemindersSent} awaiting_closure=${awaitingClosure} overdue_s1=${overdueNotified} review_prompts=${overdueReviewPrompted} team_invites_expired=${expiredTeamInvitations} page_transfers_expired=${expiredPageTransfers} msg_nudged=${msgNudged} delivered=${notificationsDelivered} failed=${notificationsFailed} dead=${notificationsDead} orphans_swept=${avatarsRemoved + kycRemoved + licencesRemoved + pendingRemoved}`);
   return NextResponse.json({
     ok:         true,
     awaitingClosure,
@@ -307,6 +328,9 @@ export async function GET(req: NextRequest) {
     notificationsDelivered,
     notificationsFailed,
     notificationsDead,
+    requestsClosed,
+    requestsClosedQuietly,
+    requestRemindersSent,
     expiredTeamInvitations,
     expiredPageTransfers,
     expiredVehicleVerifications,

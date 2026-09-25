@@ -1,12 +1,13 @@
 "use client";
 
 import { useCallback } from "react";
-import { ShieldAlert, Check } from "lucide-react";
+import { ShieldAlert, Check, Clock } from "lucide-react";
 import { Badge } from "@/components/ui/Badge";
 import { AgencyBookingActions } from "@/components/booking/AgencyBookingActions";
 import { ReportRenterButton } from "@/components/booking/ReportRenterButton";
 import { MessageRenterButton } from "@/components/booking/BookingChat";
 import { BOOKING_STATUS_LABELS } from "@/lib/booking/state-machine";
+import { NO_REPLY_REASON, formatReplyDeadline, requestReplyDeadline } from "@/lib/booking/request-expiry";
 import { formatLKR, reliabilityColor, reliabilityLabel } from "@/lib/vehicles/format";
 import { FOREIGN_PERMIT_LABELS } from "@/lib/booking/self-drive-eligibility";
 import { usePolledRows } from "@/lib/realtime/usePolledRows";
@@ -86,6 +87,10 @@ export function AgencyBookingsList({
         const blocked = renter?.is_blacklisted ?? false;
         const verified = renter?.kyc_status === "verified";
         const deposit = booking.deposit_lkr ?? vehicle?.deposit_lkr ?? 0;
+        // "Declined" would tell the owner they turned this renter down.
+        const closedWithoutReply = status === "declined"
+          && (booking.cancellation_reason === NO_REPLY_REASON
+            || booking.cancellation_reason === "Request expired, agency did not respond in time");
 
         const readCursor = booking.page_msgs_read_at ? Date.parse(booking.page_msgs_read_at) : 0;
         const hasUnread = (booking.booking_messages ?? []).some(
@@ -107,8 +112,21 @@ export function AgencyBookingsList({
                   {booking.start_time?.slice(0, 5)} pick-up
                 </p>
               </div>
-              <Badge variant={statusVariant[status]}>{BOOKING_STATUS_LABELS[status]}</Badge>
+              <Badge variant={statusVariant[status]}>{closedWithoutReply ? "Closed, no reply" : BOOKING_STATUS_LABELS[status]}</Badge>
             </div>
+
+            {/* The deadline is the reason to answer now rather than later. */}
+            {status === "pending_confirmation" && (
+              <p className="mt-2 flex items-start gap-1.5 text-xs font-medium text-amber-800">
+                <Clock size={13} className="mt-0.5 shrink-0" aria-hidden="true" />
+                Reply by {formatReplyDeadline(requestReplyDeadline(booking.created_at, booking.start_at))}, or this request closes automatically.
+              </p>
+            )}
+            {closedWithoutReply && (
+              <p className="mt-2 text-xs text-slate-600">
+                This request closed automatically because it wasn&apos;t answered within 24 hours (or by pickup time).
+              </p>
+            )}
 
             {/* Who is asking. This is the decision the owner is actually making. */}
             <div className="mt-3 rounded-lg bg-slate-50 p-3">
