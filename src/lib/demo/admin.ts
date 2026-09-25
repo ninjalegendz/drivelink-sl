@@ -8,29 +8,32 @@ import type { AdminHomeViewProps } from "@/components/admin/shell/AdminHomeView"
 // counts instead of an always-empty inbox.
 
 export const DEMO_ADMIN_NAV: AdminNavItem[] = [
-  { href: "/admin",           label: "Home",          icon: "home",     count: 9 },
-  { href: "/admin/analytics", label: "Analytics",     icon: "analytics" },
-  { href: "/admin/vehicles",  label: "Listings",      icon: "listings" },
-  { href: "/admin/bookings",  label: "All Bookings",  icon: "bookings" },
-  { href: "/admin/users",     label: "Renters / KYC", icon: "users" },
-  { href: "/admin/agencies",  label: "Rental Pages",  icon: "agencies" },
-  { href: "/admin/reports",   label: "Reports",       icon: "reports" },
-  { href: "/admin/support",   label: "Support",       icon: "support", count: 3, urgent: true },
-  { href: "/admin/settings",  label: "Settings",      icon: "settings" },
+  { href: "/design/admin",           label: "Home",          icon: "home",     count: 9 },
+  { href: "/design/admin/analytics", label: "Analytics",     icon: "analytics" },
+  { href: "/design/admin/vehicles",  label: "Listings",      icon: "listings" },
+  { href: "/design/admin/bookings",  label: "All Bookings",  icon: "bookings" },
+  { href: "/design/admin/users",     label: "Renters / KYC", icon: "users" },
+  { href: "/design/admin/agencies",  label: "Rental Pages",  icon: "agencies" },
+  { href: "/design/admin/reports",   label: "Reports",       icon: "reports" },
+  { href: "/design/admin/activity",  label: "Dev log",       icon: "activity" },
+  { href: "/design/admin/support",   label: "Support",       icon: "support", count: 3, urgent: true },
+  { href: "/design/admin/settings",  label: "Settings",      icon: "settings" },
 ];
 
 export const DEMO_ADMIN_MOBILE_PRIMARY: MobileNavItem[] = [
-  { href: "/admin",          label: "Home",     icon: "home", badge: 9 },
-  { href: "/admin/vehicles", label: "Listings", icon: "listings" },
+  { href: "/design/admin",          label: "Home",     icon: "home", badge: 9 },
+  { href: "/design/admin/vehicles", label: "Listings", icon: "listings" },
 ];
 
 export const DEMO_ADMIN_MOBILE_SECONDARY: MobileNavItem[] = [
-  { href: "/admin/analytics", label: "Analytics",     icon: "analytics" },
-  { href: "/admin/bookings",  label: "All Bookings",  icon: "all-bookings" },
-  { href: "/admin/users",     label: "Renters / KYC", icon: "users" },
-  { href: "/admin/agencies",  label: "Rental Pages",  icon: "agencies" },
-  { href: "/admin/support",   label: "Support",       icon: "support", badge: 3 },
-  { href: "/admin/settings",  label: "Settings",      icon: "settings" },
+  { href: "/design/admin/analytics", label: "Analytics",     icon: "analytics" },
+  { href: "/design/admin/bookings",  label: "All Bookings",  icon: "all-bookings" },
+  { href: "/design/admin/users",     label: "Renters / KYC", icon: "users" },
+  { href: "/design/admin/agencies",  label: "Rental Pages",  icon: "agencies" },
+  { href: "/design/admin/reports",   label: "Reports",       icon: "cases" },
+  { href: "/design/admin/activity",  label: "Dev log",       icon: "activity" },
+  { href: "/design/admin/support",   label: "Support",       icon: "support", badge: 3 },
+  { href: "/design/admin/settings",  label: "Settings",      icon: "settings" },
   { href: "/vehicles",        label: "Browse vehicles", icon: "browse" },
   { href: "/",                label: "DriveLink home",  icon: "home" },
 ];

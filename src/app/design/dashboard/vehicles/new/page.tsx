@@ -28,7 +28,7 @@ export default function DesignNewVehiclePage() {
         <PageHeader
           title="List a vehicle"
           description="Three short steps. Everything else has a sensible default you can change later."
-          backHref="/design/dashboard/fleet"
+          backHref="/design/dashboard/vehicles"
           backLabel="Fleet"
         />
         <VehicleWizard agencyId={DEMO_ACTIVE_PAGE.id} agencyCity="Colombo" canDeclareListingAuthority />

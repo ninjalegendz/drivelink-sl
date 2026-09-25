@@ -5,7 +5,7 @@ import Image from "next/image";
 import { usePathname } from "next/navigation";
 import {
   Compass, Search, UserCog,
-  LayoutDashboard, BarChart3, Car, ClipboardList, Users, Building2, Flag, Headphones, Settings,
+  LayoutDashboard, BarChart3, Car, ClipboardList, Users, Building2, Flag, Headphones, Settings, ScrollText,
   type LucideIcon,
 } from "lucide-react";
 import { CommandPalette, openCommandPalette } from "@/components/layout/CommandPalette";
@@ -26,7 +26,7 @@ import { SignOutButton } from "@/components/account/SignOutButton";
 // runtime even though it type-checks. MobileNav next door uses the same
 // keyed-icon pattern for the same reason.
 export type AdminNavIcon =
-  | "home" | "analytics" | "listings" | "bookings" | "users" | "agencies" | "reports" | "support" | "settings";
+  | "home" | "analytics" | "listings" | "bookings" | "users" | "agencies" | "reports" | "support" | "settings" | "activity";
 
 const NAV_ICONS: Record<AdminNavIcon, LucideIcon> = {
   home: LayoutDashboard,
@@ -38,6 +38,7 @@ const NAV_ICONS: Record<AdminNavIcon, LucideIcon> = {
   reports: Flag,
   support: Headphones,
   settings: Settings,
+  activity: ScrollText,
 };
 
 export interface AdminNavItem {

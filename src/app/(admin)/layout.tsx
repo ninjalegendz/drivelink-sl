@@ -22,6 +22,9 @@ const NAV: NavDef[] = [
   { href: "/admin/users",           label: "Renters / KYC", icon: "users" },
   { href: "/admin/agencies",        label: "Rental Pages",  icon: "agencies" },
   { href: "/admin/reports",         label: "Reports",       icon: "reports" },
+  // Every recorded action across the platform, newest first. See
+  // src/app/(admin)/admin/activity/page.tsx.
+  { href: "/admin/activity",        label: "Dev log",       icon: "activity" },
   { href: "/admin/support",         label: "Support",       icon: "support",  badge: "support" },
   { href: "/admin/settings",        label: "Settings",      icon: "settings" },
 ];
@@ -33,6 +36,8 @@ const HREF_TO_ICON: Record<string, MobileNavItem["icon"]> = {
   "/admin/bookings":        "all-bookings",
   "/admin/users":           "users",
   "/admin/agencies":        "agencies",
+  "/admin/reports":         "cases",
+  "/admin/activity":        "activity",
   "/admin/support":         "support",
   "/admin/settings":        "settings",
 };

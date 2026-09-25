@@ -38,7 +38,7 @@ const PREVIEW_LINKS = [
   { href: "/pages/serendib-drive", label: "Rental Page (demo)", description: "A provider's public storefront." },
   { href: "/login", label: "Log in", description: "Sign-in screen." },
   { href: "/design/dashboard", label: "Rental Page dashboard", description: "Owner workspace, signed-in preview." },
-  { href: "/design/dashboard/fleet", label: "Fleet", description: "A Rental Page's vehicle list, signed-in preview." },
+  { href: "/design/dashboard/vehicles", label: "Fleet", description: "A Rental Page's vehicle list, signed-in preview." },
   { href: "/design/account", label: "Account", description: "Renter account hub, signed-in preview." },
   { href: "/design/bookings", label: "Bookings", description: "Renter bookings list, signed-in preview." },
   { href: "/design/admin", label: "Admin", description: "The admin workspace shell and home, signed-in preview." },

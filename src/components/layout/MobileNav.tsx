@@ -8,7 +8,7 @@ import {
   Car, Compass, CalendarCheck, User, Tag, HelpCircle, Building2,
   LayoutDashboard, BarChart3, Headphones, Settings,
   Users, Ban, Mail, ClipboardList,
-  Bell, MessageSquare, Sparkles, ShieldAlert, CirclePlay,
+  Bell, MessageSquare, Sparkles, ShieldAlert, CirclePlay, ScrollText,
 } from "lucide-react";
 import { BottomSheet } from "@/components/ui/BottomSheet";
 
@@ -17,7 +17,7 @@ export type MobileNavIcon =
   | "home" | "analytics" | "support" | "settings" | "listings"
   | "users" | "agencies" | "blacklist" | "email"
   | "pricing" | "faq" | "guides" | "car" | "all-bookings" | "notifications"
-  | "requests" | "directory" | "cases";
+  | "requests" | "directory" | "cases" | "activity";
 
 const ICONS: Record<MobileNavIcon, React.ComponentType<{ size?: number; strokeWidth?: number; className?: string }>> = {
   browse: Compass,
@@ -44,6 +44,7 @@ const ICONS: Record<MobileNavIcon, React.ComponentType<{ size?: number; strokeWi
   requests: MessageSquare,
   directory: Sparkles,
   cases: ShieldAlert,
+  activity: ScrollText,
 };
 
 export interface MobileNavItem {

@@ -1,5 +1,6 @@
 import { notFound } from "next/navigation";
 import type { Metadata } from "next";
+import { PreviewLinkRewriter } from "./_components/PreviewLinkRewriter";
 
 // ─── Design preview area (/design) ──────────────────────────
 //
@@ -19,5 +20,10 @@ export const metadata: Metadata = {
 
 export default function DesignLayout({ children }: { children: React.ReactNode }) {
   if (process.env.NODE_ENV === "production") notFound();
-  return children;
+  return (
+    <>
+      <PreviewLinkRewriter />
+      {children}
+    </>
+  );
 }

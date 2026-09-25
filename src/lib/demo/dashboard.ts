@@ -34,7 +34,7 @@ export const DEMO_PAGE_OPTIONS: PageSwitcherEntry[] = [
 export const DEMO_NAV_ITEMS: DashboardNavItem[] = [
   { href: "/design/dashboard",         label: "Today",     icon: "today" },
   { href: "/design/dashboard/bookings", label: "Bookings",  icon: "bookings" },
-  { href: "/design/dashboard/fleet",    label: "Fleet",      icon: "fleet" },
+  { href: "/design/dashboard/vehicles",    label: "Fleet",      icon: "fleet" },
   { href: "/design/dashboard/analytics", label: "Analytics", icon: "analytics" },
   { href: "/design/dashboard/support",  label: "Support",   icon: "support", badge: "NEW" },
 ];
@@ -42,14 +42,14 @@ export const DEMO_NAV_ITEMS: DashboardNavItem[] = [
 export const DEMO_MOBILE_PRIMARY: MobileNavItem[] = [
   { href: "/design/dashboard",          label: "Home",     icon: "home" },
   { href: "/design/dashboard/bookings", label: "Bookings", icon: "bookings" },
-  { href: "/design/dashboard/fleet",    label: "Fleet",     icon: "fleet" },
+  { href: "/design/dashboard/vehicles",    label: "Fleet",     icon: "fleet" },
 ];
 
 export const DEMO_MOBILE_SECONDARY: MobileNavItem[] = [
   { href: "/design/dashboard/analytics", label: "Analytics", icon: "analytics" },
   { href: "/design/dashboard/support",   label: "Support",   icon: "support", badge: "NEW" },
-  { href: "/account",  label: "Account",          icon: "account" },
-  { href: "/account/settings", label: "Settings",  icon: "settings" },
+  { href: "/design/account",  label: "Account",          icon: "account" },
+  { href: "/design/account/settings", label: "Settings",  icon: "settings" },
   { href: "/vehicles", label: "Browse vehicles",   icon: "browse" },
   { href: "/",          label: "DriveLink home",   icon: "home" },
 ];
