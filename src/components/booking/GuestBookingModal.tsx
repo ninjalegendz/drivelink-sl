@@ -41,7 +41,6 @@ export function GuestBookingModal({ draft, onClose }: Props) {
   // Shared form state
   const [identifier, setIdentifier] = useState("");  // login: email or phone; signup: phone
   const [fullName,   setFullName]   = useState("");
-  const [address,    setAddress]    = useState("");
   const [email,      setEmail]      = useState("");
   const [code,       setCode]       = useState("");
   const [loading,    setLoading]    = useState(false);
@@ -95,7 +94,6 @@ export function GuestBookingModal({ draft, onClose }: Props) {
     setInfo(null);
     setIdentifier("");
     setFullName("");
-    setAddress("");
     setEmail("");
   }
 
@@ -106,7 +104,6 @@ export function GuestBookingModal({ draft, onClose }: Props) {
   // ─── Stage 1: send OTP ──────────────────────────────────────────────
   async function startSignup() {
     if (fullName.trim().length < 2)            { setError("Enter your full name."); return; }
-    if (address.trim().length < 5)             { setError("Enter your home address."); return; }
     if (!isValidInternationalPhone(identifier)) { setError("Enter a valid mobile number for the selected country."); return; }
     if (isForeignPhone && !email.trim())       { setError("Add an email. SMS doesn't reach non-Sri Lankan numbers."); return; }
     if (email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) { setError("That email doesn't look right."); return; }
@@ -118,7 +115,6 @@ export function GuestBookingModal({ draft, onClose }: Props) {
       headers: { "Content-Type": "application/json" },
       body:    JSON.stringify({
         full_name: fullName.trim(),
-        address:   address.trim(),
         phone:     identifier.trim(),
         email:     email.trim() || undefined,
       }),
@@ -346,18 +342,6 @@ export function GuestBookingModal({ draft, onClose }: Props) {
                         autoFocus
                         autoComplete="name"
                         placeholder="As on your NIC or passport"
-                        className="w-full px-3 py-2 bg-slate-100 border border-slate-200 rounded-lg text-slate-900 placeholder-slate-400 text-sm focus:border-blue-500"
-                      />
-                    </div>
-                    <div>
-                      <label className="text-slate-600 text-xs mb-1 block">Home address</label>
-                      <input
-                        type="text"
-                        value={address}
-                        onChange={(e) => setAddress(e.target.value)}
-                        required
-                        autoComplete="street-address"
-                        placeholder="House number, street, city"
                         className="w-full px-3 py-2 bg-slate-100 border border-slate-200 rounded-lg text-slate-900 placeholder-slate-400 text-sm focus:border-blue-500"
                       />
                     </div>
