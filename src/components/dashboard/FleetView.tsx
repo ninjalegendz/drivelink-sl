@@ -1,9 +1,9 @@
 import Link from "next/link";
 import Image from "next/image";
-import { Car, Plus, ExternalLink, MessageCircle } from "lucide-react";
+import { Car, Plus, MessageCircle } from "lucide-react";
 import { whatsappLink } from "@/lib/site-config";
 import { Badge } from "@/components/ui/Badge";
-import { VehicleStatusToggle } from "@/components/dashboard/VehicleStatusToggle";
+import { FleetCardActions } from "@/components/dashboard/FleetCardActions";
 import { ResubmitButton } from "@/components/dashboard/ResubmitButton";
 import { DismissNotice } from "@/components/dashboard/DismissNotice";
 import { Card } from "@/components/ui/Card";
@@ -23,13 +23,28 @@ const STATUS_VARIANT = {
   pending_review: "blue",
 } as const;
 
+// "Live" matches the wording Today uses for the same state (STATUS_META in
+// TodayView), so a listing isn't "Listed" on one screen and "Live" on another.
 const STATUS_LABEL = {
-  available:      "Listed",
+  available:      "Live",
   rented:         "Rented",
   maintenance:    "Maintenance",
   unlisted:       "Unlisted",
   pending_review: "Pending review",
 } as const;
+
+/** A short tinted line for the one thing this card needs the owner to know,
+ * shown once near the top instead of squeezed between the action buttons. */
+function fleetStatusNote(v: VehicleRow, needsAuthority: boolean): { text: string; tone: "amber" | "slate" } | null {
+  if (needsAuthority) return { text: "Owner review needed", tone: "amber" };
+  if (v.status === "rented") return { text: "Currently rented", tone: "slate" };
+  if (v.status === "maintenance") return { text: "In maintenance", tone: "slate" };
+  if (v.status === "pending_review") return { text: "Awaiting admin", tone: "slate" };
+  if (v.status === "unlisted" && (v as { rejection_reason?: string | null }).rejection_reason) {
+    return { text: "Fix and resubmit below", tone: "amber" };
+  }
+  return null;
+}
 
 export interface FleetViewProps {
   vehicles: VehicleRow[];
@@ -173,52 +188,32 @@ export function FleetView({
                   </div>
 
                   <div className="mt-3 flex flex-wrap gap-1.5">
-                    <Badge variant="slate">{v.transmission}</Badge>
+                    <Badge variant="slate">{v.transmission.charAt(0).toUpperCase() + v.transmission.slice(1)}</Badge>
                     <Badge variant="slate">{v.seats} seats</Badge>
                     <Badge variant={v.insurance_type === "hire" ? "green" : "yellow"}>
                       {insuranceLabel(v.insurance_type)}
                     </Badge>
                   </div>
 
-                  <div className="mt-4 flex items-center justify-between gap-2 border-t border-slate-100 pt-3">
-                    <div className="-ml-2 flex flex-wrap gap-0.5">
-                      <Link
-                        href={`/dashboard/vehicles/${v.id}/edit`}
-                        className="inline-flex min-h-11 items-center rounded-lg px-2.5 text-sm font-medium text-blue-600 transition-colors hover:bg-blue-50"
-                      >
-                        Edit
-                      </Link>
-                      <Link
-                        href={`/dashboard/vehicles/${v.id}/availability`}
-                        className="inline-flex min-h-11 items-center rounded-lg px-2.5 text-sm font-medium text-blue-600 transition-colors hover:bg-blue-50"
-                      >
-                        Availability
-                      </Link>
-                      <Link
-                        href={`/dashboard/vehicles/new?from=${v.id}`}
-                        title="Start a new listing pre-filled from this one"
-                        className="inline-flex min-h-11 items-center rounded-lg px-2.5 text-sm font-medium text-blue-600 transition-colors hover:bg-blue-50"
-                      >
-                        Duplicate
-                      </Link>
-                      <Link
-                        href={`/vehicles/${v.slug}`}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="inline-flex min-h-11 items-center gap-1 rounded-lg px-2.5 text-sm text-slate-500 transition-colors hover:bg-slate-100"
-                      >
-                        {v.status === "available" ? "View" : "Preview"} <ExternalLink size={12} aria-hidden="true" />
-                      </Link>
-                    </div>
-                    {needsAuthority ? (
-                      <span className="rounded-md bg-amber-50 px-2 py-1 text-xs font-semibold text-amber-800">Owner review needed</span>
-                    ) : (
-                      <VehicleStatusToggle
-                        vehicleId={v.id}
-                        status={v.status}
-                        rejectionReason={(v as { rejection_reason?: string | null }).rejection_reason}
-                      />
-                    )}
+                  {/* The one thing this card needs the owner to know, as a
+                      small tinted line, never squeezed between the buttons below. */}
+                  {(() => {
+                    const note = fleetStatusNote(v, needsAuthority);
+                    return note && (
+                      <p className={`mt-2 text-xs font-semibold ${note.tone === "amber" ? "text-amber-700" : "text-slate-500"}`}>
+                        {note.text}
+                      </p>
+                    );
+                  })()}
+
+                  <div className="mt-4 border-t border-slate-100 pt-3">
+                    <FleetCardActions
+                      vehicleId={v.id}
+                      slug={v.slug}
+                      status={v.status}
+                      rejectionReason={(v as { rejection_reason?: string | null }).rejection_reason}
+                      needsAuthority={needsAuthority}
+                    />
                   </div>
 
                   {needsAuthority && (

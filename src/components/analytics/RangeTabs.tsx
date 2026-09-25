@@ -32,7 +32,7 @@ export function RangeTabs({ tabs, active, basePath }: Props) {
 
   return (
     <div className="mb-6 flex flex-wrap items-center gap-3">
-      <div className="inline-flex flex-wrap items-center gap-1 rounded-full bg-slate-100 p-1">
+      <div className="mask-fade-x -mx-4 flex items-center gap-1 overflow-x-auto scrollbar-none rounded-full bg-slate-100 py-1 px-4 sm:mx-0 sm:flex-wrap sm:px-1">
         {tabs.map((tab) => {
           const selected = tab.key === active;
           return (

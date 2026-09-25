@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useId, useLayoutEffect, useRef, useState } from "react";
+import Link from "next/link";
 import { MoreHorizontal, type LucideIcon } from "lucide-react";
 import { Portal } from "@/components/ui/Portal";
 import { useEscapeLayer } from "@/components/ui/useEscapeLayer";
@@ -20,7 +21,12 @@ import { useEscapeLayer } from "@/components/ui/useEscapeLayer";
 export interface OverflowMenuItem {
   label: string;
   icon?: LucideIcon;
-  onSelect: () => void;
+  /** For an action. Give `href` instead when the item only goes somewhere,
+   *  so it stays a real link (new tab, copy link, preview rewriting). */
+  onSelect?: () => void;
+  href?: string;
+  /** Open `href` in a new tab, for a page people check and come back from. */
+  newTab?: boolean;
   /** Red, for an action that removes or blocks something. */
   danger?: boolean;
   disabled?: boolean;
@@ -50,7 +56,7 @@ export function OverflowMenu({ items, label = "More actions" }: { items: Overflo
 
   useEffect(() => {
     if (!open) return;
-    menuRef.current?.querySelector<HTMLButtonElement>("[role=menuitem]:not([disabled])")?.focus();
+    menuRef.current?.querySelector<HTMLElement>("[role=menuitem]:not([disabled])")?.focus();
     function onDown(event: MouseEvent) {
       const target = event.target as Node;
       if (!menuRef.current?.contains(target) && !triggerRef.current?.contains(target)) setOpen(false);
@@ -69,8 +75,8 @@ export function OverflowMenu({ items, label = "More actions" }: { items: Overflo
   }, [open]);
 
   function onMenuKey(event: React.KeyboardEvent) {
-    const itemsEls = Array.from(menuRef.current?.querySelectorAll<HTMLButtonElement>("[role=menuitem]:not([disabled])") ?? []);
-    const index = itemsEls.indexOf(document.activeElement as HTMLButtonElement);
+    const itemsEls = Array.from(menuRef.current?.querySelectorAll<HTMLElement>("[role=menuitem]:not([disabled])") ?? []);
+    const index = itemsEls.indexOf(document.activeElement as HTMLElement);
     if (event.key === "ArrowDown") { event.preventDefault(); itemsEls[(index + 1) % itemsEls.length]?.focus(); }
     if (event.key === "ArrowUp") { event.preventDefault(); itemsEls[(index - 1 + itemsEls.length) % itemsEls.length]?.focus(); }
     if (event.key === "Tab") setOpen(false);
@@ -107,21 +113,41 @@ export function OverflowMenu({ items, label = "More actions" }: { items: Overflo
               position.up ? "origin-bottom-right" : "origin-top-right"
             }`}
           >
-            {items.map(({ label: itemLabel, icon: Icon, onSelect, danger, disabled }) => (
-              <button
-                key={itemLabel}
-                type="button"
-                role="menuitem"
-                disabled={disabled}
-                onClick={() => { setOpen(false); onSelect(); }}
-                className={`flex min-h-10 w-full items-center gap-2.5 rounded-lg px-3 text-left text-sm font-medium transition-colors disabled:opacity-40 ${
-                  danger ? "text-rose-700 hover:bg-rose-50" : "text-slate-700 hover:bg-slate-100 hover:text-slate-950"
-                }`}
-              >
-                {Icon && <Icon size={16} className={danger ? "text-rose-500" : "text-slate-400"} aria-hidden="true" />}
-                {itemLabel}
-              </button>
-            ))}
+            {items.map(({ label: itemLabel, icon: Icon, onSelect, href, newTab, danger, disabled }) => {
+              const className = `flex min-h-10 w-full items-center gap-2.5 rounded-lg px-3 text-left text-sm font-medium transition-colors disabled:opacity-40 ${
+                danger ? "text-rose-700 hover:bg-rose-50" : "text-slate-700 hover:bg-slate-100 hover:text-slate-950"
+              }`;
+              const content = (
+                <>
+                  {Icon && <Icon size={16} className={danger ? "text-rose-500" : "text-slate-400"} aria-hidden="true" />}
+                  {itemLabel}
+                </>
+              );
+              return href && !disabled ? (
+                <Link
+                  key={itemLabel}
+                  href={href}
+                  role="menuitem"
+                  target={newTab ? "_blank" : undefined}
+                  rel={newTab ? "noopener noreferrer" : undefined}
+                  onClick={() => setOpen(false)}
+                  className={className}
+                >
+                  {content}
+                </Link>
+              ) : (
+                <button
+                  key={itemLabel}
+                  type="button"
+                  role="menuitem"
+                  disabled={disabled}
+                  onClick={() => { setOpen(false); onSelect?.(); }}
+                  className={className}
+                >
+                  {content}
+                </button>
+              );
+            })}
           </div>
         </Portal>
       )}

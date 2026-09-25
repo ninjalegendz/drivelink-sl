@@ -7,6 +7,7 @@ import { PageTeamSection } from "@/components/dashboard/PageTeamSection";
 import { PageLifecycleControls, type PendingPageTransfer } from "@/components/dashboard/PageLifecycleControls";
 import type { TeamMember, PendingTeamInvitation } from "@/components/dashboard/PageTeamManager";
 import type { RentalPageRow } from "@/types/queries";
+import { formatPhone } from "@/lib/format/phone";
 
 export interface PageSettingsViewProps {
   page: RentalPageRow;
@@ -45,7 +46,7 @@ export function PageSettingsView({ page, isOwner, pendingTransfer, teamMembers, 
           <h2 className="text-base font-semibold text-slate-900">Contact and WhatsApp</h2>
           <p className="mb-3 mt-0.5 text-xs leading-5 text-slate-500">
             {page.whatsapp_number
-              ? <>Confirm you control {page.whatsapp_number}: it&apos;s where booking alerts go and what renters use to reach you.</>
+              ? <>Confirm you control {formatPhone(page.whatsapp_number)}: it&apos;s where booking alerts go and what renters use to reach you.</>
               : <>Add and verify a phone number before this restored page can accept bookings again.</>}
           </p>
           <PageWhatsappVerify agencyId={page.id} verified={isWhatsappVerified} />

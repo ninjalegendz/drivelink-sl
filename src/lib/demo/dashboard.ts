@@ -57,20 +57,22 @@ export const DEMO_MOBILE_SECONDARY: MobileNavItem[] = [
 /** One overdue, one still within the 24h response window. */
 export const DEMO_PENDING_BOOKINGS: BookingLite[] = [
   {
-    id: "00000000-0000-4000-8000-00000000e001",
+    id: "c7d8e9a0-0000-4000-8000-00000000e001",
     status: "pending_confirmation",
     created_at: hoursAgo(27),
     start_date: "2026-10-02", end_date: "2026-10-05", start_time: "09:00:00", end_time: "18:00:00",
     total_days: 3, subtotal_lkr: 25500,
+    start_at: "2026-10-02T09:00:00",
     vehicles: { make: "Toyota", model: "Corolla Hybrid", year: 2019 },
     profiles: { full_name: "Dilani Perera", kyc_status: "verified" },
   },
   {
-    id: "00000000-0000-4000-8000-00000000e002",
+    id: "e3f4a5b6-0000-4000-8000-00000000e002",
     status: "pending_confirmation",
     created_at: hoursAgo(3),
     start_date: "2026-10-10", end_date: "2026-10-12", start_time: "10:00:00", end_time: "10:00:00",
     total_days: 2, subtotal_lkr: 33000,
+    start_at: "2026-10-10T10:00:00",
     vehicles: { make: "Honda", model: "CR-V", year: 2019 },
     profiles: { full_name: "James Whitfield", kyc_status: "unverified" },
   },
@@ -78,11 +80,12 @@ export const DEMO_PENDING_BOOKINGS: BookingLite[] = [
 
 export const DEMO_ACTIVE_BOOKINGS: BookingLite[] = [
   {
-    id: "00000000-0000-4000-8000-00000000e003",
+    id: "a1b2c3d4-0000-4000-8000-00000000e003",
     status: "active",
     created_at: hoursAgo(60),
     start_date: "2026-09-20", end_date: "2026-09-27", start_time: "08:00:00", end_time: "20:00:00",
     total_days: 7, subtotal_lkr: 115500,
+    start_at: "2026-09-20T08:00:00",
     vehicles: { make: "Volvo", model: "XC60", year: 2020 },
     profiles: { full_name: "Nadia Silva", kyc_status: "verified" },
   },
@@ -138,12 +141,12 @@ export const DEMO_FLEET_VEHICLES: VehicleRow[] = DEMO_VEHICLES.slice(0, 5).map((
 /** For /design/dashboard/bookings, which renders the real AgencyBookingsList with sample rows. */
 export const DEMO_AGENCY_BOOKINGS: AgencyBookingRow[] = [
   {
-    id: "00000000-0000-4000-8000-00000000e002",
+    id: "e3f4a5b6-0000-4000-8000-00000000e002",
     renter_id: "00000000-0000-4000-8000-00000000f002",
     status: "pending_confirmation",
     start_date: "2026-10-10", end_date: "2026-10-12", start_time: "10:00:00", end_time: "10:00:00",
     total_days: 2, subtotal_lkr: 33000, created_at: hoursAgo(3),
-    start_at: "2026-10-10T10:00:00Z", end_at: "2026-10-12T10:00:00Z", completed_at: null, cancellation_reason: null, deposit_lkr: 40000,
+    start_at: "2026-10-10T10:00:00", end_at: "2026-10-12T10:00:00", completed_at: null, cancellation_reason: null, deposit_lkr: 40000,
     rental_mode: "self_drive", is_foreign_renter: true, foreign_permit_type: "idp_1968",
     doc_share_consent_at: hoursAgo(3), page_msgs_read_at: null,
     vehicles: { make: "Honda", model: "CR-V", year: 2019, plate_number: null, deposit_lkr: 40000 },
@@ -151,12 +154,12 @@ export const DEMO_AGENCY_BOOKINGS: AgencyBookingRow[] = [
     booking_messages: [{ sender_id: "00000000-0000-4000-8000-00000000f002", created_at: hoursAgo(2) }],
   },
   {
-    id: "00000000-0000-4000-8000-00000000e003",
+    id: "a1b2c3d4-0000-4000-8000-00000000e003",
     renter_id: "00000000-0000-4000-8000-00000000f003",
     status: "active",
     start_date: "2026-09-20", end_date: "2026-09-27", start_time: "08:00:00", end_time: "20:00:00",
     total_days: 7, subtotal_lkr: 115500, created_at: hoursAgo(180),
-    start_at: "2026-09-20T08:00:00Z", end_at: "2026-09-27T20:00:00Z", completed_at: null, cancellation_reason: null, deposit_lkr: 75000,
+    start_at: "2026-09-20T08:00:00", end_at: "2026-09-27T20:00:00", completed_at: null, cancellation_reason: null, deposit_lkr: 75000,
     rental_mode: "with_driver", is_foreign_renter: false, foreign_permit_type: null,
     doc_share_consent_at: hoursAgo(180), page_msgs_read_at: hoursAgo(10),
     vehicles: { make: "Volvo", model: "XC60", year: 2020, plate_number: "WP CAB-4021", deposit_lkr: 75000 },
@@ -164,12 +167,12 @@ export const DEMO_AGENCY_BOOKINGS: AgencyBookingRow[] = [
     booking_messages: [],
   },
   {
-    id: "00000000-0000-4000-8000-00000000e004",
+    id: "f6a7b8c9-0000-4000-8000-00000000e004",
     renter_id: "00000000-0000-4000-8000-00000000f004",
     status: "completed",
     start_date: "2026-08-11", end_date: "2026-08-14", start_time: "09:00:00", end_time: "09:00:00",
     total_days: 3, subtotal_lkr: 25500, created_at: hoursAgo(1000),
-    start_at: "2026-08-11T09:00:00Z", end_at: "2026-08-14T09:00:00Z", completed_at: hoursAgo(900), cancellation_reason: null, deposit_lkr: 25000,
+    start_at: "2026-08-11T09:00:00", end_at: "2026-08-14T09:00:00", completed_at: hoursAgo(900), cancellation_reason: null, deposit_lkr: 25000,
     rental_mode: "self_drive", is_foreign_renter: false, foreign_permit_type: null,
     doc_share_consent_at: hoursAgo(1000), page_msgs_read_at: hoursAgo(900),
     vehicles: { make: "Toyota", model: "Corolla Hybrid", year: 2019, plate_number: "WP CAA-1187", deposit_lkr: 25000 },
@@ -177,12 +180,12 @@ export const DEMO_AGENCY_BOOKINGS: AgencyBookingRow[] = [
     booking_messages: [],
   },
   {
-    id: "00000000-0000-4000-8000-00000000e005",
+    id: "9d8c7b6a-0000-4000-8000-00000000e005",
     renter_id: "00000000-0000-4000-8000-00000000f005",
     status: "declined",
     start_date: "2026-08-02", end_date: "2026-08-03", start_time: "12:00:00", end_time: "12:00:00",
     total_days: 1, subtotal_lkr: 8500, created_at: hoursAgo(1400),
-    start_at: "2026-08-02T12:00:00Z", end_at: "2026-08-03T12:00:00Z", completed_at: null, cancellation_reason: "No reply from the owner in time", deposit_lkr: 25000,
+    start_at: "2026-08-02T12:00:00", end_at: "2026-08-03T12:00:00", completed_at: null, cancellation_reason: "No reply from the owner in time", deposit_lkr: 25000,
     rental_mode: "self_drive", is_foreign_renter: false, foreign_permit_type: null,
     doc_share_consent_at: null, page_msgs_read_at: null,
     vehicles: { make: "Toyota", model: "Corolla Hybrid", year: 2019, plate_number: null, deposit_lkr: 25000 },

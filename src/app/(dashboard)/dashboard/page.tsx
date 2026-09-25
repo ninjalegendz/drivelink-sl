@@ -21,7 +21,7 @@ export default async function DashboardPage() {
   const canManageFleet = pageAccess.capabilities.includes("manage_fleet");
   const canViewAnalytics = pageAccess.capabilities.includes("view_analytics");
 
-  const bookingSelect = "id, status, created_at, start_date, end_date, start_time, end_time, total_days, subtotal_lkr, vehicles(make, model, year), profiles!renter_id(full_name, kyc_status)";
+  const bookingSelect = "id, status, created_at, start_date, end_date, start_time, end_time, total_days, subtotal_lkr, start_at, vehicles(make, model, year), profiles!renter_id(full_name, kyc_status)";
 
   const [{ data: pendingData }, { data: activeData }, { data: fleetData }, { count: monthCount }, { data: statsRow }] = await Promise.all([
     canViewBookings ? supabase.from("bookings").select(bookingSelect).eq("agency_id", agency.id).eq("status", "pending_confirmation").order("created_at", { ascending: true }).limit(20) : Promise.resolve({ data: [] }),

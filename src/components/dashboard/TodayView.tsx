@@ -11,13 +11,15 @@ import { Section } from "@/components/ui/Section";
 import { EmptyState } from "@/components/ui/EmptyState";
 import { Stat } from "@/components/ui/Stat";
 import { formatLKR } from "@/lib/vehicles/format";
-import { formatTimeLeft, isResponseOverdue } from "@/lib/booking/response-window";
+import { formatReplyDeadline, requestReplyDeadline } from "@/lib/booking/request-expiry";
 import type { BookingStatus } from "@/types/database";
 import { formatSlot } from "@/lib/dates/display";
 
 export type BookingLite = {
   id: string; status: string; created_at: string; start_date: string; end_date: string;
   start_time: string; end_time: string; total_days: number; subtotal_lkr: number;
+  /** Generated start_at timestamp (migration 041), used to work out when an unanswered request closes. */
+  start_at: string | null;
   vehicles: { make: string; model: string; year: number } | null;
   profiles: { full_name: string; kyc_status: string } | null;
 };
@@ -131,7 +133,7 @@ export function TodayView({
       {canViewBookings && (
         <Section
           title="Needs you now"
-          description="Requests waiting on your answer. A renter is watching this one."
+          description="Requests waiting on your answer. Renters see the same deadline."
         >
           {pending.length === 0 ? (
             <EmptyState
@@ -142,7 +144,12 @@ export function TodayView({
           ) : (
             <div className="space-y-3">
               {pending.map((b) => {
-                const overdue = isResponseOverdue(b.created_at);
+                // A request closes at 24 hours or at pickup, whichever is
+                // first (migration 130). The last six hours are highlighted:
+                // that is when an answer is due. Same rule as the bookings
+                // list's computeBookingFacts.
+                const deadline = requestReplyDeadline(b.created_at, b.start_at);
+                const overdue = deadline.getTime() - Date.now() < 6 * 3_600_000;
                 return (
                   <Card key={b.id} className={overdue ? "border-l-4 border-l-amber-400" : undefined}>
                     <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
@@ -152,7 +159,7 @@ export function TodayView({
                           {/* The renter is being shown this same deadline. Without
                               it here, a slow reply costs the host nothing. */}
                           <span className={`text-xs font-semibold ${overdue ? "text-amber-700" : "text-blue-700"}`}>
-                            {formatTimeLeft(b.created_at)}
+                            Reply by {formatReplyDeadline(deadline)}
                           </span>
                         </div>
                         <p className="mt-0.5 text-xs text-slate-500">

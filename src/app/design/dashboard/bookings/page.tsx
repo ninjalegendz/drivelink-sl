@@ -36,7 +36,7 @@ export default function DesignBookingsPage() {
           description="Every request and rental for this Rental Page, newest first."
         />
 
-        <div className="my-6 flex flex-wrap gap-2">
+        <div className="my-6 flex gap-2 overflow-x-auto scrollbar-none mask-fade-x -mx-4 px-4 sm:mx-0 sm:px-0 sm:flex-wrap">
           {FILTER_LABELS.map((label, i) => (
             <Chip key={label} active={i === 0} count={i === 0 ? DEMO_AGENCY_BOOKINGS.length : undefined}>
               {label}

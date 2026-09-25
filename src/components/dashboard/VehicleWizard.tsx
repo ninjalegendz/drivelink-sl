@@ -11,6 +11,7 @@ import { createClient } from "@/lib/supabase/client";
 import { uploadToR2 } from "@/lib/storage/upload";
 import { Select } from "@/components/ui/Select";
 import { PresetPicker } from "@/components/dashboard/PresetPicker";
+import { inputBase, inputEdge } from "@/components/ui/Input";
 import { PhotoOrderGrid, movePhotoInList } from "@/components/dashboard/PhotoOrderGrid";
 import { SL_CITIES } from "@/data/cities";
 import { RULE_PRESETS, FEATURE_PRESETS, SL_MAKES, RESTRICTED_USE_OPTIONS, bodyTypesFor, hasBodyType, makeModelHint } from "@/data/vehicle-presets";
@@ -957,7 +958,7 @@ export function VehicleWizard({ agencyId, agencyCity, prefill, canDeclareListing
   );
 }
 
-const bigInput = "w-full min-h-11 px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl text-base text-slate-900 placeholder-slate-400 focus:border-blue-500 focus:bg-white";
+const bigInput = `${inputBase} ${inputEdge()} min-h-12`;
 
 function BigField({ label, hint, children }: { label: string; hint?: string; children: React.ReactNode }) {
   return (
@@ -1005,7 +1006,7 @@ function OptionTile({
       } ${className}`}
     >
       {active && (
-        <span className="absolute right-1.5 top-1.5 grid h-5 w-5 place-items-center rounded-full bg-blue-600 text-white">
+        <span className="absolute -right-1.5 -top-1.5 grid h-5 w-5 place-items-center rounded-full bg-blue-600 text-white ring-2 ring-white">
           <Check size={11} strokeWidth={3} aria-hidden="true" />
         </span>
       )}

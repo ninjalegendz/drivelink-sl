@@ -167,7 +167,8 @@ export function AgencyBookingActions({
           </Button>
           <Button
             size="sm"
-            variant="danger"
+            variant="secondary"
+            className="!text-rose-700 hover:!bg-rose-50 hover:!ring-rose-200"
             loading={loading === "decline"}
             onClick={async () => {
               setLoading("decline");

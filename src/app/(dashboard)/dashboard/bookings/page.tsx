@@ -70,7 +70,7 @@ export default async function AgencyBookingsPage({ searchParams }: Props) {
         description="Every request and rental for this Rental Page, newest first."
       />
 
-      <div className="my-6 flex flex-wrap gap-2">
+      <div className="my-6 flex gap-2 overflow-x-auto scrollbar-none mask-fade-x -mx-4 px-4 sm:mx-0 sm:px-0 sm:flex-wrap">
         {FILTER_TABS.map(({ label, value }) => (
           <ChipLink
             key={value}
