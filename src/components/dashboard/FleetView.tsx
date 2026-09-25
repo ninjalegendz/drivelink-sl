@@ -231,8 +231,8 @@ export function FleetView({
 
                   {/* UX-008: rejection reason + resubmit for review */}
                   {!needsAuthority && v.status === "unlisted" && (v as { rejection_reason?: string | null }).rejection_reason && (
-                    <div className="mt-2 rounded-lg border border-red-200 bg-red-50 px-2.5 py-2">
-                      <p className="text-xs text-red-700"><span className="font-semibold">Rejected:</span> {(v as { rejection_reason?: string | null }).rejection_reason}</p>
+                    <div className="mt-2 rounded-lg border border-rose-200 bg-rose-50 px-2.5 py-2">
+                      <p className="text-xs text-rose-700"><span className="font-semibold">Rejected:</span> {(v as { rejection_reason?: string | null }).rejection_reason}</p>
                       <div className="mt-1.5"><ResubmitButton vehicleId={v.id} /></div>
                     </div>
                   )}

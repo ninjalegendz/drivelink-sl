@@ -2,11 +2,14 @@
 
 import { useEffect, useId, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
-import { Camera, X, FileText, Check, Upload } from "lucide-react";
+import { Camera, X, FileText, Check, Upload, CircleAlert } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 import { uploadToR2 } from "@/lib/storage/upload";
 import { Button } from "@/components/ui/Button";
+import { Card } from "@/components/ui/Card";
+import { ActionBar } from "@/components/ui/ActionBar";
 import { ConfirmDialog } from "@/components/ui/ConfirmDialog";
+import { Toc, type TocItem } from "@/components/content/Toc";
 import { startNavigationProgress } from "@/components/layout/NavigationProgress";
 import { HelpHint } from "@/components/ui/HelpHint";
 import { Select } from "@/components/ui/Select";
@@ -46,6 +49,20 @@ const TRANSMISSION_OPTIONS = [
 ] as const;
 
 const CITY_OPTIONS = SL_CITIES.map((c) => ({ value: c, label: c }));
+
+// The in-page section nav (desktop sidebar + mobile collapsible, both from
+// <Toc>) and every section id below must stay in step, or a nav link lands
+// nowhere.
+const SECTION_NAV: TocItem[] = [
+  { id: "basics",         label: "Basics" },
+  { id: "photos",         label: "Photos" },
+  { id: "pricing",        label: "Pricing" },
+  { id: "rental-options", label: "Rental options" },
+  { id: "terms-fees",     label: "Terms and fees" },
+  { id: "rules-features", label: "Rules and features" },
+  { id: "documents",      label: "Documents" },
+  { id: "status",         label: "Status" },
+];
 
 // Kept in step with the listing wizard: the same floors and ceilings, enforced
 // with a message instead of being clamped on the way to the database.
@@ -517,6 +534,31 @@ export function VehicleForm({ agencyId, agencyCity, vehicle, documents, canDecla
     }
   }
 
+  function cancel() {
+    if (dirty) { setConfirmDiscard(true); return; }
+    startNavigationProgress();
+    router.push("/dashboard/vehicles");
+  }
+
+  // Rendered twice: once inside the phone ActionBar (fixed above the tab
+  // bar), once in the desktop floating card (fixed bottom-right). Only one
+  // is ever visible at a given width, but a single source keeps the label
+  // logic, the loading state and the Cancel confirmation from drifting apart.
+  function SaveCancelButtons({ size }: { size: "md" | "lg" }) {
+    return (
+      <>
+        <Button type="submit" loading={loading} size={size}>
+          {loading
+            ? (uploadProgress ? "Uploading photos…" : "Saving…")
+            : (editing ? "Save changes" : canDeclareListingAuthority ? "List vehicle" : "Save for owner review")}
+        </Button>
+        <Button type="button" variant="ghost" size={size} onClick={cancel} disabled={loading}>
+          Cancel
+        </Button>
+      </>
+    );
+  }
+
   return (
     // noValidate is deliberate. These money fields carry `step` (100, 500,
     // 1000) so the spinner arrows move in sensible increments, but with native
@@ -533,474 +575,479 @@ export function VehicleForm({ agencyId, agencyCity, vehicle, documents, canDecla
         const button = (e.target as HTMLElement).closest("button");
         if (button?.type === "button" && !button.closest("[data-form-actions]")) setDirty(true);
       }}
-      className="max-w-2xl space-y-5"
+      className="max-w-6xl"
     >
+      <div className="lg:grid lg:grid-cols-[13rem_minmax(0,1fr)] lg:items-start lg:gap-10">
+        <Toc items={SECTION_NAV} title="Sections" />
 
-      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-        <Field label="Make" required>
-          <input type="text" value={make} onChange={(e) => setMake(e.target.value)} required placeholder={makeModelHint(vehicleType).make} list="sl-makes-edit" className={inputClass} />
-          <datalist id="sl-makes-edit">
-            {SL_MAKES.map((m) => <option key={m} value={m} />)}
-          </datalist>
-        </Field>
-        <Field label="Model" required>
-          <input type="text" value={model} onChange={(e) => setModel(e.target.value)} required placeholder={makeModelHint(vehicleType).model} className={inputClass} />
-        </Field>
-      </div>
+        <div className="min-w-0 space-y-8 pb-8">
 
-      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-        <Field label="Year" required error={yearError}>
-          <input
-            type="number"
-            value={year}
-            onChange={(e) => {
-              const v = e.target.value;
-              setYear(v === "" ? "" : Number(v));
-              if (yearError) setYearError(null);
-            }}
-            onBlur={() => setYearError(validateYear(year))}
-            required
-            placeholder="2018"
-            className={inputClass}
-          />
-        </Field>
-        <Field label="Color">
-          <input type="text" value={color} onChange={(e) => setColor(e.target.value)} placeholder="Pearl White" className={inputClass} />
-        </Field>
-      </div>
+          <FormSection id="basics" title="Basics" description="Make, model and the identifying details renters see first.">
+            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+              <Field label="Make" required>
+                <input type="text" value={make} onChange={(e) => setMake(e.target.value)} required placeholder={makeModelHint(vehicleType).make} list="sl-makes-edit" className={inputClass} />
+                <datalist id="sl-makes-edit">
+                  {SL_MAKES.map((m) => <option key={m} value={m} />)}
+                </datalist>
+              </Field>
+              <Field label="Model" required>
+                <input type="text" value={model} onChange={(e) => setModel(e.target.value)} required placeholder={makeModelHint(vehicleType).model} className={inputClass} />
+              </Field>
+            </div>
 
-      <div className={`grid grid-cols-1 gap-4 ${showBodyType ? "sm:grid-cols-2" : ""}`}>
-        {showBodyType && (
-          <Field label="Body type" hint="Optional">
-            <Select value={bodyType} onChange={setBodyType} options={bodyTypeOptions} placeholder="Select…" label="Body type" />
-          </Field>
-        )}
-        <Field label="Variant" hint="Optional trim, e.g. GLi, Hybrid">
-          <input type="text" value={variant} onChange={(e) => setVariant(e.target.value)} placeholder="GLi, Hybrid, etc." className={inputClass} />
-        </Field>
-      </div>
+            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+              <Field label="Year" required error={yearError}>
+                <input
+                  type="number"
+                  value={year}
+                  onChange={(e) => {
+                    const v = e.target.value;
+                    setYear(v === "" ? "" : Number(v));
+                    if (yearError) setYearError(null);
+                  }}
+                  onBlur={() => setYearError(validateYear(year))}
+                  required
+                  placeholder="2018"
+                  className={inputClass}
+                />
+              </Field>
+              <Field label="Color">
+                <input type="text" value={color} onChange={(e) => setColor(e.target.value)} placeholder="Pearl White" className={inputClass} />
+              </Field>
+            </div>
 
-      <div className={`grid grid-cols-1 gap-4 ${specGridClass}`}>
-        {needsDoors && (
-          <Field label="Doors" required>
-            <input type="number" value={doors} onChange={(e) => setDoors(e.target.value)} min={1} max={6} placeholder="4" className={inputClass} />
-          </Field>
-        )}
-        {!isElectric && (
-          <Field label="Engine (cc)" required>
-            <input type="number" value={engineCc} onChange={(e) => setEngineCc(e.target.value)} min={0} placeholder="1500" className={inputClass} />
-          </Field>
-        )}
-        <Field label="Odometer (km)" hint="Optional">
-          <input type="number" value={odometerKm} onChange={(e) => setOdometerKm(e.target.value)} min={0} placeholder="65000" className={inputClass} />
-        </Field>
-      </div>
+            <div className={`grid grid-cols-1 gap-4 ${showBodyType ? "sm:grid-cols-2" : ""}`}>
+              {showBodyType && (
+                <Field label="Body type" hint="Optional">
+                  <Select value={bodyType} onChange={setBodyType} options={bodyTypeOptions} placeholder="Select…" label="Body type" />
+                </Field>
+              )}
+              <Field label="Variant" hint="Optional trim, e.g. GLi, Hybrid">
+                <input type="text" value={variant} onChange={(e) => setVariant(e.target.value)} placeholder="GLi, Hybrid, etc." className={inputClass} />
+              </Field>
+            </div>
 
-      <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
-        <Field label="Vehicle type" required hint="Search category.">
-          <Select value={vehicleType} onChange={(v) => changeVehicleType(v as VehicleType)} options={VEHICLE_TYPE_OPTIONS} label="Vehicle type" />
-        </Field>
-        <Field label="Fuel type" required hint="Shown to tourists.">
-          <Select value={fuelType} onChange={setFuelType} options={FUEL_TYPE_OPTIONS} label="Fuel type" />
-        </Field>
-        <Field label="Luggage (bags)" hint="Large bags it fits">
-          <input type="number" value={luggage} onChange={(e) => setLuggage(e.target.value)} min={0} max={20} placeholder="2" className={inputClass} />
-        </Field>
-      </div>
+            <div className={`grid grid-cols-1 gap-4 ${specGridClass}`}>
+              {needsDoors && (
+                <Field label="Doors" required>
+                  <input type="number" value={doors} onChange={(e) => setDoors(e.target.value)} min={1} max={6} placeholder="4" className={inputClass} />
+                </Field>
+              )}
+              {!isElectric && (
+                <Field label="Engine (cc)" required>
+                  <input type="number" value={engineCc} onChange={(e) => setEngineCc(e.target.value)} min={0} placeholder="1500" className={inputClass} />
+                </Field>
+              )}
+              <Field label="Odometer (km)" hint="Optional">
+                <input type="number" value={odometerKm} onChange={(e) => setOdometerKm(e.target.value)} min={0} placeholder="65000" className={inputClass} />
+              </Field>
+            </div>
 
-      <div>
-        <span className="text-slate-600 text-xs mb-1.5 flex items-center">
-          Rental mode <span className="text-blue-600 ml-0.5">*</span>
-          <HelpHint text="Choose self-drive, with driver, or both. Airport handover is configured separately below." />
-        </span>
-        <div className="grid grid-cols-2 gap-2">
-          {[
-            { label: "Self-drive",     on: selfDrive,     set: setSelfDrive },
-            { label: "With driver",    on: withDriver,    set: setWithDriver },
-          ].map(({ label, on, set }) => (
-            <button
-              key={label}
-              type="button"
-              onClick={() => set(!on)}
-              className={`px-2 py-2.5 text-xs rounded-xl border font-semibold text-center transition-all ${
-                on ? "bg-blue-50 border-blue-500 text-blue-700" : "bg-white border-slate-200 text-slate-500 hover:bg-slate-50"
-              }`}
+            <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
+              <Field label="Vehicle type" required hint="Search category.">
+                <Select value={vehicleType} onChange={(v) => changeVehicleType(v as VehicleType)} options={VEHICLE_TYPE_OPTIONS} label="Vehicle type" />
+              </Field>
+              <Field label="Fuel type" required hint="Shown to tourists.">
+                <Select value={fuelType} onChange={setFuelType} options={FUEL_TYPE_OPTIONS} label="Fuel type" />
+              </Field>
+              <Field label="Luggage (bags)" hint="Large bags it fits">
+                <input type="number" value={luggage} onChange={(e) => setLuggage(e.target.value)} min={0} max={20} placeholder="2" className={inputClass} />
+              </Field>
+            </div>
+
+            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+              <Field label="Seats" required>
+                <input type="number" inputMode="numeric" value={seats} onChange={(e) => setSeats(e.target.value === "" ? "" : Number(e.target.value))} min={1} max={20} className={inputClass} />
+              </Field>
+              <Field label="Transmission" required>
+                <Select
+                  value={transmission}
+                  onChange={setTransmission}
+                  options={TRANSMISSION_OPTIONS}
+                  label="Transmission"
+                />
+              </Field>
+            </div>
+
+            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+              <Field label="City" required>
+                <Select
+                  value={city}
+                  onChange={setCity}
+                  options={CITY_OPTIONS}
+                  label="City"
+                />
+              </Field>
+              <Field label="Plate number" required hint="Private while browsing; shown to the confirmed renter for handover">
+                <input type="text" value={plateNumber} onChange={(e) => setPlateNumber(e.target.value)} required placeholder="WP CAB-1234" autoCapitalize="characters" className={inputClass} />
+              </Field>
+            </div>
+          </FormSection>
+
+          <FormSection id="photos" title="Photos" description="Add clear photos, in the order renters should see them.">
+            <span className="text-slate-600 text-xs mb-1 block">Photos</span>
+
+            {/* Native <label htmlFor> association, opens the file picker reliably
+                every time, including after the user cancels the dialog. (The old
+                hidden-input + programmatic .click() approach only opened once.) */}
+            <input
+              id="vehicle-photo-input"
+              type="file" accept={PHOTO_ACCEPT} multiple
+              onChange={(e) => {
+                addPhotos(e.target.files);
+                // Clear so the same file can be re-picked next time
+                e.target.value = "";
+              }}
+              className="sr-only"
+              aria-label="Add photos"
+            />
+            <label
+              htmlFor="vehicle-photo-input"
+              className="block w-full border-2 border-dashed border-slate-200 rounded-xl p-6 text-center cursor-pointer hover:border-blue-500 hover:bg-slate-100/60 transition-colors"
             >
-              {label}
-            </button>
-          ))}
-        </div>
-        <button
-          type="button"
-          onClick={() => setAirportPickup(!airportPickup)}
-          className={`mt-3 flex w-full items-start gap-3 rounded-xl border px-3 py-3 text-left transition-colors ${airportPickup ? "border-blue-500 bg-blue-50 text-blue-800" : "border-slate-200 bg-white text-slate-600"}`}
-        >
-          <span className={`mt-0.5 h-4 w-4 shrink-0 rounded border ${airportPickup ? "border-blue-600 bg-blue-600" : "border-slate-300"}`} />
-          <span>
-            <span className="block text-sm font-semibold">Airport handover available</span>
-            <span className="mt-0.5 block text-xs">The vehicle can be handed over or collected at the airport. It is not a third rental mode.</span>
-          </span>
-        </button>
-      </div>
+              <Camera size={28} className="mx-auto mb-2 text-slate-600" strokeWidth={1.75} />
+              <p className="text-slate-700 text-sm font-medium">
+                Click to {photos.length ? "add more photos" : "select photos"}
+              </p>
+              <p className="text-slate-500 text-xs mt-0.5">JPG or PNG · multiple allowed</p>
+            </label>
 
-      <Field
-        label="Insurance type"
-        required
-        help={INSURANCE_HELP}
-        hint="Hire-insured vehicles are listed first."
-      >
-        <Select
-          value={insuranceType}
-          onChange={(v) => setInsuranceType(v as InsuranceType)}
-          options={INSURANCE_OPTIONS}
-          label="Insurance type"
-        />
-      </Field>
-
-      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-        <Field label="Daily rate (LKR)" required>
-          <input type="number" value={dailyRate} onChange={(e) => setDailyRate(e.target.value)} required min={500} step={100} placeholder="6500" className={inputClass} />
-        </Field>
-        <Field label="Monthly rate (LKR)" help={MONTHLY_RATE_HELP} hint="Optional package price">
-          <input type="number" value={monthlyRate} onChange={(e) => setMonthlyRate(e.target.value)} min={0} step={1000} placeholder="120000" className={inputClass} />
-        </Field>
-      </div>
-
-      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-        <Field label="Refundable deposit (LKR)" hint="Optional, held by you, refunded after return">
-          <input type="number" value={deposit} onChange={(e) => setDeposit(e.target.value)} min={0} step={1000} placeholder="0" className={inputClass} />
-        </Field>
-        <Field label="Daily rate (USD)" hint="Optional, shown to tourists. Auto-estimated if blank.">
-          <input type="number" value={dailyRateUsd} onChange={(e) => setDailyRateUsd(e.target.value)} min={0} step={1} placeholder="30" className={inputClass} />
-        </Field>
-      </div>
-
-      <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
-        <Field label="Seats" required>
-          <input type="number" inputMode="numeric" value={seats} onChange={(e) => setSeats(e.target.value === "" ? "" : Number(e.target.value))} min={1} max={20} className={inputClass} />
-        </Field>
-        <Field label="Transmission" required>
-          <Select
-            value={transmission}
-            onChange={setTransmission}
-            options={TRANSMISSION_OPTIONS}
-            label="Transmission"
-          />
-        </Field>
-        <Field label="Fuel policy" help={FUEL_POLICY_HELP}>
-          <Select
-            value={fuelPolicy}
-            onChange={(v) => setFuelPolicy(v as FuelPolicy)}
-            options={FUEL_POLICY_OPTIONS}
-            label="Fuel policy"
-          />
-        </Field>
-      </div>
-
-      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-        <Field label="City" required>
-          <Select
-            value={city}
-            onChange={setCity}
-            options={CITY_OPTIONS}
-            label="City"
-          />
-        </Field>
-        <Field label="Plate number" required hint="Private while browsing; shown to the confirmed renter for handover">
-          <input type="text" value={plateNumber} onChange={(e) => setPlateNumber(e.target.value)} required placeholder="WP CAB-1234" autoCapitalize="characters" className={inputClass} />
-        </Field>
-      </div>
-
-      {/* ── Rental terms (Terms Engine), mirrors the listing wizard's step ── */}
-      <div className="pt-4 border-t border-slate-200 space-y-5">
-        <div>
-          <h3 className="text-slate-900 text-sm font-bold">Rental terms</h3>
-          <p className="text-slate-500 text-xs mt-0.5">
-            These are shown to renters on the listing and recorded on every booking. Standard Sri Lankan defaults are pre-filled. Change only what&apos;s different for this vehicle.
-          </p>
-        </div>
-
-        {/* Pricing extras */}
-        <div className="space-y-3">
-          <TermsHeading>Pricing extras</TermsHeading>
-          <Field label="Weekly rate (LKR)" hint="Optional package price for 7+ day bookings">
-            <input type="number" value={weeklyRate} onChange={(e) => setWeeklyRate(e.target.value)} min={0} step={500} placeholder="40000" className={inputClass} />
-          </Field>
-          <ToggleRow label="Unlimited km" hint="Turn on to remove the daily distance allowance" on={unlimitedKm} onChange={setUnlimitedKm} />
-          {!unlimitedKm && (
-            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-              <Field label="Included km/day" hint="Extra km beyond this is charged">
-                <input type="number" inputMode="numeric" value={includedKmPerDay} onChange={(e) => setIncludedKmPerDay(e.target.value)}
-                  min={0} placeholder="100" className={inputClass} />
-              </Field>
-              <Field label="Extra km charge (LKR/km)" hint="Charge beyond the allowance">
-                <input type="number" inputMode="numeric" value={extraMileage} onChange={(e) => setExtraMileage(e.target.value)} min={0} step={5} placeholder="30" className={inputClass} />
-              </Field>
-            </div>
-          )}
-          <ToggleRow label="Delivery available" hint="Deliver the vehicle to the renter for a fee" on={deliveryAvailable} onChange={setDeliveryAvailable} />
-          {deliveryAvailable && (
-            <Field label="Delivery fee (LKR)">
-              <input type="number" value={deliveryFee} onChange={(e) => setDeliveryFee(e.target.value)} min={0} placeholder="1500" className={inputClass} />
-            </Field>
-          )}
-          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-            <Field label="Min rental days">
-              <input type="number" value={minRentalDays} onChange={(e) => setMinRentalDays(e.target.value)} min={1} className={inputClass} />
-            </Field>
-            <Field label="Max rental days" hint="Optional, blank = no limit">
-              <input type="number" value={maxRentalDays} onChange={(e) => setMaxRentalDays(e.target.value)} min={1} placeholder="No limit" className={inputClass} />
-            </Field>
-          </div>
-        </div>
-
-        {/* Fees (deposit lives above, next to the daily rate) */}
-        <div className="space-y-3">
-          <TermsHeading>Fees</TermsHeading>
-          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-            <Field label="Cleaning fee (LKR)" hint="Only if it comes back excessively dirty. Blank means no fee, and Rs. 10,000 is the most you can charge.">
-              <input type="number" value={cleaningFee} onChange={(e) => setCleaningFee(e.target.value)} placeholder="0" min={0} max={10000} step={500} className={inputClass} />
-            </Field>
-            <Field label="Refuel service fee (LKR)" hint="Only if it comes back with less fuel. Blank means no fee.">
-              <input type="number" value={refuelFee} onChange={(e) => setRefuelFee(e.target.value)} placeholder="0" min={0} step={100} className={inputClass} />
-            </Field>
-          </div>
-          <Field label="Late fee per hour (LKR)" hint="Optional. Leave blank when no hourly late fee applies.">
-            <input type="number" value={lateFeePerHour} onChange={(e) => setLateFeePerHour(e.target.value)} min={0} placeholder="No fee when blank" className={inputClass} />
-          </Field>
-        </div>
-
-        {/* House rules */}
-        <div className="space-y-2">
-          <TermsHeading>House rules</TermsHeading>
-          <ToggleRow label="Smoking allowed" on={smokingAllowed} onChange={setSmokingAllowed} />
-          <ToggleRow label="Pets allowed" on={petsAllowed} onChange={setPetsAllowed} />
-          <ToggleRow label="Ride-hail / commercial use allowed" on={rideHailAllowed} onChange={setRideHailAllowed} />
-          {selfDrive && (
-            <p className="rounded-lg border border-blue-200 bg-blue-50 p-3 text-xs leading-5 text-blue-900">
-              Self-drive is limited to the verified account holder named on the booking. Additional renter-drivers are not supported at launch.
+            <p className="text-slate-500 text-xs mt-1">
+              Keep at least {requiredPhotos}. Photos upload when you save the form.
             </p>
-          )}
-          <div className="pt-1">
-            <span className="text-slate-600 text-xs mb-1.5 block">Not allowed:</span>
-            <div className="flex flex-wrap gap-1.5">
-              {RESTRICTED_USE_OPTIONS.map(({ value, label }) => {
-                const on = restrictedUse.includes(value);
-                return (
-                  <button key={value} type="button"
-                    onClick={() => setRestrictedUse((r) => on ? r.filter((v) => v !== value) : [...r, value])}
-                    className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-full border text-xs font-medium transition-all ${on ? "bg-blue-50 border-blue-500 text-blue-700" : "bg-white border-slate-200 text-slate-500 hover:bg-slate-50"}`}>
-                    {on && <Check size={11} />} {label}
-                  </button>
-                );
-              })}
-            </div>
-          </div>
-        </div>
 
-        {/* Renter requirements */}
-        <div className="space-y-3">
-          <TermsHeading>Renter requirements</TermsHeading>
-          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-            <Field label="Min age">
-              <input type="number" value={minRenterAge} onChange={(e) => setMinRenterAge(e.target.value)} min={18} max={40} className={inputClass} />
-            </Field>
-            <Field label="Min years holding licence (you check at handover)">
-              <input type="number" value={minLicenseYears} onChange={(e) => setMinLicenseYears(e.target.value)} min={0} className={inputClass} />
-            </Field>
-          </div>
-        </div>
+            {photos.length > 0 && (
+              <>
+                <p className="text-slate-600 text-xs mt-3">
+                  {photos.length} photo{photos.length === 1 ? "" : "s"}
+                  {pendingCount > 0 && ` · ${pendingCount} pending upload`}
+                </p>
+                <PhotoOrderGrid
+                  className="mt-2"
+                  photos={photos.map((p) => ({ key: p.key, src: p.url, pending: Boolean(p.file) }))}
+                  onMove={movePhoto}
+                  onRemove={removePhoto}
+                />
+              </>
+            )}
+          </FormSection>
 
-        {/* Disclosures */}
-        <div className="space-y-2">
-          <TermsHeading>Disclosures</TermsHeading>
-          <ToggleRow label="GPS tracker fitted" hint="Shown to renters on the listing, as required" on={hasGpsTracker} onChange={setHasGpsTracker} />
-          <ToggleRow label="ETC expressway tag fitted" hint="Tag charges during a rental are billed to the renter" on={hasEtcTag} onChange={setHasEtcTag} />
-        </div>
-
-        {/* With-driver terms */}
-        {withDriver && (
-          <div className="space-y-3">
-            <TermsHeading>With-driver terms</TermsHeading>
+          <FormSection id="pricing" title="Pricing" description="What renters pay, and what you refund after the rental.">
             <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-              <Field label="Per-km rate (LKR)" hint="Optional">
-                <input type="number" value={perKmRate} onChange={(e) => setPerKmRate(e.target.value)} min={0} placeholder="60" className={inputClass} />
+              <Field label="Daily rate (LKR)" required>
+                <input type="number" value={dailyRate} onChange={(e) => setDailyRate(e.target.value)} required min={500} step={100} placeholder="6500" className={inputClass} />
               </Field>
-              <Field label="Driver overnight allowance (Rs/night)">
-                <input type="number" value={driverBata} onChange={(e) => setDriverBata(e.target.value)} min={0} placeholder="2000" className={inputClass} />
+              <Field label="Monthly rate (LKR)" help={MONTHLY_RATE_HELP} hint="Optional package price">
+                <input type="number" value={monthlyRate} onChange={(e) => setMonthlyRate(e.target.value)} min={0} step={1000} placeholder="120000" className={inputClass} />
               </Field>
             </div>
+
+            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+              <Field label="Refundable deposit (LKR)" hint="Optional, held by you, refunded after return">
+                <input type="number" value={deposit} onChange={(e) => setDeposit(e.target.value)} min={0} step={1000} placeholder="0" className={inputClass} />
+              </Field>
+              <Field label="Daily rate (USD)" hint="Optional, shown to tourists. Auto-estimated if blank.">
+                <input type="number" value={dailyRateUsd} onChange={(e) => setDailyRateUsd(e.target.value)} min={0} step={1} placeholder="30" className={inputClass} />
+              </Field>
+            </div>
+
+            <Field label="Weekly rate (LKR)" hint="Optional package price for 7+ day bookings">
+              <input type="number" value={weeklyRate} onChange={(e) => setWeeklyRate(e.target.value)} min={0} step={500} placeholder="40000" className={inputClass} />
+            </Field>
+          </FormSection>
+
+          <FormSection id="rental-options" title="Rental options" description="How this vehicle can be rented, its distance allowance and delivery terms.">
             <div>
-              <span className="text-slate-600 text-xs mb-1.5 block">Tolls included in price?</span>
-            <div className="grid grid-cols-2 gap-2">
-                {([[true, "Yes"], [false, "No"]] as const).map(([v, l]) => (
-                  <button key={l} type="button" onClick={() => setTollsIncluded(v)}
-                    className={`py-2.5 rounded-xl border font-semibold text-xs transition-all ${tollsIncluded === v ? "bg-blue-50 border-blue-500 text-blue-700" : "bg-white border-slate-200 text-slate-500 hover:bg-slate-50"}`}>{l}</button>
+              <span className="text-slate-600 text-xs mb-1.5 flex items-center">
+                Rental mode <span className="text-rose-600 ml-0.5">*</span>
+                <HelpHint text="Choose self-drive, with driver, or both. Airport handover is configured separately below." />
+              </span>
+              <div className="grid grid-cols-2 gap-2">
+                {[
+                  { label: "Self-drive",     on: selfDrive,     set: setSelfDrive },
+                  { label: "With driver",    on: withDriver,    set: setWithDriver },
+                ].map(({ label, on, set }) => (
+                  <button
+                    key={label}
+                    type="button"
+                    onClick={() => set(!on)}
+                    className={`px-2 py-2.5 text-xs rounded-xl border font-semibold text-center transition-all ${
+                      on ? "bg-blue-50 border-blue-500 text-blue-700" : "bg-white border-slate-200 text-slate-500 hover:bg-slate-50"
+                    }`}
+                  >
+                    {label}
+                  </button>
                 ))}
               </div>
-            </div>
-          </div>
-        )}
-      </div>
-
-      <div>
-        <span className="text-slate-600 text-xs mb-1.5 block">Features</span>
-        <PresetPicker presets={FEATURE_PRESETS} value={features} onChange={setFeatures} addPlaceholder="Add another feature" />
-        <span className="text-slate-500 text-xs mt-1.5 block">
-          Tap everything this vehicle has. Features only, no ads or contact info, listings with non-feature content are rejected in review.
-        </span>
-      </div>
-
-      <div>
-        <span className="text-slate-600 text-xs mb-1.5 block">Handover rules</span>
-        <PresetPicker presets={RULE_PRESETS} value={rules} onChange={setRules} addPlaceholder="Add your own rule" />
-        <span className="text-slate-500 text-xs mt-1.5 block">
-          Tap the rules that apply. Shown to renters on the listing with matching icons.
-        </span>
-      </div>
-
-      <Field
-        label="Description"
-        hint="Free-form prose: pickup notes, what's included (child seat? delivery?), why renters love this car. Reviewed by admins, keep it factual."
-      >
-        <textarea
-          value={description}
-          onChange={(e) => setDescription(e.target.value)}
-          rows={4}
-          maxLength={1000}
-          placeholder="Free pickup within Colombo city limits. Child seat available on request. Recently serviced, clean and well-maintained."
-          className={`${inputClass} resize-none`}
-        />
-        <span className="text-slate-400 text-xs mt-1 block">{description.length}/1000</span>
-      </Field>
-
-      {/* Photo dropzone, rendered as a plain <div>, NOT inside a <label>.
-          Wrapping a hidden file input + a button in the same <label> causes
-          the browser to forward clicks twice (once via label, once via the
-          button's onClick), which on some platforms makes the second pick
-          silently fail. Keeping these as siblings in a div sidesteps it. */}
-      <div>
-        <span className="text-slate-600 text-xs mb-1 block">Photos</span>
-
-        {/* Native <label htmlFor> association, opens the file picker reliably
-            every time, including after the user cancels the dialog. (The old
-            hidden-input + programmatic .click() approach only opened once.) */}
-        <input
-          id="vehicle-photo-input"
-          type="file" accept={PHOTO_ACCEPT} multiple
-          onChange={(e) => {
-            addPhotos(e.target.files);
-            // Clear so the same file can be re-picked next time
-            e.target.value = "";
-          }}
-          className="sr-only"
-          aria-label="Add photos"
-        />
-        <label
-          htmlFor="vehicle-photo-input"
-          className="block w-full border-2 border-dashed border-slate-200 rounded-xl p-6 text-center cursor-pointer hover:border-blue-500 hover:bg-slate-100/60 transition-colors"
-        >
-          <Camera size={28} className="mx-auto mb-2 text-slate-600" strokeWidth={1.75} />
-          <p className="text-slate-700 text-sm font-medium">
-            Click to {photos.length ? "add more photos" : "select photos"}
-          </p>
-          <p className="text-slate-500 text-xs mt-0.5">JPG or PNG · multiple allowed</p>
-        </label>
-
-        <p className="text-slate-500 text-xs mt-1">
-          Keep at least {requiredPhotos}. Photos upload when you save the form.
-        </p>
-
-        {photos.length > 0 && (
-          <>
-            <p className="text-slate-600 text-xs mt-3">
-              {photos.length} photo{photos.length === 1 ? "" : "s"}
-              {pendingCount > 0 && ` · ${pendingCount} pending upload`}
-            </p>
-            <PhotoOrderGrid
-              className="mt-2"
-              photos={photos.map((p) => ({ key: p.key, src: p.url, pending: Boolean(p.file) }))}
-              onMove={movePhoto}
-              onRemove={removePhoto}
-            />
-          </>
-        )}
-      </div>
-
-      {/* Document proof, private, for admin verification only */}
-      <div className="bg-slate-100/60 border border-slate-200 rounded-xl p-4 space-y-3">
-        <div>
-          <span className="text-slate-700 text-sm font-semibold block">Document proof <span className="text-slate-400 font-normal">(optional, private)</span></span>
-          <span className="text-slate-500 text-xs">
-            Optional now: upload the registration, current hire-insurance, and revenue-licence documents to apply for <strong>Verified Vehicle</strong>. DriveLink reviews them before awarding that mark. Only DriveLink admins see these.
-          </span>
-        </div>
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-          <DocUpload label="Registration (CR)" url={crUrl} file={crFile} onPick={setCrFile} onClear={() => { setCrFile(null); setCrUrl(null); }} />
-          <DocUpload label="Insurance certificate" url={insuranceUrl} file={insuranceFile} onPick={setInsuranceFile} onClear={() => { setInsuranceFile(null); setInsuranceUrl(null); }} />
-          <DocUpload label="Revenue licence" url={revenueLicenseUrl} file={revenueLicenseFile} onPick={setRevenueLicenseFile} onClear={() => { setRevenueLicenseFile(null); setRevenueLicenseUrl(null); }} />
-        </div>
-      </div>
-
-      {canDeclareListingAuthority ? (
-        <fieldset className="space-y-3 rounded-xl border border-slate-200 bg-white p-4">
-          <legend className="px-1 text-sm font-semibold text-slate-900">Right to list this vehicle</legend>
-          <p className="text-xs leading-5 text-slate-600">This declaration is recorded with your account and may be checked during moderation.</p>
-          <div className="grid gap-2 sm:grid-cols-2">
-            {([
-              ["registered_owner", "Owned by this page's operator"],
-              ["authorized_operator", "Listed with the registered owner's authority"],
-            ] as const).map(([value, label]) => (
-              <button key={value} type="button" onClick={() => setAuthorityBasis(value)}
-                className={`rounded-xl border px-3 py-3 text-left text-xs font-semibold ${authorityBasis === value ? "border-blue-500 bg-blue-50 text-blue-800" : "border-slate-200 bg-white text-slate-700"}`}>
-                {label}
+              <button
+                type="button"
+                onClick={() => setAirportPickup(!airportPickup)}
+                className={`mt-3 flex w-full items-start gap-3 rounded-xl border px-3 py-3 text-left transition-colors ${airportPickup ? "border-blue-500 bg-blue-50 text-blue-800" : "border-slate-200 bg-white text-slate-600"}`}
+              >
+                <span className={`mt-0.5 h-4 w-4 shrink-0 rounded border ${airportPickup ? "border-blue-600 bg-blue-600" : "border-slate-300"}`} />
+                <span>
+                  <span className="block text-sm font-semibold">Airport handover available</span>
+                  <span className="mt-0.5 block text-xs">The vehicle can be handed over or collected at the airport. It is not a third rental mode.</span>
+                </span>
               </button>
-            ))}
-          </div>
-          <label className="flex cursor-pointer items-start gap-3 rounded-xl border border-slate-200 p-3 text-xs leading-5 text-slate-700">
-            <input type="checkbox" checked={authorityDeclared} onChange={(e) => setAuthorityDeclared(e.target.checked)} className="mt-0.5 h-4 w-4 accent-blue-600" />
-            <span>I confirm this Rental Page has the legal right to offer this vehicle for the rental modes shown, and the listing is accurate.</span>
-          </label>
-        </fieldset>
-      ) : (
-        <div className="rounded-xl border border-amber-200 bg-amber-50 p-4 text-sm leading-6 text-amber-950">
-          You can prepare the vehicle details, photos and documents. A Rental Page owner or manager must make or change the right-to-list declaration before DriveLink can publish it.
-        </div>
-      )}
+            </div>
 
-      {error && (
-        <div ref={errorRef} role="alert" className="rounded-xl border border-rose-200 bg-rose-50 p-3">
-          <p className="whitespace-pre-line text-sm font-medium text-rose-700">{error}</p>
-        </div>
-      )}
+            <Field
+              label="Insurance type"
+              required
+              help={INSURANCE_HELP}
+              hint="Hire-insured vehicles are listed first."
+            >
+              <Select
+                value={insuranceType}
+                onChange={(v) => setInsuranceType(v as InsuranceType)}
+                options={INSURANCE_OPTIONS}
+                label="Insurance type"
+              />
+            </Field>
 
-      {uploadProgress && (
-        <div role="status" className="rounded-xl border border-blue-200 bg-blue-50 p-3">
-          <p className="text-sm font-medium text-blue-900">
-            Uploading photo {Math.min(uploadProgress.done + 1, uploadProgress.total)} of {uploadProgress.total}
-          </p>
-          <div className="mt-2 h-1.5 overflow-hidden rounded-full bg-blue-200">
-            <div
-              className="h-full rounded-full bg-blue-600 transition-all"
-              style={{ width: `${uploadProgress.total ? (uploadProgress.done / uploadProgress.total) * 100 : 0}%` }}
-            />
-          </div>
-        </div>
-      )}
+            <Field label="Fuel policy" help={FUEL_POLICY_HELP}>
+              <Select
+                value={fuelPolicy}
+                onChange={(v) => setFuelPolicy(v as FuelPolicy)}
+                options={FUEL_POLICY_OPTIONS}
+                label="Fuel policy"
+              />
+            </Field>
 
-      <div className="flex gap-3 pt-2" data-form-actions>
-        <Button type="submit" loading={loading} size="lg">
-          {loading
-            ? (uploadProgress ? "Uploading photos…" : "Saving…")
-            : (editing ? "Save changes" : canDeclareListingAuthority ? "List vehicle" : "Save for owner review")}
-        </Button>
-        <Button
-          type="button" variant="ghost" size="lg"
-          onClick={() => { if (dirty) { setConfirmDiscard(true); return; } startNavigationProgress(); router.push("/dashboard/vehicles"); }}
-          disabled={loading}
-        >
-          Cancel
-        </Button>
+            <div className="space-y-3 border-t border-slate-100 pt-5">
+              <TermsHeading>Distance and delivery</TermsHeading>
+              <ToggleRow label="Unlimited km" hint="Turn on to remove the daily distance allowance" on={unlimitedKm} onChange={setUnlimitedKm} />
+              {!unlimitedKm && (
+                <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+                  <Field label="Included km/day" hint="Extra km beyond this is charged">
+                    <input type="number" inputMode="numeric" value={includedKmPerDay} onChange={(e) => setIncludedKmPerDay(e.target.value)}
+                      min={0} placeholder="100" className={inputClass} />
+                  </Field>
+                  <Field label="Extra km charge (LKR/km)" hint="Charge beyond the allowance">
+                    <input type="number" inputMode="numeric" value={extraMileage} onChange={(e) => setExtraMileage(e.target.value)} min={0} step={5} placeholder="30" className={inputClass} />
+                  </Field>
+                </div>
+              )}
+              <ToggleRow label="Delivery available" hint="Deliver the vehicle to the renter for a fee" on={deliveryAvailable} onChange={setDeliveryAvailable} />
+              {deliveryAvailable && (
+                <Field label="Delivery fee (LKR)">
+                  <input type="number" value={deliveryFee} onChange={(e) => setDeliveryFee(e.target.value)} min={0} placeholder="1500" className={inputClass} />
+                </Field>
+              )}
+            </div>
+
+            <div className="space-y-3 border-t border-slate-100 pt-5">
+              <TermsHeading>Rental length</TermsHeading>
+              <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+                <Field label="Min rental days">
+                  <input type="number" value={minRentalDays} onChange={(e) => setMinRentalDays(e.target.value)} min={1} className={inputClass} />
+                </Field>
+                <Field label="Max rental days" hint="Optional, blank = no limit">
+                  <input type="number" value={maxRentalDays} onChange={(e) => setMaxRentalDays(e.target.value)} min={1} placeholder="No limit" className={inputClass} />
+                </Field>
+              </div>
+            </div>
+
+            {withDriver && (
+              <div className="space-y-3 border-t border-slate-100 pt-5">
+                <TermsHeading>With-driver terms</TermsHeading>
+                <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+                  <Field label="Per-km rate (LKR)" hint="Optional">
+                    <input type="number" value={perKmRate} onChange={(e) => setPerKmRate(e.target.value)} min={0} placeholder="60" className={inputClass} />
+                  </Field>
+                  <Field label="Driver overnight allowance (Rs/night)">
+                    <input type="number" value={driverBata} onChange={(e) => setDriverBata(e.target.value)} min={0} placeholder="2000" className={inputClass} />
+                  </Field>
+                </div>
+                <div>
+                  <span className="text-slate-600 text-xs mb-1.5 block">Tolls included in price?</span>
+                  <div className="grid grid-cols-2 gap-2">
+                    {([[true, "Yes"], [false, "No"]] as const).map(([v, l]) => (
+                      <button key={l} type="button" onClick={() => setTollsIncluded(v)}
+                        className={`py-2.5 rounded-xl border font-semibold text-xs transition-all ${tollsIncluded === v ? "bg-blue-50 border-blue-500 text-blue-700" : "bg-white border-slate-200 text-slate-500 hover:bg-slate-50"}`}>{l}</button>
+                    ))}
+                  </div>
+                </div>
+              </div>
+            )}
+          </FormSection>
+
+          <FormSection id="terms-fees" title="Terms and fees" description="Charges beyond the daily rate, and who is allowed to rent it.">
+            <div className="space-y-3">
+              <TermsHeading>Fees</TermsHeading>
+              <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+                <Field label="Cleaning fee (LKR)" hint="Only if it comes back excessively dirty. Blank means no fee, and Rs. 10,000 is the most you can charge.">
+                  <input type="number" value={cleaningFee} onChange={(e) => setCleaningFee(e.target.value)} placeholder="0" min={0} max={10000} step={500} className={inputClass} />
+                </Field>
+                <Field label="Refuel service fee (LKR)" hint="Only if it comes back with less fuel. Blank means no fee.">
+                  <input type="number" value={refuelFee} onChange={(e) => setRefuelFee(e.target.value)} placeholder="0" min={0} step={100} className={inputClass} />
+                </Field>
+              </div>
+              <Field label="Late fee per hour (LKR)" hint="Optional. Leave blank when no hourly late fee applies.">
+                <input type="number" value={lateFeePerHour} onChange={(e) => setLateFeePerHour(e.target.value)} min={0} placeholder="No fee when blank" className={inputClass} />
+              </Field>
+            </div>
+
+            <div className="space-y-3 border-t border-slate-100 pt-5">
+              <TermsHeading>Renter requirements</TermsHeading>
+              <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+                <Field label="Min age">
+                  <input type="number" value={minRenterAge} onChange={(e) => setMinRenterAge(e.target.value)} min={18} max={40} className={inputClass} />
+                </Field>
+                <Field label="Min years holding licence (you check at handover)">
+                  <input type="number" value={minLicenseYears} onChange={(e) => setMinLicenseYears(e.target.value)} min={0} className={inputClass} />
+                </Field>
+              </div>
+            </div>
+
+            <div className="space-y-2 border-t border-slate-100 pt-5">
+              <TermsHeading>Disclosures</TermsHeading>
+              <ToggleRow label="GPS tracker fitted" hint="Shown to renters on the listing, as required" on={hasGpsTracker} onChange={setHasGpsTracker} />
+              <ToggleRow label="ETC expressway tag fitted" hint="Tag charges during a rental are billed to the renter" on={hasEtcTag} onChange={setHasEtcTag} />
+            </div>
+          </FormSection>
+
+          <FormSection id="rules-features" title="Rules and features" description="What renters see on the listing page.">
+            <div>
+              <span className="text-slate-600 text-xs mb-1.5 block">Features</span>
+              <PresetPicker presets={FEATURE_PRESETS} value={features} onChange={setFeatures} addPlaceholder="Add another feature" />
+              <span className="text-slate-500 text-xs mt-1.5 block">
+                Tap everything this vehicle has. Features only, no ads or contact info, listings with non-feature content are rejected in review.
+              </span>
+            </div>
+
+            <div>
+              <span className="text-slate-600 text-xs mb-1.5 block">Handover rules</span>
+              <PresetPicker presets={RULE_PRESETS} value={rules} onChange={setRules} addPlaceholder="Add your own rule" />
+              <span className="text-slate-500 text-xs mt-1.5 block">
+                Tap the rules that apply. Shown to renters on the listing with matching icons.
+              </span>
+            </div>
+
+            <div className="space-y-2 border-t border-slate-100 pt-5">
+              <TermsHeading>House rules</TermsHeading>
+              <ToggleRow label="Smoking allowed" on={smokingAllowed} onChange={setSmokingAllowed} />
+              <ToggleRow label="Pets allowed" on={petsAllowed} onChange={setPetsAllowed} />
+              <ToggleRow label="Ride-hail / commercial use allowed" on={rideHailAllowed} onChange={setRideHailAllowed} />
+              {selfDrive && (
+                <p className="rounded-lg border border-blue-200 bg-blue-50 p-3 text-xs leading-5 text-blue-900">
+                  Self-drive is limited to the verified account holder named on the booking. Additional renter-drivers are not supported at launch.
+                </p>
+              )}
+              <div className="pt-1">
+                <span className="text-slate-600 text-xs mb-1.5 block">Not allowed:</span>
+                <div className="flex flex-wrap gap-1.5">
+                  {RESTRICTED_USE_OPTIONS.map(({ value, label }) => {
+                    const on = restrictedUse.includes(value);
+                    return (
+                      <button key={value} type="button"
+                        onClick={() => setRestrictedUse((r) => on ? r.filter((v) => v !== value) : [...r, value])}
+                        className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-full border text-xs font-medium transition-all ${on ? "bg-blue-50 border-blue-500 text-blue-700" : "bg-white border-slate-200 text-slate-500 hover:bg-slate-50"}`}>
+                        {on && <Check size={11} />} {label}
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+            </div>
+
+            <Field
+              label="Description"
+              hint="Free-form prose: pickup notes, what's included (child seat? delivery?), why renters love this car. Reviewed by admins, keep it factual."
+            >
+              <textarea
+                value={description}
+                onChange={(e) => setDescription(e.target.value)}
+                rows={4}
+                maxLength={1000}
+                placeholder="Free pickup within Colombo city limits. Child seat available on request. Recently serviced, clean and well-maintained."
+                className={`${inputClass} resize-none`}
+              />
+              <span className="text-slate-400 text-xs mt-1 block">{description.length}/1000</span>
+            </Field>
+          </FormSection>
+
+          <FormSection id="documents" title="Documents" description="Optional, private. Only DriveLink admins see these.">
+            <div>
+              <span className="text-slate-700 text-sm font-semibold block">Document proof <span className="text-slate-400 font-normal">(optional, private)</span></span>
+              <span className="text-slate-500 text-xs">
+                Optional now: upload the registration, current hire-insurance, and revenue-licence documents to apply for <strong>Verified Vehicle</strong>. DriveLink reviews them before awarding that mark. Only DriveLink admins see these.
+              </span>
+            </div>
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+              <DocUpload label="Registration (CR)" url={crUrl} file={crFile} onPick={setCrFile} onClear={() => { setCrFile(null); setCrUrl(null); }} />
+              <DocUpload label="Insurance certificate" url={insuranceUrl} file={insuranceFile} onPick={setInsuranceFile} onClear={() => { setInsuranceFile(null); setInsuranceUrl(null); }} />
+              <DocUpload label="Revenue licence" url={revenueLicenseUrl} file={revenueLicenseFile} onPick={setRevenueLicenseFile} onClear={() => { setRevenueLicenseFile(null); setRevenueLicenseUrl(null); }} />
+            </div>
+          </FormSection>
+
+          <FormSection id="status" title="Status" description="Confirm the right to list this vehicle before it can go live.">
+            {canDeclareListingAuthority ? (
+              <fieldset className="space-y-3">
+                <legend className="px-0 text-sm font-semibold text-slate-900">Right to list this vehicle</legend>
+                <p className="text-xs leading-5 text-slate-600">This declaration is recorded with your account and may be checked during moderation.</p>
+                <div className="grid gap-2 sm:grid-cols-2">
+                  {([
+                    ["registered_owner", "Owned by this page's operator"],
+                    ["authorized_operator", "Listed with the registered owner's authority"],
+                  ] as const).map(([value, label]) => (
+                    <button key={value} type="button" onClick={() => setAuthorityBasis(value)}
+                      className={`rounded-xl border px-3 py-3 text-left text-xs font-semibold ${authorityBasis === value ? "border-blue-500 bg-blue-50 text-blue-800" : "border-slate-200 bg-white text-slate-700"}`}>
+                      {label}
+                    </button>
+                  ))}
+                </div>
+                <label className="flex cursor-pointer items-start gap-3 rounded-xl border border-slate-200 p-3 text-xs leading-5 text-slate-700">
+                  <input type="checkbox" checked={authorityDeclared} onChange={(e) => setAuthorityDeclared(e.target.checked)} className="mt-0.5 h-4 w-4 accent-blue-600" />
+                  <span>I confirm this Rental Page has the legal right to offer this vehicle for the rental modes shown, and the listing is accurate.</span>
+                </label>
+              </fieldset>
+            ) : (
+              <div className="rounded-xl border border-amber-200 bg-amber-50 p-4 text-sm leading-6 text-amber-950">
+                You can prepare the vehicle details, photos and documents. A Rental Page owner or manager must make or change the right-to-list declaration before DriveLink can publish it.
+              </div>
+            )}
+          </FormSection>
+
+          {error && (
+            <div ref={errorRef} role="alert" className="rounded-xl border border-rose-200 bg-rose-50 p-3">
+              <p className="whitespace-pre-line text-sm font-medium text-rose-700">{error}</p>
+            </div>
+          )}
+
+          {uploadProgress && (
+            <div role="status" className="rounded-xl border border-blue-200 bg-blue-50 p-3">
+              <p className="text-sm font-medium text-blue-900">
+                Uploading photo {Math.min(uploadProgress.done + 1, uploadProgress.total)} of {uploadProgress.total}
+              </p>
+              <div className="mt-2 h-1.5 overflow-hidden rounded-full bg-blue-200">
+                <div
+                  className="h-full rounded-full bg-blue-600 transition-all"
+                  style={{ width: `${uploadProgress.total ? (uploadProgress.done / uploadProgress.total) * 100 : 0}%` }}
+                />
+              </div>
+            </div>
+          )}
+        </div>
+      </div>
+
+      {/* Phone: sticky above the tab bar, matches ActionBar's geometry
+          everywhere else in the dashboard. */}
+      <div data-form-actions>
+        <ActionBar>
+          <SaveCancelButtons size="md" />
+        </ActionBar>
+      </div>
+
+      {/* Desktop: a floating card in the bottom-right corner, always in
+          reach regardless of how far down the sections the owner has
+          scrolled. */}
+      <div
+        data-form-actions
+        className="fixed bottom-8 right-8 z-30 hidden items-center gap-2 rounded-2xl bg-white p-3 shadow-xl ring-1 ring-slate-900/[0.08] lg:flex"
+      >
+        <SaveCancelButtons size="lg" />
       </div>
 
       {/* beforeunload covers a tab close or reload, but Cancel is a client-side
@@ -1018,10 +1065,35 @@ export function VehicleForm({ agencyId, agencyCity, vehicle, documents, canDecla
 }
 
 const inputClass =
-  "w-full min-h-11 px-4 py-2.5 bg-slate-100 border border-slate-200 rounded-xl text-base text-slate-900 placeholder-slate-400 focus:border-blue-500";
+  "w-full min-h-12 px-3.5 py-2.5 bg-white border border-slate-300 rounded-lg text-base text-slate-950 placeholder-slate-400 shadow-xs transition-[border-color,box-shadow] hover:border-slate-400 focus:border-blue-600 focus:outline-none focus:ring-4 focus:ring-blue-600/10";
+
+// A group of related fields: a short label and description on the left
+// (what the group is and why it matters), the fields themselves in a white
+// card on the right. Stacks on phones. The id is the in-page nav's anchor
+// target, so it must match an entry in SECTION_NAV above.
+function FormSection({
+  id, title, description, children,
+}: {
+  id: string;
+  title: string;
+  description?: string;
+  children: React.ReactNode;
+}) {
+  return (
+    <section id={id} className="scroll-mt-24">
+      <div className="sm:grid sm:grid-cols-[minmax(0,13rem)_minmax(0,1fr)] sm:gap-6">
+        <div className="mb-3 sm:mb-0">
+          <h2 className="text-base font-semibold text-slate-900">{title}</h2>
+          {description && <p className="mt-1 text-xs leading-5 text-slate-500">{description}</p>}
+        </div>
+        <Card padding="lg" className="min-w-0 space-y-5">{children}</Card>
+      </div>
+    </section>
+  );
+}
 
 function TermsHeading({ children }: { children: React.ReactNode }) {
-  return <p className="text-slate-700 text-xs font-bold uppercase tracking-wide">{children}</p>;
+  return <p className="text-xs font-semibold uppercase tracking-[0.08em] text-slate-500">{children}</p>;
 }
 
 // Compact switch row, same interaction as the wizard's ToggleField, scaled to
@@ -1053,7 +1125,7 @@ function DocUpload({
   const inputId = useId();
   const has = !!file || !!url;
   return (
-    <div className="bg-white border border-slate-200 rounded-lg p-3">
+    <div className="bg-white rounded-lg p-3 ring-1 ring-slate-900/[0.06]">
       <p className="text-slate-700 text-xs font-medium mb-2">{label}</p>
       <input
         id={inputId}
@@ -1099,15 +1171,16 @@ function Field({
 }) {
   return (
     <label className="block">
-      <span className="text-slate-600 text-xs mb-1 flex items-center">
-        {label} {required && <span className="text-blue-600 ml-0.5">*</span>}
+      <span className="text-sm font-medium text-slate-800 mb-1.5 flex items-center">
+        {label} {required && <span className="text-rose-600 ml-0.5" aria-hidden="true">*</span>}
         {help && <HelpHint text={help} />}
       </span>
       {children}
       {error
-        ? <span className="text-rose-600 text-xs mt-1 block">{error}</span>
-        : hint && <span className="text-slate-500 text-xs mt-1 block">{hint}</span>}
+        ? <span role="alert" className="flex items-start gap-1.5 text-xs font-medium text-rose-700 mt-1.5">
+            <CircleAlert size={14} className="mt-0.5 shrink-0" aria-hidden="true" /> {error}
+          </span>
+        : hint && <span className="text-xs leading-5 text-slate-500 mt-1.5 block">{hint}</span>}
     </label>
   );
 }
-

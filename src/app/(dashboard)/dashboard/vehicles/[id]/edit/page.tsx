@@ -1,11 +1,10 @@
 import { createClient, createServiceClient } from "@/lib/supabase/server";
 import { notFound, redirect } from "next/navigation";
-import Link from "next/link";
-import { ArrowLeft } from "lucide-react";
 import { getActivePage } from "@/lib/pages/active-page";
 import { getPageAccess } from "@/lib/pages/access";
 import { VehicleForm } from "@/components/dashboard/VehicleForm";
 import { AgencyVerificationGate } from "@/components/dashboard/AgencyVerificationGate";
+import { PageHeader } from "@/components/ui/PageHeader";
 import type { Database } from "@/types/database";
 
 type VehicleRow = Database["public"]["Tables"]["vehicles"]["Row"];
@@ -58,20 +57,13 @@ export default async function EditVehiclePage({ params }: Props) {
   const documents = (docData ?? null) as { cr_url: string | null; insurance_url: string | null; revenue_license_url: string | null } | null;
 
   return (
-    <div>
-      <Link
-        href="/dashboard/vehicles"
-        className="inline-flex items-center gap-1.5 text-slate-600 hover:text-slate-900 text-sm mb-4"
-      >
-        <ArrowLeft size={14} /> Back to fleet
-      </Link>
-
-      <h1 className="text-2xl font-bold text-slate-900 mb-1">
-        Edit {vehicle.year} {vehicle.make} {vehicle.model}
-      </h1>
-      <p className="text-slate-600 text-sm mb-8">
-        Important listing changes may need a new DriveLink review before renters see them.
-      </p>
+    <div className="space-y-6 pb-24 lg:pb-8">
+      <PageHeader
+        title={`Edit ${vehicle.year} ${vehicle.make} ${vehicle.model}`}
+        description="Important listing changes may need a new DriveLink review before renters see them."
+        backHref="/dashboard/vehicles"
+        backLabel="Fleet"
+      />
 
       {canEdit
         ? <VehicleForm

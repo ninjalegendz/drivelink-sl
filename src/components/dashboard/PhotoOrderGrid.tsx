@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import Image from "next/image";
-import { ChevronLeft, ChevronRight, Star, X } from "lucide-react";
+import { ChevronLeft, ChevronRight, GripVertical, Star, X } from "lucide-react";
 
 export interface OrderablePhoto {
   /** Stable identity for React and for the reorder controls. */
@@ -62,7 +62,7 @@ export function PhotoOrderGrid({ photos, onMove, onRemove, className = "" }: Pro
               onDragOver={(e) => { e.preventDefault(); setDropTarget(i); }}
               onDragLeave={() => setDropTarget((t) => (t === i ? null : t))}
               onDrop={(e) => { e.preventDefault(); handleDrop(i); }}
-              className={`relative overflow-hidden rounded-xl border bg-slate-100 transition-colors ${
+              className={`relative overflow-hidden rounded-xl border bg-slate-100 transition-colors cursor-grab active:cursor-grabbing ${
                 dropTarget === i && draggingFrom !== i ? "border-blue-500" : "border-slate-200"
               } ${draggingFrom === i ? "opacity-50" : ""}`}
             >
@@ -76,17 +76,14 @@ export function PhotoOrderGrid({ photos, onMove, onRemove, className = "" }: Pro
                   <Image src={photo.src} alt="" fill className="object-cover" sizes="120px" />
                 )}
 
-                {i > 0 && (
-                  <button
-                    type="button"
-                    onClick={() => onMove(i, 0)}
-                    title="Make this the cover photo"
-                    aria-label={`Make photo ${position} the cover`}
-                    className="absolute left-1 top-1 grid h-7 w-7 place-items-center rounded-full bg-slate-900/70 text-white transition hover:bg-blue-600"
-                  >
-                    <Star size={13} />
-                  </button>
-                )}
+                {/* Order number + a drag-handle glyph, purely as an affordance:
+                    the whole tile is already draggable (HTML5 drag has no
+                    touch support, which is why the arrow buttons below exist
+                    too), this just tells the eye a photo can be picked up. */}
+                <span className="absolute left-1 top-1 inline-flex h-7 items-center gap-1 rounded-full bg-slate-900/70 px-1.5 text-white">
+                  <GripVertical size={12} aria-hidden="true" className="opacity-70" />
+                  <span className="text-xs font-semibold tabular">{i + 1}</span>
+                </span>
 
                 <button
                   type="button"
@@ -97,10 +94,20 @@ export function PhotoOrderGrid({ photos, onMove, onRemove, className = "" }: Pro
                   <X size={13} />
                 </button>
 
-                {i === 0 && (
+                {i === 0 ? (
                   <span className="absolute bottom-1 left-1 rounded bg-blue-600 px-1.5 py-0.5 text-xs font-semibold text-white">
                     Cover
                   </span>
+                ) : (
+                  <button
+                    type="button"
+                    onClick={() => onMove(i, 0)}
+                    title="Make this the cover photo"
+                    aria-label={`Make photo ${position} the cover`}
+                    className="absolute bottom-1 left-1 grid h-7 w-7 place-items-center rounded-full bg-slate-900/70 text-white transition hover:bg-blue-600"
+                  >
+                    <Star size={13} />
+                  </button>
                 )}
                 {photo.pending && i !== 0 && (
                   <span className="absolute bottom-1 right-1 rounded bg-slate-900/80 px-1.5 py-0.5 text-xs text-blue-200">

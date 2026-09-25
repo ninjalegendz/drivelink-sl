@@ -1,10 +1,9 @@
 import { createClient } from "@/lib/supabase/server";
 import { notFound, redirect } from "next/navigation";
-import Link from "next/link";
-import { ArrowLeft } from "lucide-react";
 import { getActivePage } from "@/lib/pages/active-page";
 import { getPageAccess } from "@/lib/pages/access";
 import { AvailabilityManager } from "@/components/dashboard/AvailabilityManager";
+import { PageHeader } from "@/components/ui/PageHeader";
 
 interface Props {
   params: Promise<{ id: string }>;
@@ -68,22 +67,13 @@ export default async function VehicleAvailabilityPage({ params }: Props) {
   const booked = (bookingRows ?? []) as { start_date: string; end_date: string }[];
 
   return (
-    <div className="max-w-2xl">
-      <Link
-        href="/dashboard/vehicles"
-        className="inline-flex items-center gap-1.5 text-slate-600 hover:text-slate-900 text-sm mb-4"
-      >
-        <ArrowLeft size={14} /> Back to fleet
-      </Link>
-
-      <h1 className="text-2xl font-bold text-slate-900 mb-1">
-        Availability, {vehicle.year} {vehicle.make} {vehicle.model}
-      </h1>
-      <p className="text-slate-600 text-sm mb-8">
-        Block dates when the vehicle isn&apos;t available for rental, maintenance,
-        owner using it, agency holiday, anything. Renters won&apos;t see these
-        dates as bookable.
-      </p>
+    <div className="max-w-2xl space-y-6">
+      <PageHeader
+        title={`Availability, ${vehicle.year} ${vehicle.make} ${vehicle.model}`}
+        description="Block dates when the vehicle isn't available for rental, maintenance, owner using it, agency holiday, anything. Renters won't see these dates as bookable."
+        backHref="/dashboard/vehicles"
+        backLabel="Fleet"
+      />
 
       <AvailabilityManager vehicleId={vehicle.id} agencyId={agency.id} initial={blocks} booked={booked} />
     </div>

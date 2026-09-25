@@ -1,12 +1,15 @@
 "use client";
 
-import { useState, useTransition } from "react";
+import { useMemo, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
-import { CalendarX, Plus, Trash2 } from "lucide-react";
+import { CalendarX, ChevronLeft, ChevronRight, Plus, Trash2 } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 import { Button } from "@/components/ui/Button";
+import { Card } from "@/components/ui/Card";
 import { ConfirmDialog } from "@/components/ui/ConfirmDialog";
 import { DatePicker } from "@/components/ui/DatePicker";
+
+const WEEKDAYS = ["S", "M", "T", "W", "T", "F", "S"];
 
 interface Block {
   id:         string;
@@ -130,6 +133,10 @@ export function AvailabilityManager({ vehicleId, agencyId, initial, booked = [] 
   return (
     <div className="space-y-6">
 
+      {/* At a glance: booked ranges and the owner's own blocks, so an owner
+          can see both without cross-referencing the bookings list. */}
+      <MonthCalendar blocks={blocks} booked={booked} today={today} />
+
       {/* Add new */}
       <form onSubmit={addBlock} className="bg-white border border-slate-200 rounded-2xl shadow-sm p-5 space-y-4">
         <h2 className="text-slate-900 font-semibold text-sm">Block a date range</h2>
@@ -225,5 +232,122 @@ export function AvailabilityManager({ vehicleId, agencyId, initial, booked = [] 
         onCancel={() => setPendingRemoval(null)}
       />
     </div>
+  );
+}
+
+function monthDateString(year: number, month: number, day: number): string {
+  return `${year}-${String(month + 1).padStart(2, "0")}-${String(day).padStart(2, "0")}`;
+}
+
+/** Whether `day` falls inside any range in the list, inclusive. */
+function withinAny(day: string, ranges: { start_date: string; end_date: string }[]): { start_date: string; end_date: string } | undefined {
+  return ranges.find((r) => r.start_date <= day && day <= r.end_date);
+}
+
+/**
+ * A month at a glance: booked ranges (a renter already holds these dates) and
+ * the owner's own blocks, each tinted differently and drawn as a continuous
+ * bar across the days they cover, with rounded ends only where a range
+ * actually starts or ends, rather than a run of separate dots. Purely a
+ * read-only view over the same `blocks`/`booked` props the list below uses,
+ * it fetches nothing of its own.
+ */
+function MonthCalendar({
+  blocks, booked, today,
+}: {
+  blocks: Block[];
+  booked: BookedRange[];
+  today: string;
+}) {
+  const [visibleMonth, setVisibleMonth] = useState(() => {
+    const [y, m] = today.split("-").map(Number);
+    return new Date(y, m - 1, 1);
+  });
+
+  const year = visibleMonth.getFullYear();
+  const month = visibleMonth.getMonth();
+  const monthLabel = new Intl.DateTimeFormat("en-LK", { month: "long", year: "numeric" }).format(visibleMonth);
+
+  const cells = useMemo(() => {
+    const firstWeekday = new Date(year, month, 1).getDay();
+    const daysInMonth = new Date(year, month + 1, 0).getDate();
+    return Array.from({ length: 42 }, (_, index) => {
+      const day = index - firstWeekday + 1;
+      return day >= 1 && day <= daysInMonth ? monthDateString(year, month, day) : null;
+    });
+  }, [year, month]);
+
+  return (
+    <Card padding="md">
+      <div className="flex items-center justify-between">
+        <button
+          type="button"
+          onClick={() => setVisibleMonth(new Date(year, month - 1, 1))}
+          className="grid h-10 w-10 place-items-center rounded-full text-slate-600 hover:bg-slate-100"
+          aria-label="Previous month"
+        >
+          <ChevronLeft size={18} />
+        </button>
+        <p className="text-sm font-semibold tracking-tight text-slate-900">{monthLabel}</p>
+        <button
+          type="button"
+          onClick={() => setVisibleMonth(new Date(year, month + 1, 1))}
+          className="grid h-10 w-10 place-items-center rounded-full text-slate-600 hover:bg-slate-100"
+          aria-label="Next month"
+        >
+          <ChevronRight size={18} />
+        </button>
+      </div>
+
+      <div className="mt-3 grid grid-cols-7" aria-hidden="true">
+        {WEEKDAYS.map((weekday, index) => (
+          <span key={`${weekday}-${index}`} className="grid h-7 place-items-center text-xs font-semibold text-slate-400">{weekday}</span>
+        ))}
+      </div>
+
+      <div className="grid grid-cols-7 gap-y-1" role="group" aria-label={monthLabel}>
+        {cells.map((day, index) => {
+          if (!day) return <span key={`blank-${index}`} className="h-9 sm:h-10" />;
+
+          const bookedRange = withinAny(day, booked);
+          const blockRange  = bookedRange ? undefined : withinAny(day, blocks);
+          const range       = bookedRange ?? blockRange;
+          const status: "booked" | "blocked" | null = bookedRange ? "booked" : blockRange ? "blocked" : null;
+          const isStart = range ? day === range.start_date : false;
+          const isEnd   = range ? day === range.end_date : false;
+          const isToday = day === today;
+
+          const fill = status === "booked"
+            ? "bg-blue-600 text-white"
+            : status === "blocked"
+              ? "bg-amber-100 text-amber-900"
+              : "text-slate-700";
+
+          return (
+            <span key={day} className="flex h-9 items-center sm:h-10" data-date={day}>
+              <span
+                className={`flex h-full w-full items-center justify-center text-xs font-medium tabular transition-colors ${fill} ${
+                  isStart ? "rounded-l-full" : ""
+                } ${isEnd ? "rounded-r-full" : ""} ${isToday && !status ? "ring-1 ring-inset ring-blue-400 rounded-full" : ""}`}
+              >
+                {Number(day.slice(-2))}
+              </span>
+            </span>
+          );
+        })}
+      </div>
+
+      <div className="mt-4 flex flex-wrap items-center gap-x-4 gap-y-1.5 border-t border-slate-100 pt-3">
+        <span className="inline-flex items-center gap-1.5 text-xs text-slate-600">
+          <span aria-hidden="true" className="h-2.5 w-2.5 rounded-full bg-blue-600" /> Booked by a renter
+        </span>
+        <span className="inline-flex items-center gap-1.5 text-xs text-slate-600">
+          <span aria-hidden="true" className="h-2.5 w-2.5 rounded-full bg-amber-200" /> Blocked by you
+        </span>
+        <span className="inline-flex items-center gap-1.5 text-xs text-slate-600">
+          <span aria-hidden="true" className="h-2.5 w-2.5 rounded-full ring-1 ring-inset ring-blue-400" /> Today
+        </span>
+      </div>
+    </Card>
   );
 }

@@ -1,12 +1,13 @@
 import { createClient, createServiceClient } from "@/lib/supabase/server";
 import { redirect } from "next/navigation";
-import Link from "next/link";
-import { ArrowLeft, Copy, MessageCircle } from "lucide-react";
+import { Copy, MessageCircle } from "lucide-react";
 import { whatsappLink } from "@/lib/site-config";
 import { getActivePage } from "@/lib/pages/active-page";
 import { getPageAccess } from "@/lib/pages/access";
 import { VehicleWizard, type WizardPrefill } from "@/components/dashboard/VehicleWizard";
 import { AgencyVerificationGate } from "@/components/dashboard/AgencyVerificationGate";
+import { PageHeader } from "@/components/ui/PageHeader";
+import { Card } from "@/components/ui/Card";
 
 interface Props {
   searchParams: Promise<{ from?: string }>;
@@ -57,18 +58,13 @@ export default async function NewVehiclePage({ searchParams }: Props) {
   }
 
   return (
-    <div>
-      <Link
-        href="/dashboard/vehicles"
-        className="inline-flex items-center gap-1.5 text-slate-600 hover:text-slate-900 text-sm mb-4"
-      >
-        <ArrowLeft size={14} /> Back to fleet
-      </Link>
-
-      <h1 className="text-2xl font-bold text-slate-900 mb-1">List your vehicle</h1>
-      <p className="text-slate-600 text-sm mb-4">
-        Three quick steps. Listing is free.
-      </p>
+    <div className="max-w-2xl space-y-6">
+      <PageHeader
+        title="List your vehicle"
+        description="Three quick steps. Listing is free."
+        backHref="/dashboard/vehicles"
+        backLabel="Fleet"
+      />
 
       {/* "List it for me": for owners who would rather send photos than fill in
           a form. The team drafts it on this page and the owner confirms it. */}
@@ -77,22 +73,24 @@ export default async function NewVehiclePage({ searchParams }: Props) {
           href={whatsappLink(`Hi DriveLink, please list my vehicle for me. Rental Page: ${agency.name} (${agency.id.slice(0, 8).toUpperCase()})`)}
           target="_blank"
           rel="noopener noreferrer"
-          className="mb-6 flex max-w-xl items-start gap-3 rounded-2xl border border-slate-200 bg-white p-4 transition-colors hover:border-blue-300"
+          className="block"
         >
-          <span className="grid h-9 w-9 shrink-0 place-items-center rounded-full bg-emerald-50 text-emerald-700">
-            <MessageCircle size={18} aria-hidden="true" />
-          </span>
-          <span>
-            <span className="block text-sm font-semibold text-slate-900">Short on time? We can list it for you</span>
-            <span className="mt-0.5 block text-xs leading-5 text-slate-600">
-              Send the photos, plate number and daily price on WhatsApp. Our team sets up the listing and you just check it and confirm.
+          <Card interactive className="flex items-start gap-3 hover:ring-blue-200">
+            <span className="grid h-9 w-9 shrink-0 place-items-center rounded-full bg-emerald-50 text-emerald-700">
+              <MessageCircle size={18} aria-hidden="true" />
             </span>
-          </span>
+            <span>
+              <span className="block text-sm font-semibold text-slate-900">Short on time? We can list it for you</span>
+              <span className="mt-0.5 block text-xs leading-5 text-slate-600">
+                Send the photos, plate number and daily price on WhatsApp. Our team sets up the listing and you just check it and confirm.
+              </span>
+            </span>
+          </Card>
         </a>
       )}
 
       {prefill && (
-        <div className="inline-flex items-center gap-2 mb-6 px-3 py-2 bg-blue-50 border border-blue-200 rounded-xl text-blue-700 text-xs font-medium">
+        <div className="inline-flex items-center gap-2 rounded-xl border border-blue-200 bg-blue-50 px-3 py-2 text-xs font-medium text-blue-700">
           <Copy size={13} /> Duplicated from {prefill.year} {prefill.make} {prefill.model}. Add fresh photos, the plate number and the odometer. Everything else is pre-filled.
         </div>
       )}

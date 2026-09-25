@@ -2,7 +2,10 @@
 
 import { useEffect, useId, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
-import { Camera, Check, Car, Bus, Bike, ChevronLeft, ChevronRight, ChevronDown, Upload, FileText } from "lucide-react";
+import {
+  Camera, Check, Car, Bus, Bike, ChevronLeft, ChevronRight, ChevronDown, Upload, FileText,
+  Fuel, Leaf, Zap, ShieldCheck, FileCheck, UserRound,
+} from "lucide-react";
 import { TukTuk } from "@/components/ui/icons/TukTuk";
 import { createClient } from "@/lib/supabase/client";
 import { uploadToR2 } from "@/lib/storage/upload";
@@ -23,7 +26,12 @@ const TYPE_TILES: { value: VehicleType; label: string; Icon: React.ComponentType
   { value: "bike",   label: "Bike",    Icon: Bike },
   { value: "tuktuk", label: "Tuk-Tuk", Icon: TukTuk },
 ];
-const FUEL_TILES = ["petrol", "diesel", "hybrid", "electric"];
+const FUEL_TILES: { value: string; Icon: React.ComponentType<{ size?: number }> }[] = [
+  { value: "petrol",   Icon: Fuel },
+  { value: "diesel",   Icon: Fuel },
+  { value: "hybrid",   Icon: Leaf },
+  { value: "electric", Icon: Zap },
+];
 const CITY_OPTIONS = SL_CITIES.map((c) => ({ value: c, label: c }));
 const CURRENT_YEAR = new Date().getFullYear();
 const DRAFT_KEY = "drivelink_vehicle_wizard_draft";
@@ -528,403 +536,422 @@ export function VehicleWizard({ agencyId, agencyCity, prefill, canDeclareListing
     : canDeclareListingAuthority ? "Submit listing" : "Save for owner review";
 
   return (
-    <div className="max-w-xl" onKeyDown={onKeyDown}>
-      {/* Progress */}
-      <div className="flex items-center gap-1.5 mb-6">
-        {STEPS.map((label, i) => (
-          <div key={label} className="flex-1">
-            <div className={`h-1.5 rounded-full transition-colors ${i <= step ? "bg-blue-600" : "bg-slate-200"}`} />
-          </div>
-        ))}
-      </div>
-      <p className="text-xs text-slate-400 font-semibold uppercase tracking-wider mb-1">Step {step + 1} of {STEPS.length}</p>
-      <h2 className="font-display text-2xl font-extrabold text-slate-900 mb-5">{STEPS[step]}</h2>
+    <div className="max-w-2xl" onKeyDown={onKeyDown}>
+      {/* Progress: numbered circles with the step names, a filled connector
+          between finished steps, and a checkmark once a step is behind you -
+          so "where am I" never depends on remembering a plain fraction. */}
+      <ol className="mb-6 flex items-center">
+        {STEPS.map((label, i) => {
+          const state: "done" | "current" | "upcoming" = i < step ? "done" : i === step ? "current" : "upcoming";
+          return (
+            <li key={label} className="flex flex-1 items-center last:flex-none">
+              <div className="flex items-center gap-2">
+                <span
+                  className={`grid h-8 w-8 shrink-0 place-items-center rounded-full text-sm font-semibold transition-colors ${
+                    state === "done" ? "bg-blue-600 text-white"
+                    : state === "current" ? "bg-blue-50 text-blue-700 ring-2 ring-blue-500"
+                    : "bg-slate-100 text-slate-400"
+                  }`}
+                >
+                  {state === "done" ? <Check size={15} strokeWidth={3} aria-hidden="true" /> : i + 1}
+                </span>
+                <span className={`hidden text-sm font-semibold sm:inline ${state === "upcoming" ? "text-slate-400" : "text-slate-900"}`}>
+                  {label}
+                </span>
+              </div>
+              {i < STEPS.length - 1 && (
+                <span aria-hidden="true" className={`mx-2 h-0.5 flex-1 rounded-full transition-colors sm:mx-3 ${state === "done" ? "bg-blue-600" : "bg-slate-200"}`} />
+              )}
+            </li>
+          );
+        })}
+      </ol>
+      <p className="mb-5 text-xs font-semibold uppercase tracking-wider text-slate-400 sm:hidden">
+        Step {step + 1} of {STEPS.length}: {STEPS[step]}
+      </p>
 
-      {/* A saved draft used to reappear with no explanation, which reads as the
-          form remembering the wrong vehicle. Say so, and offer a clean start.
-          Photos are files and cannot be saved, so that is stated too. */}
-      {draftRestored && step <= PHOTOS_STEP && (
-        <div className="mb-5 rounded-xl border border-blue-200 bg-blue-50 p-3.5">
-          <p className="text-sm font-semibold text-blue-900">We brought back your unfinished listing.</p>
-          <p className="mt-1 text-xs leading-5 text-blue-900/90">
-            Everything you typed is here. Photos cannot be saved on this device, so those need adding again.
-          </p>
-          <button
-            type="button"
-            onClick={discardDraft}
-            className="mt-2 min-h-11 text-sm font-semibold text-blue-700 underline underline-offset-2 hover:text-blue-800"
-          >
-            Start a fresh listing instead
-          </button>
-        </div>
-      )}
+      {/* Each step lives in its own card: generous spacing, and on phones the
+          Back/Next nav docks to the bottom of it (see the sticky footer at
+          the end of this card), so the primary action is always in reach no
+          matter how far the step has been scrolled. */}
+      <div className="rounded-3xl bg-white p-5 shadow-sm ring-1 ring-slate-900/[0.06] sm:p-8">
+        <h2 className="text-xl font-semibold tracking-tight text-slate-900 sm:text-2xl">{STEPS[step]}</h2>
 
-      {/* ── Step 1: Your vehicle ── */}
-      {step === 0 && (
-        <div className="space-y-5">
-          <div>
-            <p className="text-slate-600 text-sm mb-2">What kind of vehicle is it?</p>
-            <div className="grid grid-cols-3 gap-2">
-              {TYPE_TILES.map(({ value, label, Icon }) => (
-                <button key={value} type="button" onClick={() => changeVehicleType(value)}
-                  className={`flex flex-col items-center gap-1.5 py-4 rounded-2xl border-2 font-semibold text-sm transition-all ${vehicleType === value ? "bg-blue-50 border-blue-500 text-blue-700" : "bg-white border-slate-200 text-slate-500 hover:bg-slate-50"}`}>
-                  <Icon size={22} /> {label}
-                </button>
-              ))}
-            </div>
-          </div>
-          <div className="grid grid-cols-2 gap-3">
-            <BigField label="Make">
-              <input className={bigInput} value={make} onChange={(e) => setMake(e.target.value)} placeholder={makeModelHint(vehicleType).make} list="sl-makes" />
-              <datalist id="sl-makes">
-                {SL_MAKES.map((m) => <option key={m} value={m} />)}
-              </datalist>
-            </BigField>
-            <BigField label="Model"><input className={bigInput} value={model} onChange={(e) => setModel(e.target.value)} placeholder={makeModelHint(vehicleType).model} /></BigField>
-          </div>
-          <div className="grid grid-cols-2 gap-3">
-            <BigField label="Year"><input className={bigInput} type="number" inputMode="numeric" value={year} onChange={(e) => setYear(e.target.value === "" ? "" : Number(e.target.value))} placeholder="2018" /></BigField>
-            <BigField label="Seats"><input className={bigInput} type="number" inputMode="numeric" value={seats} onChange={(e) => setSeats(e.target.value === "" ? "" : Number(e.target.value))} min={1} max={20} /></BigField>
-          </div>
-          <BigField label="Registration plate number">
-            <input className={bigInput} value={plateNumber} onChange={(e) => setPlateNumber(e.target.value)} placeholder="WP CAB-1234" autoCapitalize="characters" />
-            <p className="mt-1 text-xs leading-5 text-slate-500">Kept private while browsing. The confirmed renter sees it for the handover plate check.</p>
-          </BigField>
-          <div>
-            <p className="text-slate-600 text-sm mb-2">Fuel</p>
-            <div className="grid grid-cols-4 gap-2">
-              {FUEL_TILES.map((f) => (
-                <button key={f} type="button" onClick={() => setFuelType(f)}
-                  className={`min-h-11 rounded-xl border-2 font-semibold text-sm capitalize ${fuelType === f ? "bg-blue-50 border-blue-500 text-blue-700" : "bg-white border-slate-200 text-slate-500"}`}>{f}</button>
-              ))}
-            </div>
-          </div>
-          {/* Required: renters filter and compare on these. Doors are skipped
-              for bikes and tuk-tuks, engine size for electric vehicles. */}
-          {specColumns > 0 && (
-            <div className={`grid gap-3 ${specGridClass}`}>
-              {needsDoors && <BigField label="Doors"><input className={bigInput} type="number" inputMode="numeric" value={doors} onChange={(e) => setDoors(e.target.value)} min={1} max={6} placeholder="4" /></BigField>}
-              {!isElectric && <BigField label="Engine cc"><input className={bigInput} type="number" inputMode="numeric" value={engineCc} onChange={(e) => setEngineCc(e.target.value)} min={0} placeholder="1500" /></BigField>}
-            </div>
-          )}
-          {/* Tiptronic is its own answer here, not a kind of automatic: plenty
-              of the used Japanese imports rented in Sri Lanka have it, and a
-              renter who needs a true automatic wants to know the difference. */}
-          <div>
-            <p className="text-slate-600 text-sm mb-2">Transmission</p>
-            <div className="grid grid-cols-3 gap-2">
-              {["automatic", "manual", "tiptronic"].map((t) => (
-                <button key={t} type="button" onClick={() => setTransmission(t)}
-                  className={`min-h-11 rounded-xl border-2 px-1 font-semibold text-sm capitalize ${transmission === t ? "bg-blue-50 border-blue-500 text-blue-700" : "bg-white border-slate-200 text-slate-500"}`}>{t}</button>
-              ))}
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* ── Step 2: Photos ── */}
-      {step === 1 && (
-        <div className="space-y-3">
-          <p className="text-slate-600 text-sm">Add a few clear photos, then put them in the order renters should see them.</p>
-          <input id="wizard-photo-input" type="file" accept={PHOTO_ACCEPT} multiple className="sr-only"
-            onChange={(e) => { if (e.target.files) { const items = Array.from(e.target.files).map((file) => ({ file, url: URL.createObjectURL(file) })); setPhotos((p) => [...p, ...items]); } e.target.value = ""; }} />
-          <label htmlFor="wizard-photo-input"
-            className="block w-full border-2 border-dashed border-slate-200 rounded-2xl p-10 text-center cursor-pointer hover:border-blue-500 hover:bg-slate-50 transition-colors">
-            <Camera size={36} className="mx-auto mb-2 text-blue-600" strokeWidth={1.5} />
-            <p className="text-slate-700 font-semibold">Tap to add photos</p>
-            <p className="text-slate-500 text-xs mt-0.5">Add at least 4 clear photos: front, back, sides and interior. JPG or PNG.</p>
-          </label>
-          <PhotoOrderGrid
-            photos={photos.map((item) => ({ key: item.url, src: item.url, pending: true }))}
-            onMove={(from, to) => setPhotos((prev) => movePhotoInList(prev, from, to))}
-            onRemove={(i) => setPhotos((prev) => {
-              const target = prev[i];
-              if (target) URL.revokeObjectURL(target.url);
-              return prev.filter((_, j) => j !== i);
-            })}
-          />
-        </div>
-      )}
-
-      {/* ── Step 3: Price and go live ── */}
-      {step === 2 && (
-        <div className="space-y-5">
-          <BigField label="Price per day (LKR)">
-            <input className={`${bigInput} text-2xl font-bold`} type="number" inputMode="numeric" value={dailyRate} onChange={(e) => setDailyRate(e.target.value)} placeholder="6500" min={500} />
-          </BigField>
-
-          <div>
-            <p className="text-slate-600 text-sm mb-2">How can people rent it? (tap all that apply)</p>
-            <div className="grid grid-cols-2 gap-2">
-              {[
-                { label: "Self-drive", on: selfDrive, set: setSelfDrive },
-                { label: "With driver", on: withDriver, set: setWithDriver },
-              ].map(({ label, on, set }) => (
-                <button key={label} type="button" onClick={() => set(!on)}
-                  className={`py-4 rounded-2xl border-2 font-semibold text-sm transition-all ${on ? "bg-blue-50 border-blue-500 text-blue-700" : "bg-white border-slate-200 text-slate-500 hover:bg-slate-50"}`}>
-                  {on && <Check size={14} className="inline mr-1" />}{label}
-                </button>
-              ))}
-            </div>
-          </div>
-
-          <BigField label="City"><Select value={city} onChange={setCity} options={CITY_OPTIONS} label="City" /></BigField>
-
-          <div>
-            <p className="text-slate-600 text-sm mb-2">Insurance</p>
-            <div className="grid grid-cols-2 gap-2">
-              {([["hire", "Hire (commercial)"], ["private", "Private (P-number)"]] as const).map(([v, l]) => (
-                <button key={v} type="button" onClick={() => setInsuranceType(v)}
-                  className={`min-h-11 rounded-xl border-2 font-semibold text-sm ${insuranceType === v ? "bg-blue-50 border-blue-500 text-blue-700" : "bg-white border-slate-200 text-slate-500"}`}>{l}</button>
-              ))}
-            </div>
-          </div>
-
-          {/* Everything below already has a sensible default, so it is folded
-              away rather than asked. Owners can fill it in now or from Edit. */}
-          <div className="rounded-2xl border border-slate-200 bg-white">
+        {/* A saved draft used to reappear with no explanation, which reads as the
+            form remembering the wrong vehicle. Say so, and offer a clean start.
+            Photos are files and cannot be saved, so that is stated too. */}
+        {draftRestored && step <= PHOTOS_STEP && (
+          <div className="mt-5 rounded-2xl border border-blue-200 bg-blue-50 p-3.5">
+            <p className="text-sm font-semibold text-blue-900">We brought back your unfinished listing.</p>
+            <p className="mt-1 text-xs leading-5 text-blue-900/90">
+              Everything you typed is here. Photos cannot be saved on this device, so those need adding again.
+            </p>
             <button
               type="button"
-              onClick={() => setShowMore((v) => !v)}
-              aria-expanded={showMore}
-              className="flex w-full min-h-11 items-center justify-between gap-3 px-4 py-3 text-left"
+              onClick={discardDraft}
+              className="mt-2 min-h-11 text-sm font-semibold text-blue-700 underline underline-offset-2 hover:text-blue-800"
             >
-              <span>
-                <span className="block text-sm font-semibold text-slate-900">More details (optional)</span>
-                <span className="block text-xs text-slate-500 mt-0.5">
-                  Deposit, km allowance, fees, house rules, features and documents. Defaults are set, change them now or later.
-                </span>
-              </span>
-              <ChevronDown size={18} className={`shrink-0 text-slate-500 transition-transform ${showMore ? "rotate-180" : ""}`} aria-hidden="true" />
+              Start a fresh listing instead
             </button>
+          </div>
+        )}
 
-            {showMore && (
-              <div className="space-y-6 border-t border-slate-200 px-4 py-5">
-                {/* Vehicle specs */}
-                <div className="space-y-3">
-                  <SectionHeading>Vehicle specs</SectionHeading>
-                  {/* A bike and a tuk-tuk have no body style, so the question is
-                      not asked at all rather than offering them "Sedan". */}
-                  <div className={`grid gap-3 ${showBodyType ? "grid-cols-2" : "grid-cols-1"}`}>
-                    {showBodyType && (
-                      <BigField label="Body type">
-                        <Select value={bodyType} onChange={setBodyType} options={bodyTypeOptions} placeholder="Select…" label="Body type" />
-                      </BigField>
-                    )}
-                    <BigField label="Variant"><input className={bigInput} value={variant} onChange={(e) => setVariant(e.target.value)} placeholder="GLi, Hybrid, etc." /></BigField>
-                  </div>
-                  <BigField label="Odometer km"><input className={bigInput} type="number" inputMode="numeric" value={odometerKm} onChange={(e) => setOdometerKm(e.target.value)} min={0} placeholder="65000" /></BigField>
-                  <ToggleField label="Airport handover available" hint="Handed over or collected at the airport. This does not change who drives it." on={airportPickup} onChange={setAirportPickup} />
-                </div>
+        {/* ── Step 1: Your vehicle ── */}
+        {step === 0 && (
+          <div className="mt-6 space-y-6">
+            <div>
+              <p className="text-slate-600 text-sm mb-2.5">What kind of vehicle is it?</p>
+              <div className="grid grid-cols-3 gap-2.5 sm:grid-cols-5">
+                {TYPE_TILES.map(({ value, label, Icon }) => (
+                  <OptionTile key={value} active={vehicleType === value} onClick={() => changeVehicleType(value)} label={label} icon={<Icon size={22} />} />
+                ))}
+              </div>
+            </div>
+            <div className="grid grid-cols-2 gap-3">
+              <BigField label="Make">
+                <input className={bigInput} value={make} onChange={(e) => setMake(e.target.value)} placeholder={makeModelHint(vehicleType).make} list="sl-makes" />
+                <datalist id="sl-makes">
+                  {SL_MAKES.map((m) => <option key={m} value={m} />)}
+                </datalist>
+              </BigField>
+              <BigField label="Model"><input className={bigInput} value={model} onChange={(e) => setModel(e.target.value)} placeholder={makeModelHint(vehicleType).model} /></BigField>
+            </div>
+            <div className="grid grid-cols-2 gap-3">
+              <BigField label="Year"><input className={bigInput} type="number" inputMode="numeric" value={year} onChange={(e) => setYear(e.target.value === "" ? "" : Number(e.target.value))} placeholder="2018" /></BigField>
+              <BigField label="Seats"><input className={bigInput} type="number" inputMode="numeric" value={seats} onChange={(e) => setSeats(e.target.value === "" ? "" : Number(e.target.value))} min={1} max={20} /></BigField>
+            </div>
+            <BigField label="Registration plate number">
+              <input className={bigInput} value={plateNumber} onChange={(e) => setPlateNumber(e.target.value)} placeholder="WP CAB-1234" autoCapitalize="characters" />
+              <p className="mt-1 text-xs leading-5 text-slate-500">Kept private while browsing. The confirmed renter sees it for the handover plate check.</p>
+            </BigField>
+            <div>
+              <p className="text-slate-600 text-sm mb-2.5">Fuel</p>
+              <div className="grid grid-cols-4 gap-2.5">
+                {FUEL_TILES.map(({ value, Icon }) => (
+                  <OptionTile key={value} active={fuelType === value} onClick={() => setFuelType(value)} label={value} icon={<Icon size={20} />} className="capitalize" />
+                ))}
+              </div>
+            </div>
+            {/* Required: renters filter and compare on these. Doors are skipped
+                for bikes and tuk-tuks, engine size for electric vehicles. */}
+            {specColumns > 0 && (
+              <div className={`grid gap-3 ${specGridClass}`}>
+                {needsDoors && <BigField label="Doors"><input className={bigInput} type="number" inputMode="numeric" value={doors} onChange={(e) => setDoors(e.target.value)} min={1} max={6} placeholder="4" /></BigField>}
+                {!isElectric && <BigField label="Engine cc"><input className={bigInput} type="number" inputMode="numeric" value={engineCc} onChange={(e) => setEngineCc(e.target.value)} min={0} placeholder="1500" /></BigField>}
+              </div>
+            )}
+            {/* Tiptronic is its own answer here, not a kind of automatic: plenty
+                of the used Japanese imports rented in Sri Lanka have it, and a
+                renter who needs a true automatic wants to know the difference. */}
+            <div>
+              <p className="text-slate-600 text-sm mb-2.5">Transmission</p>
+              <div className="grid grid-cols-3 gap-2.5">
+                {["automatic", "manual", "tiptronic"].map((t) => (
+                  <OptionTile key={t} active={transmission === t} onClick={() => setTransmission(t)} label={t} className="capitalize" />
+                ))}
+              </div>
+            </div>
+          </div>
+        )}
 
-                {/* Pricing extras */}
-                <div className="space-y-3">
-                  <SectionHeading>Pricing extras</SectionHeading>
-                  <BigField label="Weekly rate"><input className={bigInput} type="number" inputMode="numeric" value={weeklyRate} onChange={(e) => setWeeklyRate(e.target.value)} placeholder="e.g. 40000" min={0} /></BigField>
-                  {/* The switch comes before the fields it disables. It used to sit
-                      underneath them, so the allowance greyed itself out for no
-                      visible reason. */}
-                  <ToggleField label="Unlimited km" hint="Turn on to remove the daily distance allowance" on={unlimitedKm} onChange={setUnlimitedKm} />
-                  {!unlimitedKm && (
-                    <div className="grid grid-cols-2 gap-3">
-                      <BigField label="Included km/day" hint="Extra km beyond this is charged">
-                        <input className={bigInput} type="number" inputMode="numeric" value={includedKmPerDay} onChange={(e) => setIncludedKmPerDay(e.target.value)} placeholder="100" min={0} />
-                      </BigField>
-                      <BigField label="Extra km charge (LKR/km)"><input className={bigInput} type="number" inputMode="numeric" value={extraMileage} onChange={(e) => setExtraMileage(e.target.value)} placeholder="e.g. 30" min={0} /></BigField>
-                    </div>
-                  )}
-                  <ToggleField label="Delivery available" hint="Deliver the vehicle to the renter for a fee" on={deliveryAvailable} onChange={setDeliveryAvailable} />
-                  {deliveryAvailable && (
-                    <BigField label="Delivery fee (LKR)"><input className={bigInput} type="number" value={deliveryFee} onChange={(e) => setDeliveryFee(e.target.value)} placeholder="e.g. 1500" min={0} /></BigField>
-                  )}
-                  <div className="grid grid-cols-2 gap-3">
-                    <BigField label="Min rental days"><input className={bigInput} type="number" value={minRentalDays} onChange={(e) => setMinRentalDays(e.target.value)} min={1} /></BigField>
-                    <BigField label="Max rental days"><input className={bigInput} type="number" value={maxRentalDays} onChange={(e) => setMaxRentalDays(e.target.value)} min={1} placeholder="No limit" /></BigField>
-                  </div>
-                </div>
+        {/* ── Step 2: Photos ── */}
+        {step === 1 && (
+          <div className="mt-6 space-y-3">
+            <p className="text-slate-600 text-sm">Add a few clear photos, then put them in the order renters should see them.</p>
+            <input id="wizard-photo-input" type="file" accept={PHOTO_ACCEPT} multiple className="sr-only"
+              onChange={(e) => { if (e.target.files) { const items = Array.from(e.target.files).map((file) => ({ file, url: URL.createObjectURL(file) })); setPhotos((p) => [...p, ...items]); } e.target.value = ""; }} />
+            <label htmlFor="wizard-photo-input"
+              className="block w-full border-2 border-dashed border-slate-200 rounded-2xl p-10 text-center cursor-pointer hover:border-blue-500 hover:bg-slate-50 transition-colors">
+              <Camera size={36} className="mx-auto mb-2 text-blue-600" strokeWidth={1.5} />
+              <p className="text-slate-700 font-semibold">Tap to add photos</p>
+              <p className="text-slate-500 text-xs mt-0.5">Add at least 4 clear photos: front, back, sides and interior. JPG or PNG.</p>
+            </label>
+            <PhotoOrderGrid
+              photos={photos.map((item) => ({ key: item.url, src: item.url, pending: true }))}
+              onMove={(from, to) => setPhotos((prev) => movePhotoInList(prev, from, to))}
+              onRemove={(i) => setPhotos((prev) => {
+                const target = prev[i];
+                if (target) URL.revokeObjectURL(target.url);
+                return prev.filter((_, j) => j !== i);
+              })}
+            />
+          </div>
+        )}
 
-                {/* Deposit & fees */}
-                <div className="space-y-3">
-                  <SectionHeading>Deposit &amp; fees</SectionHeading>
-                  <BigField label="Refundable deposit (LKR)" hint="Held by you, returned after the rental. Leave blank for none.">
-                    <input className={bigInput} type="number" value={deposit} onChange={(e) => setDeposit(e.target.value)} placeholder="0" min={0} step={1000} />
-                  </BigField>
-                  <div className="grid grid-cols-2 gap-3">
-                    <BigField label="Cleaning fee" hint="Only if it comes back excessively dirty. Blank means no fee, and Rs. 10,000 is the most you can charge.">
-                      <input className={bigInput} type="number" value={cleaningFee} onChange={(e) => setCleaningFee(e.target.value)} placeholder="0" min={0} max={10000} step={500} />
-                    </BigField>
-                    <BigField label="Refuel service fee" hint="Only if it comes back with less fuel. Blank means no fee.">
-                      <input className={bigInput} type="number" value={refuelFee} onChange={(e) => setRefuelFee(e.target.value)} placeholder="0" min={0} step={100} />
-                    </BigField>
-                  </div>
-                  <BigField label="Late fee per hour"><input className={bigInput} type="number" value={lateFeePerHour} onChange={(e) => setLateFeePerHour(e.target.value)} min={0} placeholder="No fee when blank" /></BigField>
-                </div>
+        {/* ── Step 3: Price and go live ── */}
+        {step === 2 && (
+          <div className="mt-6 space-y-6">
+            <BigField label="Price per day (LKR)">
+              <input className={`${bigInput} text-2xl font-bold`} type="number" inputMode="numeric" value={dailyRate} onChange={(e) => setDailyRate(e.target.value)} placeholder="6500" min={500} />
+            </BigField>
 
-                {/* Renter requirements */}
-                <div className="space-y-3">
-                  <SectionHeading>Renter requirements</SectionHeading>
-                  <div className="grid grid-cols-2 gap-3">
-                    <BigField label="Min age"><input className={bigInput} type="number" value={minRenterAge} onChange={(e) => setMinRenterAge(e.target.value)} min={18} max={40} /></BigField>
-                    <BigField label="Min years holding licence (you check at handover)"><input className={bigInput} type="number" value={minLicenseYears} onChange={(e) => setMinLicenseYears(e.target.value)} min={0} /></BigField>
-                  </div>
-                </div>
+            <div>
+              <p className="text-slate-600 text-sm mb-2.5">How can people rent it? (tap all that apply)</p>
+              <div className="grid grid-cols-2 gap-2.5">
+                <OptionTile active={selfDrive} onClick={() => setSelfDrive(!selfDrive)} label="Self-drive" icon={<Car size={22} />} />
+                <OptionTile active={withDriver} onClick={() => setWithDriver(!withDriver)} label="With driver" icon={<UserRound size={22} />} />
+              </div>
+            </div>
 
-                {/* With-driver terms */}
-                {withDriver && (
+            <BigField label="City"><Select value={city} onChange={setCity} options={CITY_OPTIONS} label="City" /></BigField>
+
+            <div>
+              <p className="text-slate-600 text-sm mb-2.5">Insurance</p>
+              <div className="grid grid-cols-2 gap-2.5">
+                <OptionTile active={insuranceType === "hire"} onClick={() => setInsuranceType("hire")} label="Hire (commercial)" icon={<ShieldCheck size={22} />} />
+                <OptionTile active={insuranceType === "private"} onClick={() => setInsuranceType("private")} label="Private (P-number)" icon={<FileCheck size={22} />} />
+              </div>
+            </div>
+
+            {/* Everything below already has a sensible default, so it is folded
+                away rather than asked. Owners can fill it in now or from Edit. */}
+            <div className="rounded-2xl ring-1 ring-slate-900/[0.06]">
+              <button
+                type="button"
+                onClick={() => setShowMore((v) => !v)}
+                aria-expanded={showMore}
+                className="flex w-full min-h-11 items-center justify-between gap-3 px-4 py-3 text-left"
+              >
+                <span>
+                  <span className="block text-sm font-semibold text-slate-900">More details (optional)</span>
+                  <span className="block text-xs text-slate-500 mt-0.5">
+                    Deposit, km allowance, fees, house rules, features and documents. Defaults are set, change them now or later.
+                  </span>
+                </span>
+                <ChevronDown size={18} className={`shrink-0 text-slate-500 transition-transform ${showMore ? "rotate-180" : ""}`} aria-hidden="true" />
+              </button>
+
+              {showMore && (
+                <div className="space-y-6 border-t border-slate-100 px-4 py-5">
+                  {/* Vehicle specs */}
                   <div className="space-y-3">
-                    <SectionHeading>With-driver terms</SectionHeading>
-                    <div className="grid grid-cols-2 gap-3">
-                      <BigField label="Per-km rate"><input className={bigInput} type="number" value={perKmRate} onChange={(e) => setPerKmRate(e.target.value)} min={0} placeholder="e.g. 60" /></BigField>
-                      <BigField label="Driver overnight allowance (Rs/night)"><input className={bigInput} type="number" value={driverBata} onChange={(e) => setDriverBata(e.target.value)} min={0} placeholder="2000" /></BigField>
+                    <SectionHeading>Vehicle specs</SectionHeading>
+                    {/* A bike and a tuk-tuk have no body style, so the question is
+                        not asked at all rather than offering them "Sedan". */}
+                    <div className={`grid gap-3 ${showBodyType ? "grid-cols-2" : "grid-cols-1"}`}>
+                      {showBodyType && (
+                        <BigField label="Body type">
+                          <Select value={bodyType} onChange={setBodyType} options={bodyTypeOptions} placeholder="Select…" label="Body type" />
+                        </BigField>
+                      )}
+                      <BigField label="Variant"><input className={bigInput} value={variant} onChange={(e) => setVariant(e.target.value)} placeholder="GLi, Hybrid, etc." /></BigField>
                     </div>
-                    <div>
-                      <p className="text-slate-600 text-sm mb-2">Tolls included in price?</p>
-                      <div className="grid grid-cols-2 gap-2">
-                        {([[true, "Yes"], [false, "No"]] as const).map(([v, l]) => (
-                          <button key={l} type="button" onClick={() => setTollsIncluded(v)}
-                            className={`min-h-11 rounded-xl border-2 font-semibold text-sm ${tollsIncluded === v ? "bg-blue-50 border-blue-500 text-blue-700" : "bg-white border-slate-200 text-slate-500"}`}>{l}</button>
-                        ))}
+                    <BigField label="Odometer km"><input className={bigInput} type="number" inputMode="numeric" value={odometerKm} onChange={(e) => setOdometerKm(e.target.value)} min={0} placeholder="65000" /></BigField>
+                    <ToggleField label="Airport handover available" hint="Handed over or collected at the airport. This does not change who drives it." on={airportPickup} onChange={setAirportPickup} />
+                  </div>
+
+                  {/* Pricing extras */}
+                  <div className="space-y-3">
+                    <SectionHeading>Pricing extras</SectionHeading>
+                    <BigField label="Weekly rate"><input className={bigInput} type="number" inputMode="numeric" value={weeklyRate} onChange={(e) => setWeeklyRate(e.target.value)} placeholder="e.g. 40000" min={0} /></BigField>
+                    {/* The switch comes before the fields it disables. It used to sit
+                        underneath them, so the allowance greyed itself out for no
+                        visible reason. */}
+                    <ToggleField label="Unlimited km" hint="Turn on to remove the daily distance allowance" on={unlimitedKm} onChange={setUnlimitedKm} />
+                    {!unlimitedKm && (
+                      <div className="grid grid-cols-2 gap-3">
+                        <BigField label="Included km/day" hint="Extra km beyond this is charged">
+                          <input className={bigInput} type="number" inputMode="numeric" value={includedKmPerDay} onChange={(e) => setIncludedKmPerDay(e.target.value)} placeholder="100" min={0} />
+                        </BigField>
+                        <BigField label="Extra km charge (LKR/km)"><input className={bigInput} type="number" inputMode="numeric" value={extraMileage} onChange={(e) => setExtraMileage(e.target.value)} placeholder="e.g. 30" min={0} /></BigField>
+                      </div>
+                    )}
+                    <ToggleField label="Delivery available" hint="Deliver the vehicle to the renter for a fee" on={deliveryAvailable} onChange={setDeliveryAvailable} />
+                    {deliveryAvailable && (
+                      <BigField label="Delivery fee (LKR)"><input className={bigInput} type="number" value={deliveryFee} onChange={(e) => setDeliveryFee(e.target.value)} placeholder="e.g. 1500" min={0} /></BigField>
+                    )}
+                    <div className="grid grid-cols-2 gap-3">
+                      <BigField label="Min rental days"><input className={bigInput} type="number" value={minRentalDays} onChange={(e) => setMinRentalDays(e.target.value)} min={1} /></BigField>
+                      <BigField label="Max rental days"><input className={bigInput} type="number" value={maxRentalDays} onChange={(e) => setMaxRentalDays(e.target.value)} min={1} placeholder="No limit" /></BigField>
+                    </div>
+                  </div>
+
+                  {/* Deposit & fees */}
+                  <div className="space-y-3">
+                    <SectionHeading>Deposit &amp; fees</SectionHeading>
+                    <BigField label="Refundable deposit (LKR)" hint="Held by you, returned after the rental. Leave blank for none.">
+                      <input className={bigInput} type="number" value={deposit} onChange={(e) => setDeposit(e.target.value)} placeholder="0" min={0} step={1000} />
+                    </BigField>
+                    <div className="grid grid-cols-2 gap-3">
+                      <BigField label="Cleaning fee" hint="Only if it comes back excessively dirty. Blank means no fee, and Rs. 10,000 is the most you can charge.">
+                        <input className={bigInput} type="number" value={cleaningFee} onChange={(e) => setCleaningFee(e.target.value)} placeholder="0" min={0} max={10000} step={500} />
+                      </BigField>
+                      <BigField label="Refuel service fee" hint="Only if it comes back with less fuel. Blank means no fee.">
+                        <input className={bigInput} type="number" value={refuelFee} onChange={(e) => setRefuelFee(e.target.value)} placeholder="0" min={0} step={100} />
+                      </BigField>
+                    </div>
+                    <BigField label="Late fee per hour"><input className={bigInput} type="number" value={lateFeePerHour} onChange={(e) => setLateFeePerHour(e.target.value)} min={0} placeholder="No fee when blank" /></BigField>
+                  </div>
+
+                  {/* Renter requirements */}
+                  <div className="space-y-3">
+                    <SectionHeading>Renter requirements</SectionHeading>
+                    <div className="grid grid-cols-2 gap-3">
+                      <BigField label="Min age"><input className={bigInput} type="number" value={minRenterAge} onChange={(e) => setMinRenterAge(e.target.value)} min={18} max={40} /></BigField>
+                      <BigField label="Min years holding licence (you check at handover)"><input className={bigInput} type="number" value={minLicenseYears} onChange={(e) => setMinLicenseYears(e.target.value)} min={0} /></BigField>
+                    </div>
+                  </div>
+
+                  {/* With-driver terms */}
+                  {withDriver && (
+                    <div className="space-y-3">
+                      <SectionHeading>With-driver terms</SectionHeading>
+                      <div className="grid grid-cols-2 gap-3">
+                        <BigField label="Per-km rate"><input className={bigInput} type="number" value={perKmRate} onChange={(e) => setPerKmRate(e.target.value)} min={0} placeholder="e.g. 60" /></BigField>
+                        <BigField label="Driver overnight allowance (Rs/night)"><input className={bigInput} type="number" value={driverBata} onChange={(e) => setDriverBata(e.target.value)} min={0} placeholder="2000" /></BigField>
+                      </div>
+                      <div>
+                        <p className="text-slate-600 text-sm mb-2">Tolls included in price?</p>
+                        <div className="grid grid-cols-2 gap-2">
+                          {([[true, "Yes"], [false, "No"]] as const).map(([v, l]) => (
+                            <button key={l} type="button" onClick={() => setTollsIncluded(v)}
+                              className={`min-h-11 rounded-xl border-2 font-semibold text-sm ${tollsIncluded === v ? "bg-blue-50 border-blue-500 text-blue-700" : "bg-white border-slate-200 text-slate-500"}`}>{l}</button>
+                          ))}
+                        </div>
+                      </div>
+                    </div>
+                  )}
+
+                  {/* House rules */}
+                  <div className="space-y-2">
+                    <SectionHeading>House rules</SectionHeading>
+                    <ToggleField label="Smoking allowed" on={smokingAllowed} onChange={setSmokingAllowed} />
+                    <ToggleField label="Pets allowed" on={petsAllowed} onChange={setPetsAllowed} />
+                    <ToggleField label="Ride-hail / commercial use allowed" on={rideHailAllowed} onChange={setRideHailAllowed} />
+                    {selfDrive && (
+                      <p className="rounded-lg border border-blue-200 bg-blue-50 p-3 text-xs leading-5 text-blue-900">
+                        Self-drive is limited to the verified account holder named on the booking. Additional renter-drivers are not supported at launch.
+                      </p>
+                    )}
+                    <div className="pt-1">
+                      <p className="text-slate-600 text-sm mb-2">Not allowed:</p>
+                      <div className="flex flex-wrap gap-1.5">
+                        {RESTRICTED_USE_OPTIONS.map(({ value, label }) => {
+                          const on = restrictedUse.includes(value);
+                          return (
+                            <button key={value} type="button"
+                              onClick={() => setRestrictedUse((r) => on ? r.filter((v) => v !== value) : [...r, value])}
+                              className={`inline-flex min-h-11 items-center gap-1.5 px-3.5 rounded-full border text-sm font-medium transition-all ${on ? "bg-blue-50 border-blue-500 text-blue-700" : "bg-white border-slate-200 text-slate-500 hover:bg-slate-50"}`}>
+                              {on && <Check size={12} />} {label}
+                            </button>
+                          );
+                        })}
                       </div>
                     </div>
                   </div>
-                )}
 
-                {/* House rules */}
-                <div className="space-y-2">
-                  <SectionHeading>House rules</SectionHeading>
-                  <ToggleField label="Smoking allowed" on={smokingAllowed} onChange={setSmokingAllowed} />
-                  <ToggleField label="Pets allowed" on={petsAllowed} onChange={setPetsAllowed} />
-                  <ToggleField label="Ride-hail / commercial use allowed" on={rideHailAllowed} onChange={setRideHailAllowed} />
-                  {selfDrive && (
-                    <p className="rounded-lg border border-blue-200 bg-blue-50 p-3 text-xs leading-5 text-blue-900">
-                      Self-drive is limited to the verified account holder named on the booking. Additional renter-drivers are not supported at launch.
+                  {/* Disclosures */}
+                  <div className="space-y-2">
+                    <SectionHeading>Disclosures</SectionHeading>
+                    <ToggleField label="GPS tracker fitted" hint="Shown on your listing, so renters know before they request" on={hasGpsTracker} onChange={setHasGpsTracker} />
+                    <ToggleField label="ETC expressway tag fitted" hint="Tag charges during a rental are billed to the renter" on={hasEtcTag} onChange={setHasEtcTag} />
+                  </div>
+
+                  <div>
+                    <p className="text-slate-600 text-sm mb-0.5">Features</p>
+                    <p className="text-slate-400 text-xs mb-2">Tap everything this vehicle has.</p>
+                    <PresetPicker presets={FEATURE_PRESETS} value={features} onChange={setFeatures} addPlaceholder="Add another feature" />
+                  </div>
+                  <div>
+                    <p className="text-slate-600 text-sm mb-0.5">Handover rules</p>
+                    <p className="text-slate-400 text-xs mb-2">Tap the rules that apply, renters see these on the listing.</p>
+                    <PresetPicker presets={RULE_PRESETS} value={rules} onChange={setRules} addPlaceholder="Add your own rule" />
+                  </div>
+                  <div>
+                    <p className="text-slate-600 text-sm mb-0.5">Documents</p>
+                    <p className="text-slate-400 text-xs mb-2">
+                      Add all three when you are ready to apply for the Verified Vehicle badge.
                     </p>
-                  )}
-                  <div className="pt-1">
-                    <p className="text-slate-600 text-sm mb-2">Not allowed:</p>
-                    <div className="flex flex-wrap gap-1.5">
-                      {RESTRICTED_USE_OPTIONS.map(({ value, label }) => {
-                        const on = restrictedUse.includes(value);
-                        return (
-                          <button key={value} type="button"
-                            onClick={() => setRestrictedUse((r) => on ? r.filter((v) => v !== value) : [...r, value])}
-                            className={`inline-flex min-h-11 items-center gap-1.5 px-3.5 rounded-full border text-sm font-medium transition-all ${on ? "bg-blue-50 border-blue-500 text-blue-700" : "bg-white border-slate-200 text-slate-500 hover:bg-slate-50"}`}>
-                            {on && <Check size={12} />} {label}
-                          </button>
-                        );
-                      })}
+                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                      <DocPick label="Registration (CR)" file={crFile} onPick={setCrFile} />
+                      <DocPick label="Insurance" file={insuranceFile} onPick={setInsuranceFile} />
+                      <DocPick label="Revenue licence" file={revenueLicenseFile} onPick={setRevenueLicenseFile} />
                     </div>
+                    <p className="text-slate-400 text-xs mt-1.5">Documents are private, only DriveLink admins see them.</p>
                   </div>
                 </div>
+              )}
+            </div>
 
-                {/* Disclosures */}
-                <div className="space-y-2">
-                  <SectionHeading>Disclosures</SectionHeading>
-                  <ToggleField label="GPS tracker fitted" hint="Shown on your listing, so renters know before they request" on={hasGpsTracker} onChange={setHasGpsTracker} />
-                  <ToggleField label="ETC expressway tag fitted" hint="Tag charges during a rental are billed to the renter" on={hasEtcTag} onChange={setHasEtcTag} />
+            {canDeclareListingAuthority ? (
+              <fieldset className="space-y-3 rounded-xl ring-1 ring-slate-900/[0.06] p-4">
+                <legend className="px-1 text-sm font-semibold text-slate-900">Your right to list this vehicle</legend>
+                <p className="text-xs leading-5 text-slate-600">Choose the true statement. DriveLink may ask for supporting proof.</p>
+                <div className="grid gap-2 sm:grid-cols-2">
+                  {([
+                    ["registered_owner", "Owned by this page's operator"],
+                    ["authorized_operator", "Listed with the registered owner's authority"],
+                  ] as const).map(([value, label]) => (
+                    <button key={value} type="button" onClick={() => setAuthorityBasis(value)}
+                      className={`rounded-xl border px-3 py-3 text-left text-xs font-semibold ${authorityBasis === value ? "border-blue-500 bg-blue-50 text-blue-800" : "border-slate-200 bg-white text-slate-700"}`}>
+                      {label}
+                    </button>
+                  ))}
                 </div>
-
-                <div>
-                  <p className="text-slate-600 text-sm mb-0.5">Features</p>
-                  <p className="text-slate-400 text-xs mb-2">Tap everything this vehicle has.</p>
-                  <PresetPicker presets={FEATURE_PRESETS} value={features} onChange={setFeatures} addPlaceholder="Add another feature" />
-                </div>
-                <div>
-                  <p className="text-slate-600 text-sm mb-0.5">Handover rules</p>
-                  <p className="text-slate-400 text-xs mb-2">Tap the rules that apply, renters see these on the listing.</p>
-                  <PresetPicker presets={RULE_PRESETS} value={rules} onChange={setRules} addPlaceholder="Add your own rule" />
-                </div>
-                <div>
-                  <p className="text-slate-600 text-sm mb-0.5">Documents</p>
-                  <p className="text-slate-400 text-xs mb-2">
-                    Add all three when you are ready to apply for the Verified Vehicle badge.
-                  </p>
-                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-                    <DocPick label="Registration (CR)" file={crFile} onPick={setCrFile} />
-                    <DocPick label="Insurance" file={insuranceFile} onPick={setInsuranceFile} />
-                    <DocPick label="Revenue licence" file={revenueLicenseFile} onPick={setRevenueLicenseFile} />
-                  </div>
-                  <p className="text-slate-400 text-xs mt-1.5">Documents are private, only DriveLink admins see them.</p>
-                </div>
+                <label className="flex cursor-pointer items-start gap-3 rounded-xl border border-slate-200 p-3 text-xs leading-5 text-slate-700">
+                  <input type="checkbox" checked={authorityDeclared} onChange={(e) => setAuthorityDeclared(e.target.checked)} className="mt-0.5 h-4 w-4 accent-blue-600" />
+                  <span>I confirm this Rental Page has the legal right to offer this vehicle for the rental modes shown, and the details are accurate.</span>
+                </label>
+              </fieldset>
+            ) : adminDraft ? (
+              <div className="rounded-xl border border-blue-200 bg-blue-50 p-4 text-sm leading-6 text-blue-950">
+                This is saved as a private draft on {adminDraft.pageName}. The owner gets a message, checks the details,
+                confirms their right to list it and submits it. Nothing is shown to renters until then.
+              </div>
+            ) : (
+              <div className="rounded-xl border border-amber-200 bg-amber-50 p-4 text-sm leading-6 text-amber-950">
+                This will be saved privately for a Rental Page owner or manager to review. Only they can confirm the page&apos;s right to list the vehicle and send it to DriveLink.
               </div>
             )}
+            {canDeclareListingAuthority && (
+              <p className="text-slate-500 text-xs">
+                New listings are usually checked within 24 hours, and we text you the moment yours is live. Once one listing is
+                approved, your next ones go live as soon as you submit them.
+              </p>
+            )}
           </div>
-
-          {canDeclareListingAuthority ? (
-            <fieldset className="space-y-3 rounded-xl border border-slate-200 bg-white p-4">
-              <legend className="px-1 text-sm font-semibold text-slate-900">Your right to list this vehicle</legend>
-              <p className="text-xs leading-5 text-slate-600">Choose the true statement. DriveLink may ask for supporting proof.</p>
-              <div className="grid gap-2 sm:grid-cols-2">
-                {([
-                  ["registered_owner", "Owned by this page's operator"],
-                  ["authorized_operator", "Listed with the registered owner's authority"],
-                ] as const).map(([value, label]) => (
-                  <button key={value} type="button" onClick={() => setAuthorityBasis(value)}
-                    className={`rounded-xl border px-3 py-3 text-left text-xs font-semibold ${authorityBasis === value ? "border-blue-500 bg-blue-50 text-blue-800" : "border-slate-200 bg-white text-slate-700"}`}>
-                    {label}
-                  </button>
-                ))}
-              </div>
-              <label className="flex cursor-pointer items-start gap-3 rounded-xl border border-slate-200 p-3 text-xs leading-5 text-slate-700">
-                <input type="checkbox" checked={authorityDeclared} onChange={(e) => setAuthorityDeclared(e.target.checked)} className="mt-0.5 h-4 w-4 accent-blue-600" />
-                <span>I confirm this Rental Page has the legal right to offer this vehicle for the rental modes shown, and the details are accurate.</span>
-              </label>
-            </fieldset>
-          ) : adminDraft ? (
-            <div className="rounded-xl border border-blue-200 bg-blue-50 p-4 text-sm leading-6 text-blue-950">
-              This is saved as a private draft on {adminDraft.pageName}. The owner gets a message, checks the details,
-              confirms their right to list it and submits it. Nothing is shown to renters until then.
-            </div>
-          ) : (
-            <div className="rounded-xl border border-amber-200 bg-amber-50 p-4 text-sm leading-6 text-amber-950">
-              This will be saved privately for a Rental Page owner or manager to review. Only they can confirm the page&apos;s right to list the vehicle and send it to DriveLink.
-            </div>
-          )}
-          {canDeclareListingAuthority && (
-            <p className="text-slate-500 text-xs">
-              New listings are usually checked within 24 hours, and we text you the moment yours is live. Once one listing is
-              approved, your next ones go live as soon as you submit them.
-            </p>
-          )}
-        </div>
-      )}
-
-      {error && (
-        <p ref={errorRef} role="alert" className="text-rose-600 text-sm font-medium mt-4">{error}</p>
-      )}
-
-      {uploadProgress && (
-        <div role="status" className="mt-4 rounded-xl border border-blue-200 bg-blue-50 p-3">
-          <p className="text-sm font-medium text-blue-900">
-            Uploading photo {Math.min(uploadProgress.done + 1, uploadProgress.total)} of {uploadProgress.total}
-          </p>
-          <div className="mt-2 h-1.5 overflow-hidden rounded-full bg-blue-200">
-            <div
-              className="h-full rounded-full bg-blue-600 transition-all"
-              style={{ width: `${uploadProgress.total ? (uploadProgress.done / uploadProgress.total) * 100 : 0}%` }}
-            />
-          </div>
-          <p className="mt-1.5 text-xs text-blue-900/80">Keep this screen open until it finishes.</p>
-        </div>
-      )}
-
-      {/* Nav */}
-      <div className="flex items-center justify-between gap-3 mt-7">
-        <button type="button" onClick={back} disabled={step === 0 || loading}
-          className="inline-flex min-h-11 items-center gap-1.5 px-4 rounded-xl text-sm font-semibold text-slate-600 hover:bg-slate-100 disabled:opacity-40 transition-colors">
-          <ChevronLeft size={16} /> Back
-        </button>
-        {step < LAST_STEP ? (
-          <button type="button" onClick={next}
-            className="inline-flex min-h-11 items-center gap-1.5 px-6 rounded-xl text-sm font-bold bg-blue-600 hover:bg-blue-700 text-white shadow-sm transition-colors">
-            Next <ChevronRight size={16} />
-          </button>
-        ) : (
-          <button type="button" onClick={submit} disabled={loading}
-            className="inline-flex min-h-11 items-center gap-1.5 px-6 rounded-xl text-sm font-bold bg-blue-600 hover:bg-blue-700 text-white shadow-sm disabled:opacity-50 transition-colors">
-            {loading ? "Saving…" : submitLabel}
-          </button>
         )}
+
+        {error && (
+          <p ref={errorRef} role="alert" className="text-rose-600 text-sm font-medium mt-5">{error}</p>
+        )}
+
+        {uploadProgress && (
+          <div role="status" className="mt-5 rounded-xl border border-blue-200 bg-blue-50 p-3">
+            <p className="text-sm font-medium text-blue-900">
+              Uploading photo {Math.min(uploadProgress.done + 1, uploadProgress.total)} of {uploadProgress.total}
+            </p>
+            <div className="mt-2 h-1.5 overflow-hidden rounded-full bg-blue-200">
+              <div
+                className="h-full rounded-full bg-blue-600 transition-all"
+                style={{ width: `${uploadProgress.total ? (uploadProgress.done / uploadProgress.total) * 100 : 0}%` }}
+              />
+            </div>
+            <p className="mt-1.5 text-xs text-blue-900/80">Keep this screen open until it finishes.</p>
+          </div>
+        )}
+
+        {/* Nav: on phones this docks to the bottom of the viewport (above the
+            tab bar) while this step's card is in view, styled as if it were
+            the card's own footer. On desktop it is simply the last row in
+            the card. */}
+        <div className="sticky bottom-[calc(5.5rem+env(safe-area-inset-bottom))] z-10 -mx-5 mt-7 flex items-center justify-between gap-3 border-t border-slate-100 bg-white/95 px-5 py-4 backdrop-blur-sm sm:-mx-8 sm:px-8 md:static md:mx-0 md:border-t-0 md:bg-transparent md:px-0 md:pb-0 md:pt-6 md:backdrop-blur-none">
+          <button type="button" onClick={back} disabled={step === 0 || loading}
+            className="inline-flex min-h-11 items-center gap-1.5 px-4 rounded-xl text-sm font-semibold text-slate-600 hover:bg-slate-100 disabled:opacity-40 transition-colors">
+            <ChevronLeft size={16} /> Back
+          </button>
+          {step < LAST_STEP ? (
+            <button type="button" onClick={next}
+              className="inline-flex min-h-11 items-center gap-1.5 px-6 rounded-xl text-sm font-bold bg-blue-600 hover:bg-blue-700 text-white shadow-sm transition-colors">
+              Next <ChevronRight size={16} />
+            </button>
+          ) : (
+            <button type="button" onClick={submit} disabled={loading}
+              className="inline-flex min-h-11 items-center gap-1.5 px-6 rounded-xl text-sm font-bold bg-blue-600 hover:bg-blue-700 text-white shadow-sm disabled:opacity-50 transition-colors">
+              {loading ? "Saving…" : submitLabel}
+            </button>
+          )}
+        </div>
       </div>
     </div>
   );
@@ -957,6 +984,33 @@ function ToggleField({ label, hint, on, onChange }: { label: string; hint?: stri
       <span className={`shrink-0 w-10 h-6 rounded-full relative transition-colors ${on ? "bg-blue-600" : "bg-slate-300"}`}>
         <span className={`absolute top-0.5 left-0.5 w-5 h-5 rounded-full bg-white shadow transition-transform ${on ? "translate-x-4" : ""}`} />
       </span>
+    </button>
+  );
+}
+
+// A large selectable card for a single choice (vehicle type, fuel,
+// transmission, rental mode, insurance): icon (optional), label, and a
+// checkmark badge when selected, so the chosen option is never signalled by
+// colour alone.
+function OptionTile({
+  active, onClick, label, icon, className = "",
+}: { active: boolean; onClick: () => void; label: string; icon?: React.ReactNode; className?: string }) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      aria-pressed={active}
+      className={`spring-press relative flex min-h-11 flex-col items-center justify-center gap-1.5 rounded-2xl border-2 px-2 py-4 text-center text-sm font-semibold transition-all ${
+        active ? "border-blue-500 bg-blue-50 text-blue-700" : "border-slate-200 bg-white text-slate-500 hover:border-slate-300 hover:bg-slate-50"
+      } ${className}`}
+    >
+      {active && (
+        <span className="absolute right-1.5 top-1.5 grid h-5 w-5 place-items-center rounded-full bg-blue-600 text-white">
+          <Check size={11} strokeWidth={3} aria-hidden="true" />
+        </span>
+      )}
+      {icon}
+      <span>{label}</span>
     </button>
   );
 }
