@@ -4,6 +4,11 @@ import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { X } from "lucide-react";
 import { Button } from "@/components/ui/Button";
+import { Input } from "@/components/ui/Input";
+import { Field } from "@/components/ui/Field";
+import { Select } from "@/components/ui/Select";
+import { Portal } from "@/components/ui/Portal";
+import { useEscapeLayer } from "@/components/ui/useEscapeLayer";
 import { PhoneInput } from "@/components/ui/PhoneInput";
 import { toLocalSL } from "@/lib/auth/phone-format";
 
@@ -22,7 +27,7 @@ interface Props {
 
 const ROLES = [
   { value: "renter",       label: "Renter" },
-  { value: "agency_owner", label: "Agency owner" },
+  { value: "agency_owner", label: "Rental Page owner" },
   { value: "admin",        label: "Admin" },
 ] as const;
 
@@ -38,10 +43,9 @@ export function EditRenterModal({ userId, initial, onClose }: Props) {
   useEffect(() => {
     const prev = document.body.style.overflow;
     document.body.style.overflow = "hidden";
-    function onKey(e: KeyboardEvent) { if (e.key === "Escape") onClose(); }
-    window.addEventListener("keydown", onKey);
-    return () => { document.body.style.overflow = prev; window.removeEventListener("keydown", onKey); };
-  }, [onClose]);
+    return () => { document.body.style.overflow = prev; };
+  }, []);
+  useEscapeLayer(onClose);
 
   async function submit(e: React.FormEvent) {
     e.preventDefault();
@@ -67,65 +71,54 @@ export function EditRenterModal({ userId, initial, onClose }: Props) {
   }
 
   return (
-    <div className="fixed inset-0 z-50 bg-black/70 flex items-center justify-center p-4" onClick={onClose}>
-      <div className="animate-bounce-in glass-card rounded-3xl w-full max-w-md p-5" onClick={(e) => e.stopPropagation()}>
-        <div className="flex items-start justify-between mb-4">
-          <h2 className="text-slate-900 font-semibold">Edit user</h2>
-          <button type="button" onClick={onClose} className="text-slate-500 hover:text-slate-900" aria-label="Close">
-            <X size={18} />
-          </button>
+    <Portal>
+      <div className="animate-fade-in fixed inset-0 z-[60] flex items-end justify-center bg-slate-950/40 p-3 backdrop-blur-[2px] sm:items-center sm:p-6" onClick={onClose}>
+        <div
+          role="dialog"
+          aria-modal="true"
+          className="animate-scale-in max-h-[88dvh] w-full max-w-md overflow-y-auto rounded-3xl bg-white p-6 shadow-2xl ring-1 ring-slate-900/[0.06]"
+          onClick={(e) => e.stopPropagation()}
+        >
+          <div className="mb-4 flex items-start justify-between">
+            <h2 className="text-base font-semibold text-slate-950">Edit renter</h2>
+            <button type="button" onClick={onClose} className="grid h-9 w-9 shrink-0 place-items-center rounded-full text-slate-500 transition-colors hover:bg-slate-100 hover:text-slate-950" aria-label="Close">
+              <X size={18} />
+            </button>
+          </div>
+
+          <form onSubmit={submit} className="space-y-4">
+            <Field label="Full name" required>
+              {(f) => <Input {...f} type="text" value={fullName} onChange={(e) => setFullName(e.target.value)} required autoFocus />}
+            </Field>
+
+            <div>
+              <label className="mb-1.5 block text-sm font-medium text-slate-800">Mobile number</label>
+              <PhoneInput value={phone} onChange={setPhone} required />
+            </div>
+
+            <Field label="Email" hint="Blank means phone-only.">
+              {(f) => <Input {...f} type="email" value={email} onChange={(e) => setEmail(e.target.value)} placeholder="you@example.com" />}
+            </Field>
+
+            <div>
+              <label className="mb-1.5 block text-sm font-medium text-slate-800">Role</label>
+              <Select value={role} onChange={(v) => setRole(v as Initial["role"])} options={ROLES} label="Role" />
+              {role !== initial.role && (
+                <p className="mt-1.5 text-xs font-medium text-blue-700">
+                  Role change, this affects what they can do. Confirm before saving.
+                </p>
+              )}
+            </div>
+
+            {error && <p className="text-sm font-medium text-rose-700">{error}</p>}
+
+            <div className="flex flex-col-reverse gap-2 pt-1 sm:flex-row sm:justify-end">
+              <Button type="button" variant="secondary" onClick={onClose}>Cancel</Button>
+              <Button type="submit" loading={loading}>Save</Button>
+            </div>
+          </form>
         </div>
-
-        <form onSubmit={submit} className="space-y-3">
-          <div>
-            <label className="text-slate-700 text-xs mb-1 block">Full name</label>
-            <input
-              type="text" value={fullName} onChange={(e) => setFullName(e.target.value)}
-              required autoFocus
-              className={inputClass}
-            />
-          </div>
-          <div>
-            <label className="text-slate-700 text-xs mb-1 block">Mobile number</label>
-            <PhoneInput value={phone} onChange={setPhone} required />
-          </div>
-          <div>
-            <label className="text-slate-700 text-xs mb-1 block">
-              Email <span className="text-slate-400 font-normal">(blank = phone-only)</span>
-            </label>
-            <input
-              type="email" value={email} onChange={(e) => setEmail(e.target.value)}
-              placeholder="you@example.com"
-              className={inputClass}
-            />
-          </div>
-          <div>
-            <label className="text-slate-700 text-xs mb-1 block">Role</label>
-            <select
-              value={role}
-              onChange={(e) => setRole(e.target.value as Initial["role"])}
-              className={inputClass}
-            >
-              {ROLES.map((r) => <option key={r.value} value={r.value}>{r.label}</option>)}
-            </select>
-            {role !== initial.role && (
-              <p className="text-blue-600 text-xs mt-1">
-                Role change, this affects what they can do. Confirm before saving.
-              </p>
-            )}
-          </div>
-
-          {error && <p className="text-rose-600 text-sm">{error}</p>}
-
-          <div className="flex gap-2 justify-end pt-2">
-            <Button type="button" size="sm" variant="ghost" onClick={onClose}>Cancel</Button>
-            <Button type="submit" size="sm" loading={loading}>Save</Button>
-          </div>
-        </form>
       </div>
-    </div>
+    </Portal>
   );
 }
-
-const inputClass =
-  "w-full px-3 py-2 bg-slate-100 border border-slate-200 rounded-lg text-slate-900 placeholder-slate-400 text-sm focus:border-blue-500";

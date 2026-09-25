@@ -3,6 +3,9 @@ import {
   Activity, CheckCircle2, XCircle, AlertCircle, Pencil, Trash2, Star,
   Receipt, FileCheck, FileX, Car, Calendar, ShieldCheck, MousePointerClick,
 } from "lucide-react";
+import { Card } from "@/components/ui/Card";
+import { EmptyState } from "@/components/ui/EmptyState";
+import { formatDay, sriLankaDayKey, formatInstantClock } from "@/lib/dates/display";
 
 export interface ActivityEvent {
   id:                  string;
@@ -67,13 +70,13 @@ function renderEvent(e: ActivityEvent): EventRender {
         detail: typeof m.start_date === "string" ? `${m.start_date} → ${m.end_date} (${m.days} days)` : undefined,
       };
     case "booking.pending_confirmation":
-      return { Icon: Calendar, tone: "amber", title: "Booking awaiting agency confirmation" };
+      return { Icon: Calendar, tone: "amber", title: "Booking awaiting Rental Page confirmation" };
     case "booking.confirmed":
-      return { Icon: CheckCircle2, tone: "emerald", title: "Agency confirmed the booking" };
+      return { Icon: CheckCircle2, tone: "emerald", title: "Rental Page confirmed the booking" };
     case "booking.declined":
       return {
         Icon: XCircle, tone: "red",
-        title: "Agency declined the booking",
+        title: "Rental Page declined the booking",
         detail: typeof m.reason === "string" ? m.reason : undefined,
       };
     case "booking.cancelled":
@@ -109,11 +112,11 @@ function renderEvent(e: ActivityEvent): EventRender {
     case "admin.agency_edited":
       return {
         Icon: Pencil, tone: "slate",
-        title: "Admin edited the agency's details",
+        title: "Admin edited the Rental Page's details",
         detail: Array.isArray(m.fields) ? `Changed: ${(m.fields as string[]).join(", ")}` : undefined,
       };
     case "admin.agency_deleted":
-      return { Icon: Trash2, tone: "red", title: "Admin soft-deleted this agency" };
+      return { Icon: Trash2, tone: "red", title: "Admin soft-deleted this Rental Page" };
 
     // ─── KYC events ───────────────────────────────────────────
     case "kyc.verified":
@@ -136,22 +139,34 @@ function renderEvent(e: ActivityEvent): EventRender {
   }
 }
 
+// One meaning per colour, matching the rest of the product: emerald done,
+// amber needs attention, rose a real risk, blue a plain action, slate neutral.
 const TONE_STYLES = {
-  slate:   { icon: "text-slate-600",   bg: "bg-slate-100" },
-  emerald: { icon: "text-emerald-700", bg: "bg-emerald-50" },
-  amber:   { icon: "text-blue-600",   bg: "bg-blue-50" },
-  red:     { icon: "text-rose-600",     bg: "bg-rose-50" },
-  blue:    { icon: "text-blue-400",    bg: "bg-blue-50" },
+  slate:   { icon: "text-slate-600",   bg: "bg-slate-100",  ring: "ring-slate-200" },
+  emerald: { icon: "text-emerald-700", bg: "bg-emerald-50", ring: "ring-emerald-100" },
+  amber:   { icon: "text-amber-700",   bg: "bg-amber-50",   ring: "ring-amber-100" },
+  red:     { icon: "text-rose-700",    bg: "bg-rose-50",    ring: "ring-rose-100" },
+  blue:    { icon: "text-blue-700",    bg: "bg-blue-50",    ring: "ring-blue-100" },
 } as const;
 
 const ROLE_LABEL: Record<string, string> = {
   renter:       "Renter",
-  agency_owner: "Agency",
+  agency_owner: "Rental Page",
   admin:        "Admin",
   system:       "System",
 };
 
-function BrowsingRow({ event }: { event: BrowsingEvent }) {
+/** "2026-09-20T10:00:00.000Z" -> "2026-09-20", the grouping key for a day heading. */
+function dayKeyOf(iso: string): string {
+  return sriLankaDayKey(iso);
+}
+
+/** "2026-09-20T10:00:00.000Z" -> "10:00:00", fed to formatClock. */
+function clockOf(iso: string): string {
+  return formatInstantClock(iso);
+}
+
+function BrowsingRow({ event, last }: { event: BrowsingEvent; last?: boolean }) {
   const label = BROWSING_LABEL[event.event_name] ?? event.event_name;
   // Where the visit came from: a campaign beats a referrer, a referrer beats
   // the coarse category, and "direct" is what is left.
@@ -166,26 +181,49 @@ function BrowsingRow({ event }: { event: BrowsingEvent }) {
   const device = [event.device_type, event.browser_family].filter(Boolean).join(" · ");
 
   return (
-    <li className="flex gap-3">
-      <div className="shrink-0 w-9 h-9 rounded-full flex items-center justify-center bg-slate-100">
-        <MousePointerClick size={15} className="text-slate-500" />
-      </div>
+    <li className="relative flex gap-3.5 pb-5 last:pb-0">
+      {!last && <span aria-hidden="true" className="absolute left-[15px] top-8 bottom-0 w-px bg-slate-200" />}
+      <span className="relative z-10 mt-0.5 grid h-8 w-8 shrink-0 place-items-center rounded-full bg-slate-100 text-slate-500 ring-4 ring-white">
+        <MousePointerClick size={14} aria-hidden="true" />
+      </span>
       <div className="min-w-0 flex-1 rounded-xl border border-dashed border-slate-200 bg-slate-50/60 px-4 py-2.5">
         <div className="flex flex-wrap items-start justify-between gap-x-3 gap-y-0.5">
           <p className="min-w-0 break-words text-sm text-slate-700">{label}</p>
-          <p className="font-mono text-xs text-slate-400">
-            {new Date(event.created_at).toLocaleString("en-LK", {
-              month: "short", day: "numeric", hour: "2-digit", minute: "2-digit",
-            })}
-          </p>
+          <p className="tabular shrink-0 text-xs text-slate-400">{clockOf(event.created_at)}</p>
         </div>
         {event.path && <p className="mt-0.5 w-full truncate font-mono text-xs text-slate-500">{event.path}</p>}
         <div className="mt-1 flex flex-wrap items-center gap-x-3 gap-y-0.5 text-xs text-slate-500">
           <span>{origin}</span>
           {device && <span>{device}</span>}
           {event.country_code && <span>{event.country_code}</span>}
-          {event.session_id && (
-            <span className="font-mono text-slate-400">session {event.session_id.slice(0, 8)}</span>
+          {event.session_id && <span className="font-mono text-slate-400">session {event.session_id.slice(0, 8)}</span>}
+        </div>
+      </div>
+    </li>
+  );
+}
+
+function ActionRow({ event, last }: { event: ActivityEvent; last?: boolean }) {
+  const r = renderEvent(event);
+  const tone = TONE_STYLES[r.tone];
+  return (
+    <li className="relative flex gap-3.5 pb-5 last:pb-0">
+      {!last && <span aria-hidden="true" className="absolute left-[15px] top-8 bottom-0 w-px bg-slate-200" />}
+      <span className={`relative z-10 mt-0.5 grid h-8 w-8 shrink-0 place-items-center rounded-full ring-4 ring-white ${tone.bg}`}>
+        <r.Icon size={15} className={tone.icon} />
+      </span>
+      <div className="min-w-0 flex-1 rounded-xl bg-white px-4 py-3 ring-1 ring-slate-900/[0.06]">
+        <div className="flex flex-wrap items-start justify-between gap-x-3 gap-y-0.5">
+          <p className="min-w-0 break-words text-sm font-medium text-slate-900">{r.title}</p>
+          <p className="tabular shrink-0 text-xs text-slate-400">{clockOf(event.created_at)}</p>
+        </div>
+        {r.detail && <p className="mt-1 text-xs leading-5 text-slate-600">{r.detail}</p>}
+        <div className="mt-1.5 flex items-center gap-3 text-xs">
+          {event.actor_role && <span className="text-slate-500">By {ROLE_LABEL[event.actor_role] ?? event.actor_role}</span>}
+          {event.related_booking_id && (
+            <Link href="/admin/bookings" className="font-mono text-blue-700 hover:text-blue-800">
+              {event.related_booking_id.slice(0, 8).toUpperCase()}
+            </Link>
           )}
         </div>
       </div>
@@ -209,51 +247,37 @@ export function ActivityTimeline({
 
   if (merged.length === 0) {
     return (
-      <div className="bg-white border border-slate-200 rounded-2xl shadow-sm p-12 text-center text-slate-500 text-sm">
-        No activity recorded yet.
-      </div>
+      <Card padding="lg">
+        <EmptyState bare icon={<Activity size={22} className="text-slate-400" strokeWidth={1.5} />} title="No activity recorded yet" />
+      </Card>
     );
   }
 
+  // Grouped by calendar day, newest day first, so a reviewer can scan "what
+  // happened on this day" instead of assembling a flat list themselves.
+  const days: { key: string; items: typeof merged }[] = [];
+  for (const item of merged) {
+    const key = dayKeyOf(item.at);
+    const group = days[days.length - 1]?.key === key ? days[days.length - 1] : undefined;
+    if (group) group.items.push(item);
+    else days.push({ key, items: [item] });
+  }
+
   return (
-    <ol className="space-y-3">
-      {merged.map((item) => {
-        if (item.kind === "browse") return <BrowsingRow key={item.browse!.id} event={item.browse!} />;
-        const e = item.action!;
-        const r = renderEvent(e);
-        const tone = TONE_STYLES[r.tone];
-        return (
-          <li key={e.id} className="flex gap-3">
-            <div className={`shrink-0 w-9 h-9 rounded-full flex items-center justify-center ${tone.bg}`}>
-              <r.Icon size={16} className={tone.icon} />
-            </div>
-            <div className="min-w-0 flex-1 bg-white border border-slate-100 rounded-xl px-4 py-3">
-              <div className="flex flex-wrap items-start justify-between gap-x-3 gap-y-0.5">
-                <p className="min-w-0 break-words text-slate-900 text-sm font-medium">{r.title}</p>
-                <p className="text-slate-400 text-xs font-mono">
-                  {new Date(e.created_at).toLocaleString("en-LK", {
-                    month: "short", day: "numeric", hour: "2-digit", minute: "2-digit",
-                  })}
-                </p>
-              </div>
-              {r.detail && <p className="text-slate-600 text-xs mt-1">{r.detail}</p>}
-              <div className="flex items-center gap-3 mt-1.5 text-xs">
-                {e.actor_role && (
-                  <span className="text-slate-500">By {ROLE_LABEL[e.actor_role] ?? e.actor_role}</span>
-                )}
-                {e.related_booking_id && (
-                  <Link
-                    href={`/admin/bookings`}
-                    className="text-blue-600 hover:text-blue-500 font-mono"
-                  >
-                    {e.related_booking_id.slice(0, 8).toUpperCase()}
-                  </Link>
-                )}
-              </div>
-            </div>
-          </li>
-        );
-      })}
-    </ol>
+    <div className="space-y-7">
+      {days.map((day) => (
+        <div key={day.key}>
+          <p className="mb-3 text-xs font-semibold uppercase tracking-[0.08em] text-slate-400">{formatDay(day.key)}</p>
+          <ol className="relative">
+            {day.items.map((item, i) => {
+              const last = i === day.items.length - 1;
+              return item.kind === "browse"
+                ? <BrowsingRow key={item.browse!.id} event={item.browse!} last={last} />
+                : <ActionRow key={item.action!.id} event={item.action!} last={last} />;
+            })}
+          </ol>
+        </div>
+      ))}
+    </div>
   );
 }

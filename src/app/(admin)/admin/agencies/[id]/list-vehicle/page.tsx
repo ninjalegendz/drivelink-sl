@@ -1,8 +1,6 @@
 import { notFound } from "next/navigation";
-import Link from "next/link";
-import { ArrowLeft } from "lucide-react";
 import { createServiceClient } from "@/lib/supabase/server";
-import { VehicleWizard } from "@/components/dashboard/VehicleWizard";
+import { ListVehicleView } from "@/components/admin/people/ListVehicleView";
 
 interface Props {
   params: Promise<{ id: string }>;
@@ -32,35 +30,13 @@ export default async function AdminDraftListingPage({ params }: Props) {
   } | null;
   if (!page || page.deleted_at) notFound();
 
-  const ownerVerified = page.owner?.kyc_status === "verified";
-
   return (
-    <div>
-      <Link
-        href="/admin/agencies"
-        className="inline-flex min-h-11 items-center gap-1.5 text-sm text-slate-600 hover:text-slate-900 mb-2"
-      >
-        <ArrowLeft size={14} /> Back to Rental Pages
-      </Link>
-
-      <h1 className="text-2xl font-bold text-slate-900 mb-1">Draft a listing for {page.name}</h1>
-      <p className="text-slate-600 text-sm mb-6">
-        Enter what {page.owner?.full_name ?? "the owner"} sent on WhatsApp. It is saved privately on their page, and they
-        confirm and submit it themselves.
-      </p>
-
-      {ownerVerified ? (
-        <VehicleWizard
-          agencyId={page.id}
-          agencyCity={page.city}
-          canDeclareListingAuthority={false}
-          adminDraft={{ pageName: page.name }}
-        />
-      ) : (
-        <div className="max-w-xl rounded-2xl border border-amber-200 bg-amber-50 p-5 text-sm leading-6 text-amber-950">
-          The owner has not finished identity verification, so a listing cannot be drafted on this page yet.
-        </div>
-      )}
-    </div>
+    <ListVehicleView
+      agencyId={page.id}
+      pageName={page.name}
+      agencyCity={page.city}
+      ownerName={page.owner?.full_name ?? null}
+      ownerVerified={page.owner?.kyc_status === "verified"}
+    />
   );
 }

@@ -1,6 +1,5 @@
 import { createServiceClient } from "@/lib/supabase/server";
-import { Badge } from "@/components/ui/Badge";
-import { BlacklistActions } from "@/components/admin/BlacklistActions";
+import { BlacklistView, type BlacklistReportRow } from "@/components/admin/people/BlacklistView";
 
 export default async function AdminBlacklistPage() {
   // Service client: blacklist_reports has RLS enabled with no admin SELECT
@@ -14,50 +13,7 @@ export default async function AdminBlacklistPage() {
     .select("id, reported_nic, reason, approved, created_at, agencies(name), bookings(id)")
     .order("created_at", { ascending: false });
 
-  const reports = (data ?? []) as unknown as {
-    id: string;
-    reported_nic: string;
-    reason: string;
-    approved: boolean | null;
-    created_at: string;
-    agencies: { name: string } | null;
-    bookings: { id: string } | null;
-  }[];
+  const reports = (data ?? []) as unknown as BlacklistReportRow[];
 
-  return (
-    <div>
-      <h1 className="text-2xl font-bold text-slate-900 mb-2">Blacklist Reports</h1>
-      <p className="text-slate-600 text-sm mb-6">
-        Reported by agencies after vehicle damage or theft. Approved NICs are blocked from future bookings.
-      </p>
-
-      <div className="space-y-3">
-        {reports.map((r) => (
-          <div key={r.id} className="bg-white border border-slate-200 rounded-2xl shadow-sm p-4">
-            <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between sm:gap-4">
-              <div className="min-w-0 flex-1">
-                <div className="flex items-center gap-2 mb-1">
-                  <p className="font-mono text-slate-900 font-semibold">{r.reported_nic}</p>
-                  {r.approved === null && <Badge variant="yellow">Pending review</Badge>}
-                  {r.approved === true && <Badge variant="red">Blacklisted</Badge>}
-                  {r.approved === false && <Badge variant="slate">Dismissed</Badge>}
-                </div>
-                <p className="text-slate-600 text-sm">{r.reason}</p>
-                <div className="mt-1 flex flex-wrap gap-x-3 gap-y-0.5 text-xs text-slate-500">
-                  <span>Reported by: {r.agencies?.name ?? "Unknown"}</span>
-                  <span>Booking: {r.bookings?.id?.slice(0, 8).toUpperCase() ?? "-"}</span>
-                  <span>{new Date(r.created_at).toLocaleDateString("en-LK")}</span>
-                </div>
-              </div>
-              {r.approved === null && <BlacklistActions reportId={r.id} reportedNic={r.reported_nic} />}
-            </div>
-          </div>
-        ))}
-
-        {reports.length === 0 && (
-          <div className="text-center py-16 text-slate-500">No blacklist reports.</div>
-        )}
-      </div>
-    </div>
-  );
+  return <BlacklistView reports={reports} />;
 }

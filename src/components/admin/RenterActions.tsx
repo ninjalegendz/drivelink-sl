@@ -5,10 +5,13 @@ import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { Ban, Undo2, Trash2, X, Pencil, Gauge, Activity } from "lucide-react";
 import { Button } from "@/components/ui/Button";
+import { Textarea } from "@/components/ui/Input";
+import { Portal } from "@/components/ui/Portal";
+import { useEscapeLayer } from "@/components/ui/useEscapeLayer";
 import { EditRenterModal } from "@/components/admin/EditRenterModal";
 import { RatingAdjustModal } from "@/components/admin/RatingAdjustModal";
 import { ConfirmDialog } from "@/components/ui/ConfirmDialog";
-import { ADMIN_ACTION_ROW, ADMIN_GHOST_CELL } from "@/components/admin/action-row";
+import { ADMIN_ACTION_ROW, ADMIN_ICON_ACTION } from "@/components/admin/action-row";
 
 interface Props {
   userId:         string;
@@ -35,18 +38,14 @@ export function RenterActions({ userId, fullName, phone, email, role, isBlacklis
   const [editOpen,   setEditOpen]   = useState(false);
   const [ratingOpen, setRatingOpen] = useState(false);
 
-  // Lock body scroll while modal is open + Escape to close
+  // Lock body scroll while the block modal is open.
   useEffect(() => {
     if (!modalOpen) return;
     const prev = document.body.style.overflow;
     document.body.style.overflow = "hidden";
-    function onKey(e: KeyboardEvent) { if (e.key === "Escape") setModalOpen(false); }
-    window.addEventListener("keydown", onKey);
-    return () => {
-      document.body.style.overflow = prev;
-      window.removeEventListener("keydown", onKey);
-    };
+    return () => { document.body.style.overflow = prev; };
   }, [modalOpen]);
+  useEscapeLayer(() => setModalOpen(false), modalOpen);
 
   async function submitBlock(e: React.FormEvent) {
     e.preventDefault();
@@ -117,20 +116,19 @@ export function RenterActions({ userId, fullName, phone, email, role, isBlacklis
   }
 
   return (
-    <div className="flex w-full flex-col items-stretch gap-1 sm:w-auto sm:items-end">
-      <div className={ADMIN_ACTION_ROW}>
-        <Link
-          href={`/admin/users/${userId}/timeline`}
-          className={`inline-flex items-center justify-center gap-1 px-2.5 py-1 text-xs text-slate-600 hover:text-blue-600 rounded-lg hover:bg-slate-100 transition-colors ${ADMIN_GHOST_CELL}`}
-        >
-          <Activity size={14} /> Timeline
+    <div className="flex w-full flex-col items-stretch gap-1.5 sm:w-auto sm:items-end">
+      <div className="flex items-center justify-end gap-1">
+        <Link href={`/admin/users/${userId}/timeline`} aria-label="View timeline" title="Timeline" className={ADMIN_ICON_ACTION}>
+          <Activity size={16} aria-hidden="true" />
         </Link>
-        <Button size="sm" variant="ghost" className={ADMIN_GHOST_CELL} onClick={() => setRatingOpen(true)}>
-          <Gauge size={14} /> Reliability
-        </Button>
-        <Button size="sm" variant="ghost" className={ADMIN_GHOST_CELL} onClick={() => setEditOpen(true)}>
-          <Pencil size={14} /> Edit
-        </Button>
+        <button type="button" aria-label="Adjust reliability" title="Reliability" className={ADMIN_ICON_ACTION} onClick={() => setRatingOpen(true)}>
+          <Gauge size={16} aria-hidden="true" />
+        </button>
+        <button type="button" aria-label="Edit renter" title="Edit" className={ADMIN_ICON_ACTION} onClick={() => setEditOpen(true)}>
+          <Pencil size={16} aria-hidden="true" />
+        </button>
+      </div>
+      <div className={ADMIN_ACTION_ROW}>
         {isBlacklisted ? (
           <Button size="sm" variant="secondary" loading={loading === "unblock"} onClick={unblock}>
             <Undo2 size={14} /> Unblock
@@ -174,77 +172,79 @@ export function RenterActions({ userId, fullName, phone, email, role, isBlacklis
       />
 
       {modalOpen && (
-        <div
-          className="fixed inset-0 z-50 bg-black/70 flex items-center justify-center p-4"
-          onClick={() => setModalOpen(false)}
-        >
+        <Portal>
           <div
-            className="animate-bounce-in glass-card rounded-3xl w-full max-w-md p-5"
-            onClick={(e) => e.stopPropagation()}
+            className="animate-fade-in fixed inset-0 z-[60] flex items-end justify-center bg-slate-950/40 p-3 backdrop-blur-[2px] sm:items-center sm:p-6"
+            onClick={() => setModalOpen(false)}
           >
-            <div className="flex items-start justify-between mb-1">
-              <h2 className="text-slate-900 font-semibold">Block {fullName}</h2>
-              <button
-                type="button"
-                onClick={() => setModalOpen(false)}
-                className="text-slate-500 hover:text-slate-900"
-                aria-label="Close"
-              >
-                <X size={18} />
-              </button>
+            <div
+              role="dialog"
+              aria-modal="true"
+              className="animate-scale-in w-full max-w-md rounded-3xl bg-white p-6 shadow-2xl ring-1 ring-slate-900/[0.06]"
+              onClick={(e) => e.stopPropagation()}
+            >
+              <div className="mb-1 flex items-start justify-between">
+                <h2 className="text-base font-semibold text-slate-950">Block {fullName}</h2>
+                <button
+                  type="button"
+                  onClick={() => setModalOpen(false)}
+                  className="grid h-9 w-9 shrink-0 place-items-center rounded-full text-slate-500 transition-colors hover:bg-slate-100 hover:text-slate-950"
+                  aria-label="Close"
+                >
+                  <X size={18} />
+                </button>
+              </div>
+              <p className="mb-4 text-sm text-slate-500">
+                They can still log in, but Rental Pages will see a warning on any new booking from them.
+              </p>
+
+              <form onSubmit={submitBlock} className="space-y-4">
+                <div>
+                  <label className="mb-1.5 block text-sm font-medium text-slate-800">
+                    Admin reason <span className="text-rose-600">*</span>
+                  </label>
+                  <Textarea
+                    value={adminReason}
+                    onChange={(e) => setAdminReason(e.target.value)}
+                    rows={3}
+                    required
+                    autoFocus
+                    placeholder="Internal note, only admins see this. e.g. 'Police report filed by Beast Cars on 2026-04-12, vehicle returned damaged with smell of alcohol.'"
+                  />
+                  <p className="mt-1 text-xs leading-5 text-slate-500">
+                    Private. Other admins see this when reviewing the renter or any of their bookings.
+                  </p>
+                </div>
+
+                <div>
+                  <label className="mb-1.5 block text-sm font-medium text-slate-800">
+                    Reason shown to Rental Pages
+                  </label>
+                  <Textarea
+                    value={publicReason}
+                    onChange={(e) => setPublicReason(e.target.value)}
+                    rows={2}
+                    placeholder="What a Rental Page sees on bookings from this renter. e.g. 'Returned a vehicle with damage and refused to pay deposit. Decline at your discretion.'"
+                  />
+                  <p className="mt-1 text-xs leading-5 text-slate-500">
+                    Visible to any Rental Page that receives a booking from this renter. Keep it factual, no names, no sensitive details.
+                  </p>
+                </div>
+
+                {error && <p className="text-xs font-medium text-rose-700">{error}</p>}
+
+                <div className="flex flex-col-reverse gap-2 pt-1 sm:flex-row sm:justify-end">
+                  <Button type="button" variant="secondary" onClick={() => setModalOpen(false)}>
+                    Cancel
+                  </Button>
+                  <Button type="submit" variant="danger" loading={loading === "block"}>
+                    <Ban size={14} /> Block renter
+                  </Button>
+                </div>
+              </form>
             </div>
-            <p className="text-slate-500 text-xs mb-4">
-              They can still log in, but agencies will see a warning on any new booking from them.
-            </p>
-
-            <form onSubmit={submitBlock} className="space-y-4">
-              <div>
-                <label className="text-slate-700 text-xs font-medium block mb-1.5">
-                  Admin reason <span className="text-blue-600">*</span>
-                </label>
-                <textarea
-                  value={adminReason}
-                  onChange={(e) => setAdminReason(e.target.value)}
-                  rows={3}
-                  required
-                  autoFocus
-                  placeholder="Internal note, only admins see this. e.g. 'Police report filed by Beast Cars on 2026-04-12, vehicle returned damaged with smell of alcohol.'"
-                  className="w-full px-3 py-2 bg-slate-100 border border-slate-200 rounded-lg text-slate-900 text-sm placeholder-slate-400 focus:border-blue-500"
-                />
-                <p className="text-slate-400 text-xs mt-1">
-                  Private. Other admins see this when reviewing the renter or any of their bookings.
-                </p>
-              </div>
-
-              <div>
-                <label className="text-slate-700 text-xs font-medium block mb-1.5">
-                  Reason shown to agencies
-                </label>
-                <textarea
-                  value={publicReason}
-                  onChange={(e) => setPublicReason(e.target.value)}
-                  rows={2}
-                  placeholder="What agencies see on bookings from this renter. e.g. 'Returned a vehicle with damage and refused to pay deposit. Decline at your discretion.'"
-                  className="w-full px-3 py-2 bg-slate-100 border border-slate-200 rounded-lg text-slate-900 text-sm placeholder-slate-400 focus:border-blue-500"
-                />
-                <p className="text-slate-400 text-xs mt-1">
-                  Visible to any agency that receives a booking from this renter. Keep it factual, no names, no sensitive details.
-                </p>
-              </div>
-
-              {error && <p className="text-rose-600 text-xs">{error}</p>}
-
-              <div className="flex gap-2 justify-end pt-1">
-                <Button type="button" size="sm" variant="ghost" onClick={() => setModalOpen(false)}>
-                  Cancel
-                </Button>
-                <Button type="submit" size="sm" variant="danger" loading={loading === "block"}>
-                  <Ban size={14} /> Block renter
-                </Button>
-              </div>
-            </form>
           </div>
-        </div>
+        </Portal>
       )}
     </div>
   );

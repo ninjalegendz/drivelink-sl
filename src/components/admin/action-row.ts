@@ -21,3 +21,18 @@ export const ADMIN_ACTION_ROW =
  */
 export const ADMIN_GHOST_CELL =
   "border border-slate-200 bg-white min-h-11 sm:min-h-0 sm:border-0 sm:bg-transparent";
+
+/**
+ * A single icon-only utility action (Timeline, Reliability, Edit, ...) that
+ * sits beside the labelled buttons in a table row's action cell. A row that
+ * spells out every secondary action in full text ran to five or six lines
+ * once approve/reject and block/delete joined it; folding the least-used
+ * ones into icons keeps the row scannable without hiding what they do
+ * (`aria-label` and `title` still carry the full word).
+ *
+ * 44px on a phone, where a tap needs the room; a plain 36px square once a
+ * pointer is doing the work, matching Button's own "sm" height.
+ */
+export const ADMIN_ICON_ACTION =
+  "grid h-11 w-11 shrink-0 place-items-center rounded-lg text-slate-500 transition-colors "
+  + "hover:bg-slate-100 hover:text-blue-600 sm:h-9 sm:w-9";

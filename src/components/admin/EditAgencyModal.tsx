@@ -4,7 +4,11 @@ import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { X } from "lucide-react";
 import { Button } from "@/components/ui/Button";
+import { Input, Textarea } from "@/components/ui/Input";
+import { Field } from "@/components/ui/Field";
 import { Select } from "@/components/ui/Select";
+import { Portal } from "@/components/ui/Portal";
+import { useEscapeLayer } from "@/components/ui/useEscapeLayer";
 import { PhoneInput } from "@/components/ui/PhoneInput";
 import { SL_CITIES } from "@/data/cities";
 import { toLocalSL } from "@/lib/auth/phone-format";
@@ -38,10 +42,9 @@ export function EditAgencyModal({ agencyId, initial, onClose }: Props) {
   useEffect(() => {
     const prev = document.body.style.overflow;
     document.body.style.overflow = "hidden";
-    function onKey(e: KeyboardEvent) { if (e.key === "Escape") onClose(); }
-    window.addEventListener("keydown", onKey);
-    return () => { document.body.style.overflow = prev; window.removeEventListener("keydown", onKey); };
-  }, [onClose]);
+    return () => { document.body.style.overflow = prev; };
+  }, []);
+  useEscapeLayer(onClose);
 
   async function submit(e: React.FormEvent) {
     e.preventDefault();
@@ -67,69 +70,54 @@ export function EditAgencyModal({ agencyId, initial, onClose }: Props) {
   }
 
   return (
-    <div className="fixed inset-0 z-50 bg-black/70 flex items-center justify-center p-4" onClick={onClose}>
-      <div className="animate-bounce-in glass-card rounded-3xl w-full max-w-md p-5 my-8 max-h-[90vh] overflow-y-auto" onClick={(e) => e.stopPropagation()}>
-        <div className="flex items-start justify-between mb-4">
-          <h2 className="text-slate-900 font-semibold">Edit agency</h2>
-          <button type="button" onClick={onClose} className="text-slate-500 hover:text-slate-900" aria-label="Close">
-            <X size={18} />
-          </button>
+    <Portal>
+      <div className="animate-fade-in fixed inset-0 z-[60] flex items-end justify-center bg-slate-950/40 p-3 backdrop-blur-[2px] sm:items-center sm:p-6" onClick={onClose}>
+        <div
+          role="dialog"
+          aria-modal="true"
+          className="animate-scale-in max-h-[88dvh] w-full max-w-md overflow-y-auto rounded-3xl bg-white p-6 shadow-2xl ring-1 ring-slate-900/[0.06]"
+          onClick={(e) => e.stopPropagation()}
+        >
+          <div className="mb-4 flex items-start justify-between">
+            <h2 className="text-base font-semibold text-slate-950">Edit Rental Page</h2>
+            <button type="button" onClick={onClose} className="grid h-9 w-9 shrink-0 place-items-center rounded-full text-slate-500 transition-colors hover:bg-slate-100 hover:text-slate-950" aria-label="Close">
+              <X size={18} />
+            </button>
+          </div>
+
+          <form onSubmit={submit} className="space-y-4">
+            <Field label="Page name" required>
+              {(f) => <Input {...f} type="text" value={name} onChange={(e) => setName(e.target.value)} required autoFocus />}
+            </Field>
+
+            <div className="grid grid-cols-2 gap-3">
+              <div>
+                <label className="mb-1.5 block text-sm font-medium text-slate-800">City</label>
+                <Select value={city} onChange={setCity} options={CITY_OPTIONS} label="City" />
+              </div>
+              <Field label="Address" hint="Optional">
+                {(f) => <Input {...f} type="text" value={address} onChange={(e) => setAddress(e.target.value)} placeholder="14 Galle Rd" />}
+              </Field>
+            </div>
+
+            <div>
+              <label className="mb-1.5 block text-sm font-medium text-slate-800">Mobile number</label>
+              <PhoneInput value={phone} onChange={setPhone} required />
+            </div>
+
+            <Field label="Description" hint="Optional">
+              {(f) => <Textarea {...f} value={desc} onChange={(e) => setDesc(e.target.value)} rows={3} maxLength={500} />}
+            </Field>
+
+            {error && <p className="text-sm font-medium text-rose-700">{error}</p>}
+
+            <div className="flex flex-col-reverse gap-2 pt-1 sm:flex-row sm:justify-end">
+              <Button type="button" variant="secondary" onClick={onClose}>Cancel</Button>
+              <Button type="submit" loading={loading}>Save</Button>
+            </div>
+          </form>
         </div>
-
-        <form onSubmit={submit} className="space-y-3">
-          <div>
-            <label className="text-slate-700 text-xs mb-1 block">Agency name</label>
-            <input
-              type="text" value={name} onChange={(e) => setName(e.target.value)}
-              required autoFocus
-              className={inputClass}
-            />
-          </div>
-
-          <div className="grid grid-cols-2 gap-2">
-            <div>
-              <label className="text-slate-700 text-xs mb-1 block">City</label>
-              <Select value={city} onChange={setCity} options={CITY_OPTIONS} label="City" />
-            </div>
-            <div>
-              <label className="text-slate-700 text-xs mb-1 block">
-                Address <span className="text-slate-400 font-normal">(opt)</span>
-              </label>
-              <input
-                type="text" value={address} onChange={(e) => setAddress(e.target.value)}
-                placeholder="14 Galle Rd"
-                className={inputClass}
-              />
-            </div>
-          </div>
-
-          <div>
-            <label className="text-slate-700 text-xs mb-1 block">Mobile number</label>
-            <PhoneInput value={phone} onChange={setPhone} required />
-          </div>
-
-          <div>
-            <label className="text-slate-700 text-xs mb-1 block">
-              Description <span className="text-slate-400 font-normal">(opt)</span>
-            </label>
-            <textarea
-              value={desc} onChange={(e) => setDesc(e.target.value)}
-              rows={3} maxLength={500}
-              className={`${inputClass} resize-none`}
-            />
-          </div>
-
-          {error && <p className="text-rose-600 text-sm">{error}</p>}
-
-          <div className="flex gap-2 justify-end pt-2">
-            <Button type="button" size="sm" variant="ghost" onClick={onClose}>Cancel</Button>
-            <Button type="submit" size="sm" loading={loading}>Save</Button>
-          </div>
-        </form>
       </div>
-    </div>
+    </Portal>
   );
 }
-
-const inputClass =
-  "w-full px-3 py-2 bg-slate-100 border border-slate-200 rounded-lg text-slate-900 placeholder-slate-400 text-sm focus:border-blue-500";

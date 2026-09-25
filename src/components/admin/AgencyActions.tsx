@@ -8,7 +8,7 @@ import { Button } from "@/components/ui/Button";
 import { EditAgencyModal } from "@/components/admin/EditAgencyModal";
 import { RatingAdjustModal } from "@/components/admin/RatingAdjustModal";
 import { ConfirmDialog } from "@/components/ui/ConfirmDialog";
-import { ADMIN_ACTION_ROW, ADMIN_GHOST_CELL } from "@/components/admin/action-row";
+import { ADMIN_ACTION_ROW, ADMIN_ICON_ACTION } from "@/components/admin/action-row";
 
 interface Props {
   agencyId:        string;
@@ -84,20 +84,19 @@ export function AgencyActions({ agencyId, name, city, address, whatsapp_number, 
   }
 
   return (
-    <div className="flex w-full flex-col items-stretch gap-1 sm:w-auto sm:items-end">
-      <div className={ADMIN_ACTION_ROW}>
-        <Link
-          href={`/admin/agencies/${agencyId}/timeline`}
-          className={`inline-flex items-center justify-center gap-1 px-2.5 py-1 text-xs text-slate-600 hover:text-blue-600 rounded-lg hover:bg-slate-100 transition-colors ${ADMIN_GHOST_CELL}`}
-        >
-          <Activity size={14} /> Timeline
+    <div className="flex w-full flex-col items-stretch gap-1.5 sm:w-auto sm:items-end">
+      <div className="flex items-center justify-end gap-1">
+        <Link href={`/admin/agencies/${agencyId}/timeline`} aria-label="View timeline" title="Timeline" className={ADMIN_ICON_ACTION}>
+          <Activity size={16} aria-hidden="true" />
         </Link>
-        <Button size="sm" variant="ghost" className={ADMIN_GHOST_CELL} onClick={() => setRatingOpen(true)}>
-          <Gauge size={14} /> Reliability
-        </Button>
-        <Button size="sm" variant="ghost" className={ADMIN_GHOST_CELL} onClick={() => setEditOpen(true)}>
-          <Pencil size={14} /> Edit
-        </Button>
+        <button type="button" aria-label="Adjust reliability" title="Reliability" className={ADMIN_ICON_ACTION} onClick={() => setRatingOpen(true)}>
+          <Gauge size={16} aria-hidden="true" />
+        </button>
+        <button type="button" aria-label="Edit Rental Page" title="Edit" className={ADMIN_ICON_ACTION} onClick={() => setEditOpen(true)}>
+          <Pencil size={16} aria-hidden="true" />
+        </button>
+      </div>
+      <div className={ADMIN_ACTION_ROW}>
         {isBlocked ? (
           <Button size="sm" variant="secondary" loading={loading === "unblock"} onClick={unblock}>
             <Undo2 size={14} /> Unblock
