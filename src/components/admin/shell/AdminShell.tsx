@@ -165,6 +165,8 @@ export function AdminShell({ navItems, mobilePrimary, mobileSecondary, children 
 
 /** Mirrors the tab bar's rule: only the most specific match should read as active. */
 function isActive(pathname: string, href: string): boolean {
-  if (href === "/admin") return pathname === "/admin";
+  // Home is a prefix of every admin path, so it only counts on an exact match
+  // (the /design mirror included, or every preview lit up Home as well).
+  if (href === "/admin" || href === "/design/admin") return pathname === href;
   return pathname === href || pathname.startsWith(href + "/");
 }
