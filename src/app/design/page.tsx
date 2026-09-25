@@ -31,17 +31,59 @@ export const metadata: Metadata = { title: "Design system" };
 // from the product; it exists for the founder and whoever builds the next
 // screen, so a token or a component only has to be decided once.
 
-const PREVIEW_LINKS = [
-  { href: "/", label: "Homepage", description: "Marketplace landing page." },
-  { href: "/vehicles", label: "Browse vehicles", description: "Search, filters and results grid." },
-  { href: "/vehicles/demo-toyota-corolla-2019-colombo", label: "Vehicle detail (demo)", description: "A sample listing page, full gallery and booking panel." },
-  { href: "/pages/serendib-drive", label: "Rental Page (demo)", description: "A provider's public storefront." },
-  { href: "/login", label: "Log in", description: "Sign-in screen." },
-  { href: "/design/dashboard", label: "Rental Page dashboard", description: "Owner workspace, signed-in preview." },
-  { href: "/design/dashboard/vehicles", label: "Fleet", description: "A Rental Page's vehicle list, signed-in preview." },
-  { href: "/design/account", label: "Account", description: "Renter account hub, signed-in preview." },
-  { href: "/design/bookings", label: "Bookings", description: "Renter bookings list, signed-in preview." },
-  { href: "/design/admin", label: "Admin", description: "The admin workspace shell and home, signed-in preview." },
+// Every screen the revamp touched, grouped by who uses it. Signed-in screens
+// point at their /design mirror, which renders the real view with sample data.
+const PREVIEW_GROUPS: { title: string; links: { href: string; label: string; description: string }[] }[] = [
+  { title: "Public", links: [
+    { href: "/", label: "Homepage", description: "Search dock, types, destinations, how it works." },
+    { href: "/vehicles", label: "Browse vehicles", description: "Instant filter chips and photo cards." },
+    { href: "/vehicles/demo-toyota-corolla-2019-colombo", label: "Vehicle page", description: "Gallery, booking panel, rental terms." },
+    { href: "/pages/serendib-drive", label: "Public Rental Page", description: "A provider's storefront." },
+    { href: "/login", label: "Log in", description: "Split screen sign-in." },
+    { href: "/signup", label: "Sign up", description: "Account creation." },
+    { href: "/pricing", label: "Pricing", description: "How fees work." },
+    { href: "/faq", label: "FAQ", description: "Grouped questions." },
+    { href: "/guides", label: "Guides", description: "Help articles and videos." },
+    { href: "/terms", label: "Terms", description: "Legal page with a table of contents." },
+  ] },
+  { title: "Renter (signed in)", links: [
+    { href: "/design/account", label: "Your account", description: "Profile, identity check, shortcuts." },
+    { href: "/design/bookings", label: "Your bookings", description: "Upcoming and past, with photos." },
+    { href: "/design/bookings/sample", label: "A booking", description: "One timeline from request to return." },
+    { href: "/design/account/settings", label: "Account settings", description: "Profile, phone, delete account." },
+    { href: "/design/account/documents", label: "Documents", description: "Who can see your ID and when." },
+    { href: "/design/account/support", label: "Support", description: "Chat with DriveLink." },
+    { href: "/design/account/pages/new", label: "Create a Rental Page", description: "Start listing vehicles." },
+  ] },
+  { title: "Rental Page (signed in)", links: [
+    { href: "/design/dashboard", label: "Today", description: "Requests waiting, cars out, fleet." },
+    { href: "/design/dashboard/bookings", label: "Bookings", description: "Every request and rental." },
+    { href: "/design/dashboard/bookings/sample/documents", label: "Renter documents", description: "Consent-scoped, watermarked viewer." },
+    { href: "/design/dashboard/vehicles", label: "Fleet", description: "Every listing and its status." },
+    { href: "/design/dashboard/vehicles/new", label: "List a vehicle", description: "Three-step wizard." },
+    { href: "/design/dashboard/vehicles/sample/edit", label: "Edit a listing", description: "Sectioned form, sticky save." },
+    { href: "/design/dashboard/vehicles/sample/availability", label: "Availability", description: "Calendar of bookings and blocks." },
+    { href: "/design/dashboard/analytics", label: "Analytics", description: "Requests, conversion, earnings." },
+    { href: "/design/dashboard/settings", label: "Page settings", description: "Details, team, danger zone." },
+    { href: "/design/dashboard/support", label: "Support", description: "Chat with DriveLink." },
+  ] },
+  { title: "Admin (signed in)", links: [
+    { href: "/design/admin", label: "Admin home", description: "What needs a decision." },
+    { href: "/design/admin/activity", label: "Dev log", description: "Every recorded action, who and when." },
+    { href: "/design/admin/vehicles?status=pending_review", label: "Listing review", description: "Approve or reject new listings." },
+    { href: "/design/admin/bookings", label: "All bookings", description: "Every booking on the platform." },
+    { href: "/design/admin/users", label: "Renters and KYC", description: "Identity checks and accounts." },
+    { href: "/design/admin/users/sample/timeline", label: "A renter's timeline", description: "Everything about one person." },
+    { href: "/design/admin/agencies", label: "Rental Pages", description: "Every provider." },
+    { href: "/design/admin/agencies/sample/timeline", label: "A Rental Page's timeline", description: "Everything about one page." },
+    { href: "/design/admin/agencies/sample/list-vehicle", label: "List a vehicle for a page", description: "Admin drafting." },
+    { href: "/design/admin/reports", label: "Reports", description: "Reports from pages about renters." },
+    { href: "/design/admin/blacklist", label: "Blacklist", description: "Blocked identity numbers." },
+    { href: "/design/admin/support", label: "Support inbox", description: "Conversations with users." },
+    { href: "/design/admin/support/sample", label: "A support thread", description: "One conversation." },
+    { href: "/design/admin/analytics", label: "Analytics", description: "Platform numbers and traffic." },
+    { href: "/design/admin/settings", label: "Settings", description: "Notifications, email, WhatsApp." },
+  ] },
 ];
 
 const SLATE = [
@@ -162,15 +204,22 @@ export default function DesignSystemPage() {
 
           <div className="min-w-0 space-y-20">
             <Section id="previews" title="Previews" description="Every screenshot-able screen in the revamp, real or signed-in preview.">
-              <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
-                {PREVIEW_LINKS.map((l) => (
-                  <Link key={l.href} href={l.href} className="block">
-                    <Card interactive className="h-full">
-                      <p className="font-semibold text-slate-900">{l.label}</p>
-                      <p className="mt-1 text-sm text-slate-500">{l.description}</p>
-                      <p className="mt-3 text-xs font-medium text-blue-700">{l.href}</p>
-                    </Card>
-                  </Link>
+              <div className="space-y-10">
+                {PREVIEW_GROUPS.map((group) => (
+                  <div key={group.title}>
+                    <h3 className="mb-3 text-sm font-semibold text-slate-700">{group.title}</h3>
+                    <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+                      {group.links.map((l) => (
+                        <Link key={l.href} href={l.href} className="block">
+                          <Card interactive className="h-full">
+                            <p className="font-semibold text-slate-900">{l.label}</p>
+                            <p className="mt-1 text-sm text-slate-500">{l.description}</p>
+                            <p className="mt-3 truncate text-xs font-medium text-blue-700">{l.href}</p>
+                          </Card>
+                        </Link>
+                      ))}
+                    </div>
+                  </div>
                 ))}
               </div>
             </Section>
