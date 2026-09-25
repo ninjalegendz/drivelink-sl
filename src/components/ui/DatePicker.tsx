@@ -3,6 +3,7 @@
 import { CalendarDays, ChevronLeft, ChevronRight } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 import { BottomSheet } from "@/components/ui/BottomSheet";
+import { sriLankaToday } from "@/lib/dates/sri-lanka";
 
 interface Props {
   value: string;
@@ -15,6 +16,8 @@ interface Props {
 }
 
 const WEEKDAYS = ["S", "M", "T", "W", "T", "F", "S"];
+const WEEKDAY_ABBR = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
+const MONTH_ABBR = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
 
 function parts(value: string): { year: number; month: number; day: number } {
   const [year, month, day] = value.split("-").map(Number);
@@ -25,11 +28,20 @@ function dateString(year: number, month: number, day: number): string {
   return `${year}-${String(month + 1).padStart(2, "0")}-${String(day).padStart(2, "0")}`;
 }
 
+/**
+ * "Sat 26 Sep", the year only added when it is not the current year in Sri
+ * Lanka time. Built from fixed abbreviation tables rather than
+ * Intl.DateTimeFormat: "en-LK" fell back to US month-first ordering with
+ * commas ("Sat, Sep 26, 2026") in this deployment's ICU data, which is what
+ * truncated in the half-width booking form in the first place.
+ */
 function displayDate(value: string): string {
   if (!value) return "Choose date";
   const { year, month, day } = parts(value);
-  return new Intl.DateTimeFormat("en-LK", { weekday: "short", day: "numeric", month: "short", year: "numeric" })
-    .format(new Date(year, month, day));
+  const weekday = WEEKDAY_ABBR[new Date(year, month, day).getDay()];
+  const base = `${weekday} ${day} ${MONTH_ABBR[month]}`;
+  const currentYear = Number(sriLankaToday().slice(0, 4));
+  return year === currentYear ? base : `${base} ${year}`;
 }
 
 /** Spelled-out date used as each day button's accessible name. */

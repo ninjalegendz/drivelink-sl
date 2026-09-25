@@ -31,9 +31,11 @@ import { Explanation } from "@/components/ui/Explanation";
 import { HouseRules } from "@/components/vehicles/HouseRules";
 import { isDemoMode, demoVehicleBySlug } from "@/lib/demo/fixtures";
 
-const INSURANCE_HELP =
-  "Hire insurance: the provider states this vehicle is insured for rental use. Policies can still have an excess, exclusions and driver conditions. " +
-  "Private insurance: a personal policy may not cover paid rental use. Confirm the relevant cover with the provider before driving.";
+// Takes the renter-facing noun ("host" or "rental business") for the
+// listing's provider type, so the help text reads naturally either way.
+const insuranceHelp = (provNoun: string) =>
+  `Hire insurance: the ${provNoun} states this vehicle is insured for rental use. Policies can still have an excess, exclusions and driver conditions. ` +
+  `Private insurance: a personal policy may not cover paid rental use. Confirm the relevant cover with the ${provNoun} before driving.`;
 
 const FUEL_POLICY_HELP =
   "Full-to-Full: pick up with a full tank, return with a full tank. " +
@@ -121,7 +123,7 @@ export default async function VehicleDetailPage({ params, searchParams }: Props)
 
   const vehicle = data as unknown as VehicleWithAgency;
   const agency = vehicle.agencies!;
-  // Renter-facing word for this provider: "host" (individual) or "Rental Page".
+  // Renter-facing word for this provider: "host" (individual) or "rental business".
   const provNoun = providerNoun(agency.provider_type);
   const provNounCap = providerNounCap(agency.provider_type);
 
@@ -244,7 +246,7 @@ export default async function VehicleDetailPage({ params, searchParams }: Props)
     ...(vehicle.fuel_type   ? [{ label: "Fuel type", value: vehicle.fuel_type, Icon: Fuel }] : []),
     ...(vehicle.luggage != null ? [{ label: "Luggage", value: `${vehicle.luggage} bag${vehicle.luggage === 1 ? "" : "s"}`, Icon: Luggage }] : []),
     { label: "Fuel policy",  value: fuelPolicyLabel(vehicle.fuel_policy), Icon: Droplets, help: FUEL_POLICY_HELP },
-    { label: "Insurance",    value: insuranceLabel(vehicle.insurance_type), Icon: ShieldCheck, help: INSURANCE_HELP },
+    { label: "Insurance",    value: insuranceLabel(vehicle.insurance_type), Icon: ShieldCheck, help: insuranceHelp(provNoun) },
   ];
 
   return (
@@ -265,10 +267,17 @@ export default async function VehicleDetailPage({ params, searchParams }: Props)
       {/* Gallery spans the full width above both columns on desktop. */}
       <VehicleGallery photos={photos} alt={`${vehicle.year} ${vehicle.make} ${vehicle.model}`} />
 
+      {/* Phones: source order decides the stack, so it reads gallery, title,
+          "before you request", booking panel, then everything else, instead
+          of burying the request form under ~7 screens of detail. Desktop
+          keeps today's two columns: this block and "Details" below use
+          lg:col-start-1 to share the left column across two rows, and the
+          booking panel uses lg:row-span-2 to sit beside both of them,
+          sticky, on the right. */}
       <div className="mt-6 grid gap-8 sm:mt-8 lg:grid-cols-12">
 
-        {/* Left: content */}
-        <div className="space-y-8 lg:col-span-7">
+        {/* Summary: title, specs, "before you request". */}
+        <div className="space-y-8 lg:col-span-7 lg:col-start-1 lg:row-start-1">
 
           {/* Title block */}
           <div>
@@ -387,8 +396,8 @@ export default async function VehicleDetailPage({ params, searchParams }: Props)
                 {vehicle.self_drive && (
                   <p className="text-xs leading-relaxed text-slate-600">
                     <strong className="text-slate-800">Self-drive:</strong> add your licence and permit details before requesting.
-                    The Rental Page checks the original documents at pickup. Driving and insurance requirements can depend on
-                    your licence, permit and the provider&apos;s policy, so confirm them before travelling.
+                    The {provNoun} checks the original documents at pickup. Driving and insurance requirements can depend on
+                    your licence, permit and the {provNoun}&apos;s policy, so confirm them before travelling.
                   </p>
                 )}
                 {vehicle.with_driver && (
@@ -407,6 +416,73 @@ export default async function VehicleDetailPage({ params, searchParams }: Props)
               </p>
             )}
           </Card>
+        </div>
+
+        {/* Booking panel. On phones it renders here, right after the summary
+            and before the details below. On desktop it moves to the right
+            column and spans both rows so it sits beside the summary and the
+            details, sticky as before. */}
+        <div className="lg:col-span-5 lg:col-start-8 lg:row-start-1 lg:row-span-2">
+          <div id="request" className="scroll-mt-24 rounded-3xl bg-white p-5 shadow-xl ring-1 ring-slate-900/[0.06] sm:p-6 lg:sticky lg:top-24">
+            <div className="flex items-baseline gap-1.5">
+              <span className="text-2xl font-bold tabular text-slate-950">{formatLKR(vehicle.daily_rate_lkr)}</span>
+              <span className="text-sm text-slate-500">/ day{siteConfig.showUsd ? ` (~$${usd})` : ""}</span>
+            </div>
+            {vehicle.deposit_lkr > 0 && (
+              <p className="mt-1 text-xs text-slate-500">{formatLKR(vehicle.deposit_lkr)} refundable deposit</p>
+            )}
+
+            <div className="mt-5 border-t border-slate-100 pt-5">
+              {!isLive ? (
+                <>
+                  <h2 className="text-base font-semibold text-slate-900">Not accepting bookings</h2>
+                  <p className="mt-1 text-sm text-slate-600">
+                    {vehicle.status === "pending_review"
+                      ? "Once DriveLink approves this listing, the request form appears here and renters can send dates."
+                      : "This listing is not published. Publish it from your fleet to start receiving booking requests."}
+                  </p>
+                </>
+              ) : (
+                <>
+                  <h2 className="text-base font-semibold text-slate-900">Request this vehicle</h2>
+                  <p className="mt-1 text-sm text-slate-600">
+                    The {provNoun} will review your dates.
+                  </p>
+                  <div className="mt-4">
+                    <BookingRequestForm
+                      vehicleId={vehicle.id}
+                      agencyId={vehicle.agency_id}
+                      vehicleName={`${vehicle.year} ${vehicle.make} ${vehicle.model}`}
+                      dailyRateLkr={vehicle.daily_rate_lkr}
+                      weeklyRateLkr={vehicle.weekly_rate_lkr}
+                      monthlyRateLkr={vehicle.monthly_rate_lkr}
+                      selfDrive={vehicle.self_drive}
+                      withDriver={vehicle.with_driver}
+                      deliveryAvailable={vehicle.delivery_available}
+                      deliveryFeeLkr={vehicle.delivery_fee_lkr}
+                      perKmRateLkr={vehicle.per_km_rate_lkr}
+                      driverBataLkr={vehicle.driver_bata_lkr}
+                      bookedRanges={bookedRanges}
+                      providerNoun={provNoun}
+                      initialStartDate={from ?? null}
+                      initialEndDate={to ?? null}
+                      initialStartTime={from_time ?? null}
+                      initialEndTime={to_time ?? null}
+                    />
+                  </div>
+                </>
+              )}
+            </div>
+
+            <div className="mt-4 text-right">
+              <ReportListingButton vehicleId={vehicle.id} />
+            </div>
+          </div>
+        </div>
+
+        {/* Details: everything else, continuing the left column under the
+            summary on desktop. */}
+        <div className="space-y-8 lg:col-span-7 lg:col-start-1 lg:row-start-2">
 
           {/* Content sections: headings and whitespace, not cards inside
               cards. Every section but the first gets a hairline above it. */}
@@ -519,7 +595,7 @@ export default async function VehicleDetailPage({ params, searchParams }: Props)
               {!currentlyVerified && (
                 <div className="space-y-1.5">
                   <span className="inline-flex items-center rounded border border-slate-200 bg-slate-50 px-2 py-1 text-xs font-semibold text-slate-700">Basic listing</span>
-                  <p className="text-xs leading-5 text-slate-600">The Rental Page declared its right to list this vehicle, and DriveLink reviewed the public listing. The vehicle documents have not completed Verified Vehicle review. Confirm the exact vehicle and insurance conditions before handover.</p>
+                  <p className="text-xs leading-5 text-slate-600">The {provNoun} declared their right to list this vehicle, and DriveLink reviewed the public listing. The vehicle documents have not completed Verified Vehicle review. Confirm the exact vehicle and insurance conditions before handover.</p>
                 </div>
               )}
             </Section>
@@ -619,67 +695,6 @@ export default async function VehicleDetailPage({ params, searchParams }: Props)
                 ))}
               </ol>
             </Section>
-          </div>
-        </div>
-
-        {/* Right: sticky booking panel */}
-        <div className="lg:col-span-5">
-          <div id="request" className="scroll-mt-24 rounded-3xl bg-white p-5 shadow-xl ring-1 ring-slate-900/[0.06] sm:p-6 lg:sticky lg:top-24">
-            <div className="flex items-baseline gap-1.5">
-              <span className="text-2xl font-bold tabular text-slate-950">{formatLKR(vehicle.daily_rate_lkr)}</span>
-              <span className="text-sm text-slate-500">/ day{siteConfig.showUsd ? ` (~$${usd})` : ""}</span>
-            </div>
-            {vehicle.deposit_lkr > 0 && (
-              <p className="mt-1 text-xs text-slate-500">{formatLKR(vehicle.deposit_lkr)} refundable deposit</p>
-            )}
-
-            <div className="mt-5 border-t border-slate-100 pt-5">
-              {!isLive ? (
-                <>
-                  <h2 className="text-base font-semibold text-slate-900">Not accepting bookings</h2>
-                  <p className="mt-1 text-sm text-slate-600">
-                    {vehicle.status === "pending_review"
-                      ? "Once DriveLink approves this listing, the request form appears here and renters can send dates."
-                      : "This listing is not published. Publish it from your fleet to start receiving booking requests."}
-                  </p>
-                </>
-              ) : (
-                <>
-                  <h2 className="text-base font-semibold text-slate-900">Request this vehicle</h2>
-                  <p className="mt-1 text-sm text-slate-600">
-                    The {provNoun} will review your dates.
-                  </p>
-                  <div className="mt-4">
-                    <BookingRequestForm
-                      vehicleId={vehicle.id}
-                      agencyId={vehicle.agency_id}
-                      vehicleName={`${vehicle.year} ${vehicle.make} ${vehicle.model}`}
-                      dailyRateLkr={vehicle.daily_rate_lkr}
-                      weeklyRateLkr={vehicle.weekly_rate_lkr}
-                      monthlyRateLkr={vehicle.monthly_rate_lkr}
-                      selfDrive={vehicle.self_drive}
-                      withDriver={vehicle.with_driver}
-                      deliveryAvailable={vehicle.delivery_available}
-                      deliveryFeeLkr={vehicle.delivery_fee_lkr}
-                      perKmRateLkr={vehicle.per_km_rate_lkr}
-                      driverBataLkr={vehicle.driver_bata_lkr}
-                      bookedRanges={bookedRanges}
-                      initialStartDate={from ?? null}
-                      initialEndDate={to ?? null}
-                      initialStartTime={from_time ?? null}
-                      initialEndTime={to_time ?? null}
-                    />
-                  </div>
-                  <p className="mt-4 text-xs leading-5 text-slate-500">
-                    DriveLink&apos;s booking confirmation fee is Rs. 0. Once they confirm availability, their contact unlocks.
-                  </p>
-                </>
-              )}
-            </div>
-
-            <div className="mt-4 text-right">
-              <ReportListingButton vehicleId={vehicle.id} />
-            </div>
           </div>
         </div>
       </div>

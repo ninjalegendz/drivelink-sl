@@ -406,3 +406,31 @@
     transition-duration: 0.01ms !important;
   }
 }
+
+/* A grid that becomes a horizontal, snapping row on phones: cards at ~80% of
+   the screen, so the next one peeks in and the row reads as swipeable.
+   Deliberately outside any @layer: unlayered rules win over Tailwind's
+   utilities, which is what lets this replace the grid's display and gaps
+   below sm without a second copy of the cards. */
+@media (max-width: 639.98px) {
+  .rail-on-phone {
+    display: flex;
+    gap: 1rem;
+    margin-inline: -1rem;
+    padding-inline: 1rem;
+    overflow-x: auto;
+    scroll-snap-type: x mandatory;
+    /* Snap to the padded edge, not the raw one, or the first card snaps
+       flush against the screen edge under the fade. */
+    scroll-padding-inline: 1rem;
+    scrollbar-width: none;
+    -webkit-mask-image: linear-gradient(to right, transparent 0, #000 16px, #000 calc(100% - 24px), transparent 100%);
+    mask-image: linear-gradient(to right, transparent 0, #000 16px, #000 calc(100% - 24px), transparent 100%);
+  }
+  .rail-on-phone::-webkit-scrollbar { display: none; }
+  .rail-on-phone > * {
+    flex: 0 0 80vw;
+    min-width: 0;
+    scroll-snap-align: start;
+  }
+}

@@ -83,7 +83,7 @@ export function Hero({
       <div className="relative z-10">
         <div className={`space-y-3 md:space-y-4 ${s.wrap}`}>
           {badge && (
-            <p className="text-xs font-semibold uppercase tracking-[0.08em] text-blue-200">{badge}</p>
+            <p className="text-xs font-semibold uppercase tracking-[0.08em] text-white/90 [text-shadow:0_1px_8px_rgb(0_0_0/0.35)]">{badge}</p>
           )}
           <h1 className={`font-semibold leading-tight tracking-tight ${s.title}`}>{title}</h1>
           {subtitle && (

@@ -10,6 +10,7 @@ import { BookingRequestForm, type DateRange } from "@/components/booking/Booking
 import { VerificationBadge } from "@/components/ui/Badge";
 import { formatLKR, insuranceLabel, fuelPolicyLabel, responseTimeLabel } from "@/lib/vehicles/format";
 import { badgeDisplayLabel, vehicleTypeLabel, usdFromLkr } from "@/data/vehicles";
+import { providerNoun } from "@/lib/providers/label";
 import { siteConfig } from "@/lib/site-config";
 import type { VehicleWithAgency } from "@/types/queries";
 import { trackTrafficEvent } from "@/lib/analytics/client";
@@ -36,6 +37,8 @@ export function VehicleDetailModal({ vehicle, onClose }: { vehicle: VehicleWithA
   useSheetDrag(modalRef, { onClose });
   const closeRef = useRef<HTMLButtonElement>(null);
   const agency = vehicle.agencies;
+  // Renter-facing word for this provider: "host" (individual) or "rental business".
+  const provNoun = providerNoun(agency?.provider_type);
   // BUILD 2: page rating, not the owner's personal rating.
   const rating = agency?.rating_avg ?? null;
   const reviewCount = agency?.rating_count ?? 0;
@@ -200,7 +203,7 @@ export function VehicleDetailModal({ vehicle, onClose }: { vehicle: VehicleWithA
           {!currentlyVerified && (
             <div className="space-y-1.5">
               <span className="inline-flex items-center rounded border border-slate-200 bg-slate-50 px-2 py-1 text-xs font-semibold text-slate-700">Basic listing</span>
-              <p className="text-xs leading-5 text-slate-600">The Rental Page declared its right to list this vehicle, and DriveLink reviewed the public listing. The vehicle documents have not completed Verified Vehicle review. Confirm the exact vehicle and insurance conditions before handover.</p>
+              <p className="text-xs leading-5 text-slate-600">The {provNoun} declared their right to list this vehicle, and DriveLink reviewed the public listing. The vehicle documents have not completed Verified Vehicle review. Confirm the exact vehicle and insurance conditions before handover.</p>
             </div>
           )}
           {currentlyVerified && (
@@ -282,7 +285,7 @@ export function VehicleDetailModal({ vehicle, onClose }: { vehicle: VehicleWithA
           <div className="space-y-3">
             <h4 className="text-sm font-semibold text-slate-800">Guest reviews</h4>
             {reviews.length === 0 ? (
-              <p className="text-xs italic text-slate-400">No reviews yet, be the first to rent and review this provider.</p>
+              <p className="text-xs italic text-slate-400">No reviews yet, be the first to rent and review this {provNoun}.</p>
             ) : (
               <div className="space-y-3">
                 {reviews.map((rev) => (
@@ -320,7 +323,7 @@ export function VehicleDetailModal({ vehicle, onClose }: { vehicle: VehicleWithA
               <CalendarX size={16} className="mt-1 shrink-0" />
               <span>
                 {vehicle.blocked_in_range
-                  ? "The provider has marked your selected dates unavailable."
+                  ? `The ${provNoun} has marked your selected dates unavailable.`
                   : "This vehicle is already booked for your selected dates."}
                 {" "}Pick different dates below to request it.
               </span>
@@ -345,6 +348,7 @@ export function VehicleDetailModal({ vehicle, onClose }: { vehicle: VehicleWithA
             perKmRateLkr={vehicle.per_km_rate_lkr}
             driverBataLkr={vehicle.driver_bata_lkr}
             bookedRanges={bookedRanges}
+            providerNoun={provNoun}
           />
         </div>
       </div>

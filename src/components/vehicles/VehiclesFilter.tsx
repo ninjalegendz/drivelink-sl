@@ -203,8 +203,12 @@ export function VehiclesFilter({
     <div className="sticky top-16 z-30 glass-bar border-b border-slate-900/[0.06]">
       <div className="mx-auto max-w-7xl px-4 py-3 sm:px-6">
         <div className="scrollbar-none mask-fade-x flex items-center gap-2 overflow-x-auto">
-          {/* Search */}
-          <form onSubmit={submitSearch} className="relative shrink-0">
+          {/* Search. On phones this box only had room to show "Search veh...",
+              cutting Dates and Location off the edge of the screen, so it is
+              hidden below sm: the big Filters sheet has its own full-width
+              copy of this same field, and the header's search icon reaches
+              it too. From sm up it keeps its usual first position. */}
+          <form onSubmit={submitSearch} className="relative order-1 hidden shrink-0 sm:order-1 sm:block">
             <Search aria-hidden="true" className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
             <input
               type="search"
@@ -217,7 +221,7 @@ export function VehiclesFilter({
           </form>
 
           {/* Available dates, hides vehicles already booked for the trip */}
-          <Chip active={Boolean(from || to)} onClick={() => setDatesSheetOpen(true)}>
+          <Chip className="order-2" active={Boolean(from || to)} onClick={() => setDatesSheetOpen(true)}>
             <CalendarDays className="h-3.5 w-3.5" aria-hidden="true" />
             {from && to ? <>{shortDate(from)} <span aria-hidden="true">&rarr;</span> {shortDate(to)}</> : "Any dates"}
           </Chip>
@@ -225,39 +229,43 @@ export function VehiclesFilter({
           {/* Location. A chip like its neighbours rather than a full select
               box, which sat at the end of the row as the one control that
               looked different and was always half cut off by the edge fade. */}
-          <Chip active={Boolean(city)} onClick={() => setCitySheetOpen(true)}>
+          <Chip className="order-3" active={Boolean(city)} onClick={() => setCitySheetOpen(true)}>
             <MapPin className="h-3.5 w-3.5" aria-hidden="true" />
             {city || "Anywhere"}
           </Chip>
 
+          {/* Vehicle type. Ordered right after Location on phones (ahead of
+              rental option and insurance) since search is hidden there and
+              this row needs to lead with its most-used filters; sm and up
+              keeps its old position, after insurance. */}
+          <Chip className="order-4 sm:order-6" active={Boolean(type)} onClick={() => setTypeSheetOpen(true)}>
+            {type ? VEHICLE_TYPES.find((t) => t.value === type)?.plural : "Vehicle type"}
+          </Chip>
+
           {/* Rental option, single-select: tap the active one again to clear */}
           {RENTAL_OPTIONS.map((o) => (
-            <Chip key={o.value} active={option === o.value} onClick={() => chooseOption(o.value)}>
+            <Chip key={o.value} className="order-5 sm:order-4" active={option === o.value} onClick={() => chooseOption(o.value)}>
               {o.label}
             </Chip>
           ))}
 
           {/* Insurance (TRUST-023) */}
-          <Chip active={insurance === "hire"} onClick={toggleInsurance}>Hire insurance</Chip>
-
-          {/* Vehicle type */}
-          <Chip active={Boolean(type)} onClick={() => setTypeSheetOpen(true)}>
-            {type ? VEHICLE_TYPES.find((t) => t.value === type)?.plural : "Vehicle type"}
-          </Chip>
+          <Chip className="order-6 sm:order-5" active={insurance === "hire"} onClick={toggleInsurance}>Hire insurance</Chip>
 
           {/* Max price */}
-          <Chip active={Boolean(maxPrice)} onClick={() => setPriceSheetOpen(true)}>
+          <Chip className="order-7" active={Boolean(maxPrice)} onClick={() => setPriceSheetOpen(true)}>
             {maxPrice ? PRICE_OPTIONS.find((p) => p.value === maxPrice)?.label : "Price"}
           </Chip>
 
           {/* Everything above, in one sheet, for a thumb that would rather
-              not scroll the row: the primary way to filter on a phone. */}
-          <Chip active={activeCount > 0} count={activeCount} onClick={() => setFiltersSheetOpen(true)}>
+              not scroll the row: the primary way to filter on a phone, so it
+              leads the row there; sm and up keeps it at the end. */}
+          <Chip className="order-first sm:order-8" active={activeCount > 0} count={activeCount} onClick={() => setFiltersSheetOpen(true)}>
             <SlidersHorizontal className="h-3.5 w-3.5" aria-hidden="true" /> Filters
           </Chip>
 
           {activeCount > 0 && (
-            <button type="button" onClick={reset} className="shrink-0 whitespace-nowrap px-2 text-sm font-medium text-blue-700 hover:text-blue-900">
+            <button type="button" onClick={reset} className="order-last shrink-0 whitespace-nowrap px-2 text-sm font-medium text-blue-700 hover:text-blue-900">
               Clear all
             </button>
           )}

@@ -35,6 +35,11 @@ interface Props {
   perKmRateLkr?: number | null;
   driverBataLkr?: number | null;
   bookedRanges?:  DateRange[];
+  /** Renter-facing noun for this listing's provider, from providerNoun() in
+   *  @/lib/providers/label ("host" or "rental business"). Callers always
+   *  have the agency row already, so they pass this rather than the form
+   *  re-deriving it. */
+  providerNoun?: "host" | "rental business";
   /** Dates and times the renter already chose in search, so they are not
    *  asked for them twice. Ignored when they fail the lead-time rules. */
   initialStartDate?: string | null;
@@ -71,7 +76,7 @@ function to12h(hhmm: string): string {
   return `${h % 12 === 0 ? 12 : h % 12}:${PAD(m)} ${period}`;
 }
 
-export function BookingRequestForm({ vehicleId, agencyId, vehicleName, dailyRateLkr, weeklyRateLkr, monthlyRateLkr, selfDrive = true, withDriver = false, deliveryAvailable = false, deliveryFeeLkr, perKmRateLkr, driverBataLkr, bookedRanges = [], initialStartDate, initialEndDate, initialStartTime, initialEndTime }: Props) {
+export function BookingRequestForm({ vehicleId, agencyId, vehicleName, dailyRateLkr, weeklyRateLkr, monthlyRateLkr, selfDrive = true, withDriver = false, deliveryAvailable = false, deliveryFeeLkr, perKmRateLkr, driverBataLkr, bookedRanges = [], providerNoun = "rental business", initialStartDate, initialEndDate, initialStartTime, initialEndTime }: Props) {
   const bothModes = selfDrive && withDriver;
   const router = useRouter();
 
@@ -406,7 +411,7 @@ export function BookingRequestForm({ vehicleId, agencyId, vehicleName, dailyRate
               </span>
             </div>
             <p className="text-xs font-medium text-blue-700">
-              DriveLink&apos;s booking confirmation fee is Rs. 0. You arrange rental and deposit payment directly with the provider.
+              DriveLink&apos;s booking confirmation fee is Rs. 0. You arrange rental and deposit payment directly with the {providerNoun}.
             </p>
             {deliveryAvailable && (
               <p className="text-xs text-amber-800">
@@ -473,7 +478,7 @@ export function BookingRequestForm({ vehicleId, agencyId, vehicleName, dailyRate
         )}
 
         <p className="text-center text-xs text-slate-500">
-          No payment to DriveLink. The provider confirms availability first.
+          No payment to DriveLink. The {providerNoun} confirms availability first.
         </p>
       </div>
 

@@ -6,7 +6,7 @@ const POINTS = [
   {
     Icon: Wallet,
     title: "Your deposit goes to the host",
-    text: "DriveLink never holds your deposit. It is paid directly to the host, not to DriveLink.",
+    text: "You pay the deposit straight to the host. DriveLink never holds it.",
   },
   {
     Icon: ClipboardCheck,

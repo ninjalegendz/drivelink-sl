@@ -85,15 +85,19 @@ export default async function PricingPage() {
         </Card>
 
         {/* Provider card */}
-        <Card padding="lg" className="relative flex flex-col">
-          <div className="absolute right-5 top-5">
+        <Card padding="lg" className="flex flex-col">
+          {/* flex-wrap instead of an absolute badge: at 390px "For Rental
+              Page owners" plus the icon left no room for "0% commission" on
+              the same line, so the badge overlapped the heading. In flow it
+              now wraps onto its own line on narrow screens instead. */}
+          <div className="flex flex-wrap items-center justify-between gap-x-3 gap-y-2">
+            <div className="flex items-center gap-2">
+              <span className="grid h-9 w-9 place-items-center rounded-lg bg-blue-50 text-blue-700">
+                <Building2 size={18} aria-hidden="true" />
+              </span>
+              <h2 className="text-lg font-semibold tracking-tight text-slate-900">For Rental Page owners</h2>
+            </div>
             <Badge variant="green" dot={false}>0% commission</Badge>
-          </div>
-          <div className="flex items-center gap-2">
-            <span className="grid h-9 w-9 place-items-center rounded-lg bg-blue-50 text-blue-700">
-              <Building2 size={18} aria-hidden="true" />
-            </span>
-            <h2 className="text-lg font-semibold tracking-tight text-slate-900">For Rental Page owners</h2>
           </div>
           <p className="mt-4 text-3xl font-bold tabular text-slate-950">List for free</p>
           <p className="mt-1 text-sm text-slate-500">Listing is free forever, with no monthly fee or provider commission.</p>

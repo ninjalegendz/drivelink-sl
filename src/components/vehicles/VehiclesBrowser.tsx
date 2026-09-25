@@ -27,10 +27,14 @@ export function VehiclesBrowser({
   vehicles: initial,
   gridClassName = "grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6",
   loadMore,
+  layout = "grid",
 }: {
   vehicles: VehicleWithAgency[];
   gridClassName?: string;
   loadMore?: LoadMore;
+  /** "scroll-on-phone" makes the grid a horizontal snap row below `sm`,
+      keeping `gridClassName`'s grid from `sm` up. Defaults to a plain grid. */
+  layout?: "grid" | "scroll-on-phone";
 }) {
   const [vehicles, setVehicles] = useState<VehicleWithAgency[]>(initial);
   const [selected, setSelected] = useState<VehicleWithAgency | null>(null);
@@ -70,17 +74,24 @@ export function VehiclesBrowser({
     }
   }, [loadMore, loading, vehicles.length]);
 
+  const skeletons = loading
+    ? Array.from({ length: Math.min(loadMore?.pageSize ?? 0, 4) }, (_, i) => (
+        <SkeletonVehicleCard key={`more-skeleton-${i}`} />
+      ))
+    : null;
+
   return (
     <>
-      <div className={gridClassName}>
+      {/* "scroll-on-phone" turns this same grid into a swipeable row below
+          sm (see .rail-on-phone in globals.css), so the cards exist once
+          rather than once per breakpoint. */}
+      <div className={layout === "scroll-on-phone" ? `${gridClassName} rail-on-phone` : gridClassName}>
         {vehicles.map((v) => (
           <VehicleCard key={v.id} vehicle={v} onOpen={setSelected} />
         ))}
         {/* Placeholders shaped like the real cards, so the grid does not
             visibly jump the moment the next page lands. */}
-        {loading && Array.from({ length: Math.min(loadMore?.pageSize ?? 0, 4) }, (_, i) => (
-          <SkeletonVehicleCard key={`more-skeleton-${i}`} />
-        ))}
+        {skeletons}
       </div>
 
       {loadMore && hasMore && (
