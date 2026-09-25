@@ -17,10 +17,14 @@ export function PopularDestinations() {
           href={d.href}
           className="spring-hover group relative aspect-[3/4] w-64 shrink-0 snap-start overflow-hidden rounded-3xl sm:w-auto"
         >
+          {/* unoptimized: a local, already-sized file. The Cloudinary loader
+              passes local files through untouched anyway, and without this
+              Next warns that the loader ignores width. */}
           <Image
             src={d.image}
             alt={d.name}
             fill
+            unoptimized
             sizes="(max-width: 640px) 256px, (max-width: 1024px) 33vw, 25vw"
             className="object-cover transition-transform duration-500 group-hover:scale-105"
           />

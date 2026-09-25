@@ -57,11 +57,14 @@ export function Hero({
       <div className="absolute inset-0 z-0 overflow-hidden rounded-3xl">
         {image ? (
           <>
+            {/* unoptimized: hero photos are local, pre-sized files that the
+                Cloudinary loader would pass through untouched anyway. */}
             <Image
               src={image}
               alt=""
               fill
               priority
+              unoptimized
               className="object-cover"
               sizes="100vw"
             />

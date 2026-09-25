@@ -64,6 +64,7 @@ export default function AuthLayout({ children }: { children: React.ReactNode }) 
             src="/destinations/ella.jpg"
             alt="Tea country near Ella, Sri Lanka"
             fill
+            unoptimized
             priority
             sizes="(min-width: 1280px) 54vw, 50vw"
             className="object-cover"
