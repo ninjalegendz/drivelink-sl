@@ -545,7 +545,7 @@ export default async function VehicleDetailPage({ params, searchParams }: Props)
               </div>
             )}
 
-            <Section title={provNounCap === "Host" ? "Vehicle host" : "Rental Page"}>
+            <Section title={provNounCap === "Host" ? "Your host" : "The rental business"}>
               <div className="flex items-start justify-between gap-4">
                 <div className="flex items-center gap-3">
                   <span className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-blue-600 text-sm font-semibold text-white">

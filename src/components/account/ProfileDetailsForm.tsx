@@ -71,7 +71,7 @@ export function ProfileDetailsForm({ userId, initialFullName, initialPhone, emai
 
   return (
     <form onSubmit={handleSubmit} className="space-y-4">
-      <Field label="Email" hint="Email changes aren't supported yet, contact support if you need to update yours.">
+      <Field label="Email" hint="To change your email address, contact support.">
         {(field) => <Input {...field} type="email" value={email} disabled />}
       </Field>
 

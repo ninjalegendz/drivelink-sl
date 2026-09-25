@@ -175,11 +175,17 @@ function MobileTab({ item, active }: { item: MobileNavItem; active: boolean }) {
  * both "Home" (/dashboard) and "Bookings" matched, so two tabs read as current
  * and the bar stopped saying where you are. Only the most specific match wins.
  */
+const WORKSPACE_ROOTS = new Set(["/dashboard", "/admin", "/design/dashboard", "/design/admin"]);
+
 function activeHref(pathname: string, hrefs: string[]): string | null {
   let best: string | null = null;
   for (const href of hrefs) {
     const path = href.split("?")[0];
-    const matches = path === "/" ? pathname === "/" : pathname === path || pathname.startsWith(path + "/");
+    // A workspace root (Home) is a prefix of every page in its workspace, so
+    // it only counts on an exact match. Otherwise a page with no tab of its
+    // own, such as Page settings, lit up Home.
+    const exactOnly = path === "/" || WORKSPACE_ROOTS.has(path);
+    const matches = exactOnly ? pathname === path : pathname === path || pathname.startsWith(path + "/");
     if (matches && (best === null || path.length > best.length)) best = path;
   }
   return best;
