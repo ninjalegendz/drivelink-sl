@@ -167,3 +167,59 @@ pages inside the dashboard/admin shells already have `pb-28` on mobile.
 - Checks: `npx tsc --noEmit` and `npx eslint <your files> --max-warnings=0`.
   Other people are editing other files at the same time; only fix errors in
   files you own.
+
+## 7. Signed-in screens: previews and patterns (phase 2)
+
+### Preview convention (mandatory for every signed-in screen you touch)
+- Split each signed-in route into the **data-fetching page** (queries, auth,
+  redirects, capability checks, exactly as before) and a **presentational
+  view component** that receives the fetched data as props. Real behaviour
+  must stay identical.
+- Add a preview page under `src/app/design` at the **same path as the real
+  route**, with every dynamic id replaced by `sample`:
+  `/admin/users/[id]/timeline` -> `src/app/design/admin/users/sample/timeline/page.tsx`,
+  `/dashboard/vehicles/[id]/edit` -> `src/app/design/dashboard/vehicles/sample/edit/page.tsx`.
+  `src/app/design/_components/PreviewLinkRewriter.tsx` rewrites clicks on
+  real links to these mirrored paths, so every link a screen renders must
+  have its preview, or it is a dead link in the preview.
+- Every preview page calls `guardDesignPreview()` (from `@/app/design/guard`)
+  as its first statement.
+- Admin previews render inside `AdminShell` with `DEMO_ADMIN_NAV`,
+  `DEMO_ADMIN_MOBILE_PRIMARY`, `DEMO_ADMIN_MOBILE_SECONDARY` from
+  `@/lib/demo/admin`. Rental Page previews render inside `DashboardShell`
+  with the `DEMO_*` exports from `@/lib/demo/dashboard` (see
+  `src/app/design/dashboard/vehicles/page.tsx` for the exact props).
+  Account previews render between `NavbarShell` and `Footer` (see
+  `src/app/design/account/page.tsx`).
+- Sample data for your screens goes in your OWN new file under
+  `src/lib/demo/` (named in your brief). You may import from the existing
+  demo files but do not edit them.
+- Client components that call APIs on mount must not break in a preview:
+  they may fail quietly (show their normal error state), but must not
+  throw or loop.
+
+### Admin and Rental Page workspace patterns
+- Every screen starts with `PageHeader` (title, one-line purpose, at most
+  one or two actions), then a filter row, then content.
+- **Lists of records**: on `md+` a clean table: `bg-white rounded-2xl
+  ring-1 ring-slate-900/[0.06] shadow-xs overflow-hidden`, header row
+  `text-xs font-medium text-slate-500 bg-slate-50/80`, rows `divide-y
+  divide-slate-100`, `hover:bg-slate-50/60`, numbers right-aligned and
+  `tabular`, status as `Badge`, the row's one action on the right. On
+  phones the same records become stacked cards (no horizontal scrolling
+  tables). Keep any existing pagination, restyled.
+- **Filters**: status filters as `ChipLink`s (URL driven, as today) with
+  counts when the page already has them; a search input (`inputBase`
+  styled, rounded-full, with a search icon) when the page already
+  searches.
+- **Detail / timeline pages**: header card with the entity (avatar or
+  photo, name, key facts, status), then sections; timelines use the
+  `Timeline` look.
+- **Forms and settings**: grouped sections; on desktop a two-column row
+  per group (label and description left, controls right), stacked on
+  phones. Destructive actions in a rose-tinted card at the bottom.
+- **Numbers and charts**: `Stat` tiles with icons; charts keep their
+  existing implementation, restyled to blue-600 lines/bars on hairline
+  grids.
+- Dates on screen use `formatDay` / `formatSlot` / `formatClock` from
+  `@/lib/dates/display` instead of raw `2026-10-02` strings.
