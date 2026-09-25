@@ -12,6 +12,7 @@ import { buttonClasses } from "@/components/ui/Button";
 import { inputBase, inputEdge } from "@/components/ui/Input";
 import { Avatar } from "@/components/layout/NavbarShell";
 import { formatInstantDay } from "@/lib/dates/display";
+import { formatPhone } from "@/lib/format/phone";
 import { reliabilityColor, reliabilityLabel } from "@/lib/vehicles/format";
 import { KycActions } from "@/components/admin/KycActions";
 import { RenterActions } from "@/components/admin/RenterActions";
@@ -191,7 +192,7 @@ function RenterIdentity({ u }: { u: RenterRow }) {
         {u.role !== "renter" && <Badge variant="blue">{u.role.replace(/_/g, " ")}</Badge>}
       </div>
       <p className="mt-0.5 truncate text-xs text-slate-500">
-        {u.phone}{u.email ? ` · ${u.email}` : ""}
+        {formatPhone(u.phone)}{u.email ? ` · ${u.email}` : ""}
       </p>
       {u.is_blacklisted && u.blacklist_reason && (
         <p className="mt-1 flex items-start gap-1 text-xs text-rose-700">

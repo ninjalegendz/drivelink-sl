@@ -1,7 +1,7 @@
 import Link from "next/link";
 import {
   CalendarCheck, FileText, Building2, Settings, Headphones, Check,
-  Mail, Phone as PhoneIcon,
+  Mail, Phone as PhoneIcon, ChevronDown,
 } from "lucide-react";
 import { Badge } from "@/components/ui/Badge";
 import { Card } from "@/components/ui/Card";
@@ -13,6 +13,7 @@ import { SignOutButton } from "@/components/account/SignOutButton";
 import { RentalPageList, type RentalPageListEntry } from "@/components/account/RentalPageList";
 import { TeamInvitations, type TeamInvitation } from "@/components/account/TeamInvitations";
 import { PageTransferInvitations, type PageTransferInvitation } from "@/components/account/PageTransferInvitations";
+import { formatPhone } from "@/lib/format/phone";
 
 // The renter/host personal area ("You"): a profile header, one obvious way
 // into every other personal screen, the account's Rental Pages, and the
@@ -96,35 +97,17 @@ export function AccountHub({ profile, authEmail, pages, teamInvitations, pageTra
         </div>
       </div>
 
-      {/* Welcome banner, first sight after passwordless signup */}
-      {welcome && (
-        <Card variant="tinted" padding="md">
-          <p className="text-sm font-semibold text-blue-800">Welcome to DriveLink</p>
-          <p className="mt-1 text-sm leading-6 text-slate-700">
-            Your account is live. Verify your ID below to unlock booking, Rental Page owners confirm verified
-            renters faster, and the whole thing takes about 2 minutes.
-          </p>
-        </Card>
-      )}
-
-      {/* Email-verification nudge, only when an email exists and isn't verified yet */}
-      {profile.email && !profile.email_verified_at && (
-        <Card padding="md">
-          <div className="flex items-start gap-3">
-            <span aria-hidden="true" className="grid h-8 w-8 shrink-0 place-items-center rounded-full bg-slate-100 text-sm font-semibold text-blue-700">@</span>
-            <div className="min-w-0 flex-1">
-              <p className="text-sm font-medium text-slate-800">Verify your email for recovery and notices</p>
-              <p className="mt-0.5 text-xs leading-5 text-slate-500">
-                We&apos;ve sent a link to <span className="font-mono">{profile.email}</span>. Clicking it
-                gives DriveLink a second way to send important booking and account notices. Optional.
-              </p>
-            </div>
-          </div>
-        </Card>
-      )}
-
-      {/* Identity verification, prominent while unresolved */}
-      <IdentityCard profile={profile} isVerified={isVerified} isPending={isPending} canVerify={canVerify} didit={didit} />
+      {/* The one thing to finish, right under the header. Disappears once
+          identity, phone and (when there is an email on file) email are all
+          done, leaving only the compact badges above. */}
+      <FinishSetupCard
+        profile={profile}
+        isVerified={isVerified}
+        isPending={isPending}
+        canVerify={canVerify}
+        welcome={welcome}
+        didit={didit}
+      />
 
       {/* Quick links */}
       <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
@@ -162,9 +145,20 @@ export function AccountHub({ profile, authEmail, pages, teamInvitations, pageTra
           <div className="flex items-start justify-between gap-4">
             <dt className="pt-1.5 text-slate-500">Mobile</dt>
             <dd className="text-right">
-              <span className="font-medium text-slate-900">{profile.phone}</span>
+              <span className="font-medium text-slate-900">{formatPhone(profile.phone)}</span>
+              {/* The real verify flow lives in the checklist above while
+                  something is still unfinished, so this stays a small link
+                  rather than a second copy of the same form. */}
               <div className="mt-2 flex justify-end">
-                <PhoneVerifyForm phone={profile.phone} verified={profile.phone_verified} />
+                {profile.phone_verified ? (
+                  <span className="flex items-center gap-1.5 text-xs font-medium text-emerald-700">
+                    <Check size={13} aria-hidden="true" /> Verified
+                  </span>
+                ) : (
+                  <a href="#finish-setup" className="text-xs font-semibold text-blue-700 hover:text-blue-800">
+                    Verify phone
+                  </a>
+                )}
               </div>
             </dd>
           </div>
@@ -179,101 +173,167 @@ export function AccountHub({ profile, authEmail, pages, teamInvitations, pageTra
   );
 }
 
-function IdentityCard({
-  profile, isVerified, isPending, canVerify, didit,
+// Checklist wording is its own scale, separate from the header's compact
+// badge labels: "Not started" reads better as a task status than "Not
+// verified" does.
+const IDENTITY_TASK_LABEL: Record<string, string> = {
+  unverified: "Not started",
+  pending: "Under review",
+  verified: "Verified",
+  rejected: "Rejected",
+};
+
+function FinishSetupCard({
+  profile, isVerified, isPending, canVerify, welcome, didit,
 }: {
   profile: AccountHubProfile;
   isVerified: boolean;
   isPending: boolean;
   canVerify: boolean;
+  welcome?: string;
   didit?: string;
 }) {
-  const step = isVerified ? 2 : isPending ? 1 : 0;
-  const steps = ["Start verification", "Didit reviews your ID", "Identity confirmed"];
+  const phoneDone = profile.phone_verified;
+  const hasEmail = Boolean(profile.email);
+  const emailDone = hasEmail ? Boolean(profile.email_verified_at) : true;
+
+  const tasks = [isVerified, phoneDone, ...(hasEmail ? [emailDone] : [])];
+  const doneCount = tasks.filter(Boolean).length;
+  const allDone = doneCount === tasks.length;
+
+  if (allDone) return null;
+
+  const identityTone = isVerified ? "green" : profile.kyc_status === "rejected" ? "red" : "amber";
+  const identityStep = isVerified ? 2 : isPending ? 1 : 0;
+  const identitySteps = ["Start verification", "Didit reviews your ID", "Identity confirmed"];
 
   return (
-    <div className={`rounded-2xl p-5 sm:p-6 ${isVerified ? "bg-surface shadow-xs ring-1 ring-slate-900/[0.06]" : "bg-amber-50/70 ring-1 ring-amber-200"}`}>
-      <div className="flex flex-wrap items-center justify-between gap-3">
-        <h2 className="text-base font-semibold text-slate-900">Identity verification</h2>
-        <Badge variant={isVerified ? "green" : profile.kyc_status === "rejected" ? "red" : "amber"}>
-          {kycLabel[profile.kyc_status ?? "unverified"]}
-        </Badge>
+    <Card id="finish-setup" padding="lg" className="animate-fade-up scroll-mt-24">
+      <div className="flex flex-wrap items-center justify-between gap-2">
+        <h2 className="text-base font-semibold text-slate-900">Finish setting up</h2>
+        <span className="text-xs font-medium text-slate-500">{doneCount} of {tasks.length} done</span>
       </div>
-
-      {/* Step tracker */}
-      <div className="mt-5 flex items-start gap-0">
-        {steps.map((label, i) => {
-          const done = i < step;
-          const current = i === step;
-          const isLast = i === steps.length - 1;
-          return (
-            <div key={label} className="flex flex-1 items-center">
-              <div className="flex flex-col items-center">
-                <div className={`grid h-7 w-7 shrink-0 place-items-center rounded-full text-xs font-bold transition-colors ${
-                  done ? "bg-emerald-600 text-white" : current ? "bg-blue-600 text-white" : "bg-white text-slate-400 ring-1 ring-inset ring-slate-300"
-                }`}>
-                  {done ? <Check size={14} strokeWidth={3} /> : i + 1}
-                </div>
-                <p className={`mt-1.5 w-20 text-center text-xs leading-tight ${done || current ? "text-slate-900" : "text-slate-500"}`}>
-                  {label}
-                </p>
-              </div>
-              {!isLast && <div aria-hidden="true" className={`mx-2 mb-5 h-px flex-1 ${done ? "bg-emerald-500" : "bg-slate-200"}`} />}
-            </div>
-          );
-        })}
-      </div>
-
-      {/* Status panel */}
-      {isVerified && (
-        <div className="mt-5 rounded-xl bg-emerald-50 p-4 text-sm ring-1 ring-emerald-600/15">
-          <p className="font-semibold text-emerald-800">Identity verified by Didit</p>
-          <p className="mt-0.5 text-xs text-emerald-800/80">Your ID and face have been confirmed. You can book any vehicle on DriveLink.</p>
-        </div>
-      )}
-
-      {isPending && !isVerified && (
-        <div className="mt-5 rounded-xl bg-blue-50 p-4 text-sm ring-1 ring-blue-600/15">
-          <p className="font-semibold text-blue-800">Verification in progress</p>
-          <p className="mt-0.5 text-xs text-slate-600">
-            Didit is reviewing your documents. This usually takes a few minutes.
-            This page will update automatically, you can also refresh.
-          </p>
-        </div>
-      )}
-
-      {profile.kyc_status === "rejected" && !didit && (
-        <div className="mt-5 rounded-xl bg-rose-50 p-4 text-sm ring-1 ring-rose-600/15">
-          <p className="font-semibold text-rose-800">Verification failed</p>
-          <p className="mt-0.5 text-xs text-rose-800/80">
-            Didit could not verify your identity. Common reasons: blurry photo, glare on ID,
-            face not clearly visible. Please try again with better lighting.
-          </p>
-        </div>
-      )}
-
-      {canVerify && (
-        <div className="mt-5">
-          <DiditVerifyButton
-            redirectPath="/account?didit=done"
-            label={profile.kyc_status === "rejected" ? "Try verification again" : "Verify my identity"}
-          />
-        </div>
-      )}
-
-      {/* Trust note */}
-      <p className="mt-4 text-center text-xs text-slate-500">
-        Didit performs the identity and liveness check. After approval, DriveLink keeps a protected front/back copy of the approved government ID for confirmed-booking handover. It is never public, and the liveness selfie is not shared with Rental Pages. Verification is provided by{" "}
-        <a
-          href="https://didit.me"
-          target="_blank"
-          rel="noopener noreferrer"
-          className="text-slate-500 underline hover:text-slate-700"
-        >
-          Didit
-        </a>.
+      <p className="mt-1 text-sm leading-6 text-slate-600">
+        {welcome ? "Your account is live. " : ""}Finish these to unlock booking, Rental Page owners confirm verified renters faster.
       </p>
-    </div>
+
+      <ul className="mt-4 divide-y divide-slate-100">
+        {/* Identity check */}
+        <li className="py-3 first:pt-0 last:pb-0">
+          <div className="flex flex-wrap items-center justify-between gap-2">
+            <p className="text-sm font-medium text-slate-900">
+              Identity check <span className="ml-1 text-xs font-normal text-slate-500">Required to book</span>
+            </p>
+            <Badge variant={identityTone}>{IDENTITY_TASK_LABEL[profile.kyc_status ?? "unverified"]}</Badge>
+          </div>
+
+          {isPending && (
+            <p className="mt-1.5 text-xs leading-5 text-slate-500">
+              Didit is reviewing your documents. This usually takes a few minutes.
+              This page will update automatically, you can also refresh.
+            </p>
+          )}
+          {profile.kyc_status === "rejected" && !didit && (
+            <p className="mt-1.5 text-xs leading-5 text-rose-700">
+              Didit could not verify your identity. Common reasons: blurry photo, glare on ID,
+              face not clearly visible. Please try again with better lighting.
+            </p>
+          )}
+          {isVerified && (
+            <p className="mt-1.5 text-xs leading-5 text-slate-500">
+              Your ID and face have been confirmed. You can book any vehicle on DriveLink.
+            </p>
+          )}
+
+          {canVerify && (
+            <div className="mt-3">
+              <DiditVerifyButton
+                redirectPath="/account?didit=done"
+                label={profile.kyc_status === "rejected" ? "Try verification again" : "Verify my identity"}
+              />
+            </div>
+          )}
+        </li>
+
+        {/* Phone number */}
+        <li className="py-3 first:pt-0 last:pb-0">
+          <div className="flex flex-wrap items-center justify-between gap-2">
+            <p className="text-sm font-medium text-slate-900">Phone number</p>
+            <Badge variant={phoneDone ? "green" : "amber"}>{phoneDone ? "Verified" : "Not verified"}</Badge>
+          </div>
+          {!phoneDone && (
+            <div className="mt-3">
+              <PhoneVerifyForm phone={profile.phone} verified={profile.phone_verified} />
+            </div>
+          )}
+        </li>
+
+        {/* Email, optional */}
+        {hasEmail && (
+          <li className="py-3 first:pt-0 last:pb-0">
+            <div className="flex flex-wrap items-center justify-between gap-2">
+              <p className="text-sm font-medium text-slate-900">
+                Email <span className="ml-1 text-xs font-normal text-slate-500">Optional</span>
+              </p>
+              <Badge variant={emailDone ? "green" : "amber"}>{emailDone ? "Verified" : "Not verified"}</Badge>
+            </div>
+            {!emailDone && (
+              <p className="mt-1.5 text-xs leading-5 text-slate-500">
+                We&apos;ve sent a link to <span className="font-mono">{profile.email}</span>. Clicking it
+                gives DriveLink a second way to send important booking and account notices.
+              </p>
+            )}
+          </li>
+        )}
+      </ul>
+
+      {/* Identity stepper, "Powered by Didit" verification and the privacy
+          paragraph, tucked away so the checklist stays scannable. Wording
+          unchanged from the previous always-open card. */}
+      <details className="group mt-4 border-t border-slate-100 pt-4">
+        <summary className="inline-flex min-h-6 cursor-pointer select-none list-none items-center gap-1 text-xs font-semibold text-blue-700 hover:text-blue-800">
+          How the identity check works
+          <ChevronDown size={14} className="transition-transform group-open:rotate-180" aria-hidden="true" />
+        </summary>
+
+        <div className="mt-4">
+          <div className="flex items-start gap-0">
+            {identitySteps.map((label, i) => {
+              const done = i < identityStep;
+              const current = i === identityStep;
+              const isLast = i === identitySteps.length - 1;
+              return (
+                <div key={label} className="flex flex-1 items-center">
+                  <div className="flex flex-col items-center">
+                    <div className={`grid h-7 w-7 shrink-0 place-items-center rounded-full text-xs font-bold transition-colors ${
+                      done ? "bg-emerald-600 text-white" : current ? "bg-blue-600 text-white" : "bg-white text-slate-400 ring-1 ring-inset ring-slate-300"
+                    }`}>
+                      {done ? <Check size={14} strokeWidth={3} /> : i + 1}
+                    </div>
+                    <p className={`mt-1.5 w-20 text-center text-xs leading-tight ${done || current ? "text-slate-900" : "text-slate-500"}`}>
+                      {label}
+                    </p>
+                  </div>
+                  {!isLast && <div aria-hidden="true" className={`mx-2 mb-5 h-px flex-1 ${done ? "bg-emerald-500" : "bg-slate-200"}`} />}
+                </div>
+              );
+            })}
+          </div>
+
+          <p className="mt-2 text-center text-xs text-slate-500">
+            Didit performs the identity and liveness check. After approval, DriveLink keeps a protected front/back copy of the approved government ID for confirmed-booking handover. It is never public, and the liveness selfie is not shared with Rental Pages. Verification is provided by{" "}
+            <a
+              href="https://didit.me"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="text-slate-500 underline hover:text-slate-700"
+            >
+              Didit
+            </a>.
+          </p>
+        </div>
+      </details>
+    </Card>
   );
 }
 

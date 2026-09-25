@@ -27,7 +27,7 @@ export function AgencyVerifyAction({ agencyId, isVerified }: { agencyId: string;
       onClick={toggle}
       className="shrink-0"
     >
-      {isVerified ? "Revoke verification" : "Verify agency"}
+      {isVerified ? "Revoke verification" : "Verify page"}
     </Button>
   );
 }

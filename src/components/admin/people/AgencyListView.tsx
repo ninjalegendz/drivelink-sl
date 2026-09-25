@@ -12,6 +12,7 @@ import { buttonClasses } from "@/components/ui/Button";
 import { inputBase, inputEdge } from "@/components/ui/Input";
 import { Avatar } from "@/components/layout/NavbarShell";
 import { formatInstantDay } from "@/lib/dates/display";
+import { formatPhone } from "@/lib/format/phone";
 import { reliabilityColor, reliabilityLabel } from "@/lib/vehicles/format";
 import { AgencyVerifyAction } from "@/components/admin/AgencyVerifyAction";
 import { AgencyActions } from "@/components/admin/AgencyActions";
@@ -180,7 +181,7 @@ function AgencyIdentity({ a }: { a: AgencyRow }) {
         <Badge variant="slate">{a.page_type === "business" ? "Business" : "Personal"}</Badge>
         {a.strike_count >= 3 && <Badge variant="red">{a.strike_count} strikes</Badge>}
       </div>
-      <p className="mt-0.5 truncate text-xs text-slate-500">{a.city} · {a.whatsapp_number}</p>
+      <p className="mt-0.5 truncate text-xs text-slate-500">{a.city} · {formatPhone(a.whatsapp_number)}</p>
       {a.address && <p className="truncate text-xs text-slate-400">{a.address}</p>}
       {a.page_type === "business" && (
         a.business_reg_url ? (
@@ -209,7 +210,7 @@ function AgencyRowDesktop({ a }: { a: AgencyRow }) {
       <td className="max-w-sm px-4 py-3"><AgencyIdentity a={a} /></td>
       <td className="px-4 py-3">
         <p className="truncate text-sm font-medium text-slate-900">{a.profiles?.full_name ?? "-"}</p>
-        <p className="text-xs text-slate-500">{a.profiles?.phone ?? "-"}</p>
+        <p className="text-xs text-slate-500">{a.profiles?.phone ? formatPhone(a.profiles.phone) : "-"}</p>
         <div className="mt-1">
           <Badge variant={OWNER_KYC_BADGE[ownerKyc]}>{OWNER_KYC_LABEL[ownerKyc]}</Badge>
         </div>
@@ -283,7 +284,7 @@ function AgencyCardMobile({ a }: { a: AgencyRow }) {
           <div className="min-w-0">
             <p className="text-[11px] uppercase tracking-wide text-slate-500">Owner</p>
             <p className="truncate text-sm font-medium text-slate-900">{a.profiles?.full_name ?? "-"}</p>
-            <p className="text-xs text-slate-500">{a.profiles?.phone ?? "-"}</p>
+            <p className="text-xs text-slate-500">{a.profiles?.phone ? formatPhone(a.profiles.phone) : "-"}</p>
           </div>
           <Badge variant={OWNER_KYC_BADGE[ownerKyc]}>{OWNER_KYC_LABEL[ownerKyc]}</Badge>
         </div>

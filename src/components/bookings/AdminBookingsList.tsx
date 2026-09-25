@@ -5,7 +5,8 @@ import { BadgeCheck, ShieldAlert, ChevronDown, ChevronUp, Clock3, ClipboardList 
 import { Badge } from "@/components/ui/Badge";
 import { EmptyState } from "@/components/ui/EmptyState";
 import { formatLKR, reliabilityColor, reliabilityLabel } from "@/lib/vehicles/format";
-import { formatDay } from "@/lib/dates/display";
+import { formatSlot } from "@/lib/dates/display";
+import { formatPhone } from "@/lib/format/phone";
 import { BOOKING_STATUS_LABELS } from "@/lib/booking/state-machine";
 import { AdminBookingActions } from "@/components/admin/AdminBookingActions";
 import { usePolledRows } from "@/lib/realtime/usePolledRows";
@@ -73,10 +74,9 @@ export function AdminBookingsList({ initial, filterStatus }: Props) {
             <thead>
               <tr className="bg-slate-50/80 text-left text-xs font-medium text-slate-500">
                 <th className="py-3 pl-4 pr-4">Ref</th>
-                <th className="py-3 pr-4">Status</th>
                 <th className="py-3 pr-4">Vehicle</th>
                 <th className="py-3 pr-4">Renter</th>
-                <th className="py-3 pr-4">Rental Page</th>
+                <th className="py-3 pr-4">Page</th>
                 <th className="py-3 pr-4">Dates</th>
                 <th className="py-3 pr-4 text-right">Total</th>
                 <th className="py-3 pr-4">Actions</th>
@@ -95,10 +95,8 @@ export function AdminBookingsList({ initial, filterStatus }: Props) {
                   <Fragment key={b.id}>
                     <tr className={`transition-colors ${isBlacklisted ? "bg-rose-50/70 hover:bg-rose-50" : "hover:bg-slate-50/60"}`}>
                       <td className="py-3 pl-4 pr-4">
-                        <span className="font-mono text-xs text-slate-500">{b.id.slice(0, 8).toUpperCase()}</span>
-                      </td>
-                      <td className="py-3 pr-4">
                         <div className="flex flex-col items-start gap-1">
+                          <span className="font-mono text-xs text-slate-500">{b.id.slice(0, 8).toUpperCase()}</span>
                           <Badge variant={statusVariant[b.status]}>{BOOKING_STATUS_LABELS[b.status]}</Badge>
                           {isBlacklisted && (
                             <span className="inline-flex items-center gap-1 text-xs font-medium text-rose-600">
@@ -122,13 +120,15 @@ export function AdminBookingsList({ initial, filterStatus }: Props) {
                           )}
                         </div>
                       </td>
-                      <td className="py-3 pr-4 text-slate-900">
-                        {b.vehicles?.year} {b.vehicles?.make} {b.vehicles?.model}
-                        <span className="ml-1 text-xs text-slate-500">&middot; {b.vehicles?.city}</span>
+                      <td className="max-w-[11rem] py-3 pr-4 text-slate-900">
+                        <p className="truncate" title={`${b.vehicles?.year} ${b.vehicles?.make} ${b.vehicles?.model}`}>
+                          {b.vehicles?.year} {b.vehicles?.make} {b.vehicles?.model}
+                        </p>
+                        <p className="truncate text-xs text-slate-500">{b.vehicles?.city}</p>
                       </td>
-                      <td className="py-3 pr-4">
-                        <p className={isBlacklisted ? "text-rose-700 line-through" : "text-slate-900"}>{b.profiles?.full_name}</p>
-                        <p className="text-xs text-slate-500">{b.profiles?.phone}</p>
+                      <td className="max-w-[10rem] py-3 pr-4">
+                        <p className={`truncate ${isBlacklisted ? "text-rose-700 line-through" : "text-slate-900"}`}>{b.profiles?.full_name}</p>
+                        <p className="whitespace-nowrap text-xs text-slate-500">{formatPhone(b.profiles?.phone)}</p>
                         <div className="mt-1 flex flex-wrap items-center gap-2">
                           <RenterTrustPills p={b.profiles} />
                         </div>
@@ -136,22 +136,23 @@ export function AdminBookingsList({ initial, filterStatus }: Props) {
                           <p className="mt-0.5 max-w-xs text-xs text-rose-600/80">Reason: {b.profiles.blacklist_reason}</p>
                         )}
                       </td>
-                      <td className="py-3 pr-4 text-slate-700">{b.agencies?.name}</td>
-                      <td className="py-3 pr-4 whitespace-nowrap text-xs text-slate-600">
-                        {formatDay(b.start_date)} {b.start_time?.slice(0, 5)}
-                        <span aria-hidden="true" className="text-slate-400"> &rarr; </span>
-                        {formatDay(b.end_date)} {b.end_time?.slice(0, 5)}
+                      <td className="max-w-[9rem] truncate py-3 pr-4 text-slate-700">{b.agencies?.name}</td>
+                      <td className="whitespace-nowrap py-3 pr-4 text-xs text-slate-600">
+                        {formatSlot(b.start_date, b.start_time)}
+                        <br />
+                        <span aria-hidden="true" className="text-slate-400">&rarr; </span>
+                        {formatSlot(b.end_date, b.end_time)}
                         <br />
                         <span className="text-slate-400">{b.total_days}d</span>
                       </td>
-                      <td className="tabular py-3 pr-4 text-right font-semibold text-slate-900">{formatLKR(b.subtotal_lkr)}</td>
+                      <td className="tabular whitespace-nowrap py-3 pr-4 text-right font-semibold text-slate-900">{formatLKR(b.subtotal_lkr)}</td>
                       <td className="py-3 pr-4">
                         <AdminBookingActions bookingId={b.id} status={b.status} />
                       </td>
                     </tr>
                     {(hasIncidents || hasRecovery) && isExpanded && (
                       <tr>
-                        <td colSpan={8} className="pb-4 pt-0" />
+                        <td colSpan={7} className="pb-4 pt-0" />
                       </tr>
                     )}
                   </Fragment>
@@ -203,15 +204,15 @@ export function AdminBookingsList({ initial, filterStatus }: Props) {
                 <span className="font-normal text-slate-500"> &middot; {b.vehicles?.city}</span>
               </p>
               <p className="mt-0.5 text-xs text-slate-500">
-                {formatDay(b.start_date)} {b.start_time?.slice(0, 5)}
+                {formatSlot(b.start_date, b.start_time)}
                 <span aria-hidden="true"> &rarr; </span>
-                {formatDay(b.end_date)} {b.end_time?.slice(0, 5)} &middot; {b.total_days}d
+                {formatSlot(b.end_date, b.end_time)} &middot; {b.total_days}d
               </p>
 
               <div className="mt-2.5 border-t border-slate-100 pt-2.5">
                 <div className="flex flex-wrap items-center justify-between gap-x-2 gap-y-0.5">
                   <p className={`min-w-0 break-words text-sm ${isBlacklisted ? "text-rose-600 line-through" : "text-slate-900"}`}>{b.profiles?.full_name}</p>
-                  <p className="text-xs text-slate-500">{b.profiles?.phone}</p>
+                  <p className="text-xs text-slate-500">{formatPhone(b.profiles?.phone)}</p>
                 </div>
                 <div className="mt-1 flex flex-wrap items-center gap-2">
                   <RenterTrustPills p={b.profiles} />

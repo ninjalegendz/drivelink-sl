@@ -14,7 +14,8 @@ import { ActionBar } from "@/components/ui/ActionBar";
 import { BOOKING_STATUS_LABELS } from "@/lib/booking/state-machine";
 import { formatLKR } from "@/lib/vehicles/format";
 import type { BookingStatus } from "@/types/database";
-import { formatDay } from "@/lib/dates/display";
+import { formatSlot, formatClock } from "@/lib/dates/display";
+import { formatPhone } from "@/lib/format/phone";
 
 export const statusVariant: Record<BookingStatus, "slate" | "amber" | "green" | "red" | "blue"> = {
   requested:            "slate",
@@ -138,7 +139,7 @@ export function BookingDetailView({
               <Badge variant={statusVariant[status]}>{BOOKING_STATUS_LABELS[status]}</Badge>
             </div>
             <p className="text-sm text-slate-600">{vehicleCity}</p>
-            <p className="tabular text-sm text-slate-700">{formatDay(startDate)} <span aria-hidden="true" className="text-slate-400">&rarr;</span><span className="sr-only">to</span> {formatDay(endDate)}</p>
+            <p className="tabular text-sm text-slate-700">{formatSlot(startDate, startTime)} <span aria-hidden="true" className="text-slate-400">&rarr;</span><span className="sr-only">to</span> {formatSlot(endDate, endTime)}</p>
             <p className="tabular text-lg font-semibold text-slate-950">
               {formatLKR(subtotalLkr)} <span className="text-sm font-normal text-slate-500">for {totalDays} day{totalDays === 1 ? "" : "s"}</span>
             </p>
@@ -149,7 +150,7 @@ export function BookingDetailView({
                 <div className="mt-2 flex flex-wrap gap-2">
                   {agencyPhone && (
                     <a href={`tel:${agencyPhone}`} className="inline-flex min-h-9 items-center gap-1.5 rounded-lg bg-slate-100 px-3 text-xs font-semibold text-slate-800 hover:bg-slate-200">
-                      <Phone size={13} /> {agencyPhone}
+                      <Phone size={13} /> {formatPhone(agencyPhone)}
                     </a>
                   )}
                   {agencyWaLink && (
@@ -249,8 +250,8 @@ export function BookingDetailView({
       <Card padding="lg" className="mb-5">
         <h2 className="text-base font-semibold text-slate-950">What you asked for</h2>
         <dl className="mt-3 space-y-2 text-sm">
-          <Row label="Pick-up time">{startTime?.slice(0, 5) ?? "To be agreed"}</Row>
-          <Row label="Return time">{endTime?.slice(0, 5) ?? "To be agreed"}</Row>
+          <Row label="Pick-up time">{startTime ? formatClock(startTime) : "To be agreed"}</Row>
+          <Row label="Return time">{endTime ? formatClock(endTime) : "To be agreed"}</Row>
           <Row label="Rental price">{formatLKR(subtotalLkr)} <span className="font-normal text-slate-500">for {totalDays} day{totalDays === 1 ? "" : "s"}</span></Row>
           {depositLkr > 0 && <Row label="Refundable deposit">{formatLKR(depositLkr)}</Row>}
           <Row label="DriveLink fee">Rs. 0</Row>

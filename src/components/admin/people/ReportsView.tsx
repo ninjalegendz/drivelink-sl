@@ -12,6 +12,15 @@ const CATEGORY_LABEL: Record<string, string> = {
   duplicate: "Duplicate", inappropriate: "Inappropriate", other: "Other",
 };
 
+const TARGET_TYPE_LABEL: Record<string, string> = {
+  vehicle: "Listing", agency: "Rental Page", profile: "Account",
+};
+
+/** A human label for a reported target type, capitalising any code not in the map above. */
+function targetTypeLabel(type: string): string {
+  return TARGET_TYPE_LABEL[type] ?? (type.charAt(0).toUpperCase() + type.slice(1));
+}
+
 export interface ContentReportRow {
   id: string;
   target_type: string;
@@ -73,7 +82,7 @@ export function ReportsView({ reports }: ReportsViewProps) {
                     <tr key={r.id} className="align-top transition-colors hover:bg-slate-50/60">
                       <td className="max-w-md px-4 py-3">
                         <div className="flex flex-wrap items-center gap-1.5">
-                          <Badge variant="slate">{r.target_type}</Badge>
+                          <Badge variant="slate">{targetTypeLabel(r.target_type)}</Badge>
                           <Badge variant="amber">{CATEGORY_LABEL[r.category] ?? r.category}</Badge>
                         </div>
                         {r.detail && <p className="mt-1.5 text-slate-700">{r.detail}</p>}
@@ -85,7 +94,7 @@ export function ReportsView({ reports }: ReportsViewProps) {
                       </td>
                       <td className="px-4 py-3"><Badge variant={status.variant}>{status.label}</Badge></td>
                       <td className="px-4 py-3 text-slate-500">{r.reporter?.full_name ?? "-"}</td>
-                      <td className="px-4 py-3 text-slate-500">{formatInstantDay(r.created_at)}</td>
+                      <td className="whitespace-nowrap px-4 py-3 text-slate-500">{formatInstantDay(r.created_at)}</td>
                       <td className="px-4 py-3 text-right">{r.status === "open" && <ReportActions reportId={r.id} />}</td>
                     </tr>
                   );
@@ -101,7 +110,7 @@ export function ReportsView({ reports }: ReportsViewProps) {
                 <Card key={r.id} padding="md">
                   <div className="flex items-start justify-between gap-3">
                     <div className="flex flex-wrap items-center gap-1.5">
-                      <Badge variant="slate">{r.target_type}</Badge>
+                      <Badge variant="slate">{targetTypeLabel(r.target_type)}</Badge>
                       <Badge variant="amber">{CATEGORY_LABEL[r.category] ?? r.category}</Badge>
                     </div>
                     <Badge variant={status.variant}>{status.label}</Badge>

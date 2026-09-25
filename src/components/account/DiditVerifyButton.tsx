@@ -46,7 +46,7 @@ export function DiditVerifyButton({
         <div className="text-sm">
           <p className="font-semibold text-slate-900">Powered by Didit</p>
           <p className="text-xs leading-5 text-slate-600">
-            Secure biometric ID verification, your documents are processed by Didit, not stored by DriveLink.
+            Didit checks your ID and a quick selfie. DriveLink keeps only a protected copy of the approved ID for handover, never shown publicly.
           </p>
         </div>
       </div>
