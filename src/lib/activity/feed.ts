@@ -9,7 +9,7 @@ import { DEV_LOG_CATEGORIES, DEV_LOG_RANGES, DEV_LOG_ROLES } from "./labels";
 //     database walk every skipped row on each page, and it shifts when new
 //     rows arrive, which is how a paging log shows the same event twice or
 //     skips one. A cursor of "older than this exact row" does neither.
-//     Migration 130 adds the (created_at desc, id desc) index it walks.
+//     Migration 131 adds the (created_at desc, id desc) index it walks.
 //   - One query per page, limit + 1 rows so "is there more" needs no count.
 //   - Names for the people, pages and listings a page mentions come from at
 //     most three batched lookups, not one per row.

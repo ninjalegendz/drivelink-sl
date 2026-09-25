@@ -1,5 +1,5 @@
 -- ============================================================
--- 130 Dev log: a fast admin-wide activity feed, and more actions recorded
+-- 131 Dev log: a fast admin-wide activity feed, and more actions recorded
 -- ============================================================
 -- The admin "Dev log" (/admin/activity) reads public.activity_events newest
 -- first across everything. Until now that table was only ever read per
