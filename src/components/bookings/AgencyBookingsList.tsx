@@ -11,7 +11,7 @@ import { MessageRenterButton } from "@/components/booking/BookingChat";
 import { BOOKING_STATUS_LABELS } from "@/lib/booking/state-machine";
 import { formatLKR, reliabilityColor, reliabilityLabel } from "@/lib/vehicles/format";
 import { FOREIGN_PERMIT_LABELS } from "@/lib/booking/self-drive-eligibility";
-import { formatTimeLeft, isResponseOverdue } from "@/lib/booking/response-window";
+import { NO_REPLY_REASON, formatReplyDeadline, requestReplyDeadline } from "@/lib/booking/request-expiry";
 import { formatSlot } from "@/lib/dates/display";
 import { usePolledRows } from "@/lib/realtime/usePolledRows";
 import { createClient } from "@/lib/supabase/client";
@@ -152,14 +152,23 @@ function computeBookingFacts(booking: AgencyBookingRow, currentUserId: string) {
   const verified = renter?.kyc_status === "verified";
   const deposit = booking.deposit_lkr ?? vehicle?.deposit_lkr ?? 0;
   const pending = status === "pending_confirmation";
-  const overdue = pending && isResponseOverdue(booking.created_at);
+  // A request closes at 24 hours or at pickup, whichever is first (migration
+  // 130). The last six hours are highlighted: that is when an answer is due.
+  const deadline = pending ? requestReplyDeadline(booking.created_at, booking.start_at) : null;
+  const overdue = deadline !== null && deadline.getTime() - Date.now() < 6 * 3_600_000;
+  const replyBy = deadline ? `Reply by ${formatReplyDeadline(deadline)}` : null;
+  // "Declined" would tell the owner they turned this renter down.
+  const closedWithoutReply = status === "declined"
+    && (booking.cancellation_reason === NO_REPLY_REASON
+      || booking.cancellation_reason === "Request expired, agency did not respond in time");
+  const statusLabel = closedWithoutReply ? "Closed, no reply" : BOOKING_STATUS_LABELS[status];
 
   const readCursor = booking.page_msgs_read_at ? Date.parse(booking.page_msgs_read_at) : 0;
   const hasUnread = (booking.booking_messages ?? []).some(
     (m) => m.sender_id !== currentUserId && Date.parse(m.created_at) > readCursor,
   );
 
-  return { vehicle, renter, status, blocked, verified, deposit, pending, overdue, hasUnread };
+  return { vehicle, renter, status, blocked, verified, deposit, pending, overdue, replyBy, closedWithoutReply, statusLabel, hasUnread };
 }
 
 function IdStatus({ verified }: { verified: boolean }) {
@@ -200,14 +209,14 @@ function RowActions({ booking, currentUserId, canManageBooking, canManageHandove
 
 function BookingTableRow(props: RowProps) {
   const { booking, currentUserId } = props;
-  const { vehicle, renter, status, blocked, verified, deposit, pending, overdue, hasUnread } = computeBookingFacts(booking, currentUserId);
+  const { vehicle, renter, status, blocked, verified, deposit, pending, overdue, replyBy, closedWithoutReply, statusLabel, hasUnread } = computeBookingFacts(booking, currentUserId);
 
   return (
     <tr className={overdue ? "bg-amber-50/50" : undefined}>
       <td className="px-4 py-3.5 align-top">
         <p className="font-mono text-xs text-slate-500">{booking.id.slice(0, 8).toUpperCase()}</p>
-        {pending && (
-          <p className={`mt-1 text-xs font-semibold ${overdue ? "text-amber-700" : "text-blue-700"}`}>{formatTimeLeft(booking.created_at)}</p>
+        {pending && replyBy && (
+          <p className={`mt-1 text-xs font-semibold ${overdue ? "text-amber-700" : "text-blue-700"}`}>{replyBy}</p>
         )}
       </td>
       <td className="px-4 py-3.5 align-top">
@@ -230,7 +239,10 @@ function BookingTableRow(props: RowProps) {
         <p className="tabular font-semibold text-slate-900">{formatLKR(booking.subtotal_lkr)}</p>
         {deposit > 0 && <p className="tabular text-xs text-slate-500">+{formatLKR(deposit)} deposit</p>}
       </td>
-      <td className="px-4 py-3.5 align-top"><Badge variant={statusVariant[status]}>{BOOKING_STATUS_LABELS[status]}</Badge></td>
+      <td className="px-4 py-3.5 align-top">
+        <Badge variant={statusVariant[status]}>{statusLabel}</Badge>
+        {closedWithoutReply && <p className="mt-1 max-w-[12rem] text-xs text-slate-500">Closed automatically: not answered in 24 hours or by pickup.</p>}
+      </td>
       <td className="px-4 py-3.5 align-top">
         <RowActions {...props} renterName={renter?.full_name ?? "Renter"} hasUnread={hasUnread} />
       </td>
@@ -240,7 +252,7 @@ function BookingTableRow(props: RowProps) {
 
 function BookingCard(props: RowProps) {
   const { booking, currentUserId } = props;
-  const { vehicle, renter, status, blocked, verified, deposit, pending, overdue, hasUnread } = computeBookingFacts(booking, currentUserId);
+  const { vehicle, renter, status, blocked, verified, deposit, pending, overdue, replyBy, closedWithoutReply, statusLabel, hasUnread } = computeBookingFacts(booking, currentUserId);
 
   return (
     <Card padding="md" className={overdue ? "border-l-4 border-l-amber-400" : undefined}>
@@ -248,8 +260,8 @@ function BookingCard(props: RowProps) {
         <div className="min-w-0">
           <div className="flex flex-wrap items-center gap-x-2 gap-y-1">
             <p className="font-mono text-xs text-slate-500">{booking.id.slice(0, 8).toUpperCase()}</p>
-            {pending && (
-              <span className={`text-xs font-semibold ${overdue ? "text-amber-700" : "text-blue-700"}`}>{formatTimeLeft(booking.created_at)}</span>
+            {pending && replyBy && (
+              <span className={`text-xs font-semibold ${overdue ? "text-amber-700" : "text-blue-700"}`}>{replyBy}</span>
             )}
           </div>
           <h3 className="mt-0.5 font-semibold text-slate-900">
@@ -262,8 +274,13 @@ function BookingCard(props: RowProps) {
             <span className="sr-only">to</span>{formatSlot(booking.end_date, booking.end_time)}
           </p>
         </div>
-        <Badge variant={statusVariant[status]}>{BOOKING_STATUS_LABELS[status]}</Badge>
+        <Badge variant={statusVariant[status]}>{statusLabel}</Badge>
       </div>
+      {closedWithoutReply && (
+        <p className="mt-2 text-xs text-slate-500">
+          This request closed automatically because it wasn&apos;t answered within 24 hours (or by pickup time).
+        </p>
+      )}
 
       {/* Who is asking. This is the decision the owner is actually making. */}
       <div className="mt-3 rounded-lg bg-slate-50 p-3">

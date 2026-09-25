@@ -5,6 +5,7 @@ import { createClient, createServiceClient } from "@/lib/supabase/server";
 import { BookingDetailView, type BookingDetailStep } from "@/components/bookings/BookingDetailView";
 import type { BookingMessage } from "@/components/booking/BookingChat";
 import { RESPONSE_WINDOW_HOURS, formatDeadline, isResponseOverdue } from "@/lib/booking/response-window";
+import { NO_REPLY_REASON, formatReplyDeadline, requestReplyDeadline } from "@/lib/booking/request-expiry";
 import type { BookingWithRelations } from "@/types/queries";
 
 interface Props {
@@ -62,6 +63,12 @@ export default async function BookingDetailPage({ params, searchParams }: Props)
   const verified  = kycStatus === "verified";
   const closed    = ["declined", "cancelled"].includes(status);
   const cancellationReason = (booking as { cancellation_reason?: string | null }).cancellation_reason ?? null;
+  // The older wording is what the booking route stored before migration 130.
+  const closedWithoutReply = status === "declined"
+    && (cancellationReason === NO_REPLY_REASON || cancellationReason === "Request expired, agency did not respond in time");
+  const replyDeadline = status === "pending_confirmation"
+    ? requestReplyDeadline(booking.created_at, (booking as { start_at?: string | null }).start_at ?? null)
+    : null;
 
   const agencyPhone  = agency.whatsapp_number?.trim() ?? "";
   const agencyWaText =
@@ -157,6 +164,8 @@ export default async function BookingDetailPage({ params, searchParams }: Props)
       confirmed={confirmed}
       closed={closed}
       cancellationReason={cancellationReason}
+      closedWithoutReply={closedWithoutReply}
+      replyDeadlineLabel={replyDeadline ? formatReplyDeadline(replyDeadline) : null}
       agencyPhone={agencyPhone}
       agencyWaLink={agencyWaLink}
       currentUserId={user.id}

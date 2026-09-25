@@ -1,6 +1,6 @@
 import Link from "next/link";
 import Image from "next/image";
-import { Car, Phone, ShieldCheck, ShieldAlert, Sparkles } from "lucide-react";
+import { Car, Clock, Phone, ShieldCheck, ShieldAlert, Sparkles } from "lucide-react";
 import { Badge } from "@/components/ui/Badge";
 import { ReviewForm } from "@/components/booking/ReviewForm";
 import { WhatsAppIcon } from "@/components/icons/WhatsAppIcon";
@@ -57,6 +57,10 @@ export interface BookingDetailViewProps {
   confirmed: boolean;
   closed: boolean;
   cancellationReason: string | null;
+  /** The request closed because the owner never answered (migration 130). */
+  closedWithoutReply?: boolean;
+  /** "3:00 PM today" while a request waits for the owner, else null. */
+  replyDeadlineLabel?: string | null;
   agencyPhone: string;
   agencyWaLink: string | null;
   currentUserId: string;
@@ -83,7 +87,7 @@ export interface BookingDetailViewProps {
 export function BookingDetailView({
   bookingId, bookingRef, status, vehicleName, vehicleCity, vehiclePhoto, vehiclePlate,
   agencyName, agencyOwnerId, depositLkr, subtotalLkr, totalDays, startDate, endDate,
-  startTime, endTime, confirmed, closed, cancellationReason, agencyPhone, agencyWaLink,
+  startTime, endTime, confirmed, closed, cancellationReason, closedWithoutReply = false, replyDeadlineLabel = null, agencyPhone, agencyWaLink,
   currentUserId, messages, unreadMessages, chatReadOnly, showMessages, docShareConsentGranted,
   existingReviewRating, steps, currentIndex, welcome, showDiditNudge,
 }: BookingDetailViewProps) {
@@ -184,16 +188,31 @@ export function BookingDetailView({
               );
             })}
           </Timeline>
+          {/* Without a deadline a renter could wait days on an owner who never
+              answers. Say when it ends, so they can plan around it. */}
+          {status === "pending_confirmation" && replyDeadlineLabel && (
+            <p className="mt-5 flex items-start gap-2.5 rounded-xl bg-slate-50 p-3.5 text-sm leading-6 text-slate-600">
+              <Clock size={16} className="mt-1 shrink-0 text-slate-400" aria-hidden="true" />
+              <span>
+                {agencyName} has until <strong className="font-semibold text-slate-900">{replyDeadlineLabel}</strong> to
+                reply. If they don&apos;t, this request closes automatically and you can book another vehicle.
+              </span>
+            </p>
+          )}
         </Card>
       )}
 
       {closed && (
         <Card padding="lg" className="mb-5">
           <h2 className="text-base font-semibold text-slate-950">
-            {status === "declined" ? "This request was declined" : "This booking was cancelled"}
+            {closedWithoutReply
+              ? "This request closed without a reply"
+              : status === "declined" ? "This request was declined" : "This booking was cancelled"}
           </h2>
           <p className="mt-1 text-sm leading-6 text-slate-600">
-            {cancellationReason ?? "Nothing was charged."}{" "}
+            {closedWithoutReply
+              ? `${agencyName} didn't reply in time, so the request closed automatically. Nothing was charged.`
+              : (cancellationReason ?? "Nothing was charged.")}{" "}
             <Link href="/vehicles" className="font-medium text-blue-700 hover:text-blue-800">Browse other vehicles</Link>.
           </p>
         </Card>

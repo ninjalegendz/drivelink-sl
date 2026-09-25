@@ -12,6 +12,8 @@ import {
   type EligibleDriver,
 } from "@/lib/booking/self-drive-eligibility";
 import { listingPublicationProblem } from "@/lib/vehicles/trust";
+import { NO_REPLY_REASON, REQUEST_REPLY_WINDOW_HOURS } from "@/lib/booking/request-expiry";
+import { sriLankaClockNow } from "@/lib/dates/sri-lanka";
 
 export async function GET() {
   const supabase = await createClient();
@@ -272,20 +274,25 @@ export async function POST(req: NextRequest) {
   }
 
   // ── Expire ghost requests (C3) ──
-  // A pending request the agency never acted on shouldn't block this slot
-  // forever. Decline (NOT cancel) overlapping pendings older than 48h, using
-  // 'declined' avoids the renter-reliability penalty that 'cancelled' triggers.
-  const staleCutoff = new Date(Date.now() - 48 * 3600_000).toISOString();
+  // The 15-minute job closes unanswered requests at their deadline (24 hours
+  // or pickup, whichever is first; see lib/booking/request-expiry). This is
+  // the same rule applied on the spot for this vehicle's dates, so a request
+  // past its deadline never stands in the way even if that job is behind.
+  // 'declined', not 'cancelled': the renter did nothing wrong, and cancelling
+  // would cost them reliability.
+  // start_at is a Sri Lanka clock time with no zone, so "pickup has passed"
+  // is compared against the Sri Lanka clock, not a UTC timestamp.
+  const staleCutoff = new Date(Date.now() - REQUEST_REPLY_WINDOW_HOURS * 3600_000).toISOString();
   await service
     .from("bookings")
     .update({
       status:              "declined",
       declined_at:         new Date().toISOString(),
-      cancellation_reason: "Request expired, agency did not respond in time",
+      cancellation_reason: NO_REPLY_REASON,
     })
     .eq("vehicle_id", vehicle_id)
     .eq("status", "pending_confirmation")
-    .lt("created_at", staleCutoff)
+    .or(`created_at.lt.${staleCutoff},start_at.lt.${sriLankaClockNow()}`)
     .lt("start_at", endAt)
     .gt("end_at", startAt);
 
