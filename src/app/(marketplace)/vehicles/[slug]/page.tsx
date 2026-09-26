@@ -395,8 +395,8 @@ export default async function VehicleDetailPage({ params, searchParams }: Props)
                 </p>
                 {vehicle.self_drive && (
                   <p className="text-xs leading-relaxed text-slate-600">
-                    <strong className="text-slate-800">Self-drive:</strong> add your licence and permit details before requesting.
-                    The {provNoun} checks the original documents at pickup. Driving and insurance requirements can depend on
+                    <strong className="text-slate-800">Self-drive:</strong> bring your original driving licence, and a permit if it was issued outside Sri Lanka.
+                    The {provNoun} checks them at pickup. Driving and insurance requirements can depend on
                     your licence, permit and the {provNoun}&apos;s policy, so confirm them before travelling.
                   </p>
                 )}
@@ -683,7 +683,6 @@ export default async function VehicleDetailPage({ params, searchParams }: Props)
               <ol className="space-y-3">
                 {[
                   "You send a booking request, free, no payment",
-                  "DriveLink verifies your details (licence for self-drive)",
                   `The ${provNoun} confirms availability`,
                   `${provNounCap} contact unlocks so you can sync the handover`,
                   `Pickup & return, pay the ${provNoun} directly`,

@@ -164,7 +164,8 @@ async function main() {
 
     await pub.goto(`${BASE}/signup`);
     ok("signup: full name field", await pub.getByText("Your full name", { exact: false }).count() > 0);
-    ok("signup: residential address field", await pub.getByText("Residential address", { exact: false }).count() > 0);
+    // Signup stopped asking for a residential address in feb0ab8.
+    ok("signup: no residential address field", await pub.getByText("Residential address", { exact: false }).count() === 0);
     ok("signup: mobile field", await pub.getByText("Mobile number", { exact: false }).count() > 0);
     const chooserLinks = await pub.locator('a[href*="/signup/agency"], a[href*="/signup/renter"]').count();
     ok("signup: no account-type chooser links", chooserLinks === 0, `found ${chooserLinks}`);
@@ -193,7 +194,7 @@ async function main() {
     if (!createPageText.includes("Create your Rental Page")) {
       console.log("  [debug] /account/pages/new shows: " + JSON.stringify(createPageText.slice(0, 400)));
     }
-    ok("create-page form heading", createPageText.includes("Create your Rental Page"));
+    ok("create-page form heading", createPageText.includes("Set up your Rental Page"));
     await ownerPg.getByText("Personal", { exact: true }).first().click();
     await ownerPg.getByPlaceholder(/Kasun/i).fill("FE Motors");
     // custom Select for city
@@ -367,7 +368,9 @@ async function main() {
     const acctText = await renterPg.locator("body").innerText();
     ok("account: no separate licence review card", !/Driving licence/i.test(acctText));
     ok("account: rental pages section", /Rental Page/i.test(acctText));
-    ok("account: document sharing history", /Document sharing history/i.test(acctText));
+    // The history lives on its own page now, reached from the Documents tile.
+    ok("account: document sharing history", /Who has viewed your ID/i.test(acctText)
+      && await renterPg.locator('a[href="/account/documents"]').count() > 0);
     await shot(renterPg, "11-account");
 
     await browser.close();

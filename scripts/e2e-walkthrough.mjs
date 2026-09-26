@@ -170,6 +170,9 @@ async function main() {
     pageId = r.json?.page?.id;
     ok("personal page auto-approved", r.json?.page?.is_verified === true);
     ok("role flipped to agency_owner", (await svc.from("profiles").select("role").eq("id", ownerId).single()).data?.role === "agency_owner");
+    // Bookings need a verified WhatsApp on the page (the OTP step itself is
+    // not what this suite tests), same stamp as e2e-frontend.mjs.
+    await svc.from("agencies").update({ whatsapp_verified_at: new Date().toISOString() }).eq("id", pageId);
   }
 
   section("page switcher authorization");
@@ -210,10 +213,12 @@ async function main() {
     ok("vehicles approved", true);
   }
 
-  section("booking gates: licence, frozen");
+  // No licence gate at request time since 62002b2 (2026-09-15): the owner
+  // inspects the original licence at handover, so booking 1 below is sent by
+  // a renter with no licence on file and must still go through.
+  section("booking gates: frozen");
   {
-    const noLic = await api(renter, "POST", "/api/bookings", { vehicle_id: v1, ...dates(2, 2) });
-    ok("self-drive blocked without licence (403)", noLic.status === 403, `got ${noLic.status}`);
+    // Licence images still exist for the document-access checks further down.
     await svc.from("profiles").update({
       license_front_url: `/api/docs/kyc/${renterId}/e2e-lic-front.png`,
       license_back_url:  `/api/docs/kyc/${renterId}/e2e-lic-back.png`,
