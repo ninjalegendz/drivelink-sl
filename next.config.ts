@@ -13,10 +13,24 @@ const nextConfig: NextConfig = {
   // redirect, which silently drops the batch.
   skipTrailingSlashRedirect: true,
   async rewrites() {
-    return [
-      { source: "/rly/static/:path*", destination: `${POSTHOG_ASSETS}/static/:path*` },
-      { source: "/rly/:path*", destination: `${POSTHOG_INGEST}/:path*` },
-    ];
+    return {
+      // The /design review area is dev-only. Its pages already call
+      // notFound() in production, but the root loading.tsx starts streaming
+      // before they run, so the 404 page went out with a 200 status. Sending
+      // it to a route that does not exist, before the filesystem is checked,
+      // answers a real 404 and never renders a preview component at all.
+      beforeFiles: process.env.NODE_ENV === "production"
+        ? [
+            { source: "/design", destination: "/__design-preview-unavailable" },
+            { source: "/design/:path*", destination: "/__design-preview-unavailable" },
+          ]
+        : [],
+      afterFiles: [
+        { source: "/rly/static/:path*", destination: `${POSTHOG_ASSETS}/static/:path*` },
+        { source: "/rly/:path*", destination: `${POSTHOG_INGEST}/:path*` },
+      ],
+      fallback: [],
+    };
   },
   async headers() {
     // Next's local refresh runtime uses eval. Keep the production browser
